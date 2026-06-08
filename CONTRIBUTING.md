@@ -247,7 +247,7 @@ const repository = isDev
 ### **Prerequisites**
 
 - **Node.js**: 18.17.0 or higher (LTS)
-- **npm**: 9.x or higher (or yarn/pnpm)
+- **pnpm**: 8.0 or higher (we use pnpm, not npm)
 - **Git**: 2.37.0 or higher
 - **Android Studio** (for Android development) or **Xcode** (for iOS)
 - **Java Development Kit (JDK)**: 11.0 or higher (for Android)
@@ -259,26 +259,25 @@ const repository = isDev
 git clone https://github.com/omanandswami2005/omni-Docs-and-CSC.git
 cd omni-Docs-and-CSC
 
-# 2. Install dependencies
-npm install
-# or
-yarn install
-# or
+# 2. Install pnpm (if not already installed)
+npm install -g pnpm
+
+# 3. Install dependencies with pnpm
 pnpm install
 
-# 3. Set up environment files
+# 4. Set up environment files
 cp .env.example .env.development
 cp .env.example .env.production
 
-# 4. Install Capacitor CLI
-npm install -g @capacitor/cli
+# 5. Install Capacitor CLI
+pnpm add -g @capacitor/cli
 
-# 5. Install native dependencies (iOS)
+# 6. Install native dependencies (iOS)
 cd ios
 pod install
 cd ..
 
-# 6. Install native dependencies (Android)
+# 7. Install native dependencies (Android)
 # Open Android Studio, let it auto-download SDK/NDK
 ```
 
@@ -286,23 +285,41 @@ cd ..
 
 ```bash
 # Development server (web)
-npm run dev
+pnpm dev
 
 # Build for web
-npm run build
+pnpm build
 
 # Preview production build
-npm run preview
+pnpm preview
 
 # Build for Android
-npm run build
-npx cap sync android
-npx cap open android
+pnpm build
+pnpm exec cap sync android
+pnpm exec cap open android
 
 # Build for iOS
-npm run build
-npx cap sync ios
-npx cap open ios
+pnpm build
+pnpm exec cap sync ios
+pnpm exec cap open ios
+
+# Run tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Lint code
+pnpm lint
+
+# Fix linting issues
+pnpm lint:fix
+
+# Format code
+pnpm format
 ```
 
 ---
@@ -342,10 +359,10 @@ We enforce code quality using **ESLint** with strict rules:
 
 ```bash
 # Check all files
-npm run lint
+pnpm lint
 
 # Fix auto-fixable issues
-npm run lint:fix
+pnpm lint:fix
 ```
 
 ### **Prettier Formatting**
@@ -368,7 +385,7 @@ All code is automatically formatted using **Prettier**:
 **Format code:**
 
 ```bash
-npm run format
+pnpm format
 ```
 
 **Your IDE should format on save** — install the Prettier extension:
@@ -429,13 +446,13 @@ We use **Vitest** for fast, modern testing:
 
 ```bash
 # Run tests
-npm run test
+pnpm test
 
 # Run tests in watch mode
-npm run test:watch
+pnpm test:watch
 
 # Run tests with coverage
-npm run test:coverage
+pnpm test:coverage
 ```
 
 ### **Test Structure**
@@ -975,7 +992,7 @@ async uploadDocument(
 Enforce bundle size limits in CI/CD:
 
 ```bash
-npm run build:analyze
+pnpm build:analyze
 ```
 
 **Size targets:**
@@ -988,13 +1005,13 @@ npm run build:analyze
 
 ```bash
 # Run security audit
-npm audit
+pnpm audit
 
 # Fix vulnerabilities
-npm audit fix
+pnpm audit --fix
 
 # Check dependencies for vulnerabilities
-npm run security:check
+pnpm run security:check
 ```
 
 **Security best practices:**
@@ -1011,9 +1028,9 @@ Track these metrics:
 
 | Metric | Target | Tool |
 |--------|--------|------|
-| **Lighthouse Performance** | > 90 | `npm run audit:lighthouse` |
+| **Lighthouse Performance** | > 90 | `pnpm run audit:lighthouse` |
 | **Core Web Vitals** | FCP < 2s, LCP < 2.5s | Lighthouse |
-| **Bundle size (gzipped)** | < 500KB | `npm run build:analyze` |
+| **Bundle size (gzipped)** | < 500KB | `pnpm run build:analyze` |
 | **Initial load time** | < 3s | Chrome DevTools |
 | **Time to Interactive** | < 4s | Lighthouse |
 
