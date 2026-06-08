@@ -1,193 +1,126 @@
-# Code Standards & Quality — Kagaz (Omni Docs)
+# Compliance-Focused Code Standards — Kagaz (Omni Docs)
 
 Last updated: 2026-06-08
 
-This document captures coding standards, quality gates, tooling, and processes for the Kagaz codebase. It is a living artifact intended to help engineers ship maintainable, secure, and high-quality software across mobile, web, and backend components.
+Purpose
 
-Layout / where to put this file
+This document lists only the code, security, and operational standards required to meet Indian legal/regulatory obligations and reasonable future compliance expectations (DigiLocker, UIDAI/Aadhaar, DPDP Act, IT Act, CERT‑In, CCA for eSign, CSC SPV). Keep this file minimal and audit-oriented — developer-facing style/formatting rules are documented elsewhere.
 
-- Path: `code/code-standards-and-quality.md`
-- Keep this file in the `code/` folder. Add related automation (linters, CI config, commit hooks) in their respective folders.
+Scope & applicability
 
-Principles
+Applies to all code and operational artifacts that touch personal data, government integrations (DigiLocker, CSCs), backups, authentication, signing, and production infrastructure.
 
-- Correctness first: tests and types are primary guards.
-- Maintainability: readable code, small PRs, consistent style.
-- Security & privacy: threat modelling, secure defaults, and least privilege.
-- Developer experience: fast feedback loops (local lint/test), clear CI signals.
+1. Legal & regulator mapping (quick)
 
-1. Languages & stacks
+- DPDP Act (2023): consent recording, breach notifications, data subject rights, retention limits.
+- IT Act & Rules: reasonable security practices, incident reporting obligations.
+- Aadhaar Act & UIDAI rules: consented use only; do NOT store Aadhaar numbers/biometrics unless UIDAI permits and a separate legal flow exists.
+- DigiLocker / NeGD: partner onboarding, audit rights, retention & usage restrictions.
+- CCA / eSign: use licensed certifying authorities for digital signatures.
+- CERT‑In: follow directions for vulnerability and incident reporting.
 
-- Frontend (marketing + app web): Astro + Preact + TypeScript for landing/marketing islands (as recommended in docs). Follow Preact/React patterns where applicable.
-- Mobile: Capacitor + TypeScript (shared packages where feasible).
-- Shared packages: `packages/ui`, `packages/libs` in a pnpm monorepo.
-- Backend (if present): Node.js + TypeScript or Go (document and decide in architecture docs).
+2. Data handling & minimization (mandatory)
 
-2. TypeScript
+- Minimize collection: store only the data strictly necessary for declared purposes.
+- Aadhaar: never store raw Aadhaar number or biometrics unless expressly permitted by UIDAI and with separate, auditable consent.
+- Consent: capture explicit, purpose-specific consent for each flow (import, OCR, backup, share). Persist consent logs with: user id, timestamp (ISO 8601), action, scope, client UA, and request id.
+- Retention: implement configurable retention per data category; default retention for audit/consent logs = 2 years unless law requires longer. Clearly document retention periods in Privacy Policy.
+- Deletion: honoring user deletion requests must purge user-accessible copies within 30 days and purge backup copies per retention policy; keep immutable audit records (consent, event logs) for the documented retention window.
 
-- Always use TypeScript for new code.
-- tsconfig.json defaults:
-  - "strict": true
-  - "noImplicitAny": true
-  - "noImplicitReturns": true
-  - "exactOptionalPropertyTypes": true
-  - "forceConsistentCasingInFileNames": true
-- Prefer `unknown` over `any` and always narrow before use.
-- Keep `eslint` and `typescript` aligned (rules that conflict must be resolved in ESLint config).
+3. Data residency & backups (mandatory for govt integrations)
 
-3. Formatting & linting
+- Any server-side backups, logs, or metadata for DigiLocker/CSC integrations must reside in India region(s) only.
+- On-device storage is primary; cloud backups are opt-in only and must be encrypted (see Encryption section).
+- If cross-device sync is provided, enforce India-only hosting and document key management.
 
-- Formatting: Prettier as the single source of truth for code format. Add `.prettierrc` and apply via lint-staged.
-- Linting: ESLint with recommended TypeScript, React/Preact, accessibility and security plugins.
-  - Plugins: `@typescript-eslint`, `eslint-plugin-react` (or preact plugin), `eslint-plugin-jsx-a11y`, `eslint-plugin-security`.
-- Style rules:
-  - 2-space indentation
-  - Single quotes for JS/TS, backticks for templates
-  - Trailing commas in multi-line objects/arrays
-  - Max line length: 100 characters, exceptions for long strings
-- Commit hooks: Husky + lint-staged to run Prettier and ESLint on staged files.
+4. Encryption & key management (mandatory)
 
-4. Commit messages & branching
+- Transport: TLS 1.2+ (prefer TLS 1.3) for all network traffic. Enforce HSTS and certificate pinning for critical endpoints (DigiLocker endpoints, auth, backup APIs).
+- At-rest (server): AES-256 or equivalent for stored backups and audit logs containing sensitive metadata.
+- On-device: encrypt files with AES-256 and protect keys with platform keystore (Android Keystore / iOS Secure Enclave).
+- Backups / Sync: end-to-end encryption is required where possible. If servers broker encrypted blobs, the user must control the encryption key or a secure key-splitting mechanism must be documented.
+- Key custody: do not store master encryption keys in source repos or in plaintext on CI. Use a secrets manager (GitHub Secrets, Vault) with strict ACLs.
 
-- Commit message style: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `perf:`).
-- Branch strategy: feature branches off `main` named `feature/<short-name>`, bugfixes `fix/<short-name>`, hotfixes `hotfix/<short-name>`.
-- Pull requests: small (<= 400 lines changed where possible), one feature per PR, include description, screenshots, and test plan.
+5. Access control & developer operations (mandatory)
 
-5. Pull request & review process
+- Principle of least privilege for all environments (prod, staging). Require role-based access and review access quarterly.
+- MFA mandatory for all developer / ops accounts with access to production or keys.
+- Store signing keys (app signing, release keys) in a secure secret manager; restrict and audit access.
+- All privileged actions (key retrieval, key rotation, backup restore) must be logged and require authorization.
 
-- Two approvals required: one engineering and one product/design for UI changes.
-- PR checklist (must be included in PR description):
-  - Tests added/updated
-  - Lint passes locally
-  - Type checks pass
-  - Storybook / visual preview attached for UI changes
-  - Accessibility considerations noted
-  - Performance impact considered (bundle size estimate)
-- Use GitHub draft PRs while work-in-progress.
+6. Logging, audit trails & redaction (mandatory)
 
-6. Testing
+- Maintain immutable audit logs for: consent events, DigiLocker imports, share actions, eSign transactions, admin actions, and data exports.
+- Audit logs must record: event id, user id (pseudonymized where possible), action, scope, timestamp, acting principal, request id, and outcome.
+- Redact or hash highly sensitive fields (Aadhaar, PAN) in logs. Logs containing PII must be encrypted at rest and have restricted access.
+- Retention for audit logs: configurable but not less than required by law/partner agreements (default 2 years) and document exceptions.
 
-- Unit tests: Node + Jest or Vitest for frontend packages.
-  - Target: > 80% coverage for critical packages; enforce per-package thresholds pragmatically.
-- Integration tests: Playwright / Detox for mobile flows; Playwright for web E2E.
-- Accessibility tests: jest-axe rules for components and manual checks for critical flows.
-- CI: run unit tests, type checks, and E2E smoke tests on PRs.
+7. Incident response & breach notification (mandatory)
 
-7. CI/CD
+- Maintain an Incident Response Plan (IRP) that covers detection, containment, eradication, and recovery.
+- Report breaches as required by DPDP/IT rules and any specific partner (DigiLocker/CSC) agreements. Prepare templates for regulator and user notifications.
+- Follow CERT‑In reporting guidance and timelines applicable at the time of the incident; record and retain breach investigation artifacts.
 
-- CI pipeline (example):
-  1. install -> pnpm install
-  2. prebuild checks -> lint, typecheck, unit tests
-  3. build -> production build artifacts
-  4. e2e smoke -> Playwright tests
-  5. bundle size + security scan -> Snyk/Dependabot
-- Release: semantic-release for automated changelog and package releases, or manual gated release for app stores.
-- Protect `main` branch with required checks: passing CI, minimum approvals, and up-to-date with main before merge.
+8. Security testing, audits & third-party assessments (mandatory)
 
-8. Dependency management
+- Pre-production: perform SAST and dependency vulnerability scans on every PR. Fail the build on critical severity findings.
+- Penetration testing: external pentest at least annually and after any major security change; remediate critical/High findings before production use for government integrations.
+- Third-party vendor assessments: require SOC-2 / ISO27001 or equivalent for vendors handling backups, signing, or PII.
+- Supply-chain: generate SBOM (Software Bill of Materials) for production builds and maintain dependency lockfiles.
 
-- Use pnpm in monorepo mode. Keep dependency versions fixed.
-- Dependabot or Renovate for upgrade PRs, with automated tests required before merge.
-- Avoid large runtime dependencies; prefer lightweight libraries for mobile.
+9. Code & release controls required by regulators
 
-9. Security practices
+- Protected branches: require passing CI (lint, typecheck, security scan, unit tests) and at least one security/engineering approval before merge to main.
+- Reproducible builds: produce reproducible artifacts and store signed build artifacts for audit. Keep signed APKs/IPAs and release metadata in an auditable artifact repository.
+- Code provenance: enable CodeQL or comparable static analysis and retain results with commits for auditability.
 
-- Secrets: never check secrets into git. Use environment variables and secret management (GitHub Secrets, or HashiCorp Vault for infra).
-- Static analysis: use Snyk or npm audit in CI; run SAST tools for server-side code.
-- Code scanning: enable GitHub CodeQL and SAST/DAST tools.
-- Third-party packages: audit transitive deps, track high-risk packages, and have a mitigation plan.
-- cryptography: use well-vetted APIs (Web Crypto, libsodium bindings), do not roll your own crypto.
+10. eSign / digital signature rules (mandatory)
 
-10. Data protection & privacy-by-design
+- Use only CCA-approved eSign providers for any signature flows.
+- Capture explicit user consent and record eSign transaction metadata: signer id, method (OTP/biometric), timestamp, signing certificate id, and transaction id.
+- Do NOT store biometric data. Store only auditable signature proof artifacts as required by the eSign provider and law.
 
-- Default to on-device processing (as in product docs).
-- Explicit consent required for any cloud processing or third-party sharing flows; record consent with timestamp and UA.
-- Keep minimal logs and store audit logs in India-region infra.
-- For backups and sync, implement E2EE where only the user controls the keys. If server-side metadata is required, minimize sensitive metadata stored.
+11. DigiLocker & CSC integration controls (mandatory)
 
-11. Observability & logging
+- Follow DigiLocker partner onboarding requirements: attach privacy policy, security docs, and pen test report.
+- Enforce OAuth flows for DigiLocker imports; store only what user consented to and log the import event.
+- For CSC-assisted flows, ensure MoU and operator training exist; implement UI consent and point-of-transaction fee transparency.
+- Provide APIs/logs to partners or auditors on request subject to legal process and MoU terms.
 
-- Logs: structured logs with correlation IDs, but avoid logging sensitive PII. Mask or redact IDs (Aadhaar, PAN) in logs.
-- Metrics: request latency, error rates, queue lengths, OCR job durations, eSign success rates.
-- Alerts: high error rates, failed background jobs, security anomalies.
+12. Privacy & DPIA artifacts (mandatory)
 
-12. Accessibility
+- Maintain up-to-date DPIA documents for features that process sensitive data (DigiLocker import, OCR extraction, backups, eSign). Keep DPIA versioned and available for audits.
+- Publish and keep current: Privacy Policy, Data Retention Policy, Consent Capture UX, and Grievance Redressal contact.
 
-- All UI components must be keyboard-navigable and screen-reader friendly.
-- Follow WCAG 2.1 AA where feasible.
-- Use `aria-*` attributes and semantic HTML.
-- Include accessibility checks in CI (axe) and manual testing with screen readers for major flows.
+13. Supply chain & dependency policies (mandatory)
 
-13. Performance & bundle size
+- Pin dependency versions and commit lockfiles to repository; run automated dependency updates via Dependabot/Renovate with mandatory CI verification.
+- Block known-malicious packages and high-severity vulnerabilities in CI; require approved mitigation before merge when medium severity issues are present.
+- Maintain SBOM for each release and make it available to government auditors upon request.
 
-- Keep landing marketing bundle small (< 100 KB gzipped target from docs). Use Astro static-first + islands for interactivity.
-- Lazy-load non-critical assets, defer Lottie until in-viewport, and optimize images (AVIF/WebP fallbacks).
-- Measure LCP, TTI, TTFB in CI for critical pages and keep budgets in PR checklist.
+14. Records & documentary requirements (mandatory)
 
-14. Internationalization & localization
+- Keep: Privacy Policy, T&Cs, DPIAs, pen test reports, audit logs, consent logs, vendor contracts (eSign, backup), and DigiLocker/CSC MoUs for the retention period required by law and partner agreements.
+- Provide a documented process to produce these records for audits within the timelines agreed with auditors or regulators.
 
-- Extract strings to i18n resource files. Provide translations for Hindi and other launch languages.
-- Date, number, and currency formatting must be locale-aware.
+15. Change control & emergency procedures (mandatory)
 
-15. Documentation
+- Changes to production code that affect data handling must go through documented change control (ticket, code review, test plan, rollback plan).
+- Emergency (hotfix) process must include post-facto review, additional testing, and documentation for auditors.
 
-- Keep a living `README.md` at package roots with setup, test and build instructions.
-- Each package should include `CONTRIBUTING.md` for package-specific rules.
-- Document public APIs with typed interfaces and examples.
+16. Organizational controls (mandatory)
 
-16. Code ownership & CODEOWNERS
+- Designate a Data Protection Officer / Grievance Officer and document contact details in Privacy Policy and internal records.
+- Maintain role-based separation of duties for developers, reviewers, and release engineers with quarterly access reviews.
 
-- Use `CODEOWNERS` to assign reviewers for critical paths (`/apps/marketing/` => frontend owner, `/packages/ui/` => UI owner).
-- Keep ownership small and rotate to avoid bottlenecks.
+References & links
 
-17. Quality gates (enforced in CI)
-
-- ESLint: no new lint errors allowed.
-- TypeScript: no `any` in exported APIs (except explicitly allowed via `// eslint-disable` with justification).
-- Tests: unit tests for new features; PRs must not reduce coverage below defined thresholds.
-- Security: fix critical/high Snyk issues before merging.
-
-18. Mobile-specific
-
-- Keep API surfaces small; graceful degradation for offline.
-- Respect `prefers-reduced-motion` and accessibility settings.
-- Use platform keystore and biometric APIs correctly and securely.
-- Use proper storage: scoped app storage, not world-readable storage.
-
-19. API contracts
-
-- Version your APIs and document changes in changelogs.
-- Use OpenAPI / JSON Schema for backend APIs and validate requests/ responses in staging.
-
-20. Release & versioning
-
-- Use semantic versioning for packages (`MAJOR.MINOR.PATCH`).
-- Tag releases in git and create change logs automatically with semantic-release or manually maintain `CHANGELOG.md`.
-
-21. Onboarding checklist for new engineers
-
-- README: dev environment setup (`pnpm install`, `.env.example`, `pnpm dev`)
-- Run local linters & tests before opening PR
-- Read the architecture and security docs (links in repo)
-
-22. Governance & periodic reviews
-
-- Quarterly code quality review and dependency audit.
-- Annual security pen test for critical releases.
-
-Appendix: Recommended toolchain
-
-- Package management: pnpm
-- Formatter: Prettier
-- Linter: ESLint + @typescript-eslint
-- Testing: Vitest / Jest (unit), Playwright (E2E)
-- CI: GitHub Actions
-- Dependency updates: Dependabot / Renovate
-- Security: Snyk or GitHub Dependabot security alerts + CodeQL
-- Secret management: GitHub Secrets (or Vault for infra)
-- Commit hooks: Husky + lint-staged
-- Release: semantic-release (or manual release for stores)
+- DigiLocker: https://digilocker.gov.in/
+- UIDAI / Aadhaar Act: https://uidai.gov.in/
+- Digital Personal Data Protection Act, 2023: government publications
+- CERT‑In: https://www.cert-in.org.in/
+- Controller of Certifying Authorities (CCA): https://cca.gov.in/
 
 ---
 
-This file is a starting standard for the team. Adjust thresholds and tools to match the team size and product requirements. Keep this doc updated as the codebase evolves.
+This file focuses on compliance-required engineering and operational rules. Keep it up to date for audits and attach evidence (reports, logs, MoUs) under `docs/compliance/` or the secure audit repository as required.
