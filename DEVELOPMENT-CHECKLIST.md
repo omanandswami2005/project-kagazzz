@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-06-10
+> Last updated: 2026-06-10 (logging spec, app-portfolio doc, dependency overhaul)
 
 ---
 
@@ -42,6 +42,7 @@
 - [ ] P0-8 i18n setup (react-i18next, en + hi locale files, language detector) — [docs/architecture/12-i18n-multilingual.md](docs/architecture/12-i18n-multilingual.md) `[I18N]`
 - [ ] P0-9 CI pipeline: lint, type-check, test+coverage gates, bundle-size check, `pnpm audit`, agent:lint, Lighthouse — [CONTRIBUTING.md](CONTRIBUTING.md) §Performance & Security `[PERF]`
 - [ ] P0-10 App shell: routes, lazy imports, providers (Theme/I18n/Database/AI), error boundaries with **local-only** error logging `[SEC]`
+- [ ] P0-11 Logging infrastructure per [docs/architecture/14-observability-logging.md](docs/architecture/14-observability-logging.md): pino root/child loggers, redaction denylist + tests, SQLite `app_logs` ring buffer, hash-chained `audit_logs` DAO, worker log relay, pino-pretty dev pipeline `[SEC]` `[LEGAL]` (consent/audit records are DPDP evidence)
 
 ---
 
@@ -237,9 +238,10 @@
 
 ## Doc Gaps & Maintenance
 
-- [ ] `docs/architecture/13-app-portfolio.md` is referenced by [feature-priorities.md](docs/business-model/feature-priorities.md) (V3/V4 sections) but **missing from the repo** — create it before V4 planning.
-- [ ] ~27 lingering "DocVault" mentions across docs (old project name) — rename to Kagaz in a docs-only PR.
-- [ ] `package.json` lacks `agent:lint` / `agent:sitemap` scripts required by [page-skill-template.md](docs/design-system/page-skill-template.md) — add when building P0-7.
+- [x] `docs/architecture/13-app-portfolio.md` was referenced by [feature-priorities.md](docs/business-model/feature-priorities.md) but missing — created. ✅ 31edc93 (2026-06-10)
+- [x] Stale lowercase `docvault` identifiers (`@docvault/*` scope, `app.docvault.in`, `docvault.db`, backup filenames, broken a11y TOC anchor) renamed to `kagaz` equivalents. ✅ 31edc93 (2026-06-10)
+- [x] `package.json` `agent:lint` / `agent:sitemap` scripts added as **fail-loud stubs** (`scripts/agent-*.mjs`) — real implementation remains P0-7. ✅ 4080a21 (2026-06-10)
+- [x] Dependency overhaul: nonexistent packages fixed (`@capacitor/biometrics` → `@aparajita/capacitor-biometric-auth`, ADR-014), react-router pinned to v5 (Ionic peer requirement), all versions verified against npm, missing doc-required deps added, ESLint 10 flat config, Vitest 4 config. ✅ 4080a21 (2026-06-10)
 
 ---
 
@@ -247,4 +249,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
-- 2026-06-10 · _(the commit that added this file)_ · docs · Created DEVELOPMENT-CHECKLIST.md and updated CLAUDE.md with checklist-first + commit-discipline rules · (meta)
+- 2026-06-10 · 4080a21 · chore(tooling) · Dependency overhaul (verified npm versions, fixed nonexistent packages, react-router v5 pin, ESLint 10 flat config, Vitest 4, agent script stubs) · Doc Gaps, pre-P0-1
+- 2026-06-10 · ec13175 · docs(architecture) · Added 14-observability-logging.md (pino, three log streams, hash-chained audit logs, redaction) + ADR-013/014 + dependency version policy · P0-11
+- 2026-06-10 · 31edc93 · docs · Added 13-app-portfolio.md, renamed docvault→kagaz identifiers, marked roadmap gantt dates aspirational · Doc Gaps
+- 2026-06-10 · da34430 · docs · Created DEVELOPMENT-CHECKLIST.md and updated CLAUDE.md with checklist-first + commit-discipline rules · (meta)

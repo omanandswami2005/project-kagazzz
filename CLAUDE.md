@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repository Is
 
-**Kagaz** (a.k.a. Omni Docs; some older docs still say "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo currently contains the full documentation/spec suite plus project scaffolding (`package.json`, lint/test configs, Astro docs site); the `src/` application code is not yet present.
+**Kagaz** (a.k.a. Omni Docs; formerly "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo currently contains the full documentation/spec suite plus project scaffolding (`package.json`, lint/test configs, Astro docs site); the `src/` application code is not yet present.
 
 **Read these first — they are binding, not optional:**
 - `DEVELOPMENT-CHECKLIST.md` — **START HERE for any development work.** The living index of all work items (Phase 0 → V4), each cross-referenced to its spec/security/legal docs. Pick the next unblocked item, read its referenced docs before coding, and update the checklist when done (mark the box, append commit hash + date, log in its Commit Journal).
@@ -43,7 +43,8 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - **Clean Architecture**: Presentation → Application → Domain (zero dependencies) → Infrastructure. Feature modules under `src/modules/` (document-vault, document-scanner, pdf-engine, image-engine, ai-assistant, search, settings, auth = V1; sharing, cloud-sync = V2; csc-services = V3), plus `src/core/`, `src/infrastructure/`, `src/design-system/`, `src/app/`.
 - **Version dependency rule**: modules depend only on same-version-or-earlier. V1 never imports V2/V3.
 - **Protocol-based design**: modules communicate via TypeScript interfaces only — never import another module's concrete implementation; shared code comes from `core/` or `infrastructure/`.
-- Heavy ops (PDF, image, OCR, LLM inference) run in **Web Workers**. Strict TS — `any` is an ESLint **error**. `console.log` is a warning; no `console.log` in production code.
+- Heavy ops (PDF, image, OCR, LLM inference) run in **Web Workers**. Strict TS — `any` and `console.log` are ESLint **errors**.
+- **Logging**: structured pino only (`src/core/logging/`), never `console.log`. Three streams — colored dev console (pino-pretty), encrypted SQLite diagnostic ring buffer, hash-chained append-only audit log; central redaction denylist (keys, OCR text, Aadhaar/PAN, document content). Consent/audit records are legal evidence. Full spec: `docs/architecture/14-observability-logging.md`.
 - Tests live in `__tests__/` folders beside the implementation.
 - Tech choices are ADRs in `docs/architecture/08-tech-stack-decisions.md` — changing a technology requires updating the ADR.
 - Offline-first is non-negotiable: V1 is 100% offline (no HTTP clients, analytics, or network permission); cloud is always an enhancement.
