@@ -1,0 +1,16 @@
+{
+  "name": "kagaz-docs",
+  "version": "1.0.0",
+  "description": "Kagaz documentation site (Astro Starlight)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "devDependencies": {
+    "astro": "^6.4.5",
+    "@astrojs/starlight": "^0.40.0"
+  }
+}

@@ -21,6 +21,7 @@
 - [ADR-012: Native Capacitor Plugins for STT/TTS](#adr-012-native-capacitor-plugins-for-stttts)
 - [ADR-013: Pino for Structured Logging](#adr-013-pino-for-structured-logging)
 - [ADR-014: Biometric Auth Plugin Selection](#adr-014-biometric-auth-plugin-selection)
+- [ADR-015: pnpm Workspaces + Turborepo Monorepo](#adr-015-pnpm-workspaces--turborepo-monorepo)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -43,6 +44,7 @@
 | 012 | Speech I/O | **Native Capacitor Plugins** | Web Speech API | ✅ Accepted |
 | 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
 | 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
+| 015 | Repo Structure | **pnpm workspaces + Turborepo** | Nx, single package | ✅ Accepted |
 
 ---
 
@@ -851,6 +853,45 @@ Earlier drafts referenced `@capacitor/biometrics`, which **does not exist on npm
 
 - Biometric **authentication** (prompt) and **secret storage** (Keychain/Keystore) are two separate plugins — matches [10-security-architecture.md](10-security-architecture.md) §3.4 design.
 - Auto-lock on background uses `@capacitor/app` lifecycle events.
+
+---
+
+## ADR-015: pnpm Workspaces + Turborepo Monorepo
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-10 |
+| **Decision** | Structure the repo as a **pnpm workspace** with **Turborepo** task orchestration: `apps/kagaz` (consumer app), `apps/docs` (Starlight docs site), `apps/kagaz-operator` (V4), `packages/@kagaz/*` (shared code). |
+
+### Context
+
+The portfolio doc ([13-app-portfolio.md](13-app-portfolio.md)) defines two apps sharing design tokens, UI components, the agent kit, and the PDF engine. The design system already assumes a `packages/ui` workspace. Parallel development by multiple agents/teams ([docs/guides/parallel-development.md](../guides/parallel-development.md)) needs per-package task boundaries and cached builds.
+
+### Layout
+
+```
+apps/
+├── kagaz/            # Consumer app (V1–V3) — all docs' `src/` paths mean apps/kagaz/src/
+├── kagaz-operator/   # V4 operator app (created when V4 starts)
+└── docs/             # Astro Starlight documentation site
+packages/             # @kagaz/* shared packages — see packages/README.md
+scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
+```
+
+### Alternatives Considered
+
+| Option | Verdict |
+|---|---|
+| **pnpm workspaces + Turborepo** | ✅ pnpm is already mandated; Turbo adds cached, dependency-ordered task runs with near-zero config |
+| **Nx** | More powerful generators/graph, but heavier mental model and config surface for a small team |
+| **Single package** | Simplest today, but guarantees a painful split when V4 starts and contradicts the design-system's package assumption |
+
+### Consequences
+
+- One lockfile, one `node_modules` strategy, root-level lint/format; per-app builds and tests run via `turbo run <task>` with caching.
+- **Path convention:** architecture docs (`01`–`07`) describe module trees under `src/` — that always means `apps/kagaz/src/`. Do not rewrite historical docs; new docs should use full paths.
+- Shared code is extracted into `packages/` only when actually shared (rules in [packages/README.md](../../packages/README.md)) — no speculative packages.
 
 ---
 
