@@ -35,7 +35,7 @@
 
 - [x] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) ✅ 0f1d4e8 (2026-06-10)
 - [x] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure ✅ 65d3e75 (2026-06-10)
-- [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee)
+- [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee) 🟨 claimed — feature/p03-capacitor-platforms · Claude (Lane F) · 2026-06-10
 - [ ] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage)
 - [ ] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3
 - [ ] P0-6 Design-system foundation: tokens CSS, base components (atoms), 3 density modes — [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md), [component-library.md](docs/design-system/component-library.md), [design-principles.md](docs/design-system/design-principles.md)
