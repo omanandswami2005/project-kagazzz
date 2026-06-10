@@ -33,7 +33,7 @@
 
 > Refs: [docs/architecture/01-system-architecture.md](docs/architecture/01-system-architecture.md) (module structure), [CONTRIBUTING.md](CONTRIBUTING.md) (setup), [docs/architecture/08-tech-stack-decisions.md](docs/architecture/08-tech-stack-decisions.md) (ADRs — do not deviate without updating)
 
-- [ ] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build)
+- [ ] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) 🟨 claimed — feature/p01-tsconfig-vite · Claude (Lane F) · 2026-06-10
 - [ ] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure
 - [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee)
 - [ ] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage)
