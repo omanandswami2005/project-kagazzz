@@ -9,7 +9,7 @@
 
 ## How to use this file (protocol for agents)
 
-0. **Claim before working** (parallel development): commit a claim on the item line — `🟨 claimed — <branch> · <agent/dev> · <date>` — and push before branching. First pushed claim wins. Full protocol + lane ownership: [docs/guides/parallel-development.md](docs/guides/parallel-development.md).
+0. **Claim before working** (parallel development): commit a claim on the item line — `🟨 claimed — <branch> · <agent/dev> · <date>` — and push before branching. First pushed claim wins. **Branch name is derived from the item, deterministically**: `feature/<item-id>-<short-kebab-name>` — e.g. F-3 → `feature/f3-pdf-merge`, P0-7 → `feature/p07-agent-interface`, G1-3 → `chore/g1-3-a11y-audit` (use `bugfix/`/`chore/`/`docs/` prefixes per CONTRIBUTING.md when the item isn't a feature). One item = one branch; the item id in the branch makes claims, PRs, and commits mechanically traceable. Full protocol + lane ownership: [docs/guides/parallel-development.md](docs/guides/parallel-development.md).
 1. **Before working**: find the item here; read every doc it references **before writing code**.
 2. **While working**: follow the Definition of Done (below) — it applies to *every* item and is not repeated per line.
 3. **After working**: mark the checkbox, append `✅ <commit-hash> (YYYY-MM-DD)` to the item, and update the "Last updated" date above. If you only partially finished, append `🟨 in progress — <what remains>`.
