@@ -19,6 +19,9 @@
 - [ADR-010: TypeScript as Language](#adr-010-typescript-as-language)
 - [ADR-011: Tesseract.js for OCR](#adr-011-tesseractjs-for-ocr)
 - [ADR-012: Native Capacitor Plugins for STT/TTS](#adr-012-native-capacitor-plugins-for-stttts)
+- [ADR-013: Pino for Structured Logging](#adr-013-pino-for-structured-logging)
+- [ADR-014: Biometric Auth Plugin Selection](#adr-014-biometric-auth-plugin-selection)
+- [Dependency Version Policy](#dependency-version-policy)
 
 ---
 
@@ -38,6 +41,8 @@
 | 010 | Language | **TypeScript** | JavaScript | ✅ Accepted |
 | 011 | OCR Engine | **Tesseract.js** | Google Vision, AWS Textract | ✅ Accepted |
 | 012 | Speech I/O | **Native Capacitor Plugins** | Web Speech API | ✅ Accepted |
+| 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
+| 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
 
 ---
 
@@ -792,4 +797,73 @@ graph TB
 
 ---
 
-*Last updated: 2026-06-07 · Kagaz Architecture Decision Records v1.0*
+## ADR-013: Pino for Structured Logging
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-10 |
+| **Decision** | Use **pino** for all application logging (browser + workers + V2 Node backend), with **pino-pretty** for colored dev output (devDependency only). |
+
+### Context
+
+Kagaz needs structured, privacy-safe, local-only logging ([14-observability-logging.md](14-observability-logging.md)): diagnostic ring buffer in SQLite, hash-chained audit logs, strict redaction, and zero remote telemetry in V1.
+
+### Alternatives Considered
+
+| Option | Verdict |
+|---|---|
+| **pino** | ✅ Structured JSON natively, ~7 KB browser mode, child loggers, built-in `redact`, `transmit` hook for custom sinks, identical API on Node for V2 backend |
+| **tslog** | Good TS ergonomics, but weaker redaction story and no single idiom across browser + Node at scale |
+| **consola** | Pretty output, but string-first (structure bolted on) — wrong default for audit-grade logging |
+| **loglevel** | Tiny but unstructured; we'd rebuild schema, redaction, and sinks by hand |
+| **console.* + custom wrapper** | No redaction guarantees; banned by lint (`no-console`) anyway |
+
+### Consequences
+
+- One logging API everywhere; redaction is centralized and unit-testable.
+- `pino-pretty` must never reach production bundles (verify in `pnpm build:analyze`).
+- Custom SQLite sink and worker relay are our code — specified in [14-observability-logging.md](14-observability-logging.md).
+
+---
+
+## ADR-014: Biometric Auth Plugin Selection
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-10 |
+| **Decision** | Use **@aparajita/capacitor-biometric-auth** for biometric prompts, paired with **capacitor-secure-storage-plugin** for key storage. |
+
+### Context
+
+Earlier drafts referenced `@capacitor/biometrics`, which **does not exist on npm** (no official Capacitor biometrics plugin). F-16 (biometric lock) and the security architecture ([10](10-security-architecture.md) §3.1, §3.4) require a maintained plugin.
+
+### Alternatives Considered
+
+| Option | Verdict |
+|---|---|
+| **@aparajita/capacitor-biometric-auth** | ✅ Actively maintained, Capacitor 7/8 support, clean prompt-only API (auth result, no key handling — correct separation: keys live in secure storage) |
+| **capacitor-native-biometric** | Bundles credential storage with biometrics (mixes concerns); maintenance has been intermittent |
+| **Roll our own plugin** | Unjustified maintenance burden for a solved problem |
+
+### Consequences
+
+- Biometric **authentication** (prompt) and **secret storage** (Keychain/Keystore) are two separate plugins — matches [10-security-architecture.md](10-security-architecture.md) §3.4 design.
+- Auto-lock on background uses `@capacitor/app` lifecycle events.
+
+---
+
+## Dependency Version Policy
+
+> Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
+
+- **Pin known-compatible majors** for the framework spine (React, Ionic, Capacitor, Vite, Vitest, TypeScript); upgrade majors deliberately, with an ADR note if the choice itself changes.
+- **Known constraint:** `@ionic/react-router` requires **react-router v5** — do not bump `react-router-dom` to v6/v7 while Ionic's router wrapper is in use (Ionic's stack navigation/transitions depend on it).
+- **Known risk:** `pdf-lib` (ADR-004) has had no release since 2021. It remains the best pure-JS manipulation library; if it blocks us, evaluate the maintained fork `@cantoo/pdf-lib` before replacing the engine.
+- `pnpm audit` runs in CI; security patches are applied immediately, majors monthly.
+- Node baseline: **≥ 22 LTS** (18 is end-of-life since April 2025).
+
+---
+
+*Last updated: 2026-06-10 · Kagaz Architecture Decision Records v1.1*
