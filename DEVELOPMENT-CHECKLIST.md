@@ -37,7 +37,7 @@
 - [x] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure ✅ 65d3e75 (2026-06-10)
 - [x] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee) ✅ 18a7de9 (2026-06-10) — INTERNET only in debug manifest (live reload); release manifest has zero network perms; allowBackup=false
 - [x] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage) ✅ 8bfaffe (2026-06-10) — repositories/ land with Wave-1 vault contracts
-- [ ] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3 🟨 claimed — feature/p05-filesystem · Claude (Lane F) · 2026-06-10
+- [x] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3 ✅ a93c0ad (2026-06-10) — cleanupTempFiles() must be wired into app bootstrap in P0-10; thumbnail.service lands with F-24
 - [ ] P0-6 Design-system foundation: tokens CSS, base components (atoms), 3 density modes — [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md), [component-library.md](docs/design-system/component-library.md), [design-principles.md](docs/design-system/design-principles.md)
 - [ ] P0-7 Agent interface infrastructure: Action Registry, `data-agent-*` conventions, `pnpm agent:lint` + `agent:sitemap` scripts — [docs/design-system/agent-interface.md](docs/design-system/agent-interface.md)
 - [ ] P0-8 i18n setup (react-i18next, en + hi locale files, language detector) — [docs/architecture/12-i18n-multilingual.md](docs/architecture/12-i18n-multilingual.md) `[I18N]`
@@ -268,6 +268,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-10 · a93c0ad · feat(kagaz) · P0-5: FileStorage protocol, Capacitor + IndexedDB(Dexie) backends, platform factory, launch temp wipe; 22 tests vs fake-indexeddb · P0-5
 - 2026-06-10 · 8bfaffe · feat(kagaz) · P0-4: encrypted SQLite layer (DbConnection protocol, SQLCipher key in secure storage, transactional migration runner, 001 schema + 002 FTS5, 6 typed DAOs; 84 tests, 100%/94% coverage) · P0-4
 - 2026-06-10 · 18a7de9 + 190a316 · feat(kagaz)/fix(tooling) · P0-3: Capacitor android (minSdk 24) + ios (15.0) platforms, appId in.kagaz.app; release manifest stripped of INTERNET (debug-only manifest for live reload), allowBackup=false; recursive eslint ignores; capacitor.config.ts type-checked · P0-3
 - 2026-06-10 · 65d3e75 · feat(kagaz) · P0-2: src/ tree scaffolded (56 leaf dirs, 16 READMEs with lane/spec/rules; no implementation stubs); CLAUDE.md repo description updated · P0-2
