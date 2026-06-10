@@ -8,6 +8,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
 
+    // No app code yet (P0-2 scaffolds src/) — remove once first tests land.
+    passWithNoTests: true,
+
     setupFiles: ['./src/test/setup.ts'],
 
     // Coverage gates per CONTRIBUTING.md — PRs below these thresholds fail.
@@ -60,12 +63,7 @@ export default defineConfig({
 
     isolate: true,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        minThreads: 1,
-        maxThreads: 4,
-      },
-    },
+    maxWorkers: 4,
 
     reporters: ['verbose'],
   },
