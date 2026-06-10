@@ -9,6 +9,7 @@
 
 ## How to use this file (protocol for agents)
 
+0. **Claim before working** (parallel development): commit a claim on the item line — `🟨 claimed — <branch> · <agent/dev> · <date>` — and push before branching. First pushed claim wins. Full protocol + lane ownership: [docs/guides/parallel-development.md](docs/guides/parallel-development.md).
 1. **Before working**: find the item here; read every doc it references **before writing code**.
 2. **While working**: follow the Definition of Done (below) — it applies to *every* item and is not repeated per line.
 3. **After working**: mark the checkbox, append `✅ <commit-hash> (YYYY-MM-DD)` to the item, and update the "Last updated" date above. If you only partially finished, append `🟨 in progress — <what remains>`.
@@ -43,6 +44,21 @@
 - [ ] P0-9 CI pipeline: lint, type-check, test+coverage gates, bundle-size check, `pnpm audit`, agent:lint, Lighthouse — [CONTRIBUTING.md](CONTRIBUTING.md) §Performance & Security `[PERF]`
 - [ ] P0-10 App shell: routes, lazy imports, providers (Theme/I18n/Database/AI), error boundaries with **local-only** error logging `[SEC]`
 - [ ] P0-11 Logging infrastructure per [docs/architecture/14-observability-logging.md](docs/architecture/14-observability-logging.md): pino root/child loggers, redaction denylist + tests, SQLite `app_logs` ring buffer, hash-chained `audit_logs` DAO, worker log relay, pino-pretty dev pipeline `[SEC]` `[LEGAL]` (consent/audit records are DPDP evidence)
+
+---
+
+## Parallel Workstreams (how to split V1 after Phase 0)
+
+> Full rules: [docs/guides/parallel-development.md](docs/guides/parallel-development.md) (lanes, claim-by-commit, protocol-first waves, contract tests). Summary:
+
+| Lane | Scope | Items | Can start when |
+|---|---|---|---|
+| A — Vault & Search | document-vault, search | F-1, 9–12, 24–26, 30, 32–34 | Phase 0 done |
+| B — PDF Engine | pdf-engine | F-3–7, 21, 22, 28 | Phase 0 done |
+| C — Image & Scanner | image-engine, document-scanner, OCR | F-2, 8, 20, 29 | Phase 0 done (mocks for A) |
+| D — AI Assistant | ai-assistant | F-13–15, 23 | Interfaces of A/B/C exist as mocks (Wave 1) |
+| E — Auth, Settings, i18n | auth, settings, core/i18n | F-16–18, 27, 31 | Phase 0 done |
+| F — Platform (gatekeeper) | design-system, app shell, infrastructure, packages/, CI | P0-1…P0-11, G1 gates | now |
 
 ---
 
@@ -242,6 +258,9 @@
 - [x] Stale lowercase `docvault` identifiers (`@docvault/*` scope, `app.docvault.in`, `docvault.db`, backup filenames, broken a11y TOC anchor) renamed to `kagaz` equivalents. ✅ 31edc93 (2026-06-10)
 - [x] `package.json` `agent:lint` / `agent:sitemap` scripts added as **fail-loud stubs** (`scripts/agent-*.mjs`) — real implementation remains P0-7. ✅ 4080a21 (2026-06-10)
 - [x] Dependency overhaul: nonexistent packages fixed (`@capacitor/biometrics` → `@aparajita/capacitor-biometric-auth`, ADR-014), react-router pinned to v5 (Ionic peer requirement), all versions verified against npm, missing doc-required deps added, ESLint 10 flat config, Vitest 4 config. ✅ 4080a21 (2026-06-10)
+- [x] Monorepo adopted (ADR-015): pnpm workspaces + Turborepo; `apps/kagaz`, `apps/docs`, `packages/` with extraction rules. Docs' `src/` paths = `apps/kagaz/src/`. ✅ 05d074b (2026-06-10)
+- [x] `docs/guides/parallel-development.md` (referenced by AGENT.md but missing) created: lanes, claim-by-commit, protocol-first waves, contract tests, skill-file integration. ✅ _(this commit)_ (2026-06-10)
+- [ ] `docs/api-reference/` is referenced by [AGENT.md](AGENT.md) but doesn't exist — create the folder + per-module reference pages as modules land their first public APIs.
 
 ---
 
@@ -249,6 +268,8 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-10 · _(this commit)_ · docs · Parallel-development guide + lane table + claim protocol in checklist + CLAUDE.md workspace/pnpm/parallel rules · Doc Gaps
+- 2026-06-10 · 05d074b · build(monorepo) · pnpm workspaces + Turborepo, apps/kagaz + apps/docs + packages/, ADR-015 · Doc Gaps, pre-P0-1
 - 2026-06-10 · 4080a21 · chore(tooling) · Dependency overhaul (verified npm versions, fixed nonexistent packages, react-router v5 pin, ESLint 10 flat config, Vitest 4, agent script stubs) · Doc Gaps, pre-P0-1
 - 2026-06-10 · ec13175 · docs(architecture) · Added 14-observability-logging.md (pino, three log streams, hash-chained audit logs, redaction) + ADR-013/014 + dependency version policy · P0-11
 - 2026-06-10 · 31edc93 · docs · Added 13-app-portfolio.md, renamed docvault→kagaz identifiers, marked roadmap gantt dates aspirational · Doc Gaps

@@ -18,25 +18,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **At session start and before ending a turn of work, run `git status` + `git diff`.** If uncommitted changes exist that this session didn't make, review the diffs, group them into logical commits with accurate messages, and commit them — then record them in the Commit Journal in `DEVELOPMENT-CHECKLIST.md`.
 - Record the commit hash next to the checklist item it completes. Do not push unless the user asks.
 
-## Commands
+## Commands & Workspace
 
-Uses **pnpm** (not npm). Node ≥ 18.17.
+**Always pnpm — never npm or yarn** (one root lockfile; `pnpm dlx` instead of `npx`; `pnpm exec` for local bins). Node ≥ 22.12, pnpm ≥ 10.
+
+**Monorepo** (ADR-015): pnpm workspaces + Turborepo. `apps/kagaz` = the app (all `src/` paths in architecture docs mean `apps/kagaz/src/`), `apps/docs` = Starlight docs site, `packages/` = shared `@kagaz/*` packages (extraction rules in `packages/README.md`; depend via `workspace:*`). New workspace tech choices need an ADR in `08-tech-stack-decisions.md`.
 
 ```bash
-pnpm dev                 # Vite dev server (web)
-pnpm build               # production build
-pnpm test                # Vitest
-pnpm vitest run path/to/file.test.ts   # single test file
-pnpm vitest -t "test name"             # single test by name
-pnpm test:coverage       # coverage (gates: 80% lines/functions/statements, 75% branches)
-pnpm lint / lint:fix     # ESLint (.ts/.tsx)
+pnpm dev                 # kagaz app dev server (via turbo filter)
+pnpm build / test / type-check          # turbo runs across workspace (cached)
+pnpm --filter kagaz vitest run path/to/file.test.ts   # single test file
+pnpm --filter kagaz vitest -t "test name"             # single test by name
+pnpm test:coverage       # gates: 80% lines/functions/statements, 75% branches
+pnpm lint / lint:fix     # ESLint flat config at root, whole workspace
 pnpm format              # Prettier
-pnpm type-check          # tsc --noEmit
+pnpm agent:lint          # agent-interface contract check (P0-7 stub: fails loudly)
 pnpm docs:dev            # Astro Starlight docs site
-pnpm build:capacitor     # build + cap sync (then cap:open:android / cap:open:ios)
+pnpm --filter kagaz cap:sync / cap:open:android       # Capacitor (also build:capacitor)
 ```
 
 Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional Commits** (`feat(scope): subject`, scopes = module names); branches `feature/…`, `bugfix/…`, `docs/…`, etc. PRs target `develop`.
+
+**Parallel development**: work is split into lanes (A–F) with a claim-by-commit protocol on `DEVELOPMENT-CHECKLIST.md` — claim an item (🟨 line + push) before branching; never edit another lane's module; cross-module needs go through a Wave-1 contract PR (interface + mock + contract tests first). Full rules: `docs/guides/parallel-development.md`.
+
+**Tech constraints to never "fix"**: `react-router-dom` stays at **v5** (`@ionic/react-router` peer requirement); `pdf-lib` is unmaintained-but-chosen (fallback: `@cantoo/pdf-lib`, see Dependency Version Policy in `08`); verify a package exists on npm before adding it (two past deps were hallucinated names).
 
 ## Architecture (full detail: `docs/architecture/01-system-architecture.md`)
 
