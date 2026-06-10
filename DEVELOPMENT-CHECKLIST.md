@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-06-10 (logging spec, app-portfolio doc, dependency overhaul)
+> Last updated: 2026-06-10 (P0-1 done: tsconfig + vite config; install/ESLint-10 fixes; develop branch created)
 
 ---
 
@@ -33,7 +33,7 @@
 
 > Refs: [docs/architecture/01-system-architecture.md](docs/architecture/01-system-architecture.md) (module structure), [CONTRIBUTING.md](CONTRIBUTING.md) (setup), [docs/architecture/08-tech-stack-decisions.md](docs/architecture/08-tech-stack-decisions.md) (ADRs — do not deviate without updating)
 
-- [ ] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) 🟨 claimed — feature/p01-tsconfig-vite · Claude (Lane F) · 2026-06-10
+- [x] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) ✅ 0f1d4e8 (2026-06-10)
 - [ ] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure
 - [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee)
 - [ ] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage)
@@ -268,7 +268,11 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
-- 2026-06-10 · _(this commit)_ · chore(deps) · TypeScript 6.0.3 (typescript-eslint ceiling) + tsgo beta (`type-check:native`, Go-native 10× checker); TS-7-switch criteria recorded in 08's Dependency Version Policy · pre-P0-1
+- 2026-06-10 · 65bd5e1 · chore(turbo) · Task-hash inputs exclude markdown (doc edits no longer bust build/test/type-check caches) + TUI · pre-P0-9
+- 2026-06-10 · 0f1d4e8 · feat(kagaz) · P0-1: strict tsconfigs (app/node split), vite.config.ts (workers → assets/workers/, vendor chunk, analyze mode), vitest 4 fixes, test setup · P0-1
+- 2026-06-10 · 4caf528 · fix(tooling) · First real `pnpm install`: @eslint/js ^10.0.1 (10.4.1 nonexistent), packageManager field, native-build approvals, ESLint-10 compat shims (@eslint/compat) + import-x TS resolver, lockfile committed · pre-P0-1
+- 2026-06-10 · baedd06 · chore(checklist) · Claimed P0-1; `develop` branch created from main (feature branches now base off develop per CONTRIBUTING.md) · P0-1
+- 2026-06-10 · _(see da34430 group)_ · chore(deps) · TypeScript 6.0.3 (typescript-eslint ceiling) + tsgo beta (`type-check:native`, Go-native 10× checker); TS-7-switch criteria recorded in 08's Dependency Version Policy · pre-P0-1
 - 2026-06-10 · d02945e · docs · Parallel-development guide + lane table + claim protocol in checklist + CLAUDE.md workspace/pnpm/parallel rules · Doc Gaps
 - 2026-06-10 · 05d074b · build(monorepo) · pnpm workspaces + Turborepo, apps/kagaz + apps/docs + packages/, ADR-015 · Doc Gaps, pre-P0-1
 - 2026-06-10 · 4080a21 · chore(tooling) · Dependency overhaul (verified npm versions, fixed nonexistent packages, react-router v5 pin, ESLint 10 flat config, Vitest 4, agent script stubs) · Doc Gaps, pre-P0-1
