@@ -34,7 +34,7 @@
 > Refs: [docs/architecture/01-system-architecture.md](docs/architecture/01-system-architecture.md) (module structure), [CONTRIBUTING.md](CONTRIBUTING.md) (setup), [docs/architecture/08-tech-stack-decisions.md](docs/architecture/08-tech-stack-decisions.md) (ADRs — do not deviate without updating)
 
 - [x] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) ✅ 0f1d4e8 (2026-06-10)
-- [ ] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure 🟨 claimed — feature/p02-src-scaffold · Claude (Lane F) · 2026-06-10
+- [x] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure ✅ 65d3e75 (2026-06-10)
 - [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee)
 - [ ] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage)
 - [ ] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3
@@ -268,6 +268,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-10 · 65d3e75 · feat(kagaz) · P0-2: src/ tree scaffolded (56 leaf dirs, 16 READMEs with lane/spec/rules; no implementation stubs); CLAUDE.md repo description updated · P0-2
 - 2026-06-10 · 65bd5e1 · chore(turbo) · Task-hash inputs exclude markdown (doc edits no longer bust build/test/type-check caches) + TUI · pre-P0-9
 - 2026-06-10 · 0f1d4e8 · feat(kagaz) · P0-1: strict tsconfigs (app/node split), vite.config.ts (workers → assets/workers/, vendor chunk, analyze mode), vitest 4 fixes, test setup · P0-1
 - 2026-06-10 · 4caf528 · fix(tooling) · First real `pnpm install`: @eslint/js ^10.0.1 (10.4.1 nonexistent), packageManager field, native-build approvals, ESLint-10 compat shims (@eslint/compat) + import-x TS resolver, lockfile committed · pre-P0-1

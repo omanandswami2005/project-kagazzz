@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repository Is
 
-**Kagaz** (a.k.a. Omni Docs; formerly "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo currently contains the full documentation/spec suite plus project scaffolding (`package.json`, lint/test configs, Astro docs site); the `src/` application code is not yet present.
+**Kagaz** (a.k.a. Omni Docs; formerly "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo contains the full documentation/spec suite, workspace tooling (build/lint/test configs, Astro docs site), and the scaffolded `apps/kagaz/src/` module tree (P0-2) — directories + READMEs only; implementation files land with their checklist items.
 
 **Read these first — they are binding, not optional:**
 - `DEVELOPMENT-CHECKLIST.md` — **START HERE for any development work.** The living index of all work items (Phase 0 → V4), each cross-referenced to its spec/security/legal docs. Pick the next unblocked item, read its referenced docs before coding, and update the checklist when done (mark the box, append commit hash + date, log in its Commit Journal).
