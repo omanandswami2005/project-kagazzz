@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Discipline (mandatory)
 
+- **`develop` is the integration branch** (exists since 2026-06-10): claim commits go on `develop`, feature branches are cut from `develop` (`feature/<item-id>-<short-name>`), and merges/PRs target `develop`. `main` only receives merges from `develop` at release points — never commit work or claims directly to `main`.
 - **Every completed unit of work (feature, bugfix, doc change, refactor) gets its own Conventional Commit immediately** — never leave finished work uncommitted, never batch unrelated changes into one commit.
 - **At session start and before ending a turn of work, run `git status` + `git diff`.** If uncommitted changes exist that this session didn't make, review the diffs, group them into logical commits with accurate messages, and commit them — then record them in the Commit Journal in `DEVELOPMENT-CHECKLIST.md`.
 - Record the commit hash next to the checklist item it completes. Do not push unless the user asks.
