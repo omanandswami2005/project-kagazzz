@@ -35,7 +35,7 @@
 
 - [x] P0-1 Create `tsconfig.json` (strict flags per CONTRIBUTING.md) and `vite.config.ts` (workers, code-splitting per 01 §Build) ✅ 0f1d4e8 (2026-06-10)
 - [x] P0-2 Scaffold `src/` tree: `core/`, `modules/` (11 modules), `infrastructure/`, `design-system/`, `app/` exactly per [01-system-architecture.md](docs/architecture/01-system-architecture.md) §Module Structure ✅ 65d3e75 (2026-06-10)
-- [ ] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee) 🟨 claimed — feature/p03-capacitor-platforms · Claude (Lane F) · 2026-06-10
+- [x] P0-3 Capacitor init + Android (API 24+) / iOS (15+) platforms; **V1 manifest must request NO network permission** `[SEC]` (§3.5 offline-only guarantee) ✅ 18a7de9 (2026-06-10) — INTERNET only in debug manifest (live reload); release manifest has zero network perms; allowBackup=false
 - [ ] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage)
 - [ ] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3
 - [ ] P0-6 Design-system foundation: tokens CSS, base components (atoms), 3 density modes — [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md), [component-library.md](docs/design-system/component-library.md), [design-principles.md](docs/design-system/design-principles.md)
@@ -268,6 +268,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-10 · 18a7de9 + 190a316 · feat(kagaz)/fix(tooling) · P0-3: Capacitor android (minSdk 24) + ios (15.0) platforms, appId in.kagaz.app; release manifest stripped of INTERNET (debug-only manifest for live reload), allowBackup=false; recursive eslint ignores; capacitor.config.ts type-checked · P0-3
 - 2026-06-10 · 65d3e75 · feat(kagaz) · P0-2: src/ tree scaffolded (56 leaf dirs, 16 READMEs with lane/spec/rules; no implementation stubs); CLAUDE.md repo description updated · P0-2
 - 2026-06-10 · 65bd5e1 · chore(turbo) · Task-hash inputs exclude markdown (doc edits no longer bust build/test/type-check caches) + TUI · pre-P0-9
 - 2026-06-10 · 0f1d4e8 · feat(kagaz) · P0-1: strict tsconfigs (app/node split), vite.config.ts (workers → assets/workers/, vendor chunk, analyze mode), vitest 4 fixes, test setup · P0-1
