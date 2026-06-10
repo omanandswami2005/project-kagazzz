@@ -294,11 +294,11 @@ graph TB
 
 | Technology | Purpose | Version |
 |---|---|---|
-| **React** | UI library | 18.x+ |
-| **TypeScript** | Type safety | 5.x+ |
+| **React** | UI library | 19.x |
+| **TypeScript** | Type safety | 5.9+ |
 | **Ionic Framework** | Mobile-optimized UI components | 8.x+ |
-| **Tailwind CSS** | Utility-first styling | 3.x+ |
-| **Vite** | Build tool & dev server | 5.x+ |
+| **Tailwind CSS** | Utility-first styling | 4.x |
+| **Vite** | Build tool & dev server | 8.x |
 
 ### State Management & Data Fetching
 
@@ -306,7 +306,7 @@ graph TB
 |---|---|
 | **Zustand** | Lightweight global state management |
 | **TanStack Query** | Async data fetching, caching, and synchronization |
-| **React Router v7+** or **Ionic React Router** | Client-side routing |
+| **Ionic React Router** (react-router v5 — required peer, see ADR notes in 08) | Client-side routing |
 
 ### Platform & Native
 
@@ -348,7 +348,7 @@ graph TB
 ```mermaid
 graph TB
     subgraph UI["Presentation Layer"]
-        React["React 18+"]
+        React["React 19"]
         Ionic["Ionic Framework"]
         Tailwind["Tailwind CSS"]
     end
@@ -356,7 +356,7 @@ graph TB
     subgraph State["State Layer"]
         Zustand["Zustand"]
         TanStack["TanStack Query"]
-        Router["React Router v7+"]
+        Router["Ionic React Router"]
     end
 
     subgraph Processing["Processing Layer"]

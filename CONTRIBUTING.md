@@ -246,8 +246,8 @@ const repository = isDev
 
 ### **Prerequisites**
 
-- **Node.js**: 18.17.0 or higher (LTS)
-- **pnpm**: 8.0 or higher (we use pnpm, not npm)
+- **Node.js**: 22.12.0 or higher (LTS — Node 18 is end-of-life)
+- **pnpm**: 10.0 or higher (we use pnpm, not npm)
 - **Git**: 2.37.0 or higher
 - **Android Studio** (for Android development) or **Xcode** (for iOS)
 - **Java Development Kit (JDK)**: 11.0 or higher (for Android)
@@ -328,30 +328,19 @@ pnpm format
 
 ### **ESLint Configuration**
 
-We enforce code quality using **ESLint** with strict rules:
+We enforce code quality using **ESLint 10** (flat config — see `eslint.config.js` in the repo root). It layers `typescript-eslint` type-checked rules, `eslint-plugin-react` + `react-hooks`, `eslint-plugin-jsx-a11y` (accessibility lint is mandatory), `eslint-plugin-import-x`, and `eslint-config-prettier`, with these project rules:
 
-```json
-// .eslintrc.json
-{
-  "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    "prettier"
-  ],
-  "rules": {
-    "no-console": ["warn", { "allow": ["warn", "error"] }],
-    "no-debugger": "error",
-    "no-var": "error",
-    "prefer-const": "error",
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/explicit-function-return-types": "warn",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      { "argsIgnorePattern": "^_" }
-    ]
-  }
+```js
+// eslint.config.js (excerpt — see the file for the full config)
+rules: {
+  // Use the structured logger (docs/architecture/14-observability-logging.md), never console.log
+  'no-console': ['error', { allow: ['warn', 'error'] }],
+  'no-debugger': 'error',
+  'no-var': 'error',
+  'prefer-const': 'error',
+  '@typescript-eslint/no-explicit-any': 'error',
+  '@typescript-eslint/explicit-function-return-type': 'warn',
+  '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 }
 ```
 

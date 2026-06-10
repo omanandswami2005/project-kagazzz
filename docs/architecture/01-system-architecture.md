@@ -104,7 +104,7 @@ graph TB
 |---|---|
 | **UI Rendering** | React components styled with Ionic + Tailwind CSS |
 | **User Input Handling** | Forms, gestures, voice input, camera triggers |
-| **Navigation** | React Router v7+ or Ionic React Router for page transitions |
+| **Navigation** | Ionic React Router (react-router v5 peer) for page transitions |
 | **State Binding** | Zustand selectors and TanStack Query hooks for reactive data |
 | **Accessibility** | ARIA labels, screen reader support, keyboard navigation, font scaling |
 | **Theming** | Light/dark mode via CSS custom properties and Tailwind classes |
