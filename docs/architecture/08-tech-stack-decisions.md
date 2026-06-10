@@ -904,6 +904,7 @@ scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
 - **Known risk:** `pdf-lib` (ADR-004) has had no release since 2021. It remains the best pure-JS manipulation library; if it blocks us, evaluate the maintained fork `@cantoo/pdf-lib` before replacing the engine.
 - `pnpm audit` runs in CI; security patches are applied immediately, majors monthly.
 - Node baseline: **≥ 22 LTS** (18 is end-of-life since April 2025).
+- **TypeScript strategy (2026-06-10):** use **TypeScript 6.0.x** (the JS-based bridge release aligned with 7.0's behavior) as the source of truth — it is the newest version `typescript-eslint` supports (peer `<6.1.0`). The Go-native **TypeScript 7 / tsgo** (≈10× faster, beta since 2026-04, stable expected ~July 2026) is installed as `@typescript/native-preview` with `pnpm type-check:native` for fast local feedback. Build speed is unaffected either way — Vite transpiles with esbuild; `tsc` only type-checks. **Switch `type-check` to TS 7** when (a) 7.0 is stable and (b) typescript-eslint's type-checked linting supports it; until then `tsc --noEmit` (6.0.x) gates CI and tsgo is advisory.
 
 ---
 

@@ -268,7 +268,8 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
-- 2026-06-10 · _(this commit)_ · docs · Parallel-development guide + lane table + claim protocol in checklist + CLAUDE.md workspace/pnpm/parallel rules · Doc Gaps
+- 2026-06-10 · _(this commit)_ · chore(deps) · TypeScript 6.0.3 (typescript-eslint ceiling) + tsgo beta (`type-check:native`, Go-native 10× checker); TS-7-switch criteria recorded in 08's Dependency Version Policy · pre-P0-1
+- 2026-06-10 · d02945e · docs · Parallel-development guide + lane table + claim protocol in checklist + CLAUDE.md workspace/pnpm/parallel rules · Doc Gaps
 - 2026-06-10 · 05d074b · build(monorepo) · pnpm workspaces + Turborepo, apps/kagaz + apps/docs + packages/, ADR-015 · Doc Gaps, pre-P0-1
 - 2026-06-10 · 4080a21 · chore(tooling) · Dependency overhaul (verified npm versions, fixed nonexistent packages, react-router v5 pin, ESLint 10 flat config, Vitest 4, agent script stubs) · Doc Gaps, pre-P0-1
 - 2026-06-10 · ec13175 · docs(architecture) · Added 14-observability-logging.md (pino, three log streams, hash-chained audit logs, redaction) + ADR-013/014 + dependency version policy · P0-11

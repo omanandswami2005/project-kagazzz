@@ -41,7 +41,7 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 
 **Parallel development**: work is split into lanes (A–F) with a claim-by-commit protocol on `DEVELOPMENT-CHECKLIST.md` — claim an item (🟨 line + push) before branching; never edit another lane's module; cross-module needs go through a Wave-1 contract PR (interface + mock + contract tests first). Full rules: `docs/guides/parallel-development.md`.
 
-**Tech constraints to never "fix"**: `react-router-dom` stays at **v5** (`@ionic/react-router` peer requirement); `pdf-lib` is unmaintained-but-chosen (fallback: `@cantoo/pdf-lib`, see Dependency Version Policy in `08`); verify a package exists on npm before adding it (two past deps were hallucinated names).
+**Tech constraints to never "fix"**: `react-router-dom` stays at **v5** (`@ionic/react-router` peer requirement); `pdf-lib` is unmaintained-but-chosen (fallback: `@cantoo/pdf-lib`, see Dependency Version Policy in `08`); verify a package exists on npm before adding it (two past deps were hallucinated names); TypeScript stays at **6.0.x** (typescript-eslint max) with `pnpm type-check:native` (tsgo, the 10× Go compiler) as a fast advisory check — move `type-check` to TS 7 only when typescript-eslint supports it (policy in `08`).
 
 ## Architecture (full detail: `docs/architecture/01-system-architecture.md`)
 

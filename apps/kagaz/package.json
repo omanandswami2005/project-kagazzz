@@ -13,6 +13,7 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "type-check": "tsc --noEmit",
+    "type-check:native": "tsgo --noEmit",
     "build:analyze": "vite build --mode analyze",
     "build:capacitor": "pnpm build && pnpm exec cap sync",
     "cap:open:android": "pnpm exec cap open android",
@@ -64,7 +65,8 @@
     "clsx": "^2.1.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.3",
+    "@typescript/native-preview": "beta",
     "@capacitor/cli": "^8.4.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.17",
