@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug-only manifest, merged on top of main for debug builds.
+     INTERNET here exists solely for the Capacitor dev-server / live reload
+     workflow. Release builds use only src/main/AndroidManifest.xml, which
+     requests no network permission ([SEC] 10-security §3.5). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
