@@ -1,0 +1,16 @@
+# Dependencies & builds
+node_modules/
+dist/
+coverage/
+.turbo/
+.astro/
+
+# Env & local
+.env
+.env.*
+!.env.example
+*.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
