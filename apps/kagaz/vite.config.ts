@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
     // Heavy ops (PDF, image, OCR, LLM inference) run in Web Workers,
     // imported with the `?worker` suffix and emitted under assets/workers/.
     worker: {
-      format: 'es' as const,
+      format: 'es',
       rollupOptions: {
         output: {
           entryFileNames: 'assets/workers/[name].[hash].js',
