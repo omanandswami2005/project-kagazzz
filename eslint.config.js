@@ -12,12 +12,12 @@ import prettier from 'eslint-config-prettier';
 export default tseslint.config(
   {
     ignores: [
-      'dist/',
-      'coverage/',
-      'node_modules/',
-      'android/',
-      'ios/',
-      '.astro/',
+      '**/dist/',
+      '**/coverage/',
+      '**/node_modules/',
+      '**/android/',
+      '**/ios/',
+      '**/.astro/',
       'scripts/',
     ],
   },
