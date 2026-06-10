@@ -1,9 +1,9 @@
 # 04 — Image Engine Module Architecture
 
-> **Module**: `@docvault/image-engine`
+> **Module**: `@kagaz/image-engine`
 > **Version**: 1.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-07
+> **Last Updated**: 2026-06-10
 
 ---
 

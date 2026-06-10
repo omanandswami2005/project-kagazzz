@@ -1,9 +1,9 @@
 # 07 — CSC Services Module Architecture
 
-> **Module**: `@docvault/csc-services`
+> **Module**: `@kagaz/csc-services`
 > **Version**: 3.0.0 (V3 Feature)
 > **Status**: Draft
-> **Last Updated**: 2026-06-07
+> **Last Updated**: 2026-06-10
 
 ---
 

@@ -304,6 +304,9 @@ Explicitly out of scope for V1. These are planned for future versions.
 
 ## Cross-Version Feature Roadmap
 
+> [!NOTE]
+> Dates below are **aspirational planning targets**, not commitments. Real progress is tracked exclusively in [DEVELOPMENT-CHECKLIST.md](../../DEVELOPMENT-CHECKLIST.md) (status + commit hashes); this document owns scope and priority only. When dates drift, update this chart rather than letting the two files disagree.
+
 ```mermaid
 gantt
     title Kagaz Feature Roadmap
@@ -347,4 +350,4 @@ gantt
 
 ---
 
-*Last updated: 2026-06-07 · Kagaz Feature Priorities v1.0*
+*Last updated: 2026-06-10 · Kagaz Feature Priorities v1.1*

@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Standard:** WCAG 2.1 Level AA
-> **Last Updated:** 2026-06-07
+> **Last Updated:** 2026-06-10
 
 ---
 
@@ -14,7 +14,7 @@
   - [2.2 Operable](#22-operable)
   - [2.3 Understandable](#23-understandable)
   - [2.4 Robust](#24-robust)
-- [3. Kagaz Accessibility Features](#3-docvault-accessibility-features)
+- [3. Kagaz Accessibility Features](#3-kagaz-accessibility-features)
 - [4. Implementation Guidelines](#4-implementation-guidelines)
 - [5. Component Accessibility Patterns](#5-component-accessibility-patterns)
 - [6. Testing Strategy](#6-testing-strategy)

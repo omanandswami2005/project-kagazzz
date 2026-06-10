@@ -1,9 +1,9 @@
 # 03 — PDF Engine Module Architecture
 
-> **Module**: `@docvault/pdf-engine`
+> **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-07
+> **Last Updated**: 2026-06-10
 
 ---
 

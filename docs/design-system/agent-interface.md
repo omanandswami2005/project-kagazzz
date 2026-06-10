@@ -156,7 +156,7 @@ A single TypeScript module per module declares every named action.
 
 ```ts
 // apps/mobile/src/modules/vault/vault.actions.ts
-import { defineAction } from '@docvault/agent-kit';
+import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
 
 export const vaultActions = {
@@ -254,7 +254,7 @@ apps/mobile/src/modules/vault/pages/list/
 ### `ListPage.agent.ts` — the typed manifest
 
 ```ts
-import { definePage } from '@docvault/agent-kit';
+import { definePage } from '@kagaz/agent-kit';
 import { vaultActions } from '../../vault.actions';
 
 export const ListPageAgent = definePage({
@@ -585,11 +585,11 @@ Help the user fill a PAN Card application step by step. They may be unfamiliar w
 
 | Tool | Purpose | Status |
 |---|---|---|
-| `@docvault/agent-kit` | `defineAction`, `definePage`, `useAgentProps` | V1 |
+| `@kagaz/agent-kit` | `defineAction`, `definePage`, `useAgentProps` | V1 |
 | `vite-plugin-agent-kit` | Build-time: emit `agent-sitemap.json`, `agent-manifest.json` | V1 |
 | `eslint-plugin-agent` | Lint rules: `agent/completeness`, `agent/stable-ids`, `agent/skill-in-sync` | V1 |
 | AgentInspector (dev) | Devtool overlay showing live `data-agent-*` graph | V1 |
-| `@docvault/agent-test` | E2E test harness driven by the Action Registry | V1 |
+| `@kagaz/agent-test` | E2E test harness driven by the Action Registry | V1 |
 | Remote Agent Bridge (MCP) | V2 — expose the Action Registry to remote agents via MCP server | V2 |
 | Computer-Use adapter | V2 — accept `screenshot + action` style calls and map to actions | V2 |
 
@@ -627,4 +627,4 @@ Rule of thumb: if a human can tap it or read it for meaning, the agent should se
 
 ---
 
-*Last updated: 2026-06-08 · Kagaz Agent Interface v1.0*
+*Last updated: 2026-06-10 · Kagaz Agent Interface v1.0*

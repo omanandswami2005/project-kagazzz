@@ -34,7 +34,7 @@ The lint will fail the build if any of these are missing:
 ## Template 1 — `MyPage.agent.ts`
 
 ```ts
-import { definePage } from '@docvault/agent-kit';
+import { definePage } from '@kagaz/agent-kit';
 import { myModuleActions } from '../../myModule.actions';
 
 export const MyPageAgent = definePage({
@@ -139,7 +139,7 @@ When `module.action` fails:
 Below is the *minimum* annotation density. See [agent-interface.md § Layer 1](./agent-interface.md#layer-1--dom-annotations) for the full attribute spec.
 
 ```tsx
-import { useAgentProps, useAgentPage } from '@docvault/agent-kit';
+import { useAgentProps, useAgentPage } from '@kagaz/agent-kit';
 import { MyPageAgent } from './MyPage.agent';
 
 export function MyPage() {
@@ -196,7 +196,7 @@ A short reference implementation showing all three files in their finished form.
 ### `ListPage.agent.ts`
 
 ```ts
-import { definePage } from '@docvault/agent-kit';
+import { definePage } from '@kagaz/agent-kit';
 import { vaultActions } from '../../vault.actions';
 import { useVaultStore } from '../../vault.store';
 
@@ -337,4 +337,4 @@ export function ListPage() {
 
 ---
 
-*Last updated: 2026-06-08 · Kagaz Page Skill Template v1.0*
+*Last updated: 2026-06-10 · Kagaz Page Skill Template v1.0*

@@ -1,9 +1,9 @@
 # 06 — Sharing Module Architecture
 
-> **Module**: `@docvault/sharing`
+> **Module**: `@kagaz/sharing`
 > **Version**: 2.0.0 (V2 Feature)
 > **Status**: Draft
-> **Last Updated**: 2026-06-07
+> **Last Updated**: 2026-06-10
 
 ---
 
@@ -36,7 +36,7 @@ graph TB
     end
 
     subgraph "Recipient"
-        WEB["Web Viewer<br/>(app.docvault.in/share)"]
+        WEB["Web Viewer<br/>(app.kagaz.in/share)"]
         APP["In-App Viewer"]
     end
 
@@ -71,13 +71,13 @@ graph TB
 A unique URL is generated for each share session:
 
 ```
-https://app.docvault.in/share/v1/xK9mP2nQ7
+https://app.kagaz.in/share/v1/xK9mP2nQ7
                                    └─── unique share ID (9 chars, base62)
 ```
 
 | Property | Details |
 |---|---|
-| **Format** | `https://app.docvault.in/share/v1/{shareId}` |
+| **Format** | `https://app.kagaz.in/share/v1/{shareId}` |
 | **ID Generation** | 9-character base62 (a–z, A–Z, 0–9) = 13.5 trillion combinations |
 | **TTL Options** | 1 hour, 6 hours, 24 hours, 7 days, 30 days, custom (max 90 days) |
 | **Max Access Count** | Optional: 1, 5, 10, 50, unlimited |
@@ -97,7 +97,7 @@ Code: A7K9M
 | **Format** | 5 alphanumeric characters (uppercase) |
 | **Character Set** | `A-Z, 2-9` (excluding 0, O, 1, I, L to avoid confusion) = 31 chars |
 | **Combinations** | 31⁵ = ~28.6 million unique codes |
-| **Entry Point** | `app.docvault.in/share` → enter code → view documents |
+| **Entry Point** | `app.kagaz.in/share` → enter code → view documents |
 | **TTL** | Same as the parent shareable link TTL |
 | **Rate Limiting** | Max 5 incorrect attempts per minute per IP |
 | **Lockout** | After 15 failed attempts, block IP for 30 minutes |
@@ -141,7 +141,7 @@ sequenceDiagram
     API->>Storage: Store encrypted blobs
     API-->>Client: { shareId, code }
 
-    Client-->>Sender: Share link with key fragment:<br/>app.docvault.in/share/v1/xK9mP2n#keyPart1
+    Client-->>Sender: Share link with key fragment:<br/>app.kagaz.in/share/v1/xK9mP2n#keyPart1
 ```
 
 ### 4.2 Key Management
@@ -308,7 +308,7 @@ Content-Type: application/json
 {
   "shareId": "xK9mP2nQ7",
   "code": "A7K9M",
-  "url": "https://app.docvault.in/share/v1/xK9mP2nQ7",
+  "url": "https://app.kagaz.in/share/v1/xK9mP2nQ7",
   "expiresAt": "2026-06-08T00:26:00Z",
   "maxAccessCount": 5,
   "currentAccessCount": 0
@@ -347,7 +347,7 @@ Content-Type: application/json
 ```json
 {
   "shareId": "xK9mP2nQ7",
-  "redirectUrl": "https://app.docvault.in/share/v1/xK9mP2nQ7"
+  "redirectUrl": "https://app.kagaz.in/share/v1/xK9mP2nQ7"
 }
 ```
 
@@ -669,7 +669,7 @@ interface ShareNotificationPreferences {
 
 ## 11. Web Viewer
 
-The recipient views shared documents at `app.docvault.in/share`:
+The recipient views shared documents at `app.kagaz.in/share`:
 
 ### 11.1 Viewer Features
 

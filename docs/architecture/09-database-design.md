@@ -3,7 +3,7 @@
 > **Project:** Kagaz
 > **Database Engine:** SQLite (via `@capacitor-community/sqlite`)
 > **Encryption:** SQLCipher
-> **Last Updated:** 2026-06-07
+> **Last Updated:** 2026-06-10
 
 ---
 
@@ -75,7 +75,7 @@ graph TB
     end
 
     subgraph Storage["Device Storage"]
-        DBFile["docvault.db<br/>(encrypted)"]
+        DBFile["kagaz.db<br/>(encrypted)"]
         Files["Document Files<br/>(file system)"]
     end
 
@@ -1048,7 +1048,7 @@ flowchart LR
 
 | Component | Included | Notes |
 |---|---|---|
-| `docvault.db` (encrypted) | ✅ | Full database including FTS |
+| `kagaz.db` (encrypted) | ✅ | Full database including FTS |
 | Document files | ✅ | All files referenced by `file_path` |
 | Thumbnails | ❌ | Regenerated on restore (saves space) |
 | App settings | ✅ | Included in database |
@@ -1067,7 +1067,7 @@ async function createBackup(): Promise<string> {
   // 3. Copy database file
   const dbBackupPath = await Filesystem.copy({
     from: DB_PATH,
-    to: `backups/docvault_${Date.now()}.db`,
+    to: `backups/kagaz_${Date.now()}.db`,
     directory: Directory.Data,
   });
 

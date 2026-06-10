@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-06-07
+> **Last Updated:** 2026-06-10
 
 ---
 
@@ -153,7 +153,7 @@ async function initializeDatabase() {
 
   // Open encrypted database
   const db = await CapacitorSQLite.createConnection({
-    database: 'docvault',
+    database: 'kagaz',
     encrypted: true,
     mode: 'encryption',
     version: 1,
@@ -195,7 +195,7 @@ async function initializeDatabase() {
 ├── temp/                    ← Cleaned on app launch
 │   └── ...
 └── backups/
-    └── docvault_backup_{timestamp}.enc
+    └── kagaz_backup_{timestamp}.enc
 ```
 
 ---
@@ -555,7 +555,7 @@ async function eraseAllData(): Promise<void> {
   await db.close();
 
   // 2. Delete the encrypted database file
-  await Filesystem.deleteFile({ path: 'docvault.db', directory: Directory.Data });
+  await Filesystem.deleteFile({ path: 'kagaz.db', directory: Directory.Data });
 
   // 3. Delete all document files
   await Filesystem.rmdir({

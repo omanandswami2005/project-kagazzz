@@ -1,9 +1,9 @@
 # 05 — AI Assistant Module Architecture
 
-> **Module**: `@docvault/ai-assistant`
+> **Module**: `@kagaz/ai-assistant`
 > **Version**: 1.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-07
+> **Last Updated**: 2026-06-10
 
 ---
 
