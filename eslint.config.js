@@ -71,6 +71,15 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
+    // Test files: async mock stubs without awaits and vi.mocked(obj.method)
+    // are idiomatic vitest; these two rules only produce noise there.
+    files: ['**/__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+    },
+  },
+  {
     // tseslint.config()/tseslint.configs.* is the documented typescript-eslint
     // API — import-x's named-export caution is a false positive here.
     files: ['eslint.config.js'],

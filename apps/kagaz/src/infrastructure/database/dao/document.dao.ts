@@ -1,0 +1,201 @@
+/**
+ * documents DAO (docs/architecture/09-database-design.md §4.1, §6, §8).
+ * Owns all SQL for the documents table: CRUD with soft delete, optimistic
+ * version bumps, and FTS5 search.
+ */
+import type { DbConnection, SqlRow, SqlValue } from '../connection';
+import type { DocumentEntity, DocumentSourceType, NewDocument } from '../types';
+import {
+  asBool,
+  asNumber,
+  asOptionalString,
+  asString,
+  newId,
+  nowIso,
+} from './row-mapping';
+
+function mapRow(row: SqlRow): DocumentEntity {
+  return {
+    id: asString(row, 'id'),
+    name: asString(row, 'name'),
+    description: asOptionalString(row, 'description'),
+    filePath: asString(row, 'file_path'),
+    fileType: asString(row, 'file_type'),
+    fileSize: asNumber(row, 'file_size'),
+    fileHash: asOptionalString(row, 'file_hash'),
+    thumbnailPath: asOptionalString(row, 'thumbnail_path'),
+    folderId: asOptionalString(row, 'folder_id'),
+    isFavorite: asBool(row, 'is_favorite'),
+    isLocked: asBool(row, 'is_locked'),
+    isArchived: asBool(row, 'is_archived'),
+    language: asString(row, 'language'),
+    ocrText: asOptionalString(row, 'ocr_text'),
+    sourceType: asString(row, 'source_type') as DocumentSourceType,
+    originalFilename: asOptionalString(row, 'original_filename'),
+    createdAt: asString(row, 'created_at'),
+    updatedAt: asString(row, 'updated_at'),
+    deletedAt: asOptionalString(row, 'deleted_at'),
+    metadataJson: asOptionalString(row, 'metadata_json'),
+    synced: asBool(row, 'synced'),
+    version: asNumber(row, 'version'),
+  };
+}
+
+/** Typed access to the documents table. */
+export class DocumentDao {
+  constructor(private readonly db: DbConnection) {}
+
+  /** Returns a non-deleted document by id, or null. */
+  async findById(id: string): Promise<DocumentEntity | null> {
+    const rows = await this.db.query(
+      'SELECT * FROM documents WHERE id = ? AND deleted_at IS NULL',
+      [id]
+    );
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  /**
+   * Lists non-deleted documents in a folder (null = vault root),
+   * newest first.
+   */
+  async findByFolder(folderId: string | null): Promise<DocumentEntity[]> {
+    const sql = folderId
+      ? `SELECT * FROM documents WHERE folder_id = ? AND deleted_at IS NULL
+         ORDER BY created_at DESC`
+      : `SELECT * FROM documents WHERE folder_id IS NULL AND deleted_at IS NULL
+         ORDER BY created_at DESC`;
+    const rows = await this.db.query(sql, folderId ? [folderId] : []);
+    return rows.map(mapRow);
+  }
+
+  /** Inserts a new document and returns the stored row. */
+  async create(doc: NewDocument): Promise<DocumentEntity> {
+    const id = newId();
+    const now = nowIso();
+    await this.db.run(
+      `INSERT INTO documents (id, name, description, file_path, file_type,
+        file_size, file_hash, thumbnail_path, folder_id, is_favorite,
+        is_locked, is_archived, language, ocr_text, source_type,
+        original_filename, created_at, updated_at, metadata_json, synced,
+        version)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1)`,
+      [
+        id,
+        doc.name,
+        doc.description ?? null,
+        doc.filePath,
+        doc.fileType,
+        doc.fileSize,
+        doc.fileHash ?? null,
+        doc.thumbnailPath ?? null,
+        doc.folderId ?? null,
+        doc.isFavorite ? 1 : 0,
+        doc.isLocked ? 1 : 0,
+        doc.isArchived ? 1 : 0,
+        doc.language,
+        doc.ocrText ?? null,
+        doc.sourceType,
+        doc.originalFilename ?? null,
+        now,
+        now,
+        doc.metadataJson ?? null,
+      ]
+    );
+    const created = await this.findById(id);
+    if (!created) {
+      throw new Error(`documents insert for ${id} did not persist`);
+    }
+    return created;
+  }
+
+  /**
+   * Updates mutable fields; bumps updated_at and the optimistic version.
+   * Pass `null` to clear a nullable column (e.g. `folderId: null` moves the
+   * document to the vault root). Returns affected rows (0 = not found).
+   */
+  async update(
+    id: string,
+    patch: {
+      name?: string;
+      description?: string | null;
+      folderId?: string | null;
+      isFavorite?: boolean;
+      isLocked?: boolean;
+      isArchived?: boolean;
+      language?: string;
+      ocrText?: string | null;
+      thumbnailPath?: string | null;
+      metadataJson?: string | null;
+    }
+  ): Promise<number> {
+    const sets: string[] = [];
+    const params: SqlValue[] = [];
+    const push = (column: string, value: SqlValue): void => {
+      sets.push(`${column} = ?`);
+      params.push(value);
+    };
+
+    if (patch.name !== undefined) push('name', patch.name);
+    if (patch.description !== undefined)
+      push('description', patch.description ?? null);
+    if (patch.folderId !== undefined) push('folder_id', patch.folderId ?? null);
+    if (patch.isFavorite !== undefined)
+      push('is_favorite', patch.isFavorite ? 1 : 0);
+    if (patch.isLocked !== undefined) push('is_locked', patch.isLocked ? 1 : 0);
+    if (patch.isArchived !== undefined)
+      push('is_archived', patch.isArchived ? 1 : 0);
+    if (patch.language !== undefined) push('language', patch.language);
+    if (patch.ocrText !== undefined) push('ocr_text', patch.ocrText ?? null);
+    if (patch.thumbnailPath !== undefined)
+      push('thumbnail_path', patch.thumbnailPath ?? null);
+    if (patch.metadataJson !== undefined)
+      push('metadata_json', patch.metadataJson ?? null);
+
+    if (sets.length === 0) {
+      return 0;
+    }
+    push('updated_at', nowIso());
+    params.push(id);
+    const result = await this.db.run(
+      `UPDATE documents SET ${sets.join(', ')}, version = version + 1
+       WHERE id = ? AND deleted_at IS NULL`,
+      params
+    );
+    return result.changes;
+  }
+
+  /** Soft-deletes a document (deleted_at timestamp, version bump). */
+  async softDelete(id: string): Promise<number> {
+    const now = nowIso();
+    const result = await this.db.run(
+      `UPDATE documents SET deleted_at = ?, updated_at = ?,
+        version = version + 1 WHERE id = ? AND deleted_at IS NULL`,
+      [now, now, id]
+    );
+    return result.changes;
+  }
+
+  /** Restores a soft-deleted document. */
+  async restore(id: string): Promise<number> {
+    const result = await this.db.run(
+      `UPDATE documents SET deleted_at = NULL, updated_at = ?,
+        version = version + 1 WHERE id = ? AND deleted_at IS NOT NULL`,
+      [nowIso(), id]
+    );
+    return result.changes;
+  }
+
+  /** FTS5 search across name/description/ocr_text (§6), rank order. */
+  async search(query: string, limit = 20): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT d.* FROM documents d
+       JOIN documents_fts fts ON d.rowid = fts.rowid
+       WHERE documents_fts MATCH ?
+         AND d.deleted_at IS NULL
+       ORDER BY rank
+       LIMIT ?`,
+      [query, limit]
+    );
+    return rows.map(mapRow);
+  }
+}
