@@ -256,8 +256,8 @@ const repository = isDev
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/omanandswami2005/omni-Docs-and-CSC.git
-cd omni-Docs-and-CSC
+git clone https://github.com/omanandswami2005/project-kagazzz.git
+cd project-kagazzz
 
 # 2. Install pnpm (if not already installed)
 npm install -g pnpm

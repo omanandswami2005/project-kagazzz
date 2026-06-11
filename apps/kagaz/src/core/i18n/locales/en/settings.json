@@ -1,0 +1,30 @@
+{
+  "title": "Settings",
+  "language": {
+    "title": "Language",
+    "english": "English",
+    "hindi": "हिन्दी"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "theme": "Theme",
+    "theme_system": "System",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "density": "Display size",
+    "density_simple": "Simple",
+    "density_comfortable": "Comfortable",
+    "density_compact": "Compact"
+  },
+  "security": {
+    "title": "Security",
+    "biometric_lock": "Biometric lock",
+    "auto_lock": "Auto-lock"
+  },
+  "about": {
+    "title": "About",
+    "privacy_policy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "licenses": "Open-source licenses"
+  }
+}

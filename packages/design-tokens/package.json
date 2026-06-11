@@ -1,0 +1,28 @@
+{
+  "name": "@kagaz/design-tokens",
+  "version": "0.1.0",
+  "description": "Kagaz design tokens - the single source of truth for colors, type, spacing, motion, density modes, and themes (docs/design-system/design-tokens.md)",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./css": "./src/index.css",
+    "./tokens.css": "./src/tokens.css",
+    "./dark-mode.css": "./src/dark-mode.css",
+    "./density.css": "./src/density.css",
+    "./high-contrast.css": "./src/high-contrast.css",
+    "./agent-inspector.css": "./src/agent-inspector.css"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.8",
+    "@types/node": "^24.0.0"
+  }
+}

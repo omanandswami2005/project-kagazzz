@@ -1,0 +1,15 @@
+{
+  "title": "दस्तावेज़ स्कैन करें",
+  "capture": "फोटो लें",
+  "retake": "फिर से लें",
+  "add_page": "पेज जोड़ें",
+  "adjust_corners": "कोने ठीक करें",
+  "apply_filter": "फ़िल्टर",
+  "save": "वॉल्ट में सहेजें",
+  "pages_one": "{{count}} पेज",
+  "pages_other": "{{count}} पेज",
+  "hints": {
+    "align": "दस्तावेज़ को फ्रेम के अंदर रखें",
+    "hold_steady": "स्थिर रखें..."
+  }
+}

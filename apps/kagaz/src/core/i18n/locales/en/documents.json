@@ -1,0 +1,26 @@
+{
+  "title": "My Documents",
+  "empty_state": {
+    "message": "No documents yet",
+    "hint": "Scan or upload your first document to get started"
+  },
+  "actions": {
+    "upload": "Upload",
+    "scan": "Scan",
+    "new_folder": "New Folder",
+    "move": "Move",
+    "rename": "Rename",
+    "add_tag": "Add Tag"
+  },
+  "detail": {
+    "size": "Size",
+    "type": "Type",
+    "created": "Created",
+    "modified": "Modified",
+    "location": "Folder"
+  },
+  "trash": {
+    "moved_to_trash": "Document moved to Trash",
+    "undo": "Undo"
+  }
+}

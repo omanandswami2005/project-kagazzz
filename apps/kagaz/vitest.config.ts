@@ -14,9 +14,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      include: ['src/**'],
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/test/',
+        // Entry point: executes render() on import; covered by App smoke test.
+        'src/main.tsx',
         '**/*.types.ts',
         '**/*.d.ts',
         '**/index.ts',
@@ -60,18 +62,17 @@ export default defineConfig({
 
     isolate: true,
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        minThreads: 1,
-        maxThreads: 4,
-      },
-    },
+    maxWorkers: 4,
 
     reporters: ['verbose'],
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Vitest resolves Node export conditions; the app ships pino's
+      // browser build (Vite), so tests must exercise the same code path
+      // (browser.transmit etc. are no-ops in the Node build).
+      pino: 'pino/browser.js',
     },
   },
 });

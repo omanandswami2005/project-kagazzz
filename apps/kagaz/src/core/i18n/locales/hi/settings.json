@@ -1,0 +1,30 @@
+{
+  "title": "सेटिंग्स",
+  "language": {
+    "title": "भाषा",
+    "english": "English",
+    "hindi": "हिन्दी"
+  },
+  "appearance": {
+    "title": "रूप-रंग",
+    "theme": "थीम",
+    "theme_system": "सिस्टम",
+    "theme_light": "हल्की",
+    "theme_dark": "गहरी",
+    "density": "प्रदर्शन आकार",
+    "density_simple": "सरल",
+    "density_comfortable": "आरामदायक",
+    "density_compact": "सघन"
+  },
+  "security": {
+    "title": "सुरक्षा",
+    "biometric_lock": "बायोमेट्रिक लॉक",
+    "auto_lock": "स्वतः लॉक"
+  },
+  "about": {
+    "title": "जानकारी",
+    "privacy_policy": "गोपनीयता नीति",
+    "terms": "नियम और शर्तें",
+    "licenses": "ओपन-सोर्स लाइसेंस"
+  }
+}

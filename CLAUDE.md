@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repository Is
 
-**Kagaz** (a.k.a. Omni Docs; formerly "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo currently contains the full documentation/spec suite plus project scaffolding (`package.json`, lint/test configs, Astro docs site); the `src/` application code is not yet present.
+**Kagaz** (a.k.a. Omni Docs; formerly "DocVault") — a privacy-first, offline-first document management and government-services app for India (React + Ionic + Capacitor + TypeScript, V1 offline vault → V2 cloud/sharing → V3 CSC services). The repo contains the full documentation/spec suite, workspace tooling (build/lint/test configs, Astro docs site), and the scaffolded `apps/kagaz/src/` module tree (P0-2) — directories + READMEs only; implementation files land with their checklist items.
 
 **Read these first — they are binding, not optional:**
 - `DEVELOPMENT-CHECKLIST.md` — **START HERE for any development work.** The living index of all work items (Phase 0 → V4), each cross-referenced to its spec/security/legal docs. Pick the next unblocked item, read its referenced docs before coding, and update the checklist when done (mark the box, append commit hash + date, log in its Commit Journal).
@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Discipline (mandatory)
 
+- **`develop` is the integration branch** (exists since 2026-06-10): claim commits go on `develop`, feature branches are cut from `develop` (`feature/<item-id>-<short-name>`), and merges/PRs target `develop`. `main` only receives merges from `develop` at release points — never commit work or claims directly to `main`.
 - **Every completed unit of work (feature, bugfix, doc change, refactor) gets its own Conventional Commit immediately** — never leave finished work uncommitted, never batch unrelated changes into one commit.
 - **At session start and before ending a turn of work, run `git status` + `git diff`.** If uncommitted changes exist that this session didn't make, review the diffs, group them into logical commits with accurate messages, and commit them — then record them in the Commit Journal in `DEVELOPMENT-CHECKLIST.md`.
 - Record the commit hash next to the checklist item it completes. Do not push unless the user asks.
@@ -49,7 +50,8 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - **Version dependency rule**: modules depend only on same-version-or-earlier. V1 never imports V2/V3.
 - **Protocol-based design**: modules communicate via TypeScript interfaces only — never import another module's concrete implementation; shared code comes from `core/` or `infrastructure/`.
 - Heavy ops (PDF, image, OCR, LLM inference) run in **Web Workers**. Strict TS — `any` and `console.log` are ESLint **errors**.
-- **Logging**: structured pino only (`src/core/logging/`), never `console.log`. Three streams — colored dev console (pino-pretty), encrypted SQLite diagnostic ring buffer, hash-chained append-only audit log; central redaction denylist (keys, OCR text, Aadhaar/PAN, document content). Consent/audit records are legal evidence. Full spec: `docs/architecture/14-observability-logging.md`.
+- **Logging**: structured pino only (`src/core/logging/`), never `console.log`. The idiom: `log('module-name').info({ event: 'vault.upload.success', opId, ...ctx })` — module child logger, dot-namespaced `event` first (same names as Action Registry ids), context object, no string interpolation. Audit-class events (consent, shares, destructive ops) go through `AuditLogDao.append()`, not pino. Three streams — colored dev console (pino-pretty), encrypted SQLite diagnostic ring buffer, hash-chained append-only audit log; central redaction denylist (keys, OCR text, Aadhaar/PAN, document content) applied in `redactRecord` because pino's `redact` is a no-op in browser builds. Consent/audit records are legal evidence. Full spec: `docs/architecture/14-observability-logging.md`.
+- **Imports**: relative paths within a module; the `@/` alias (= `apps/kagaz/src/`) for anything cross-module (`import { log } from '@/core/logging'`). Workspace packages via `@kagaz/*`.
 - Tests live in `__tests__/` folders beside the implementation.
 - Tech choices are ADRs in `docs/architecture/08-tech-stack-decisions.md` — changing a technology requires updating the ADR.
 - Offline-first is non-negotiable: V1 is 100% offline (no HTTP clients, analytics, or network permission); cloud is always an enhancement.
@@ -66,7 +68,7 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - `code/code-standards-and-quality.md` + `docs/indian-compliance-checklist.md` — DPDP Act 2023, IT Act, UIDAI/Aadhaar rules (**never store raw Aadhaar numbers or biometrics**), CERT-In, DigiLocker/CSC onboarding; consent logging requirements (user id, ISO 8601 timestamp, action, scope, request id; ~2-year retention); India-only data residency for any government-integration server data; retention/deletion rules. Error logs stay on-device in V1 — no remote crash reporting.
 - `docs/compliance/` — DPIA and audit-evidence index. `docs/legal/` — privacy policy and T&C; code must never contradict them.
 - Accessibility is a launch gate: WCAG 2.1 AA (`docs/architecture/11-accessibility-a11y.md`, per-component checklist in §7).
-- Dependencies: permissive licenses only (project is MIT); run `pnpm audit` before PRs.
+- Dependencies: permissive licenses only (MIT/Apache-2.0/BSD/ISC). **The project itself is proprietary (`UNLICENSED`, closed source)** — copyleft dependencies (GPL/AGPL/SSPL) are forbidden because they'd force source disclosure; the in-app "Open-source licenses" screen ships third-party attributions as legally required. Run `pnpm audit` before PRs.
 
 ## Performance Budgets (CI-enforced targets, `CONTRIBUTING.md`)
 

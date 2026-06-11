@@ -1,0 +1,14 @@
+{
+  "$schema": "docs/design-system/agent-interface.md#the-agentsitemap",
+  "generatedAt": "2026-06-11T07:25:30.124Z",
+  "pages": {
+    "app.home": {
+      "route": "/",
+      "intent": "Landing screen of the app shell. Shows the empty vault state; document features arrive with F-1.",
+      "primary": null,
+      "actions": []
+    }
+  },
+  "actions": {},
+  "voiceIndex": []
+}
