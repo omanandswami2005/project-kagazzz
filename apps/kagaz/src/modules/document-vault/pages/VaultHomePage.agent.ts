@@ -16,6 +16,8 @@ export const VaultHomePageAgent = definePage({
   availableActions: [
     vaultActions.uploadDocument,
     vaultActions.toggleFavorite,
+    vaultActions.manageTags,
+    vaultActions.tagDocument,
     vaultActions.setSortBy,
     vaultActions.toggleSortDirection,
   ],
@@ -50,6 +52,12 @@ export const VaultHomePageAgent = definePage({
       args: { source: 'gallery' },
     },
     { utterance: 'favorite this document', action: 'vault.toggleFavorite' },
+    { utterance: 'edit tags', action: 'vault.manageTags' },
+    {
+      utterance: 'tag this as important',
+      action: 'vault.tagDocument',
+      args: { tag: 'important' },
+    },
     { utterance: 'sort by name', action: 'vault.setSortBy', args: { key: 'name' } },
     { utterance: 'sort by size', action: 'vault.setSortBy', args: { key: 'fileSize' } },
     { utterance: 'reverse the order', action: 'vault.toggleSortDirection' },

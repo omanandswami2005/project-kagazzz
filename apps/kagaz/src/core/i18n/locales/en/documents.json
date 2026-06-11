@@ -63,6 +63,12 @@
   "recent": {
     "title": "Recent"
   },
+  "tags": {
+    "title": "Tags",
+    "empty": "No tags yet. Create one below.",
+    "new_placeholder": "New tag name",
+    "create": "Create"
+  },
   "trash": {
     "moved_to_trash": "Document moved to Trash",
     "undo": "Undo"

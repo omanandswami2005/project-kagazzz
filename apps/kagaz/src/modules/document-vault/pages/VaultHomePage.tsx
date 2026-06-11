@@ -13,10 +13,12 @@ import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
 import { RecentStrip } from '../components/RecentStrip';
 import { SortControl } from '../components/SortControl';
+import { TagSelector } from '../components/TagSelector';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
+import { useTags } from '../hooks/useTags';
 import { useUpload } from '../hooks/useUpload';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -32,6 +34,8 @@ export function VaultHomePage(): ReactNode {
   const { isReady, uploadFrom } = useUpload();
   const { toggleFavorite, markAccessed } = useVaultMutations();
   const recent = useRecentDocuments();
+  const { tagsByDocument } = useTags();
+  const [tagDocId, setTagDocId] = useState<string | null>(null);
   const isUploading = useVaultStore((state) => state.isUploading);
   const uploadProgress = useVaultStore((state) => state.uploadProgress);
   const isSheetOpen = useVaultStore((state) => state.isUploadSheetOpen);
@@ -108,8 +112,10 @@ export function VaultHomePage(): ReactNode {
                   <DocumentListItem
                     key={document.id}
                     document={document}
+                    tags={tagsByDocument.get(document.id) ?? []}
                     onOpen={handleOpen}
                     onToggleFavorite={(doc) => void toggleFavorite(doc)}
+                    onManageTags={(doc) => setTagDocId(doc.id)}
                   />
                 ))}
               </ul>
@@ -123,6 +129,7 @@ export function VaultHomePage(): ReactNode {
           onDismiss={closeSheet}
           onSelect={handleSelectSource}
         />
+        <TagSelector documentId={tagDocId} onDismiss={() => setTagDocId(null)} />
 
         <IonToast
           isOpen={uploadedCount > 0}

@@ -11,6 +11,8 @@ shipped yet.
 |---|---|---|
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
 | Favorite / unfavorite | `vault.toggleFavorite` | `documentId` — resolve from the document the user means. Toggles the star. |
+| Edit a document's tags | `vault.manageTags` | `documentId`. Opens the tag editor sheet. |
+| Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |
 | Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |
 | Reverse sort | `vault.toggleSortDirection` | Flips ascending ↔ descending. |
 

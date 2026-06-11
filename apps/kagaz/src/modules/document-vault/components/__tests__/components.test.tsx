@@ -8,8 +8,14 @@ import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../DocumentListItem';
 import { EmptyVaultState } from '../EmptyVaultState';
 import { RecentStrip } from '../RecentStrip';
+import { TagSelector } from '../TagSelector';
 import { UploadFAB } from '../UploadFAB';
 import { UploadOptionsSheet } from '../UploadOptionsSheet';
+
+// TagSelector reaches the DB via useTags; presentational components ignore it.
+vi.mock('@/app/providers/DatabaseProvider', () => ({
+  useDatabase: () => ({ status: 'error', db: null }),
+}));
 
 beforeAll(async () => {
   await initI18n();
@@ -51,6 +57,28 @@ describe('DocumentListItem', () => {
       </ul>
     );
     expect(screen.getByText('ZIP')).toBeInTheDocument();
+  });
+
+  it('renders assigned tag chips and a tag button (F-10)', async () => {
+    const onManageTags = vi.fn();
+    render(
+      <ul>
+        <DocumentListItem
+          document={doc}
+          tags={[
+            { id: 't-1', name: 'Government', color: '#3b82f6', createdAt: '' },
+          ]}
+          onManageTags={onManageTags}
+        />
+      </ul>
+    );
+    expect(screen.getByText('Government')).toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.item-doc-1.tags"]'
+      ) as Element
+    );
+    expect(onManageTags).toHaveBeenCalledWith(doc);
   });
 
   it('shows a favorite star and reports toggles (F-33)', async () => {
@@ -102,6 +130,38 @@ describe('RecentStrip (F-32)', () => {
       ) as Element
     );
     expect(onOpen).toHaveBeenCalledWith(doc);
+  });
+});
+
+describe('TagSelector (F-10)', () => {
+  it('opens for a document and shows the empty state + create input', async () => {
+    render(
+      <IonPage>
+        <IonContent>
+          <TagSelector documentId="doc-1" onDismiss={() => undefined} />
+        </IonContent>
+      </IonPage>
+    );
+    expect(await screen.findByText('Tags')).toBeInTheDocument();
+    expect(screen.getByText(/No tags yet/)).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-agent-id="vault.home.tag-create"]')
+    ).not.toBeNull();
+  });
+
+  it('is closed when documentId is null', () => {
+    render(
+      <IonPage>
+        <IonContent>
+          <TagSelector documentId={null} onDismiss={() => undefined} />
+        </IonContent>
+      </IonPage>
+    );
+    expect(
+      document
+        .querySelector('[data-agent-id="vault.home.tag-sheet"]')
+        ?.getAttribute('data-agent-state')
+    ).toBe('collapsed');
   });
 });
 

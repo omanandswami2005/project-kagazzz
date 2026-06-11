@@ -21,6 +21,13 @@ export interface VaultActionContext {
   uploadFrom: (source: UploadSource) => Promise<{ uploaded: number }>;
   /** Toggles a document's favorite flag by id (F-33). */
   toggleFavorite: (documentId: string) => Promise<{ isFavorite: boolean }>;
+  /** Opens the tag selector for a document (F-10). */
+  manageTags: (documentId: string) => void;
+  /** Creates a tag (if new) and assigns it to a document (F-10). */
+  tagDocument: (
+    documentId: string,
+    tagName: string
+  ) => Promise<{ tagId: string }>;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files']);
@@ -89,6 +96,40 @@ export const vaultActions = {
       args: { documentId: string },
       ctx: VaultActionContext
     ): Promise<{ isFavorite: boolean }> => ctx.toggleFavorite(args.documentId),
+  }),
+
+  manageTags: defineAction({
+    id: 'vault.manageTags',
+    summary: 'Open the tag editor for a document.',
+    voice: ['edit tags', 'manage tags', 'टैग संपादित करो'],
+    args: z.object({ documentId: z.string().min(1) }),
+    requiresConfirmation: false,
+    handler: (
+      args: { documentId: string },
+      ctx: VaultActionContext
+    ): Promise<{ ok: true }> => {
+      ctx.manageTags(args.documentId);
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
+  tagDocument: defineAction({
+    id: 'vault.tagDocument',
+    summary: 'Tag a document with a label, creating the tag if it is new.',
+    voice: [
+      'tag this as important',
+      'add the tag personal',
+      'इसे टैग करो',
+    ],
+    args: z.object({
+      documentId: z.string().min(1),
+      tag: z.string().min(1),
+    }),
+    requiresConfirmation: false,
+    handler: (
+      args: { documentId: string; tag: string },
+      ctx: VaultActionContext
+    ): Promise<{ tagId: string }> => ctx.tagDocument(args.documentId, args.tag),
   }),
 
   toggleSortDirection: defineAction({

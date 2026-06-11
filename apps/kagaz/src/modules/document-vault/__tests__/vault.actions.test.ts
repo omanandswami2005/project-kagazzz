@@ -8,6 +8,8 @@ function makeCtx(): VaultActionContext {
     openUploadSheet: vi.fn(),
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 2 })),
     toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
+    manageTags: vi.fn(),
+    tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
   };
 }
 
@@ -76,6 +78,38 @@ describe('vault.toggleFavorite (F-33)', () => {
     const registry = new ActionRegistry<VaultActionContext>();
     registry.register(vaultActions.toggleFavorite);
     const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault tag actions (F-10)', () => {
+  it('manageTags opens the selector for a document', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.manageTags.handler({ documentId: 'doc-1' }, ctx)
+    ).resolves.toEqual({ ok: true });
+    expect(ctx.manageTags).toHaveBeenCalledWith('doc-1');
+  });
+
+  it('tagDocument delegates to ctx with id + tag', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.tagDocument.handler(
+        { documentId: 'doc-1', tag: 'important' },
+        ctx
+      )
+    ).resolves.toEqual({ tagId: 'tag-1' });
+    expect(ctx.tagDocument).toHaveBeenCalledWith('doc-1', 'important');
+  });
+
+  it('tagDocument rejects an empty tag through the registry', async () => {
+    const registry = new ActionRegistry<VaultActionContext>();
+    registry.register(vaultActions.tagDocument);
+    const result = await registry.invoke(
+      'vault.tagDocument',
+      { documentId: 'd', tag: '' },
+      makeCtx()
+    );
     expect(result.ok).toBe(false);
   });
 });
