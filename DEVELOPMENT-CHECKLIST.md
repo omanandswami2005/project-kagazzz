@@ -13,8 +13,15 @@
 1. **Before working**: find the item here; read every doc it references **before writing code**.
 2. **While working**: follow the Definition of Done (below) — it applies to *every* item and is not repeated per line.
 3. **After working**: mark the checkbox, append `✅ <commit-hash> (YYYY-MM-DD)` to the item, and update the "Last updated" date above. If you only partially finished, append `🟨 in progress — <what remains>`.
-4. **Commits**: every completed item ends in at least one Conventional Commit (`feat(scope): …`, see [CONTRIBUTING.md](CONTRIBUTING.md)). Record the hash here. If you find uncommitted changes you didn't make, review the diff, group them into logical commits, commit them, and log them under [Commit Journal](#commit-journal).
-5. **Gate tags** on items mean extra mandatory reading:
+4. **Stale-code sweep (mandatory before closing any item)**: after the feature works and the gates are green, sweep for and delete everything the item's own development made obsolete, then commit the sweep (`chore(scope): <item> stale-code sweep`) and journal it. Check at minimum:
+   - **dependencies** added but no longer imported (`grep` each dep added during the item; `pnpm remove` + lockfile commit) — e.g. F-1 left `heic-to` in package.json after the bundler approach changed;
+   - **exports/functions/types** nothing references outside their own tests (unused exports pass `pnpm lint` silently — grep for usages);
+   - **placeholders the item replaced**: components, pages, routes, mocks, and their tests/`.agent.ts`/`.skill.md` siblings — e.g. F-1 retired the P0-10 `HomePage` trio;
+   - **orphaned assets**: CSS classes whose markup is gone (F-1 left `.kg-home`), i18n keys whose screens are gone, dead `.gitkeep` files in now-populated directories;
+   - **stale docs**: READMEs and architecture docs still describing the pre-item state.
+   Keep deliberate forward-looking protocols (e.g. an interface another item will implement) — but only with a comment naming the item that will use it; "might need later" without an owner is stale.
+5. **Commits**: every completed item ends in at least one Conventional Commit (`feat(scope): …`, see [CONTRIBUTING.md](CONTRIBUTING.md)). Record the hash here. If you find uncommitted changes you didn't make, review the diff, group them into logical commits, commit them, and log them under [Commit Journal](#commit-journal).
+6. **Gate tags** on items mean extra mandatory reading:
    - `[SEC]` → [docs/architecture/10-security-architecture.md](docs/architecture/10-security-architecture.md)
    - `[LEGAL]` → [docs/indian-compliance-checklist.md](docs/indian-compliance-checklist.md) + [code/code-standards-and-quality.md](code/code-standards-and-quality.md)
    - `[CONSENT]` → [docs/ux/consent-screens.md](docs/ux/consent-screens.md) (exact UI copy) + consent-log format in [code/code-standards-and-quality.md](code/code-standards-and-quality.md)
@@ -25,7 +32,7 @@
 
 ### Definition of Done (every item, per [AGENT.md](AGENT.md))
 
-- [ ] applies to each item implicitly: strict TS (no `any`) · JSDoc on public APIs · tests in `__tests__/` (≥80% lines/functions, ≥75% branches) · module README updated · architecture docs updated if structure changed · design tokens only (no hardcoded visuals, [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md)) · every page ships `PageName.agent.ts` + `PageName.skill.md` ([docs/design-system/page-skill-template.md](docs/design-system/page-skill-template.md)) · `data-agent-id` on interactive elements ([docs/design-system/agent-interface.md](docs/design-system/agent-interface.md)) · a11y per-component checklist passed · `pnpm lint && pnpm type-check && pnpm test` green · Conventional Commit recorded here.
+- [ ] applies to each item implicitly: strict TS (no `any`) · JSDoc on public APIs · tests in `__tests__/` (≥80% lines/functions, ≥75% branches) · module README updated · architecture docs updated if structure changed · design tokens only (no hardcoded visuals, [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md)) · every page ships `PageName.agent.ts` + `PageName.skill.md` ([docs/design-system/page-skill-template.md](docs/design-system/page-skill-template.md)) · `data-agent-id` on interactive elements ([docs/design-system/agent-interface.md](docs/design-system/agent-interface.md)) · a11y per-component checklist passed · **stale-code sweep done (protocol step 4: unused deps/exports, replaced placeholders, orphaned CSS/i18n/docs)** · `pnpm lint && pnpm type-check && pnpm test` green · Conventional Commit recorded here.
 
 ---
 
