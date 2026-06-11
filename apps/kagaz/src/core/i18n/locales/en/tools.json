@@ -1,0 +1,29 @@
+{
+  "title": "Tools",
+  "merge": {
+    "title": "Merge PDFs",
+    "select_hint": "Select 2 or more PDFs to merge",
+    "success": "Merged into \"{{name}}\""
+  },
+  "split": {
+    "title": "Split PDF",
+    "page_range": "Page range",
+    "success": "Split into {{count}} files"
+  },
+  "compress": {
+    "title": "Compress",
+    "quality": "Quality",
+    "success": "Reduced from {{before}} to {{after}}"
+  },
+  "convert": {
+    "title": "Convert Format",
+    "to_pdf": "Image → PDF",
+    "to_image": "PDF → Image"
+  },
+  "encrypt": {
+    "title": "Password Protect",
+    "warning": "Without this password the file cannot be opened. Kagaz cannot recover it.",
+    "success": "Password added"
+  },
+  "progress": "Working on it..."
+}

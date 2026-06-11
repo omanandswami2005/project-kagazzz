@@ -1,0 +1,20 @@
+{
+  "title": "Kagaz AI",
+  "input_placeholder": "Ask me anything about your documents...",
+  "listening": "Listening...",
+  "model_loading": "Setting up the assistant (first time takes a moment)...",
+  "thinking": "Thinking...",
+  "confirm_action": {
+    "title": "Confirm this action?",
+    "approve": "Yes, do it",
+    "reject": "No, cancel"
+  },
+  "suggestions": {
+    "find": "Find a document",
+    "merge": "Merge PDFs",
+    "scan": "Scan something new"
+  },
+  "errors": {
+    "model_failed": "The assistant could not start. Free up some space and retry."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Scan Document",
+  "capture": "Capture",
+  "retake": "Retake",
+  "add_page": "Add Page",
+  "adjust_corners": "Adjust Corners",
+  "apply_filter": "Filter",
+  "save": "Save to Vault",
+  "pages_one": "{{count}} page",
+  "pages_other": "{{count}} pages",
+  "hints": {
+    "align": "Align the document inside the frame",
+    "hold_steady": "Hold steady..."
+  }
+}
