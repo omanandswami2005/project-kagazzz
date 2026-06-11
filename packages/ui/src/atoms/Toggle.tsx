@@ -26,7 +26,9 @@ export function Toggle({
   onChange,
   ...agent
 }: ToggleProps): ReactNode {
-  const state = disabled ? 'disabled' : enabled ? 'on' : 'off';
+  // 'selected' = on, 'idle' = off (fixed vocabulary); the boolean rides
+  // on data-agent-value.
+  const state = disabled ? 'disabled' : enabled ? 'selected' : 'idle';
   return (
     <label className={clsx('kg-toggle', disabled && 'kg-toggle--disabled')}>
       <span className="kg-toggle__label">{label}</span>

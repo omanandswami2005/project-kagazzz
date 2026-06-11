@@ -68,7 +68,8 @@ describe('Checkbox', () => {
     const onChange = vi.fn();
     render(<Checkbox label="Select all" onChange={onChange} />);
     const box = screen.getByRole('checkbox', { name: 'Select all' });
-    expect(box).toHaveAttribute('data-agent-state', 'unchecked');
+    expect(box).toHaveAttribute('data-agent-state', 'idle');
+    expect(box).toHaveAttribute('data-agent-value', 'false');
     await userEvent.click(box);
     expect(onChange).toHaveBeenCalledWith(true);
   });
@@ -77,7 +78,8 @@ describe('Checkbox', () => {
     render(<Checkbox label="Parent" indeterminate />);
     const box = screen.getByRole('checkbox');
     expect(box).toHaveAttribute('aria-checked', 'mixed');
-    expect(box).toHaveAttribute('data-agent-state', 'indeterminate');
+    expect(box).toHaveAttribute('data-agent-state', 'selected');
+    expect(box).toHaveAttribute('data-agent-value', 'mixed');
     expect((box as HTMLInputElement).indeterminate).toBe(true);
   });
 });
@@ -95,7 +97,7 @@ describe('Radio', () => {
     expect(onChange).toHaveBeenCalledWith('hi');
     expect(screen.getByRole('radio', { name: 'English' })).toHaveAttribute(
       'data-agent-state',
-      'checked'
+      'selected'
     );
   });
 });
@@ -106,7 +108,8 @@ describe('Toggle', () => {
     render(<Toggle label="Dark mode" enabled={false} onChange={onChange} />);
     const sw = screen.getByRole('switch');
     expect(sw).toHaveAttribute('aria-checked', 'false');
-    expect(sw).toHaveAttribute('data-agent-state', 'off');
+    expect(sw).toHaveAttribute('data-agent-state', 'idle');
+    expect(sw).toHaveAttribute('data-agent-value', 'false');
     await userEvent.click(sw);
     expect(onChange).toHaveBeenCalledWith(true);
   });

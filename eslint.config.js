@@ -77,6 +77,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
   {

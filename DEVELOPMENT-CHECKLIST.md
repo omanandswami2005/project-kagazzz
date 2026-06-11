@@ -39,7 +39,7 @@
 - [x] P0-4 SQLite + SQLCipher setup, migration runner, DAOs, FTS5 — [docs/architecture/09-database-design.md](docs/architecture/09-database-design.md) `[SEC]` (§3.2 encryption params, §3.4 key storage) ✅ 8bfaffe (2026-06-10) — repositories/ land with Wave-1 vault contracts
 - [x] P0-5 Filesystem abstraction (native + web fallback), temp-file cleanup on launch — [01](docs/architecture/01-system-architecture.md) §Infrastructure, `[SEC]` §3.3 ✅ a93c0ad (2026-06-10) — cleanupTempFiles() must be wired into app bootstrap in P0-10; thumbnail.service lands with F-24
 - [x] P0-6 Design-system foundation: tokens CSS, base components (atoms), 3 density modes — [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md), [component-library.md](docs/design-system/component-library.md), [design-principles.md](docs/design-system/design-principles.md) ✅ 344231f + 4b9d882 (2026-06-11) — extracted as `@kagaz/design-tokens` + `@kagaz/ui` per packages/README.md; molecules/organisms land with their feature items
-- [ ] P0-7 Agent interface infrastructure: Action Registry, `data-agent-*` conventions, `pnpm agent:lint` + `agent:sitemap` scripts — [docs/design-system/agent-interface.md](docs/design-system/agent-interface.md) 🟨 claimed — feature/p07-agent-interface · Claude (Lane F) · 2026-06-11
+- [x] P0-7 Agent interface infrastructure: Action Registry, `data-agent-*` conventions, `pnpm agent:lint` + `agent:sitemap` scripts — [docs/design-system/agent-interface.md](docs/design-system/agent-interface.md) ✅ 2cc37ff + f5c1d1a + bf2ad84 (2026-06-11) — `@kagaz/agent-kit` extracted; vite-plugin-agent-kit / eslint-plugin-agent / AgentInspector / `@kagaz/agent-test` land with the first real pages
 - [ ] P0-8 i18n setup (react-i18next, en + hi locale files, language detector) — [docs/architecture/12-i18n-multilingual.md](docs/architecture/12-i18n-multilingual.md) `[I18N]`
 - [ ] P0-9 CI pipeline: lint, type-check, test+coverage gates, bundle-size check, `pnpm audit`, agent:lint, Lighthouse — [CONTRIBUTING.md](CONTRIBUTING.md) §Performance & Security `[PERF]`
 - [ ] P0-10 App shell: routes, lazy imports, providers (Theme/I18n/Database/AI), error boundaries with **local-only** error logging `[SEC]`
@@ -268,6 +268,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-11 · 2cc37ff + f5c1d1a + bf2ad84 · feat(agent-kit)/feat(tooling)/refactor(ui) · P0-7: @kagaz/agent-kit (defineAction/ActionRegistry/definePage/useAgentProps, 23 tests), real agent:lint + agent:sitemap scripts, atoms conformed to fixed state vocabulary · P0-7
 - 2026-06-11 · 344231f + 4b9d882 · feat(design-system) · P0-6: @kagaz/design-tokens (full token CSS, dark/density/high-contrast/agent-inspector) + @kagaz/ui (11 atoms with AgentProps + a11y per spec; 42 tests) · P0-6
 - 2026-06-10 · a93c0ad · feat(kagaz) · P0-5: FileStorage protocol, Capacitor + IndexedDB(Dexie) backends, platform factory, launch temp wipe; 22 tests vs fake-indexeddb · P0-5
 - 2026-06-10 · 8bfaffe · feat(kagaz) · P0-4: encrypted SQLite layer (DbConnection protocol, SQLCipher key in secure storage, transactional migration runner, 001 schema + 002 FTS5, 6 typed DAOs; 84 tests, 100%/94% coverage) · P0-4

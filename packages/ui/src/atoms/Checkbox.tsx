@@ -38,13 +38,15 @@ export function Checkbox({
     }
   }, [indeterminate]);
 
+  // Fixed vocabulary only (agent-interface.md §State vocabulary):
+  // checked/indeterminate map to 'selected'; the exact value rides on
+  // data-agent-value ('true' | 'false' | 'mixed').
   const state = disabled
     ? 'disabled'
-    : indeterminate
-      ? 'indeterminate'
-      : checked
-        ? 'checked'
-        : 'unchecked';
+    : checked || indeterminate
+      ? 'selected'
+      : 'idle';
+  const value = indeterminate ? 'mixed' : String(checked);
 
   return (
     <div className={clsx('kg-checkbox', disabled && 'kg-checkbox--disabled')}>
@@ -57,7 +59,7 @@ export function Checkbox({
         disabled={disabled}
         aria-checked={indeterminate ? 'mixed' : checked}
         onChange={(e) => onChange?.(e.target.checked)}
-        {...agentAttrs(agent, state, String(checked))}
+        {...agentAttrs(agent, state, value)}
       />
       <label className="kg-checkbox__label" htmlFor={id}>
         {label}
