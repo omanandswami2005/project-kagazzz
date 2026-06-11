@@ -19,6 +19,9 @@ export default tseslint.config(
       '**/ios/',
       '**/.astro/',
       'scripts/',
+      // Astro/Starlight site — own toolchain, no tsconfig in our project
+      // service; content migration tracked in DEVELOPMENT-CHECKLIST.md.
+      'apps/docs/',
     ],
   },
   eslint.configs.recommended,

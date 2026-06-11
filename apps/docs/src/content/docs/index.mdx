@@ -1,0 +1,34 @@
+---
+title: Kagaz
+description: Privacy-first, offline-first document management for India.
+template: splash
+hero:
+  tagline: Sab kagaj, ek jagah — all your papers, one place. Offline-first, encrypted, no tracking.
+  actions:
+    - text: Read the specs on GitHub
+      link: https://github.com/omanandswami2005/omni-Docs-and-CSC/tree/main/docs
+      icon: external
+      variant: primary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="100% offline (V1)" icon="seti:lock">
+    No servers, no analytics, no network permission. Documents never leave
+    the device; the database is SQLCipher-encrypted.
+  </Card>
+  <Card title="AI that works for everyone" icon="rocket">
+    An on-device assistant drives the app through a typed Action Registry —
+    voice, chat, and touch are the same surface.
+  </Card>
+  <Card title="Built for India" icon="translate">
+    Hindi and English as equals, density modes for every user, DPDP-grade
+    consent and audit logging.
+  </Card>
+  <Card title="Documentation" icon="open-book">
+    The full architecture, design-system, and compliance specs currently
+    live in the repository's <code>docs/</code> tree and are being migrated
+    into this site.
+  </Card>
+</CardGrid>

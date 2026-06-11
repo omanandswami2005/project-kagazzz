@@ -261,6 +261,7 @@
 - [x] Monorepo adopted (ADR-015): pnpm workspaces + Turborepo; `apps/kagaz`, `apps/docs`, `packages/` with extraction rules. Docs' `src/` paths = `apps/kagaz/src/`. ✅ 05d074b (2026-06-10)
 - [x] `docs/guides/parallel-development.md` (referenced by AGENT.md but missing) created: lanes, claim-by-commit, protocol-first waves, contract tests, skill-file integration. ✅ _(this commit)_ (2026-06-10)
 - [ ] `docs/api-reference/` is referenced by [AGENT.md](AGENT.md) but doesn't exist — create the folder + per-module reference pages as modules land their first public APIs.
+- [ ] `apps/docs` Starlight site had an invalid config (old `social` schema) and **no content at all** — minimal shell created 2026-06-11 so `pnpm build` is green (landing page + auto sidebar); migrating the `/docs` markdown tree into the site is still open.
 
 ---
 
