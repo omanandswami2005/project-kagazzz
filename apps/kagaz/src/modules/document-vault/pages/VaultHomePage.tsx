@@ -21,6 +21,8 @@ import { useRecentDocuments } from '../hooks/useRecentDocuments';
 import { useTags } from '../hooks/useTags';
 import { useUpload } from '../hooks/useUpload';
 import { useVaultMutations } from '../hooks/useVaultMutations';
+import { SearchBar } from '@/modules/search/components/SearchBar';
+import { useSearch } from '@/modules/search/hooks/useSearch';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
 import type { UploadSource } from '../services/upload-sources';
@@ -36,6 +38,9 @@ export function VaultHomePage(): ReactNode {
   const recent = useRecentDocuments();
   const { tagsByDocument } = useTags();
   const [tagDocId, setTagDocId] = useState<string | null>(null);
+  const search = useSearch();
+  // While searching, results replace the folder/list view.
+  const visibleDocuments = search.isActive ? search.results : documents;
   const isUploading = useVaultStore((state) => state.isUploading);
   const uploadProgress = useVaultStore((state) => state.uploadProgress);
   const isSheetOpen = useVaultStore((state) => state.isUploadSheetOpen);
@@ -101,24 +106,56 @@ export function VaultHomePage(): ReactNode {
             <EmptyVaultState />
           ) : (
             <>
-              <RecentStrip documents={recent} onOpen={handleOpen} />
-              {documents.length > 1 && <SortControl />}
-              <ul
-                className="kg-vault__list"
-                data-agent-id="vault.home.list"
-                data-agent-state={listState}
-              >
-                {documents.map((document) => (
-                  <DocumentListItem
-                    key={document.id}
-                    document={document}
-                    tags={tagsByDocument.get(document.id) ?? []}
-                    onOpen={handleOpen}
-                    onToggleFavorite={(doc) => void toggleFavorite(doc)}
-                    onManageTags={(doc) => setTagDocId(doc.id)}
-                  />
-                ))}
-              </ul>
+              <SearchBar value={search.query} onChange={search.setQuery} />
+
+              {search.isActive ? (
+                visibleDocuments.length === 0 && !search.isSearching ? (
+                  <p
+                    className="kg-vault__no-results"
+                    data-agent-id="vault.home.no-results"
+                  >
+                    {t('search.no_results', { query: search.query })}
+                  </p>
+                ) : (
+                  <ul
+                    className="kg-vault__list"
+                    data-agent-id="vault.home.search-results"
+                    data-agent-state={search.isSearching ? 'loading' : 'success'}
+                  >
+                    {visibleDocuments.map((document) => (
+                      <DocumentListItem
+                        key={document.id}
+                        document={document}
+                        tags={tagsByDocument.get(document.id) ?? []}
+                        onOpen={handleOpen}
+                        onToggleFavorite={(doc) => void toggleFavorite(doc)}
+                        onManageTags={(doc) => setTagDocId(doc.id)}
+                      />
+                    ))}
+                  </ul>
+                )
+              ) : (
+                <>
+                  <RecentStrip documents={recent} onOpen={handleOpen} />
+                  {documents.length > 1 && <SortControl />}
+                  <ul
+                    className="kg-vault__list"
+                    data-agent-id="vault.home.list"
+                    data-agent-state={listState}
+                  >
+                    {documents.map((document) => (
+                      <DocumentListItem
+                        key={document.id}
+                        document={document}
+                        tags={tagsByDocument.get(document.id) ?? []}
+                        onOpen={handleOpen}
+                        onToggleFavorite={(doc) => void toggleFavorite(doc)}
+                        onManageTags={(doc) => setTagDocId(doc.id)}
+                      />
+                    ))}
+                  </ul>
+                </>
+              )}
             </>
           )}
         </main>

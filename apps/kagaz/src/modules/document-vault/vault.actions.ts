@@ -21,6 +21,8 @@ export interface VaultActionContext {
   uploadFrom: (source: UploadSource) => Promise<{ uploaded: number }>;
   /** Toggles a document's favorite flag by id (F-33). */
   toggleFavorite: (documentId: string) => Promise<{ isFavorite: boolean }>;
+  /** Sets the vault search query (F-11). */
+  search: (query: string) => void;
   /** Opens the tag selector for a document (F-10). */
   manageTags: (documentId: string) => void;
   /** Creates a tag (if new) and assigns it to a document (F-10). */
@@ -96,6 +98,26 @@ export const vaultActions = {
       args: { documentId: string },
       ctx: VaultActionContext
     ): Promise<{ isFavorite: boolean }> => ctx.toggleFavorite(args.documentId),
+  }),
+
+  searchDocuments: defineAction({
+    id: 'vault.searchDocuments',
+    summary: 'Search the vault by document name, description, or text.',
+    voice: [
+      'search for aadhaar',
+      'find my pan card',
+      'मेरा आधार खोजो',
+      'पैन कार्ड ढूंढो',
+    ],
+    args: z.object({ query: z.string() }),
+    requiresConfirmation: false,
+    handler: (
+      args: { query: string },
+      ctx: VaultActionContext
+    ): Promise<{ query: string }> => {
+      ctx.search(args.query);
+      return Promise.resolve({ query: args.query });
+    },
   }),
 
   manageTags: defineAction({

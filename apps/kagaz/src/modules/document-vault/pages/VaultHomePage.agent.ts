@@ -15,6 +15,7 @@ export const VaultHomePageAgent = definePage({
   primaryAction: vaultActions.uploadDocument,
   availableActions: [
     vaultActions.uploadDocument,
+    vaultActions.searchDocuments,
     vaultActions.toggleFavorite,
     vaultActions.manageTags,
     vaultActions.tagDocument,
@@ -50,6 +51,11 @@ export const VaultHomePageAgent = definePage({
       utterance: 'गैलरी से फोटो जोड़ो',
       action: 'vault.uploadDocument',
       args: { source: 'gallery' },
+    },
+    {
+      utterance: 'find my aadhaar',
+      action: 'vault.searchDocuments',
+      args: { query: 'aadhaar' },
     },
     { utterance: 'favorite this document', action: 'vault.toggleFavorite' },
     { utterance: 'edit tags', action: 'vault.manageTags' },

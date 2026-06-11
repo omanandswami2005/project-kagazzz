@@ -8,6 +8,7 @@ function makeCtx(): VaultActionContext {
     openUploadSheet: vi.fn(),
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 2 })),
     toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
+    search: vi.fn(),
     manageTags: vi.fn(),
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
   };
@@ -79,6 +80,16 @@ describe('vault.toggleFavorite (F-33)', () => {
     registry.register(vaultActions.toggleFavorite);
     const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault.searchDocuments (F-11)', () => {
+  it('sets the query via ctx.search', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.searchDocuments.handler({ query: 'aadhaar' }, ctx)
+    ).resolves.toEqual({ query: 'aadhaar' });
+    expect(ctx.search).toHaveBeenCalledWith('aadhaar');
   });
 });
 

@@ -63,6 +63,10 @@
   "recent": {
     "title": "Recent"
   },
+  "search": {
+    "placeholder": "Search documents",
+    "no_results": "No documents match \"{{query}}\""
+  },
   "tags": {
     "title": "Tags",
     "empty": "No tags yet. Create one below.",

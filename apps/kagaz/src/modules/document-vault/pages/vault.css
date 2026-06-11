@@ -19,6 +19,20 @@
   margin-block: var(--space-4);
 }
 
+.kg-vault__search {
+  --background: var(--surface-2);
+  --color: var(--text-primary);
+  --placeholder-color: var(--text-muted);
+  padding-inline: 0;
+  margin-block: var(--space-2);
+}
+
+.kg-vault__no-results {
+  padding-block: var(--space-8);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 .kg-recent {
   margin-block: var(--space-4);
 }
