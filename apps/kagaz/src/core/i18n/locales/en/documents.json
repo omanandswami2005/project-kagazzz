@@ -37,6 +37,9 @@
   "banner": {
     "db_unavailable": "Secure storage could not start. Restart the app — if this keeps happening, reinstall."
   },
+  "preview": {
+    "coming_soon": "Document preview is coming soon"
+  },
   "detail": {
     "size": "Size",
     "type": "Type",

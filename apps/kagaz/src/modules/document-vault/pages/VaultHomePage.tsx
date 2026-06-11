@@ -32,6 +32,9 @@ export function VaultHomePage(): ReactNode {
   const openSheet = useVaultStore((state) => state.openUploadSheet);
   const closeSheet = useVaultStore((state) => state.closeUploadSheet);
   const [uploadedCount, setUploadedCount] = useState(0);
+  // Stopgap until F-24 ships document preview/detail: tapping a row tells
+  // the user the feature is coming rather than appearing dead.
+  const [showPreviewToast, setShowPreviewToast] = useState(false);
 
   const handleSelectSource = (source: UploadSource): void => {
     void uploadFrom(source).then(({ uploaded }) => {
@@ -85,7 +88,11 @@ export function VaultHomePage(): ReactNode {
               data-agent-state={listState}
             >
               {documents.map((document) => (
-                <DocumentListItem key={document.id} document={document} />
+                <DocumentListItem
+                  key={document.id}
+                  document={document}
+                  onOpen={() => setShowPreviewToast(true)}
+                />
               ))}
             </ul>
           )}
@@ -112,6 +119,13 @@ export function VaultHomePage(): ReactNode {
           message={lastUploadErrors.map((key) => t(key)).join('\n')}
           onDidDismiss={() => useVaultStore.getState().finishUpload([])}
           data-agent-id="vault.home.upload-error-toast"
+        />
+        <IonToast
+          isOpen={showPreviewToast}
+          duration={2000}
+          message={t('preview.coming_soon')}
+          onDidDismiss={() => setShowPreviewToast(false)}
+          data-agent-id="vault.home.preview-toast"
         />
       </IonContent>
     </IonPage>

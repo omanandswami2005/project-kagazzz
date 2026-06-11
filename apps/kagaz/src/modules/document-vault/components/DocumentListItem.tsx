@@ -22,20 +22,20 @@ const TYPE_ICONS: Partial<Record<string, IconName>> = {
 /** Props for {@link DocumentListItem}. */
 export interface DocumentListItemProps {
   document: DocumentEntity;
+  /** Tap/Enter handler. Full preview lands with F-24; F-1 ships a stopgap. */
+  onOpen?: (document: DocumentEntity) => void;
 }
 
 /** Name, type badge, size, and created date for one vault document. */
 export function DocumentListItem({
   document,
+  onOpen,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
-  return (
-    <li
-      className="kg-doc-item"
-      data-agent-id={`vault.home.item-${document.id}`}
-      data-agent-state="idle"
-    >
+
+  const body = (
+    <>
       <span className="kg-doc-item__icon" aria-hidden="true">
         <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={24} />
       </span>
@@ -53,6 +53,34 @@ export function DocumentListItem({
           </span>
         </span>
       </span>
+    </>
+  );
+
+  const agentId = `vault.home.item-${document.id}`;
+
+  // A real <button> when openable (native focus + Enter/Space); a plain
+  // row otherwise. Full preview/detail lands with F-24/F-25.
+  return (
+    <li className="kg-doc-item__li">
+      {onOpen ? (
+        <button
+          type="button"
+          className="kg-doc-item kg-doc-item--button"
+          data-agent-id={agentId}
+          data-agent-state="idle"
+          onClick={() => onOpen(document)}
+        >
+          {body}
+        </button>
+      ) : (
+        <div
+          className="kg-doc-item"
+          data-agent-id={agentId}
+          data-agent-state="idle"
+        >
+          {body}
+        </div>
+      )}
     </li>
   );
 }

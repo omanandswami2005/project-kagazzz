@@ -38,6 +38,19 @@
   border-radius: var(--radius-md);
 }
 
+.kg-doc-item__li {
+  list-style: none;
+}
+
+/* Button variant: reset native button chrome, fill the row, stay tappable. */
+.kg-doc-item--button {
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
 .kg-doc-item__icon {
   color: var(--color-primary);
   display: inline-flex;
