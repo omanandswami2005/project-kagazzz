@@ -58,6 +58,26 @@ describe('DatabaseProvider (bootstrap sequence)', () => {
     ).toBe(true);
   });
 
+  it('ignores a DB that opens after unmount (no state update leak)', async () => {
+    let resolveOpen: ((db: FakeDb) => void) | undefined;
+    const open = vi.fn(
+      () =>
+        new Promise<FakeDb>((resolve) => {
+          resolveOpen = resolve;
+        })
+    );
+    const { unmount } = render(
+      <DatabaseProvider open={open}>
+        <Probe />
+      </DatabaseProvider>
+    );
+    unmount();
+    resolveOpen?.(new FakeDb());
+    // Flush the microtask queue; the cancelled guard must swallow the result.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(open).toHaveBeenCalledOnce();
+  });
+
   it('useDatabase throws outside the provider', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     expect(() => render(<Probe />)).toThrow('inside <DatabaseProvider>');

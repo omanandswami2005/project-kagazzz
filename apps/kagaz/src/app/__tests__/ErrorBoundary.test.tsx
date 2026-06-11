@@ -47,4 +47,24 @@ describe('ErrorBoundary ([SEC] local-only crash capture)', () => {
     expect(fatal).toBeDefined();
     expect((fatal?.['err'] as LogRecord)['message']).toBe('kaboom');
   });
+
+  it('the Restart button reloads the app', () => {
+    const reload = vi.fn();
+    const original = window.location;
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...original, reload },
+    });
+    render(
+      <ErrorBoundary>
+        <Bomb />
+      </ErrorBoundary>
+    );
+    screen.getByRole('button', { name: 'Restart' }).click();
+    expect(reload).toHaveBeenCalledOnce();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: original,
+    });
+  });
 });
