@@ -68,7 +68,7 @@
 
 ### Document Vault module — [docs/architecture/02-document-vault-module.md](docs/architecture/02-document-vault-module.md)
 
-- [ ] F-1 Document Upload (camera/gallery/file picker; PDF, JPG, PNG, HEIC, WEBP) 🔴Must
+- [ ] F-1 Document Upload (camera/gallery/file picker; PDF, JPG, PNG, HEIC, WEBP) 🔴Must 🟨 claimed — feature/f1-document-upload · agent:claude-A · 2026-06-11
 - [ ] F-9 Folder Organization (CRUD, color-code, nesting, move docs) 🔴Must
 - [ ] F-10 Tags / Labels 🔴Must→🟢S
 - [ ] F-24 Document Thumbnails (generate + cache) 🟡Should
