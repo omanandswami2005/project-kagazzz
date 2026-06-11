@@ -91,7 +91,7 @@
 - [ ] F-26 Storage Statistics 🟡Should
 - [ ] F-32 Recent Documents 🔵Could
 - [ ] F-33 Favorites 🔵Could
-- [ ] F-34 Sort Options 🔵Could
+- [x] F-34 Sort Options 🔵Could ✅ (develop) (2026-06-11) — client-side sort.service + store; lastAccessedAt key deferred to F-32 (needs the column)
 - [ ] F-30 Document Templates 🔵Could
 - [ ] F-31 Export/Backup to local ZIP 🔵Could `[SEC]` (encrypted backup, §3.4 `backup_encryption_key`)
 
