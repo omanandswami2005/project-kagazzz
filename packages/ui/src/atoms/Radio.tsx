@@ -33,7 +33,7 @@ export function Radio({
   ...agent
 }: RadioProps): ReactNode {
   const id = useId();
-  const state = disabled ? 'disabled' : checked ? 'checked' : 'unchecked';
+  const state = disabled ? 'disabled' : checked ? 'selected' : 'idle';
   return (
     <div className={clsx('kg-radio', disabled && 'kg-radio--disabled')}>
       <input

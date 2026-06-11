@@ -1,17 +1,13 @@
 /**
  * The standard agent prop set every interactive component accepts
- * (docs/design-system/component-library.md §Agent Interface,
- * agent-interface.md). Props propagate to data-agent-* attributes on the
- * rendered DOM root so voice, AI tool calls, computer-use agents, and E2E
- * tests can all drive the same surface.
+ * (docs/design-system/component-library.md §Agent Interface). Canonical
+ * types come from @kagaz/agent-kit; props propagate to data-agent-*
+ * attributes on the rendered DOM root so voice, AI tool calls,
+ * computer-use agents, and E2E tests all drive the same surface.
  */
+import type { AgentRole, AgentState } from '@kagaz/agent-kit';
 
-/** Semantic role of an element within its screen. */
-export type AgentRole =
-  | 'primary-action'
-  | 'secondary-action'
-  | 'destructive'
-  | 'navigation';
+export type { AgentRole, AgentState } from '@kagaz/agent-kit';
 
 /** Standard agent props (see component-library.md §The standard prop set). */
 export interface AgentProps {
@@ -28,17 +24,18 @@ export interface AgentAttributes {
   'data-agent-id'?: string;
   'data-agent-action'?: string;
   'data-agent-role'?: AgentRole;
-  'data-agent-state'?: string;
+  'data-agent-state'?: AgentState;
   'data-agent-value'?: string;
 }
 
 /**
  * Maps agent props (+ the component's derived state/value) to DOM
- * attributes. Undefined entries are omitted by React.
+ * attributes. Undefined entries are omitted by React. States come from
+ * the fixed vocabulary (agent-interface.md §State vocabulary).
  */
 export function agentAttrs(
   props: AgentProps,
-  state?: string,
+  state?: AgentState,
   value?: string
 ): AgentAttributes {
   return {
