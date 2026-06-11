@@ -1,0 +1,49 @@
+/**
+ * Density modes (docs/design-system/design-tokens.md §Density tokens,
+ * design-principles.md #6). Set on <html data-density="...">; one token
+ * swap drives the whole app. Modes: simple / comfortable (default) /
+ * compact.
+ */
+:root,
+:root[data-density='comfortable'] {
+  --row-h: 56px;
+  --target-min: 48px;
+  --scale: 1;
+  --page-padding: var(--space-4);
+  --card-padding: var(--space-4);
+  --gap-between-cards: var(--space-4);
+  --label-size: var(--text-base);
+}
+
+:root[data-density='simple'] {
+  --row-h: 80px;
+  --target-min: 64px;
+  --scale: 1.25;
+  --page-padding: var(--space-6);
+  --card-padding: var(--space-6);
+  --gap-between-cards: var(--space-5);
+  --label-size: var(--text-lg);
+
+  /* Simple Mode is more than density — it suppresses whole UI patterns
+     (design-tokens.md §Simple Mode overrides). */
+  --shadow-default: none;
+  --duration-default: 0ms;
+  --radius-default: var(--radius-md);
+  --icon-default: var(--icon-lg);
+  --focus-ring-width: 4px;
+}
+
+:root[data-density='compact'] {
+  --row-h: 44px;
+  --target-min: 40px;
+  --scale: 0.95;
+  --page-padding: var(--space-3);
+  --card-padding: var(--space-3);
+  --gap-between-cards: var(--space-3);
+  --label-size: var(--text-sm);
+}
+
+/* All type sizes multiply by --scale at the root. */
+html {
+  font-size: calc(16px * var(--scale));
+}

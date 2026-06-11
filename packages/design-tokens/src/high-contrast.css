@@ -1,0 +1,29 @@
+/**
+ * High-contrast overrides (docs/architecture/11-accessibility-a11y.md;
+ * file mandated by 01-system-architecture design-system/theme tree).
+ * Activated by <html data-contrast="high"> or the OS-level preference.
+ */
+[data-contrast='high'] {
+  --text-primary: #000000;
+  --text-secondary: #1e293b;
+  --text-muted: #334155;
+  --border-default: #475569;
+  --border-strong: #0f172a;
+  --focus-ring-width: 4px;
+  --shadow-default: none;
+}
+
+[data-theme='dark'][data-contrast='high'] {
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
+  --border-default: #94a3b8;
+  --border-strong: #f8fafc;
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --focus-ring-width: 4px;
+    --border-default: #475569;
+  }
+}
