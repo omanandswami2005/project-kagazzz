@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Kagaz agent interface primitives: defineAction, definePage, ActionRegistry, useAgentProps (docs/design-system/agent-interface.md)",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

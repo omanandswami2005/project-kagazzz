@@ -43,7 +43,7 @@
     "india"
   ],
   "author": "@omanandswami2005",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "engines": {
     "node": ">=22.12.0",
     "pnpm": ">=10.0.0"

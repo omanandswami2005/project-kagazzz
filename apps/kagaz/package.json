@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Privacy-first document management app for India",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",

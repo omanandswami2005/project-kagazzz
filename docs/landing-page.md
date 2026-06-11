@@ -314,7 +314,7 @@ Compact. Three columns on desktop, stacked on mobile.
 
 | Column | Content |
 |---|---|
-| **Kagaz** | About · How it works · Privacy · Security · Open Source |
+| **Kagaz** | About · How it works · Privacy · Security · Third-party licenses |
 | **For users** | Help · Languages · Accessibility · Contact |
 | **Omni Docs** | The company · Careers · Press · Blog |
 

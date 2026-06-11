@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Kagaz documentation site (Astro Starlight)",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "astro dev",

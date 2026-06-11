@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Kagaz design tokens - the single source of truth for colors, type, spacing, motion, density modes, and themes (docs/design-system/design-tokens.md)",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

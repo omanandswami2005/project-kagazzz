@@ -68,7 +68,7 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - `code/code-standards-and-quality.md` + `docs/indian-compliance-checklist.md` — DPDP Act 2023, IT Act, UIDAI/Aadhaar rules (**never store raw Aadhaar numbers or biometrics**), CERT-In, DigiLocker/CSC onboarding; consent logging requirements (user id, ISO 8601 timestamp, action, scope, request id; ~2-year retention); India-only data residency for any government-integration server data; retention/deletion rules. Error logs stay on-device in V1 — no remote crash reporting.
 - `docs/compliance/` — DPIA and audit-evidence index. `docs/legal/` — privacy policy and T&C; code must never contradict them.
 - Accessibility is a launch gate: WCAG 2.1 AA (`docs/architecture/11-accessibility-a11y.md`, per-component checklist in §7).
-- Dependencies: permissive licenses only (project is MIT); run `pnpm audit` before PRs.
+- Dependencies: permissive licenses only (MIT/Apache-2.0/BSD/ISC). **The project itself is proprietary (`UNLICENSED`, closed source)** — copyleft dependencies (GPL/AGPL/SSPL) are forbidden because they'd force source disclosure; the in-app "Open-source licenses" screen ships third-party attributions as legally required. Run `pnpm audit` before PRs.
 
 ## Performance Budgets (CI-enforced targets, `CONTRIBUTING.md`)
 
