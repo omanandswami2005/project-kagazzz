@@ -43,7 +43,7 @@
 - [x] P0-8 i18n setup (react-i18next, en + hi locale files, language detector) — [docs/architecture/12-i18n-multilingual.md](docs/architecture/12-i18n-multilingual.md) `[I18N]` ✅ 3b388e5 (2026-06-11) — en↔hi key parity CI-enforced; I18nProvider wiring lands in P0-10
 - [ ] P0-9 CI pipeline: lint, type-check, test+coverage gates, bundle-size check, `pnpm audit`, agent:lint, Lighthouse — [CONTRIBUTING.md](CONTRIBUTING.md) §Performance & Security `[PERF]`
 - [ ] P0-10 App shell: routes, lazy imports, providers (Theme/I18n/Database/AI), error boundaries with **local-only** error logging `[SEC]`
-- [ ] P0-11 Logging infrastructure per [docs/architecture/14-observability-logging.md](docs/architecture/14-observability-logging.md): pino root/child loggers, redaction denylist + tests, SQLite `app_logs` ring buffer, hash-chained `audit_logs` DAO, worker log relay, pino-pretty dev pipeline `[SEC]` `[LEGAL]` (consent/audit records are DPDP evidence)
+- [ ] P0-11 Logging infrastructure per [docs/architecture/14-observability-logging.md](docs/architecture/14-observability-logging.md): pino root/child loggers, redaction denylist + tests, SQLite `app_logs` ring buffer, hash-chained `audit_logs` DAO, worker log relay, pino-pretty dev pipeline `[SEC]` `[LEGAL]` (consent/audit records are DPDP evidence) 🟨 claimed — feature/p11-logging · Claude (Lane F) · 2026-06-11 (taken before P0-9/P0-10: shell error boundaries need the logger; CI needs a buildable shell)
 
 ---
 
