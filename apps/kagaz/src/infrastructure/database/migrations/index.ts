@@ -6,6 +6,7 @@
 import type { Migration } from '../migration-runner';
 import { initialSchema } from './001-initial-schema';
 import { addFts } from './002-add-fts';
+import { addLogging } from './003-add-logging';
 
 /** All known migrations in ascending version order. */
-export const migrations: Migration[] = [initialSchema, addFts];
+export const migrations: Migration[] = [initialSchema, addFts, addLogging];
