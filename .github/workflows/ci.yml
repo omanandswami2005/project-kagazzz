@@ -1,0 +1,89 @@
+# CI gates (P0-9) — CONTRIBUTING.md §Performance & Security.
+# Every PR to develop/main must pass: lint, type-check, tests + coverage
+# (80/75 enforced by vitest thresholds), agent contract lint, build,
+# bundle-size budgets, dependency audit, and Lighthouse.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint · Types · Tests · Build · Budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm type-check
+
+      - name: Agent contract lint
+        run: pnpm agent:lint
+
+      - name: Tests with coverage gates (80/75)
+        run: pnpm test:coverage
+
+      - name: Build
+        run: pnpm build
+
+      - name: Bundle-size budgets
+        run: node scripts/check-bundle-size.mjs
+
+      - name: Dependency audit
+        run: pnpm audit --audit-level high
+
+      - name: Regenerate agent sitemap (drift check)
+        run: |
+          pnpm agent:sitemap
+          git diff --exit-code -- apps/kagaz/public/agent-sitemap.json || {
+            echo "::error::agent-sitemap.json is stale — run pnpm agent:sitemap and commit it";
+            exit 1;
+          }
+
+  lighthouse:
+    name: Lighthouse (performance > 90)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.x autorun

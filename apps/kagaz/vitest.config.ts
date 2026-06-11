@@ -17,9 +17,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      include: ['src/**'],
+      include: ['src/**/*.{ts,tsx}'],
       exclude: [
         'src/test/',
+        // Entry point: executes render() on import; covered by App smoke test.
+        'src/main.tsx',
         '**/*.types.ts',
         '**/*.d.ts',
         '**/index.ts',

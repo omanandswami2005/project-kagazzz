@@ -53,4 +53,31 @@ describe('ThemeProvider', () => {
   it('useTheme throws outside the provider', () => {
     expect(() => render(<Probe />)).toThrow('inside <ThemeProvider>');
   });
+
+  it('follows the system dark preference and tracks changes', () => {
+    const original = window.matchMedia;
+    const listeners: Array<() => void> = [];
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: (_t: string, fn: () => void): void => {
+        listeners.push(fn);
+      },
+      removeEventListener: (): void => undefined,
+      addListener: (): void => undefined,
+      removeListener: (): void => undefined,
+      dispatchEvent: (): boolean => false,
+    })) as unknown as typeof window.matchMedia;
+
+    const { unmount } = render(
+      <ThemeProvider>
+        <Probe />
+      </ThemeProvider>
+    );
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(listeners.length).toBeGreaterThan(0);
+    unmount();
+    window.matchMedia = original;
+  });
 });

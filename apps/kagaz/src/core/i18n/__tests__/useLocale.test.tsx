@@ -32,4 +32,21 @@ describe('useLocale', () => {
     expect(result.current.formatDate('2026-06-07')).toContain('जून');
     await i18n.changeLanguage('en');
   });
+
+  it('falls back to i18n.language when resolvedLanguage is unset', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(i18n),
+      'resolvedLanguage'
+    );
+    Object.defineProperty(i18n, 'resolvedLanguage', {
+      configurable: true,
+      get: () => undefined,
+    });
+    const { result } = renderHook(() => useLocale());
+    expect(result.current.locale).toBe(i18n.language);
+    if (descriptor) {
+      Object.defineProperty(Object.getPrototypeOf(i18n), 'resolvedLanguage', descriptor);
+    }
+    delete (i18n as unknown as Record<string, unknown>)['resolvedLanguage'];
+  });
 });
