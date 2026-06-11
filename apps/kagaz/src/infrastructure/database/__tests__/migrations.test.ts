@@ -3,12 +3,31 @@ import { FakeDb } from '@/test/fake-db';
 import { initialSchema } from '../migrations/001-initial-schema';
 import { addFts } from '../migrations/002-add-fts';
 import { addLogging } from '../migrations/003-add-logging';
+import { addLastAccessed } from '../migrations/004-add-last-accessed';
 import { migrations } from '../migrations';
 
 describe('migration registry', () => {
   it('contains all migrations in ascending, gapless version order', () => {
     const versions = migrations.map((m) => m.version);
-    expect(versions).toEqual([1, 2, 3]);
+    expect(versions).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe('004-add-last-accessed', () => {
+  it('adds the column and its index', async () => {
+    const db = new FakeDb();
+    await addLastAccessed.up(db);
+    expect(db.allSql).toContain(
+      'ALTER TABLE documents ADD COLUMN last_accessed_at'
+    );
+    expect(db.allSql).toContain('idx_documents_last_accessed');
+  });
+
+  it('down drops the column and index', async () => {
+    const db = new FakeDb();
+    await addLastAccessed.down(db);
+    expect(db.allSql).toContain('DROP INDEX IF EXISTS idx_documents_last_accessed');
+    expect(db.allSql).toContain('DROP COLUMN last_accessed_at');
   });
 });
 

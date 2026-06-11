@@ -73,6 +73,26 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('findRecent filters last_accessed_at, orders desc, binds limit', async () => {
+    db.onQuery(/last_accessed_at IS NOT NULL/, [
+      docRow({ last_accessed_at: '2026-06-11T00:00:00.000Z' }),
+    ]);
+    const docs = await dao.findRecent(5);
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.lastAccessedAt).toBe('2026-06-11T00:00:00.000Z');
+    expect(db.calls[0]?.sql).toContain('ORDER BY last_accessed_at DESC');
+    expect(db.calls[0]?.params).toEqual([5]);
+  });
+
+  it('touchLastAccessed stamps the access time on live rows', async () => {
+    const changes = await dao.touchLastAccessed('doc-1');
+    expect(changes).toBe(1);
+    const call = db.calls[0];
+    expect(call?.sql).toContain('SET last_accessed_at = ?');
+    expect(call?.sql).toContain('deleted_at IS NULL');
+    expect(call?.params?.[1]).toBe('doc-1');
+  });
+
   it('findFavorites filters is_favorite and excludes deleted', async () => {
     db.onQuery(/is_favorite = 1/, [docRow({ is_favorite: 1 })]);
     const docs = await dao.findFavorites();

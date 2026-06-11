@@ -5,14 +5,12 @@
  */
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
-/**
- * Sortable keys (spec §Sort Options). `lastAccessedAt` joins with F-32,
- * which adds the documents.last_accessed_at column.
- */
+/** Sortable keys (spec §Sort Options). */
 export type SortKey =
   | 'name'
   | 'createdAt'
   | 'updatedAt'
+  | 'lastAccessedAt'
   | 'fileSize'
   | 'fileType';
 
@@ -28,6 +26,7 @@ export const SORT_KEY_LABELS = {
   name: 'sort.name',
   createdAt: 'sort.created',
   updatedAt: 'sort.modified',
+  lastAccessedAt: 'sort.accessed',
   fileSize: 'sort.size',
   fileType: 'sort.type',
 } as const satisfies Record<SortKey, string>;
@@ -36,6 +35,7 @@ export const SORT_KEY_LABELS = {
 export const SORT_KEYS = [
   'createdAt',
   'updatedAt',
+  'lastAccessedAt',
   'name',
   'fileSize',
   'fileType',
@@ -49,6 +49,9 @@ function compareKey(a: DocumentEntity, b: DocumentEntity, key: SortKey): number 
   switch (key) {
     case 'fileSize':
       return a.fileSize - b.fileSize;
+    case 'lastAccessedAt':
+      // Never-opened documents sort last in ascending order.
+      return (a.lastAccessedAt ?? '').localeCompare(b.lastAccessedAt ?? '');
     case 'name':
       return compareText(a.name, b.name);
     case 'fileType':

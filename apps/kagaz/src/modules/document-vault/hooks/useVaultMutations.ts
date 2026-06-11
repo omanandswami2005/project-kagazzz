@@ -16,6 +16,8 @@ const logger = log('document-vault');
 export interface UseVaultMutationsResult {
   /** Flips a document's favorite flag (persisted + reflected in the list). */
   toggleFavorite: (document: DocumentEntity) => Promise<void>;
+  /** Records that a document was opened, for the Recent list (F-32). */
+  markAccessed: (document: DocumentEntity) => Promise<void>;
 }
 
 /** Wires per-document mutations to the DAO + store. */
@@ -52,5 +54,24 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite };
+  const markAccessed = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      try {
+        await dao.touchLastAccessed(document.id);
+        logger.debug({ event: 'vault.open', documentId: document.id });
+      } catch (error) {
+        logger.error({
+          event: 'vault.open.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  return { toggleFavorite, markAccessed };
 }

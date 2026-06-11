@@ -70,6 +70,16 @@ describe('sortDocuments', () => {
     ]);
   });
 
+  it('sorts by lastAccessedAt, never-opened last when ascending (F-32)', () => {
+    const docs = [
+      doc('opened', { lastAccessedAt: '2026-06-05T00:00:00.000Z' }),
+      doc('never'),
+    ];
+    expect(
+      sortDocuments(docs, 'lastAccessedAt', 'asc').map((d) => d.id)
+    ).toEqual(['never', 'opened']);
+  });
+
   it('is stable via id tiebreaker and does not mutate the input', () => {
     const docs = [doc('b'), doc('a')];
     const frozen = [...docs];

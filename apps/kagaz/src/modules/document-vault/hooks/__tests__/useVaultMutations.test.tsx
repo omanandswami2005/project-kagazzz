@@ -61,3 +61,24 @@ describe('useVaultMutations.toggleFavorite (F-33)', () => {
     await expect(result.current.toggleFavorite(fav)).resolves.toBeUndefined();
   });
 });
+
+describe('useVaultMutations.markAccessed (F-32)', () => {
+  it('stamps last_accessed_at via the DAO', async () => {
+    const db = new FakeDb();
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useVaultMutations());
+
+    await result.current.markAccessed(fav);
+
+    const runCall = db.calls.find((c) => c.kind === 'run');
+    expect(runCall?.sql).toContain('last_accessed_at');
+  });
+
+  it('swallows DAO failures', async () => {
+    const db = new FakeDb();
+    db.run = vi.fn(() => Promise.reject(new Error('disk full')));
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useVaultMutations());
+    await expect(result.current.markAccessed(fav)).resolves.toBeUndefined();
+  });
+});

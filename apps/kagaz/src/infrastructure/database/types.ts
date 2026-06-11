@@ -31,6 +31,8 @@ export interface DocumentEntity {
   originalFilename?: string;
   createdAt: string;
   updatedAt: string;
+  /** When the document was last opened/previewed (F-32); null if never. */
+  lastAccessedAt?: string;
   deletedAt?: string;
   metadataJson?: string;
   synced: boolean;

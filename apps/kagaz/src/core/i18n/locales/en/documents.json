@@ -54,10 +54,14 @@
     "name": "Name",
     "created": "Date added",
     "modified": "Last modified",
+    "accessed": "Recently opened",
     "size": "File size",
     "type": "File type",
     "ascending": "Sort ascending",
     "descending": "Sort descending"
+  },
+  "recent": {
+    "title": "Recent"
   },
   "trash": {
     "moved_to_trash": "Document moved to Trash",

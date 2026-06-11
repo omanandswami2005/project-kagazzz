@@ -7,6 +7,7 @@ import { docRow, entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../DocumentListItem';
 import { EmptyVaultState } from '../EmptyVaultState';
+import { RecentStrip } from '../RecentStrip';
 import { UploadFAB } from '../UploadFAB';
 import { UploadOptionsSheet } from '../UploadOptionsSheet';
 
@@ -80,6 +81,27 @@ describe('DocumentListItem', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home.item-doc-1.favorite"]')
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+});
+
+describe('RecentStrip (F-32)', () => {
+  it('renders nothing when there are no recent documents', () => {
+    const { container } = render(
+      <RecentStrip documents={[]} onOpen={() => undefined} />
+    );
+    expect(container.querySelector('[data-agent-id="vault.home.recent"]')).toBeNull();
+  });
+
+  it('lists recent documents and reports opens', async () => {
+    const onOpen = vi.fn();
+    render(<RecentStrip documents={[doc]} onOpen={onOpen} />);
+    expect(screen.getByText('Recent')).toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.recent-doc-1"]'
+      ) as Element
+    );
+    expect(onOpen).toHaveBeenCalledWith(doc);
   });
 });
 

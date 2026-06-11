@@ -11,12 +11,15 @@ import { ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
+import { RecentStrip } from '../components/RecentStrip';
 import { SortControl } from '../components/SortControl';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useDocuments } from '../hooks/useDocuments';
+import { useRecentDocuments } from '../hooks/useRecentDocuments';
 import { useUpload } from '../hooks/useUpload';
 import { useVaultMutations } from '../hooks/useVaultMutations';
+import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
 import type { UploadSource } from '../services/upload-sources';
 import './vault.css';
@@ -27,7 +30,8 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
-  const { toggleFavorite } = useVaultMutations();
+  const { toggleFavorite, markAccessed } = useVaultMutations();
+  const recent = useRecentDocuments();
   const isUploading = useVaultStore((state) => state.isUploading);
   const uploadProgress = useVaultStore((state) => state.uploadProgress);
   const isSheetOpen = useVaultStore((state) => state.isUploadSheetOpen);
@@ -43,6 +47,13 @@ export function VaultHomePage(): ReactNode {
     void uploadFrom(source).then(({ uploaded }) => {
       setUploadedCount(uploaded);
     });
+  };
+
+  // Opening a document records recency (F-32) and, until F-24 ships the
+  // detail view, surfaces the "preview coming soon" stopgap.
+  const handleOpen = (document: DocumentEntity): void => {
+    void markAccessed(document);
+    setShowPreviewToast(true);
   };
 
   const listState = isLoading
@@ -86,6 +97,7 @@ export function VaultHomePage(): ReactNode {
             <EmptyVaultState />
           ) : (
             <>
+              <RecentStrip documents={recent} onOpen={handleOpen} />
               {documents.length > 1 && <SortControl />}
               <ul
                 className="kg-vault__list"
@@ -96,7 +108,7 @@ export function VaultHomePage(): ReactNode {
                   <DocumentListItem
                     key={document.id}
                     document={document}
-                    onOpen={() => setShowPreviewToast(true)}
+                    onOpen={handleOpen}
                     onToggleFavorite={(doc) => void toggleFavorite(doc)}
                   />
                 ))}

@@ -34,6 +34,7 @@ function mapRow(row: SqlRow): DocumentEntity {
     originalFilename: asOptionalString(row, 'original_filename'),
     createdAt: asString(row, 'created_at'),
     updatedAt: asString(row, 'updated_at'),
+    lastAccessedAt: asOptionalString(row, 'last_accessed_at'),
     deletedAt: asOptionalString(row, 'deleted_at'),
     metadataJson: asOptionalString(row, 'metadata_json'),
     synced: asBool(row, 'synced'),
@@ -66,6 +67,28 @@ export class DocumentDao {
          ORDER BY created_at DESC`;
     const rows = await this.db.query(sql, folderId ? [folderId] : []);
     return rows.map(mapRow);
+  }
+
+  /** Most-recently-opened non-deleted documents (F-32). */
+  async findRecent(limit = 10): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE last_accessed_at IS NOT NULL AND deleted_at IS NULL
+       ORDER BY last_accessed_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+    return rows.map(mapRow);
+  }
+
+  /** Stamps last_accessed_at = now for the "recent" list (F-32). */
+  async touchLastAccessed(id: string): Promise<number> {
+    const result = await this.db.run(
+      `UPDATE documents SET last_accessed_at = ?
+       WHERE id = ? AND deleted_at IS NULL`,
+      [nowIso(), id]
+    );
+    return result.changes;
   }
 
   /** Non-deleted favorites, newest first (F-33). */
