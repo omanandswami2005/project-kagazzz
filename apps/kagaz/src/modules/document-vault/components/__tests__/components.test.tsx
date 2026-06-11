@@ -1,0 +1,114 @@
+import { IonContent, IonPage } from '@ionic/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { i18n, initI18n } from '@/core/i18n';
+import { docRow, entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
+import type { DocumentEntity } from '@/infrastructure/database/types';
+import { DocumentListItem } from '../DocumentListItem';
+import { EmptyVaultState } from '../EmptyVaultState';
+import { UploadFAB } from '../UploadFAB';
+import { UploadOptionsSheet } from '../UploadOptionsSheet';
+
+beforeAll(async () => {
+  await initI18n();
+  await i18n.changeLanguage('en');
+});
+
+const doc: DocumentEntity = entityFromNew({
+  name: 'Aadhaar',
+  filePath: 'documents/doc-1.pdf',
+  fileType: 'pdf',
+  fileSize: 2_560_000,
+  isFavorite: false,
+  isLocked: false,
+  isArchived: false,
+  language: 'en',
+  sourceType: 'file_picker',
+});
+
+describe('DocumentListItem', () => {
+  it('shows name, type badge, size, and agent id', () => {
+    render(
+      <ul>
+        <DocumentListItem document={doc} />
+      </ul>
+    );
+    expect(screen.getByText('Aadhaar')).toBeInTheDocument();
+    expect(screen.getByText('PDF')).toBeInTheDocument();
+    expect(screen.getByText(/2\.4\s?MB/)).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-agent-id="vault.home.item-doc-1"]')
+    ).not.toBeNull();
+  });
+
+  it('falls back to a generic icon for unknown types', () => {
+    const odd = { ...doc, fileType: 'zip' };
+    render(
+      <ul>
+        <DocumentListItem document={odd} />
+      </ul>
+    );
+    expect(screen.getByText('ZIP')).toBeInTheDocument();
+  });
+});
+
+describe('EmptyVaultState', () => {
+  it('renders the localized empty copy', () => {
+    render(<EmptyVaultState />);
+    expect(screen.getByText('No documents yet')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Scan or upload your first document/)
+    ).toBeInTheDocument();
+  });
+});
+
+describe('UploadFAB', () => {
+  it('invokes onClick and exposes the primary-action agent surface', async () => {
+    const onClick = vi.fn();
+    render(<UploadFAB onClick={onClick} />);
+    const fab = document.querySelector(
+      '[data-agent-id="vault.home.upload-fab"]'
+    );
+    expect(fab).not.toBeNull();
+    expect(fab).toHaveAttribute('data-agent-role', 'primary-action');
+    expect(fab).toHaveAttribute('data-agent-state', 'idle');
+    await userEvent.click(fab as Element);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('reflects the disabled state', () => {
+    render(<UploadFAB disabled onClick={() => undefined} />);
+    expect(
+      document.querySelector('[data-agent-id="vault.home.upload-fab"]')
+    ).toHaveAttribute('data-agent-state', 'disabled');
+  });
+});
+
+describe('UploadOptionsSheet', () => {
+  it('lists the three sources and reports the chosen one', async () => {
+    const onSelect = vi.fn();
+    render(
+      <IonPage>
+        <IonContent>
+          <UploadOptionsSheet
+            isOpen
+            onDismiss={() => undefined}
+            onSelect={onSelect}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    expect(await screen.findByText('Take a photo')).toBeInTheDocument();
+    expect(screen.getByText('Browse files')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Choose from gallery'));
+    expect(onSelect).toHaveBeenCalledWith('gallery');
+  });
+});
+
+// Sanity: the snake_case fixture row matches the entity used above.
+describe('fixtures', () => {
+  it('docRow exposes the DAO column shape', () => {
+    expect(docRow()['file_type']).toBe('pdf');
+  });
+});

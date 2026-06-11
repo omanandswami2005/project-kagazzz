@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-06-11 (**Phase 0 complete** — P0-1…P0-11 all merged to develop; app builds and boots; lanes A/B/C/E/F unblocked per the Parallel Workstreams table)
+> Last updated: 2026-06-11 (F-1 Document Upload shipped — first V1 feature; Phase 0 complete; lanes A/B/C/E/F unblocked per the Parallel Workstreams table)
 
 ---
 
@@ -68,7 +68,7 @@
 
 ### Document Vault module — [docs/architecture/02-document-vault-module.md](docs/architecture/02-document-vault-module.md)
 
-- [ ] F-1 Document Upload (camera/gallery/file picker; PDF, JPG, PNG, HEIC, WEBP) 🔴Must 🟨 claimed — feature/f1-document-upload · agent:claude-A · 2026-06-11
+- [x] F-1 Document Upload (camera/gallery/file picker; PDF, JPG, PNG, HEIC, WEBP) 🔴Must ✅ b91be83 (2026-06-11) — HEIC stored as-is behind an injectable `HeicConverter` protocol (every wasm HEIC decoder is ~700 KB+ gz → bundle budget; real converter lands with F-8); thumbnails/auto-OCR pipeline stages land with F-24/F-20; `useDocuments` is store-based until a QueryClientProvider exists (revisit with F-9/F-11)
 - [ ] F-9 Folder Organization (CRUD, color-code, nesting, move docs) 🔴Must
 - [ ] F-10 Tags / Labels 🔴Must→🟢S
 - [ ] F-24 Document Thumbnails (generate + cache) 🟡Should
@@ -269,6 +269,9 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-11 · b91be83 · feat(document-vault) · F-1: upload pipeline (validate/magic-bytes/space guard → optional HEIC convert → hash → FS write → DB row), camera/gallery/file-picker sources, vault.uploadDocument action, VaultHomePage agent trio replacing the P0-10 HomePage placeholder, en+hi upload strings, 83 tests · F-1
+- 2026-06-11 · c799ca8 · fix(ui) · Icon atom: curated static lucide map (full `icons` index defeated tree-shaking, +120 KB gz in the app chunk → 150 KB budget bust) · F-1, G1-4
+- 2026-06-11 · 4089f71 · fix(ci) · pnpm/action-setup: drop `version:` input (conflicts with package.json `packageManager` → "Multiple versions of pnpm specified", all CI jobs incl. Lighthouse died at setup); lhci via pnpm dlx · P0-9
 - 2026-06-11 · ea7eb9d · feat(ci) · P0-9: GitHub Actions (lint/type-check/agent:lint/coverage/build/bundle-budgets/audit/sitemap-drift + Lighthouse job), check-bundle-size.mjs with temp vendor allowance; coverage hardening (App smoke test, migration 003 tests) — **Phase 0 complete** · P0-9
 - 2026-06-11 · 505019f · feat(kagaz) · P0-10: app shell (offline-CSP index.html, provider chain with DB/log-sink/temp-wipe bootstrap, lazy routes, ErrorBoundary fatal-local, HomePage with full agent contract); first successful build · P0-10
 - 2026-06-11 · 0ba151e · feat(kagaz) · P0-11: core/logging (pino children, browser-safe redaction layer, batched app_logs ring buffer, hash-chained AuditLogDao with verifyChain, worker relay, migration 003); CLAUDE.md logging idiom + @/ import convention · P0-11

@@ -2,16 +2,97 @@
  * Icon atom (component-library.md §Icon).
  * Lucide icons, 1.5px stroke, currentColor, paired with aria-label or
  * marked decorative.
+ *
+ * Icons come from a curated static map instead of lucide's full `icons`
+ * index: the index defeats tree-shaking and ships every icon (~120 KB
+ * gzipped), which alone blows the app-chunk budget (CONTRIBUTING.md
+ * §Performance). Add icons here as screens need them — each costs only
+ * its own module.
  */
-import { icons } from 'lucide-react';
+import {
+  AlertCircle,
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Download,
+  Eye,
+  EyeOff,
+  File,
+  FileImage,
+  FileText,
+  Folder,
+  FolderOpen,
+  GraduationCap,
+  Heart,
+  Home,
+  Images,
+  Info,
+  Lock,
+  Menu,
+  Mic,
+  Pencil,
+  Plus,
+  Scan,
+  Search,
+  Settings,
+  Share2,
+  Star,
+  Tag,
+  Trash2,
+  Unlock,
+  Upload,
+  X,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 
-/** Name of any Lucide icon (PascalCase, e.g. "FileText"). */
-export type IconName = keyof typeof icons;
+/** Curated Lucide subset (add icons as features need them). */
+const ICONS = {
+  AlertCircle,
+  Camera,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Download,
+  Eye,
+  EyeOff,
+  File,
+  FileImage,
+  FileText,
+  Folder,
+  FolderOpen,
+  GraduationCap,
+  Heart,
+  Home,
+  Images,
+  Info,
+  Lock,
+  Menu,
+  Mic,
+  Pencil,
+  Plus,
+  Scan,
+  Search,
+  Settings,
+  Share2,
+  Star,
+  Tag,
+  Trash2,
+  Unlock,
+  Upload,
+  X,
+} as const;
+
+/** Name of a curated Lucide icon (PascalCase, e.g. "FileText"). */
+export type IconName = keyof typeof ICONS;
 
 /** Props for {@link Icon}. */
 export interface IconProps {
-  /** Icon identifier from the Lucide set. */
+  /** Icon identifier from the curated Lucide set. */
   name: IconName;
   /** Icon size in pixels (token sizes: 16/20/24/32/48). */
   size?: 16 | 20 | 24 | 32 | 48;
@@ -31,7 +112,7 @@ export function Icon({
   strokeWidth = 1.5,
   'aria-label': ariaLabel,
 }: IconProps): ReactNode {
-  const LucideIcon = icons[name];
+  const LucideIcon = ICONS[name];
   return (
     <LucideIcon
       className="kg-icon"

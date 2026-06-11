@@ -12,6 +12,28 @@
     "rename": "Rename",
     "add_tag": "Add Tag"
   },
+  "upload": {
+    "sheet_title": "Add a document",
+    "sources": {
+      "camera": "Take a photo",
+      "gallery": "Choose from gallery",
+      "files": "Browse files"
+    },
+    "progress_label": "Uploading documents",
+    "success_one": "{{count}} document added",
+    "success_other": "{{count}} documents added",
+    "errors": {
+      "invalid_file_type": "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP",
+      "file_too_large": "File exceeds the maximum size of 100 MB",
+      "invalid_file_name": "Invalid file name",
+      "corrupted_file": "The file appears to be corrupted",
+      "storage_full": "Insufficient storage space",
+      "file_read_error": "The file could not be read",
+      "file_write_error": "The file could not be saved",
+      "db_error": "The document could not be saved — please try again",
+      "conversion_failed": "The photo could not be converted"
+    }
+  },
   "detail": {
     "size": "Size",
     "type": "Type",
