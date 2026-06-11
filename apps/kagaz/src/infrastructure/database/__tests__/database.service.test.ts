@@ -67,10 +67,21 @@ describe('SqliteDbAdapter', () => {
     expect(mocks.dbConn.run).toHaveBeenCalledWith('UPDATE x SET a = ?', [1], false);
   });
 
-  it('execute passes through without implicit transaction', async () => {
+  it('execute runs without implicit transaction and normalizes a trailing newline', async () => {
     const adapter = new SqliteDbAdapter(rawConnection());
     await adapter.execute('CREATE TABLE t (a)');
-    expect(mocks.dbConn.execute).toHaveBeenCalledWith('CREATE TABLE t (a)', false);
+    // Trailing newline appended so the native ";\n" splitter tokenizes a
+    // final `END;` correctly (see SqliteDbAdapter.execute).
+    expect(mocks.dbConn.execute).toHaveBeenCalledWith('CREATE TABLE t (a)\n', false);
+  });
+
+  it('execute leaves an already-newline-terminated batch unchanged', async () => {
+    const adapter = new SqliteDbAdapter(rawConnection());
+    await adapter.execute('CREATE TRIGGER t ... END;\n');
+    expect(mocks.dbConn.execute).toHaveBeenCalledWith(
+      'CREATE TRIGGER t ... END;\n',
+      false
+    );
   });
 
   it('transaction commits on success', async () => {

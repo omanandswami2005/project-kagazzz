@@ -39,7 +39,17 @@ export class SqliteDbAdapter implements DbConnection {
   }
 
   async execute(sql: string): Promise<void> {
-    await this.db.execute(sql, false);
+    // The native plugin batch-splits DDL on ";\n" and only folds a
+    // trailing `END;` into its CREATE TRIGGER when that `END;` is
+    // newline-terminated (UtilsSQLite.concatRemoveEnd matches the bare
+    // token "END", not "END;"). A DDL ending in `END;` with no trailing
+    // newline therefore leaves the last trigger unclosed and the whole
+    // migration aborts with "incomplete input". Guaranteeing a trailing
+    // newline here makes every migration splitter-safe regardless of its
+    // own formatting. (Trigger bodies must still be single-statement —
+    // a separate native-splitter constraint enforced by migrations.test.)
+    const normalized = sql.endsWith('\n') ? sql : `${sql}\n`;
+    await this.db.execute(normalized, false);
   }
 
   async transaction<T>(fn: (tx: DbConnection) => Promise<T>): Promise<T> {
