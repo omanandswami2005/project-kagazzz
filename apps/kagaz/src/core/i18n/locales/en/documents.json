@@ -34,6 +34,9 @@
       "conversion_failed": "The photo could not be converted"
     }
   },
+  "banner": {
+    "db_unavailable": "Secure storage could not start. Restart the app — if this keeps happening, reinstall."
+  },
   "detail": {
     "size": "Size",
     "type": "Type",

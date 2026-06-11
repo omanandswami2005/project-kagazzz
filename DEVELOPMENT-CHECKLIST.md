@@ -20,8 +20,16 @@
    - **orphaned assets**: CSS classes whose markup is gone (F-1 left `.kg-home`), i18n keys whose screens are gone, dead `.gitkeep` files in now-populated directories;
    - **stale docs**: READMEs and architecture docs still describing the pre-item state.
    Keep deliberate forward-looking protocols (e.g. an interface another item will implement) — but only with a comment naming the item that will use it; "might need later" without an owner is stale.
-5. **Commits**: every completed item ends in at least one Conventional Commit (`feat(scope): …`, see [CONTRIBUTING.md](CONTRIBUTING.md)). Record the hash here. If you find uncommitted changes you didn't make, review the diff, group them into logical commits, commit them, and log them under [Commit Journal](#commit-journal).
-6. **Gate tags** on items mean extra mandatory reading:
+5. **Device verification (mandatory before closing any device-affecting item)**: green unit gates are NOT evidence the app works — mocks hide config-runtime mismatches, jsdom has no pixels, and no test env has an Android back button (F-1 shipped with 100% green gates yet a dead upload FAB, unreadable dark mode, and a broken back button — all invisible to the test suite). An item is device-affecting when it touches **native plugin APIs or `capacitor.config.ts`**, **theming/design tokens**, **navigation/routing**, **permissions**, or **filesystem/secure storage**. Before checking the box:
+   - build + install the debug APK on an emulator or device (`pnpm --filter kagaz build:capacitor`, then gradle `assembleDebug`);
+   - cold-start: the app boots to the expected screen with no silently degraded state;
+   - exercise the item's primary flow end-to-end on the device (for uploads: pick → appears in list → survives an app restart);
+   - flip **dark mode** and the **Hindi locale**: every new screen stays readable (contrast) and translated;
+   - press the **hardware back button** from every new screen: sane navigation, app leaves cleanly from the root;
+   - journal what was verified and on what device/emulator (checklist line or Commit Journal).
+   Doc-only, pure-logic, or web-tooling items may skip this step — say so in the journal entry if it could look device-affecting.
+6. **Commits**: every completed item ends in at least one Conventional Commit (`feat(scope): …`, see [CONTRIBUTING.md](CONTRIBUTING.md)). Record the hash here. If you find uncommitted changes you didn't make, review the diff, group them into logical commits, commit them, and log them under [Commit Journal](#commit-journal).
+7. **Gate tags** on items mean extra mandatory reading:
    - `[SEC]` → [docs/architecture/10-security-architecture.md](docs/architecture/10-security-architecture.md)
    - `[LEGAL]` → [docs/indian-compliance-checklist.md](docs/indian-compliance-checklist.md) + [code/code-standards-and-quality.md](code/code-standards-and-quality.md)
    - `[CONSENT]` → [docs/ux/consent-screens.md](docs/ux/consent-screens.md) (exact UI copy) + consent-log format in [code/code-standards-and-quality.md](code/code-standards-and-quality.md)
@@ -32,7 +40,7 @@
 
 ### Definition of Done (every item, per [AGENT.md](AGENT.md))
 
-- [ ] applies to each item implicitly: strict TS (no `any`) · JSDoc on public APIs · tests in `__tests__/` (≥80% lines/functions, ≥75% branches) · module README updated · architecture docs updated if structure changed · design tokens only (no hardcoded visuals, [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md)) · every page ships `PageName.agent.ts` + `PageName.skill.md` ([docs/design-system/page-skill-template.md](docs/design-system/page-skill-template.md)) · `data-agent-id` on interactive elements ([docs/design-system/agent-interface.md](docs/design-system/agent-interface.md)) · a11y per-component checklist passed · **stale-code sweep done (protocol step 4: unused deps/exports, replaced placeholders, orphaned CSS/i18n/docs)** · `pnpm lint && pnpm type-check && pnpm test` green · Conventional Commit recorded here.
+- [ ] applies to each item implicitly: strict TS (no `any`) · JSDoc on public APIs · tests in `__tests__/` (≥80% lines/functions, ≥75% branches) · module README updated · architecture docs updated if structure changed · design tokens only (no hardcoded visuals, [docs/design-system/design-tokens.md](docs/design-system/design-tokens.md)) · every page ships `PageName.agent.ts` + `PageName.skill.md` ([docs/design-system/page-skill-template.md](docs/design-system/page-skill-template.md)) · `data-agent-id` on interactive elements ([docs/design-system/agent-interface.md](docs/design-system/agent-interface.md)) · a11y per-component checklist passed · **stale-code sweep done (protocol step 4: unused deps/exports, replaced placeholders, orphaned CSS/i18n/docs)** · **device verification done for device-affecting items (protocol step 5: APK on emulator/device, primary flow, dark mode + hi locale, hardware back)** · `pnpm lint && pnpm type-check && pnpm test` green · Conventional Commit recorded here.
 
 ---
 

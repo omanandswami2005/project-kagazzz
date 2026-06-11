@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { i18n, initI18n } from '@/core/i18n';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import { useDocuments } from '../../hooks/useDocuments';
@@ -11,9 +12,11 @@ import { VaultHomePageAgent } from '../VaultHomePage.agent';
 
 vi.mock('../../hooks/useDocuments', () => ({ useDocuments: vi.fn() }));
 vi.mock('../../hooks/useUpload', () => ({ useUpload: vi.fn() }));
+vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 
 const useDocumentsMock = vi.mocked(useDocuments);
 const useUploadMock = vi.mocked(useUpload);
+const useDatabaseMock = vi.mocked(useDatabase);
 
 const doc = entityFromNew({
   name: 'Aadhaar',
@@ -46,6 +49,7 @@ beforeEach(() => {
     isReady: true,
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 1 })),
   });
+  useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
 });
 
 describe('VaultHomePage', () => {
@@ -108,6 +112,14 @@ describe('VaultHomePage', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home.upload-fab"]')
     ).toHaveAttribute('data-agent-state', 'disabled');
+  });
+
+  it('shows a visible alert when the database failed to open', () => {
+    useDatabaseMock.mockReturnValue({ status: 'error', db: null });
+    render(<VaultHomePage />);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /Secure storage could not start/
+    );
   });
 
   it('surfaces batch failures through the error toast', () => {
