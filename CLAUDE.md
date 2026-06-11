@@ -40,6 +40,12 @@ pnpm docs:dev            # Astro Starlight docs site
 pnpm --filter kagaz cap:sync / cap:open:android       # Capacitor (also build:capacitor)
 ```
 
+**Fast inner loop — do NOT run the full `pnpm lint && pnpm type-check && pnpm test` after every edit** (that's ~2 min: full ESLint type-aware pass + tsc + all ~300 tests). While iterating on a feature, run only what you touched, then run the full gates **once** before committing:
+- **Tests (biggest win — ~8 s vs ~90 s):** `pnpm --filter kagaz exec vitest run src/modules/<area>` for just the affected module/files. Never `pnpm test` mid-iteration.
+- **Types (fast, advisory):** `pnpm --filter kagaz type-check:native` (tsgo, the Go compiler, ~10× faster than tsc). Run the real `pnpm type-check` (tsc) only in the pre-commit gate.
+- **Lint:** scope it — `pnpm --filter kagaz exec eslint src/path/file.ts`. The whole-workspace `pnpm lint` is `--cache`d (warm runs ~8 s vs ~19 s), but type-aware rules still load the TS program, so it has a ~8 s floor regardless of file count — save it for pre-commit.
+- **Pre-commit gate (run once, all of it):** `pnpm lint && pnpm type-check && pnpm --filter kagaz test` (+ `pnpm agent:lint` when pages/actions changed).
+
 Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional Commits** (`feat(scope): subject`, scopes = module names); branches `feature/…`, `bugfix/…`, `docs/…`, etc. PRs target `develop`.
 
 **Parallel development**: work is split into lanes (A–F) with a claim-by-commit protocol on `DEVELOPMENT-CHECKLIST.md` — claim an item (🟨 line + push) before branching; never edit another lane's module; cross-module needs go through a Wave-1 contract PR (interface + mock + contract tests first). Full rules: `docs/guides/parallel-development.md`.
