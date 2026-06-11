@@ -70,6 +70,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // Vitest resolves Node export conditions; the app ships pino's
+      // browser build (Vite), so tests must exercise the same code path
+      // (browser.transmit etc. are no-ops in the Node build).
+      pino: 'pino/browser.js',
     },
   },
 });
