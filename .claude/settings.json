@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint)",
+      "Bash(pnpm type-check)",
+      "Bash(pnpm test)",
+      "Bash(pnpm agent:lint)",
+      "Bash(node scripts/check-bundle-size.mjs)",
+      "Bash(gh run watch *)",
+      "PowerShell(pnpm lint)",
+      "PowerShell(pnpm type-check)",
+      "PowerShell(Start-Sleep *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(ConvertFrom-Json *)",
+      "PowerShell(Get-CimInstance *)"
+    ]
+  }
+}
