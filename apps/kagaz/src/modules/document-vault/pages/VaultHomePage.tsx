@@ -8,6 +8,7 @@ import { IonContent, IonPage, IonToast } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProgressBar } from '@kagaz/ui';
+import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
 import { UploadFAB } from '../components/UploadFAB';
@@ -21,6 +22,7 @@ import './vault.css';
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
   const isUploading = useVaultStore((state) => state.isUploading);
@@ -48,6 +50,17 @@ export function VaultHomePage(): ReactNode {
       <IonContent>
         <main className="kg-vault" data-agent-id="vault.home.content">
           <h1>{t('title')}</h1>
+
+          {dbStatus === 'error' && (
+            <p
+              className="kg-vault__db-error"
+              role="alert"
+              data-agent-id="vault.home.db-error"
+              data-agent-state="error"
+            >
+              {t('banner.db_unavailable')}
+            </p>
+          )}
 
           {isUploading && (
             <div
