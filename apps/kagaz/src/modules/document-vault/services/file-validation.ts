@@ -24,16 +24,6 @@ const EXTENSION_TO_TYPE: Record<string, FileType> = {
   webp: FileType.WEBP,
 };
 
-/** MIME types the pickers advertise, mapped to a FileType. */
-export const UPLOAD_ACCEPT_MIME: Record<string, FileType> = {
-  'application/pdf': FileType.PDF,
-  'image/jpeg': FileType.JPG,
-  'image/png': FileType.PNG,
-  'image/heic': FileType.HEIC,
-  'image/heif': FileType.HEIC,
-  'image/webp': FileType.WEBP,
-};
-
 /** `accept` attribute value for the file-picker input. */
 export const UPLOAD_ACCEPT_ATTR = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp';
 

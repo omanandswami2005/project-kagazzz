@@ -269,7 +269,8 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
-- 2026-06-11 · _(this commit)_ · fix(ci) · Lighthouse perf assertion temporarily 0.85 (scores 0.86; root cause = vendor chunk, same as the bundle-size allowance; G1-4 restores 0.9) — **CI fully green on develop for the first time** · P0-9, G1-4
+- 2026-06-11 · _(this commit)_ · chore(kagaz) · F-1 stale-code sweep: unused heic-to dep dropped (HeicConverter stays a protocol for F-8), unused UPLOAD_ACCEPT_MIME export, dead .kg-home CSS, app/ README updated for the removed HomePage placeholder · F-1
+- 2026-06-11 · 7907a98 · fix(ci) · Lighthouse perf assertion temporarily 0.85 (scores 0.86; root cause = vendor chunk, same as the bundle-size allowance; G1-4 restores 0.9) — **CI fully green on develop for the first time** · P0-9, G1-4
 - 2026-06-11 · 4f62384 + 80b7db4 · fix(tooling)/fix(ci) · agent:sitemap made deterministic (generatedAt timestamp meant the CI drift check could never pass) + Lighthouse audits the SPA root '/' (auditing /index.html matched no route → NO_FCP every run) · P0-9
 - 2026-06-11 · b91be83 · feat(document-vault) · F-1: upload pipeline (validate/magic-bytes/space guard → optional HEIC convert → hash → FS write → DB row), camera/gallery/file-picker sources, vault.uploadDocument action, VaultHomePage agent trio replacing the P0-10 HomePage placeholder, en+hi upload strings, 83 tests · F-1
 - 2026-06-11 · c799ca8 · fix(ui) · Icon atom: curated static lucide map (full `icons` index defeated tree-shaking, +120 KB gz in the app chunk → 150 KB budget bust) · F-1, G1-4

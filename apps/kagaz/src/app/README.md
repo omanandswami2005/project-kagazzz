@@ -1,6 +1,6 @@
 # app/
 
-App shell (P0-10): `routes/` (route tree, `lazy-imports.ts`), `providers/` (Theme/I18n/Database/AI + combined `AppProviders`), `ErrorBoundary`, `App.tsx`, `pages/HomePage` (placeholder until F-1; ships its `.agent.ts` + `.skill.md`).
+App shell (P0-10): `routes/` (route tree, `lazy-imports.ts`), `providers/` (Theme/I18n/Database/AI + combined `AppProviders`), `ErrorBoundary`, `App.tsx`. Since F-1, `/` redirects to the document-vault module's `/vault` page — the shell owns no pages of its own.
 
 Bootstrap order (binding): ErrorBoundary → ThemeProvider (token attributes on `<html>`) → I18nProvider (`initI18n`, `<html lang/dir>`) → DatabaseProvider (open SQLCipher DB → migrations → `DiagnosticSink.pruneOnLaunch()` → `setDiagnosticSink` → `cleanupTempFiles`) → AIProvider (F-13 mount point).
 
