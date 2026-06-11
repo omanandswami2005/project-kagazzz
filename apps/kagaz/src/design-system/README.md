@@ -1,10 +1,10 @@
 # design-system/
 
-Shared UI: `components/` (atoms — Button, Card, Modal, …), `layouts/`, `theme/` (tokens CSS, dark mode, high contrast — P0-6), `animations/`.
+**Tokens and component implementations were extracted at P0-6** (per [packages/README.md](../../../../packages/README.md)):
 
-Rules (binding, [docs/design-system/](../../../../docs/design-system/)):
+- Tokens / themes / density → [`@kagaz/design-tokens`](../../../../packages/design-tokens/)
+- Atoms (Button, Input, …) → [`@kagaz/ui`](../../../../packages/ui/)
 
-- Never hardcode visual values — tokens from [design-tokens.md](../../../../docs/design-system/design-tokens.md) only.
-- Components come from [component-library.md](../../../../docs/design-system/component-library.md); behavior per [interaction-patterns.md](../../../../docs/design-system/interaction-patterns.md); 3 density modes (Simple/Comfortable/Compact).
-- Every interactive element gets `data-agent-id` (+ `data-agent-state` when stateful) per [agent-interface.md](../../../../docs/design-system/agent-interface.md).
-- WCAG 2.1 AA per-component checklist ([11-accessibility-a11y.md](../../../../docs/architecture/11-accessibility-a11y.md) §7) is a launch gate.
+This folder keeps only the **app-specific** design-system pieces as they land: `layouts/` (MainLayout, FullScreenLayout, SplitPaneLayout) and `animations/` (page transitions, list animations). `components/` and `theme/` stay empty — add new shared visuals to the packages, not here.
+
+Binding rules ([docs/design-system/](../../../../docs/design-system/)): tokens only (never hardcode visuals); components from [component-library.md](../../../../docs/design-system/component-library.md); `data-agent-id` on every interactive element; WCAG 2.1 AA per-component checklist.

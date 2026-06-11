@@ -5,7 +5,6 @@ import { CapacitorFileStorage } from '../capacitor-fs';
 
 vi.mock('@capacitor/filesystem', () => ({
   Directory: { Data: 'DATA' },
-  Encoding: { UTF8: 'utf8' },
   Filesystem: {
     writeFile: vi.fn(async () => ({ uri: 'x' })),
     readFile: vi.fn(),

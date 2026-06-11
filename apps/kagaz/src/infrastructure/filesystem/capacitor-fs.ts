@@ -3,7 +3,7 @@
  * Files live in the OS-sandboxed app data directory
  * (10-security-architecture.md §3.3) under app-relative paths.
  */
-import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
+import { Directory, Filesystem } from '@capacitor/filesystem';
 import { base64ToBytes, bytesToBase64 } from './base64';
 import type { FileStorage } from './file-storage';
 
@@ -87,9 +87,3 @@ export class CapacitorFileStorage implements FileStorage {
     });
   }
 }
-
-/**
- * Re-exported so callers needing text round-trips use the same encoding
- * constant the plugin understands.
- */
-export { Encoding };

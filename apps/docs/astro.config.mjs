@@ -15,12 +15,12 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/omanandswami2005/omni-Docs-and-CSC',
+          href: 'https://github.com/omanandswami2005/project-kagazzz',
         },
       ],
       editLink: {
         baseUrl:
-          'https://github.com/omanandswami2005/omni-Docs-and-CSC/edit/main/',
+          'https://github.com/omanandswami2005/project-kagazzz/edit/main/',
       },
     }),
   ],

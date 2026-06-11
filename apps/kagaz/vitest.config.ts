@@ -8,9 +8,6 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
 
-    // No app code yet (P0-2 scaffolds src/) — remove once first tests land.
-    passWithNoTests: true,
-
     setupFiles: ['./src/test/setup.ts'],
 
     // Coverage gates per CONTRIBUTING.md — PRs below these thresholds fail.
