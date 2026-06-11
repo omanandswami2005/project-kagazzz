@@ -85,7 +85,7 @@
 
 - [x] F-1 Document Upload (camera/gallery/file picker; PDF, JPG, PNG, HEIC, WEBP) 🔴Must ✅ b91be83 (2026-06-11) — HEIC stored as-is behind an injectable `HeicConverter` protocol (every wasm HEIC decoder is ~700 KB+ gz → bundle budget; real converter lands with F-8); thumbnails/auto-OCR pipeline stages land with F-24/F-20; `useDocuments` is store-based until a QueryClientProvider exists (revisit with F-9/F-11)
 - [ ] F-9 Folder Organization (CRUD, color-code, nesting, move docs) 🔴Must
-- [ ] F-10 Tags / Labels 🔴Must→🟢S
+- [x] F-10 Tags / Labels 🔴Must→🟢S ✅ (develop) (2026-06-11) — TagDao batch assignments, useTags, TagSelector sheet, inline chips + row tag button; tag-based filtering folds into F-12
 - [ ] F-24 Document Thumbnails (generate + cache) 🟡Should
 - [ ] F-25 Bulk Operations (multi-select delete/move/tag/merge) 🟡Should
 - [ ] F-26 Storage Statistics 🟡Should
