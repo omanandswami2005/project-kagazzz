@@ -1,14 +1,51 @@
 {
   "$schema": "docs/design-system/agent-interface.md#the-agentsitemap",
-  "generatedAt": "2026-06-11T07:25:30.124Z",
+  "generatedAt": "2026-06-11T10:11:10.546Z",
   "pages": {
-    "app.home": {
-      "route": "/",
-      "intent": "Landing screen of the app shell. Shows the empty vault state; document features arrive with F-1.",
-      "primary": null,
-      "actions": []
+    "vault.home": {
+      "route": "/vault",
+      "intent": "Browse the documents in the vault and add new ones from the camera, gallery, or file picker.",
+      "primary": "vaultActions.uploadDocument",
+      "actions": [
+        "vaultActions.uploadDocument"
+      ]
     }
   },
-  "actions": {},
-  "voiceIndex": []
+  "actions": {
+    "vault.uploadDocument": {
+      "summary": "Add a document to the vault from the camera, the photo gallery, or the file picker.",
+      "voice": [],
+      "requiresConfirmation": false
+    }
+  },
+  "voiceIndex": [
+    {
+      "utterance": "upload a document",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.uploadDocument"
+    },
+    {
+      "utterance": "take a photo of my document",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.uploadDocument"
+    },
+    {
+      "utterance": "दस्तावेज़ अपलोड करो",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.uploadDocument"
+    },
+    {
+      "utterance": "गैलरी से फोटो जोड़ो",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.uploadDocument"
+    }
+  ]
 }

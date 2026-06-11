@@ -5,4 +5,6 @@
  */
 import { lazy } from 'react';
 
-export const LazyHomePage = lazy(() => import('../pages/HomePage'));
+export const LazyVaultHomePage = lazy(
+  () => import('@/modules/document-vault/pages/VaultHomePage')
+);
