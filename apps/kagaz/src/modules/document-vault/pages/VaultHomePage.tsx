@@ -16,6 +16,7 @@ import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useUpload } from '../hooks/useUpload';
+import { useVaultMutations } from '../hooks/useVaultMutations';
 import { useVaultStore } from '../store/vault.store';
 import type { UploadSource } from '../services/upload-sources';
 import './vault.css';
@@ -26,6 +27,7 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
+  const { toggleFavorite } = useVaultMutations();
   const isUploading = useVaultStore((state) => state.isUploading);
   const uploadProgress = useVaultStore((state) => state.uploadProgress);
   const isSheetOpen = useVaultStore((state) => state.isUploadSheetOpen);
@@ -95,6 +97,7 @@ export function VaultHomePage(): ReactNode {
                     key={document.id}
                     document={document}
                     onOpen={() => setShowPreviewToast(true)}
+                    onToggleFavorite={(doc) => void toggleFavorite(doc)}
                   />
                 ))}
               </ul>

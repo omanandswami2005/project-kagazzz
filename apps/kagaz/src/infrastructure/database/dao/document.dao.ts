@@ -68,6 +68,16 @@ export class DocumentDao {
     return rows.map(mapRow);
   }
 
+  /** Non-deleted favorites, newest first (F-33). */
+  async findFavorites(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE is_favorite = 1 AND deleted_at IS NULL
+       ORDER BY created_at DESC`
+    );
+    return rows.map(mapRow);
+  }
+
   /** Inserts a new document and returns the stored row. */
   async create(doc: NewDocument): Promise<DocumentEntity> {
     const id = newId();

@@ -38,6 +38,10 @@ export interface VaultState {
 
   setDocuments: (documents: DocumentEntity[]) => void;
   prependDocuments: (documents: DocumentEntity[]) => void;
+  /** Replaces fields of one document in the list (e.g. favorite toggle). */
+  patchDocument: (id: string, patch: Partial<DocumentEntity>) => void;
+  /** Removes a document from the list (e.g. delete). */
+  removeDocument: (id: string) => void;
   setLoading: (isLoading: boolean) => void;
   startUpload: () => void;
   setUploadProgress: (progress: UploadProgress) => void;
@@ -72,6 +76,16 @@ export const useVaultStore = create<VaultState>((set) => ({
         state.sortBy,
         state.sortDirection
       ),
+    })),
+  patchDocument: (id, patch): void =>
+    set((state) => ({
+      documents: state.documents.map((d) =>
+        d.id === id ? { ...d, ...patch } : d
+      ),
+    })),
+  removeDocument: (id): void =>
+    set((state) => ({
+      documents: state.documents.filter((d) => d.id !== id),
     })),
   setLoading: (isLoading): void => set({ isLoading }),
   startUpload: (): void =>

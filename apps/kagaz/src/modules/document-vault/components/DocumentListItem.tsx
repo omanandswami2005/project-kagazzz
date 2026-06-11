@@ -24,12 +24,15 @@ export interface DocumentListItemProps {
   document: DocumentEntity;
   /** Tap/Enter handler. Full preview lands with F-24; F-1 ships a stopgap. */
   onOpen?: (document: DocumentEntity) => void;
+  /** Star-toggle handler (F-33). Star is hidden when omitted. */
+  onToggleFavorite?: (document: DocumentEntity) => void;
 }
 
 /** Name, type badge, size, and created date for one vault document. */
 export function DocumentListItem({
   document,
   onOpen,
+  onToggleFavorite,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
@@ -80,6 +83,26 @@ export function DocumentListItem({
         >
           {body}
         </div>
+      )}
+      {onToggleFavorite && (
+        <button
+          type="button"
+          className="kg-doc-item__star"
+          data-agent-id={`vault.home.item-${document.id}.favorite`}
+          data-agent-action="vault.toggleFavorite"
+          data-agent-state={document.isFavorite ? 'selected' : 'idle'}
+          aria-pressed={document.isFavorite}
+          aria-label={t(document.isFavorite ? 'actions.unfavorite' : 'actions.favorite')}
+          onClick={() => onToggleFavorite(document)}
+        >
+          <Icon
+            name="Star"
+            size={20}
+            color={
+              document.isFavorite ? 'var(--color-warning)' : 'var(--text-muted)'
+            }
+          />
+        </button>
       )}
     </li>
   );

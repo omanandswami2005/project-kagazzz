@@ -51,6 +51,36 @@ describe('DocumentListItem', () => {
     );
     expect(screen.getByText('ZIP')).toBeInTheDocument();
   });
+
+  it('shows a favorite star and reports toggles (F-33)', async () => {
+    const onToggleFavorite = vi.fn();
+    render(
+      <ul>
+        <DocumentListItem document={doc} onToggleFavorite={onToggleFavorite} />
+      </ul>
+    );
+    const star = document.querySelector(
+      '[data-agent-id="vault.home.item-doc-1.favorite"]'
+    );
+    expect(star).not.toBeNull();
+    expect(star).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(star as Element);
+    expect(onToggleFavorite).toHaveBeenCalledWith(doc);
+  });
+
+  it('reflects the favorited state on the star', () => {
+    render(
+      <ul>
+        <DocumentListItem
+          document={{ ...doc, isFavorite: true }}
+          onToggleFavorite={() => undefined}
+        />
+      </ul>
+    );
+    expect(
+      document.querySelector('[data-agent-id="vault.home.item-doc-1.favorite"]')
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
 });
 
 describe('EmptyVaultState', () => {

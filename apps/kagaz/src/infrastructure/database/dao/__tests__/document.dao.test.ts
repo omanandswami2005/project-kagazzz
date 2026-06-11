@@ -73,6 +73,14 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('findFavorites filters is_favorite and excludes deleted', async () => {
+    db.onQuery(/is_favorite = 1/, [docRow({ is_favorite: 1 })]);
+    const docs = await dao.findFavorites();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.isFavorite).toBe(true);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NULL');
+  });
+
   it('create inserts with generated id, timestamps, synced=0, version=1', async () => {
     db.onQuery(/FROM documents WHERE id/, [docRow()]);
     await dao.create({

@@ -7,6 +7,7 @@ function makeCtx(): VaultActionContext {
   return {
     openUploadSheet: vi.fn(),
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 2 })),
+    toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
   };
 }
 
@@ -59,6 +60,23 @@ describe('vault.uploadDocument', () => {
       makeCtx()
     );
     expect(result).toEqual({ ok: true, data: { uploaded: 2 } });
+  });
+});
+
+describe('vault.toggleFavorite (F-33)', () => {
+  it('delegates to ctx.toggleFavorite with the document id', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.toggleFavorite.handler({ documentId: 'doc-9' }, ctx)
+    ).resolves.toEqual({ isFavorite: true });
+    expect(ctx.toggleFavorite).toHaveBeenCalledWith('doc-9');
+  });
+
+  it('rejects a missing document id through the registry', async () => {
+    const registry = new ActionRegistry<VaultActionContext>();
+    registry.register(vaultActions.toggleFavorite);
+    const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
+    expect(result.ok).toBe(false);
   });
 });
 

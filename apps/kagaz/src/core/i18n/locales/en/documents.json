@@ -10,7 +10,9 @@
     "new_folder": "New Folder",
     "move": "Move",
     "rename": "Rename",
-    "add_tag": "Add Tag"
+    "add_tag": "Add Tag",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites"
   },
   "upload": {
     "sheet_title": "Add a document",

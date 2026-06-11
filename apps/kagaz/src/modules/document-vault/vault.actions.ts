@@ -19,6 +19,8 @@ export interface VaultActionContext {
   openUploadSheet: () => void;
   /** Starts the upload flow from a specific source. */
   uploadFrom: (source: UploadSource) => Promise<{ uploaded: number }>;
+  /** Toggles a document's favorite flag by id (F-33). */
+  toggleFavorite: (documentId: string) => Promise<{ isFavorite: boolean }>;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files']);
@@ -70,6 +72,23 @@ export const vaultActions = {
       useVaultStore.getState().setSortBy(args.key);
       return Promise.resolve({ key: args.key });
     },
+  }),
+
+  toggleFavorite: defineAction({
+    id: 'vault.toggleFavorite',
+    summary: "Mark or unmark a document as a favorite.",
+    voice: [
+      'favorite this',
+      'add to favorites',
+      'remove from favorites',
+      'इसे पसंदीदा बनाओ',
+    ],
+    args: z.object({ documentId: z.string().min(1) }),
+    requiresConfirmation: false,
+    handler: (
+      args: { documentId: string },
+      ctx: VaultActionContext
+    ): Promise<{ isFavorite: boolean }> => ctx.toggleFavorite(args.documentId),
   }),
 
   toggleSortDirection: defineAction({

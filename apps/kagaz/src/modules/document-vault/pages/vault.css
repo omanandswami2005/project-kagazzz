@@ -46,6 +46,8 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
+  /* Reserve room so the favorite star (F-33) never overlaps the name. */
+  padding-right: var(--space-10);
   background: var(--surface-1);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -53,6 +55,23 @@
 
 .kg-doc-item__li {
   list-style: none;
+  position: relative;
+}
+
+/* Favorite star overlays the row's top-right; sits above the row button. */
+.kg-doc-item__star {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 /* Button variant: reset native button chrome, fill the row, stay tappable. */

@@ -76,6 +76,16 @@ describe('vault.store', () => {
     expect(useVaultStore.getState().isLoading).toBe(true);
   });
 
+  it('patchDocument updates one document; removeDocument drops it', () => {
+    useVaultStore.getState().setDocuments([doc('a'), doc('b')]);
+    useVaultStore.getState().patchDocument('a', { isFavorite: true });
+    expect(
+      useVaultStore.getState().documents.find((d) => d.id === 'a')?.isFavorite
+    ).toBe(true);
+    useVaultStore.getState().removeDocument('b');
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual(['a']);
+  });
+
   it('keeps documents sorted when set, and re-sorts on sort change (F-34)', () => {
     const a = doc('a');
     const b = doc('b');
