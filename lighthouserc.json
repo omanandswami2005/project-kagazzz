@@ -2,6 +2,8 @@
   "ci": {
     "collect": {
       "staticDistDir": "apps/kagaz/dist",
+      "isSinglePageApplication": true,
+      "url": ["http://localhost/"],
       "numberOfRuns": 3
     },
     "assert": {
