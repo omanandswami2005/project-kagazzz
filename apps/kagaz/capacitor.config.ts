@@ -17,6 +17,17 @@ const config: CapacitorConfig = {
     // Local scheme only; no remote content.
     contentInset: 'automatic',
   },
+  plugins: {
+    // [SEC] §3.2: SQLCipher encryption must be activated per platform here
+    // or setEncryptionSecret()/open(..., 'secret') reject at runtime and
+    // the app boots with no database (upload FAB disabled, empty vault).
+    CapacitorSQLite: {
+      androidIsEncryption: true,
+      iosIsEncryption: true,
+      iosDatabaseLocation: 'Library/CapacitorDatabase',
+      iosKeychainPrefix: 'kagaz',
+    },
+  },
 };
 
 export default config;
