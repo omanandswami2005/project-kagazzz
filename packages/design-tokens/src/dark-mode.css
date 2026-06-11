@@ -17,6 +17,15 @@
   --border-strong: #475569;
   --border-focus: #60a5fa;
 
+  /* Brand primary lightens on dark surfaces. The base #1e3a5f is a dark
+     navy that all but vanishes on --surface-1 (#0f172a) when used as a
+     foreground/border (secondary & ghost buttons, links, the FAB). These
+     mid-blues keep ≥3:1 contrast both as a foreground on dark surfaces
+     and as a button background under white --text-on-primary. */
+  --color-primary: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-primary-dark: #2563eb;
+
   /* Dark-mode shadows are barely visible — halve opacity per spec and
      rely on borders + surface lightening for elevation. */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.025);
