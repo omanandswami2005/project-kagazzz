@@ -1,0 +1,21 @@
+/**
+ * Agent surface tokens (docs/design-system/design-tokens.md §Agent surface
+ * tokens). Dev-only: styles the AgentInspector overlay that visualizes the
+ * data-agent-* graph. Production builds must strip the inspector; the
+ * tokens are harmless but the [data-agent-inspect] rules only activate
+ * when the tool sets that attribute (P0-7 tooling).
+ */
+:root {
+  --agent-outline: 2px dashed #9333ea;
+  --agent-overlay-bg: rgba(147, 51, 234, 0.08);
+  --agent-label-bg: #1f1b2e;
+  --agent-label-fg: #ede9fe;
+  --agent-state-idle: #10b981;
+  --agent-state-loading: #f59e0b;
+  --agent-state-error: #f43f5e;
+}
+
+[data-agent-inspect] [data-agent-id] {
+  outline: var(--agent-outline);
+  background-color: var(--agent-overlay-bg);
+}

@@ -1,0 +1,156 @@
+/**
+ * Kagaz design tokens — single source of truth.
+ * Values verbatim from docs/design-system/design-tokens.md (v2.0).
+ * Never hardcode a visual value in app code — there is a token for it.
+ * Default theme is light; dark-mode.css overrides via [data-theme="dark"].
+ */
+:root {
+  /* ── Brand colors ─────────────────────────────────────────────── */
+  --color-primary: #1e3a5f;
+  --color-primary-light: #2d5486;
+  --color-primary-dark: #142842;
+  --color-secondary: #f59e0b;
+  --color-secondary-light: #fbbf24;
+  --color-secondary-dark: #d97706;
+
+  /* ── Semantic colors ──────────────────────────────────────────── */
+  --color-accent: #10b981;
+  --color-accent-light: #34d399;
+  --color-danger: #f43f5e;
+  --color-danger-light: #fb7185;
+  --color-warning: #fb923c;
+  --color-warning-light: #fdba74;
+  --color-info: #0ea5e9;
+  --color-info-light: #38bdf8;
+
+  /* ── Surfaces (light) ─────────────────────────────────────────── */
+  --surface-1: #f8fafc;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --surface-inverse: #0f172a;
+
+  /* ── Text (light) ─────────────────────────────────────────────── */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-on-primary: #ffffff;
+  --text-on-secondary: #0f172a;
+
+  /* ── Borders (light) ──────────────────────────────────────────── */
+  --border-default: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border-focus: #1e3a5f;
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-regional: 'Noto Sans Devanagari', 'Noto Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  --leading-xs: 1.33;
+  --leading-sm: 1.43;
+  --leading-base: 1.5;
+  --leading-lg: 1.56;
+  --leading-xl: 1.4;
+  --leading-2xl: 1.33;
+  --leading-3xl: 1.27;
+  --leading-4xl: 1.22;
+
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* ── Spacing (4px base grid) ──────────────────────────────────── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+
+  /* ── Border radius ────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows / elevation (5 levels) ───────────────────────────── */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* ── Motion ───────────────────────────────────────────────────── */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* v2 expressive curves (prefer --ease-emphasized for new code) */
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized-accel: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Breakpoints (for JS consumers; CSS uses raw media queries) ─ */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+
+  /* ── Iconography ──────────────────────────────────────────────── */
+  --icon-xs: 16px;
+  --icon-sm: 20px;
+  --icon-md: 24px;
+  --icon-lg: 32px;
+  --icon-xl: 48px;
+
+  /* ── Mode-dependent defaults (Simple Mode overrides these) ────── */
+  --shadow-default: var(--shadow-xs);
+  --duration-default: var(--duration-normal);
+  --radius-default: var(--radius-md);
+  --icon-default: var(--icon-md);
+  --focus-ring-width: 2px;
+}
+
+/* Focus ring — visible on every interactive element, never removed. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Respect reduced-motion: collapse all animation durations. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-default: 0ms;
+  }
+}

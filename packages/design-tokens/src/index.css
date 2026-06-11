@@ -1,0 +1,6 @@
+/* @kagaz/design-tokens — import this once at the app root. */
+@import './tokens.css';
+@import './dark-mode.css';
+@import './density.css';
+@import './high-contrast.css';
+@import './agent-inspector.css';
