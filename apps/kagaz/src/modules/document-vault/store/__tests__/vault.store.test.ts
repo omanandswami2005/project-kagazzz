@@ -18,6 +18,8 @@ const doc = (id: string): ReturnType<typeof entityFromNew> =>
     id
   );
 
+// entityFromNew stamps a fixed createdAt, so default-sort ties break on id.
+
 beforeEach(() => {
   useVaultStore.setState({
     documents: [],
@@ -26,6 +28,8 @@ beforeEach(() => {
     uploadProgress: null,
     isUploadSheetOpen: false,
     lastUploadErrors: [],
+    sortBy: 'createdAt',
+    sortDirection: 'desc',
   });
 });
 
@@ -70,5 +74,39 @@ describe('vault.store', () => {
   it('toggles the loading flag', () => {
     useVaultStore.getState().setLoading(true);
     expect(useVaultStore.getState().isLoading).toBe(true);
+  });
+
+  it('keeps documents sorted when set, and re-sorts on sort change (F-34)', () => {
+    const a = doc('a');
+    const b = doc('b');
+    const c = doc('c');
+    // Default sort is createdAt desc; all share createdAt, so id desc.
+    useVaultStore.getState().setDocuments([a, b, c]);
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual([
+      'c',
+      'b',
+      'a',
+    ]);
+
+    useVaultStore.getState().setSortBy('name');
+    useVaultStore.getState().toggleSortDirection(); // desc -> asc
+    expect(useVaultStore.getState().sortDirection).toBe('asc');
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('prepended uploads land in sorted position', () => {
+    useVaultStore.getState().setSortBy('name');
+    useVaultStore.getState().toggleSortDirection(); // asc
+    useVaultStore.getState().setDocuments([doc('a'), doc('c')]);
+    useVaultStore.getState().prependDocuments([doc('b')]);
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
   });
 });

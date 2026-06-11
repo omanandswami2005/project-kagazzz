@@ -9,6 +9,13 @@ import type {
   UploadProgress,
   VaultErrorMessageKey,
 } from '../types/document.types';
+import {
+  DEFAULT_SORT_DIRECTION,
+  DEFAULT_SORT_KEY,
+  sortDocuments,
+  type SortDirection,
+  type SortKey,
+} from '../services/sort.service';
 
 /** State + actions for the vault screens. */
 export interface VaultState {
@@ -24,6 +31,10 @@ export interface VaultState {
   isUploadSheetOpen: boolean;
   /** i18n keys of the failures from the last batch (toast surface). */
   lastUploadErrors: VaultErrorMessageKey[];
+  /** Active sort key (F-34). `documents` is kept sorted by it. */
+  sortBy: SortKey;
+  /** Active sort direction (F-34). */
+  sortDirection: SortDirection;
 
   setDocuments: (documents: DocumentEntity[]) => void;
   prependDocuments: (documents: DocumentEntity[]) => void;
@@ -33,6 +44,10 @@ export interface VaultState {
   finishUpload: (errorKeys: VaultErrorMessageKey[]) => void;
   openUploadSheet: () => void;
   closeUploadSheet: () => void;
+  /** Sets the sort key (default desc for dates/size, asc for text). */
+  setSortBy: (key: SortKey) => void;
+  /** Flips ascending/descending and re-sorts. */
+  toggleSortDirection: () => void;
 }
 
 /** The document-vault Zustand store. */
@@ -43,10 +58,21 @@ export const useVaultStore = create<VaultState>((set) => ({
   uploadProgress: null,
   isUploadSheetOpen: false,
   lastUploadErrors: [],
+  sortBy: DEFAULT_SORT_KEY,
+  sortDirection: DEFAULT_SORT_DIRECTION,
 
-  setDocuments: (documents): void => set({ documents }),
+  setDocuments: (documents): void =>
+    set((state) => ({
+      documents: sortDocuments(documents, state.sortBy, state.sortDirection),
+    })),
   prependDocuments: (documents): void =>
-    set((state) => ({ documents: [...documents, ...state.documents] })),
+    set((state) => ({
+      documents: sortDocuments(
+        [...documents, ...state.documents],
+        state.sortBy,
+        state.sortDirection
+      ),
+    })),
   setLoading: (isLoading): void => set({ isLoading }),
   startUpload: (): void =>
     set({ isUploading: true, uploadProgress: null, lastUploadErrors: [] }),
@@ -55,4 +81,17 @@ export const useVaultStore = create<VaultState>((set) => ({
     set({ isUploading: false, uploadProgress: null, lastUploadErrors }),
   openUploadSheet: (): void => set({ isUploadSheetOpen: true }),
   closeUploadSheet: (): void => set({ isUploadSheetOpen: false }),
+  setSortBy: (key): void =>
+    set((state) => ({
+      sortBy: key,
+      documents: sortDocuments(state.documents, key, state.sortDirection),
+    })),
+  toggleSortDirection: (): void =>
+    set((state) => {
+      const sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+      return {
+        sortDirection,
+        documents: sortDocuments(state.documents, state.sortBy, sortDirection),
+      };
+    }),
 }));

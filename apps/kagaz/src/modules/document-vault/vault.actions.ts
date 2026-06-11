@@ -7,6 +7,8 @@
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
 import type { UploadSource } from './services/upload-sources';
+import { useVaultStore } from './store/vault.store';
+import { SORT_KEYS } from './services/sort.service';
 
 /**
  * What the page provides when invoking vault actions: the wired upload
@@ -47,6 +49,38 @@ export const vaultActions = {
         return { uploaded: 0 };
       }
       return ctx.uploadFrom(args.source);
+    },
+  }),
+
+  setSortBy: defineAction({
+    id: 'vault.setSortBy',
+    summary: 'Change how the document list is sorted.',
+    voice: [
+      'sort by name',
+      'sort by date',
+      'sort by size',
+      'नाम से क्रमबद्ध करो',
+      'आकार से क्रमबद्ध करो',
+    ],
+    args: z.object({ key: z.enum(SORT_KEYS) }),
+    requiresConfirmation: false,
+    handler: (args: {
+      key: (typeof SORT_KEYS)[number];
+    }): Promise<{ key: string }> => {
+      useVaultStore.getState().setSortBy(args.key);
+      return Promise.resolve({ key: args.key });
+    },
+  }),
+
+  toggleSortDirection: defineAction({
+    id: 'vault.toggleSortDirection',
+    summary: 'Flip the document sort between ascending and descending.',
+    voice: ['reverse the order', 'ascending', 'descending', 'उल्टा क्रम'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (): Promise<{ direction: string }> => {
+      useVaultStore.getState().toggleSortDirection();
+      return Promise.resolve({ direction: useVaultStore.getState().sortDirection });
     },
   }),
 };

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ActionRegistry } from '@kagaz/agent-kit';
 import { vaultActions, type VaultActionContext } from '../vault.actions';
+import { useVaultStore } from '../store/vault.store';
 
 function makeCtx(): VaultActionContext {
   return {
@@ -58,5 +59,27 @@ describe('vault.uploadDocument', () => {
       makeCtx()
     );
     expect(result).toEqual({ ok: true, data: { uploaded: 2 } });
+  });
+});
+
+describe('vault sort actions (F-34)', () => {
+  it('setSortBy updates the store and rejects bad keys', async () => {
+    await expect(
+      vaultActions.setSortBy.handler({ key: 'fileSize' }, makeCtx())
+    ).resolves.toEqual({ key: 'fileSize' });
+    expect(useVaultStore.getState().sortBy).toBe('fileSize');
+
+    const registry = new ActionRegistry<VaultActionContext>();
+    registry.register(vaultActions.setSortBy);
+    const bad = await registry.invoke('vault.setSortBy', { key: 'nope' }, makeCtx());
+    expect(bad.ok).toBe(false);
+  });
+
+  it('toggleSortDirection flips the store direction', async () => {
+    useVaultStore.setState({ sortDirection: 'desc' });
+    await expect(
+      vaultActions.toggleSortDirection.handler({}, makeCtx())
+    ).resolves.toEqual({ direction: 'asc' });
+    expect(useVaultStore.getState().sortDirection).toBe('asc');
   });
 });

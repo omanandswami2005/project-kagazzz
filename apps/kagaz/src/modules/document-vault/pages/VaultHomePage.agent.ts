@@ -13,17 +13,24 @@ export const VaultHomePageAgent = definePage({
     'Browse the documents in the vault and add new ones from the camera, gallery, or file picker.',
   surfaces: ['screen'],
   primaryAction: vaultActions.uploadDocument,
-  availableActions: [vaultActions.uploadDocument],
+  availableActions: [
+    vaultActions.uploadDocument,
+    vaultActions.setSortBy,
+    vaultActions.toggleSortDirection,
+  ],
   observableState: {
     documentCount: () => useVaultStore.getState().documents.length,
     isLoading: () => useVaultStore.getState().isLoading,
     isUploading: () => useVaultStore.getState().isUploading,
     isUploadSheetOpen: () => useVaultStore.getState().isUploadSheetOpen,
+    sortBy: () => useVaultStore.getState().sortBy,
+    sortDirection: () => useVaultStore.getState().sortDirection,
   },
   successPredicates: {
     'document added': (ctx) =>
       Number(ctx['documentCount']) > Number(ctx['startCount']),
     'upload finished': (ctx) => ctx['isUploading'] === false,
+    'sort changed': (ctx) => ctx['sortBy'] !== ctx['startSortBy'],
   },
   voiceExamples: [
     { utterance: 'upload a document', action: 'vault.uploadDocument' },
@@ -41,5 +48,8 @@ export const VaultHomePageAgent = definePage({
       action: 'vault.uploadDocument',
       args: { source: 'gallery' },
     },
+    { utterance: 'sort by name', action: 'vault.setSortBy', args: { key: 'name' } },
+    { utterance: 'sort by size', action: 'vault.setSortBy', args: { key: 'fileSize' } },
+    { utterance: 'reverse the order', action: 'vault.toggleSortDirection' },
   ],
 });

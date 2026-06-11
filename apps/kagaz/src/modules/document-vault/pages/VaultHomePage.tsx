@@ -11,6 +11,7 @@ import { ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
+import { SortControl } from '../components/SortControl';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useDocuments } from '../hooks/useDocuments';
@@ -82,19 +83,22 @@ export function VaultHomePage(): ReactNode {
           {!isLoading && documents.length === 0 ? (
             <EmptyVaultState />
           ) : (
-            <ul
-              className="kg-vault__list"
-              data-agent-id="vault.home.list"
-              data-agent-state={listState}
-            >
-              {documents.map((document) => (
-                <DocumentListItem
-                  key={document.id}
-                  document={document}
-                  onOpen={() => setShowPreviewToast(true)}
-                />
-              ))}
-            </ul>
+            <>
+              {documents.length > 1 && <SortControl />}
+              <ul
+                className="kg-vault__list"
+                data-agent-id="vault.home.list"
+                data-agent-state={listState}
+              >
+                {documents.map((document) => (
+                  <DocumentListItem
+                    key={document.id}
+                    document={document}
+                    onOpen={() => setShowPreviewToast(true)}
+                  />
+                ))}
+              </ul>
+            </>
           )}
         </main>
 

@@ -10,6 +10,8 @@ shipped yet.
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
+| Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |
+| Reverse sort | `vault.toggleSortDirection` | Flips ascending ↔ descending. |
 
 Supported upload formats: PDF, JPG, PNG, HEIC, WEBP. Max 100 MB per
 file.
