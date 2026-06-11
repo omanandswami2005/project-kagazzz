@@ -48,9 +48,10 @@ for (const file of walk(APP_SRC, (f) => f.endsWith('.agent.ts'))) {
   }
 }
 
+// No timestamp: the file is committed and CI re-generates it to detect
+// drift (git diff --exit-code) — the output must be deterministic.
 const sitemap = {
   $schema: 'docs/design-system/agent-interface.md#the-agentsitemap',
-  generatedAt: new Date().toISOString(),
   pages,
   actions,
   voiceIndex,

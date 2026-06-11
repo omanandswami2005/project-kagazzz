@@ -12,6 +12,28 @@
     "rename": "नाम बदलें",
     "add_tag": "टैग जोड़ें"
   },
+  "upload": {
+    "sheet_title": "दस्तावेज़ जोड़ें",
+    "sources": {
+      "camera": "फोटो लें",
+      "gallery": "गैलरी से चुनें",
+      "files": "फ़ाइलें ब्राउज़ करें"
+    },
+    "progress_label": "दस्तावेज़ अपलोड हो रहे हैं",
+    "success_one": "{{count}} दस्तावेज़ जोड़ा गया",
+    "success_other": "{{count}} दस्तावेज़ जोड़े गए",
+    "errors": {
+      "invalid_file_type": "असमर्थित फ़ाइल प्रारूप। समर्थित: PDF, JPG, PNG, HEIC, WEBP",
+      "file_too_large": "फ़ाइल 100 MB की अधिकतम सीमा से बड़ी है",
+      "invalid_file_name": "अमान्य फ़ाइल नाम",
+      "corrupted_file": "फ़ाइल क्षतिग्रस्त प्रतीत होती है",
+      "storage_full": "संग्रहण स्थान अपर्याप्त है",
+      "file_read_error": "फ़ाइल पढ़ी नहीं जा सकी",
+      "file_write_error": "फ़ाइल सहेजी नहीं जा सकी",
+      "db_error": "दस्तावेज़ सहेजा नहीं जा सका — कृपया फिर से प्रयास करें",
+      "conversion_failed": "फोटो परिवर्तित नहीं हो सकी"
+    }
+  },
   "detail": {
     "size": "आकार",
     "type": "प्रकार",

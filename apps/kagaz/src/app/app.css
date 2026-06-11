@@ -1,10 +1,4 @@
 /* App-shell styles — tokens only. */
-.kg-home {
-  padding: var(--page-padding);
-  font-family: var(--font-primary);
-  color: var(--text-primary);
-}
-
 .kg-crash {
   display: flex;
   flex-direction: column;
