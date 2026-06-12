@@ -12,6 +12,8 @@ shipped yet.
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
 | Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
 | Favorite / unfavorite | `vault.toggleFavorite` | `documentId` — resolve from the document the user means. Toggles the star. |
+| Create a folder | `vault.createFolder` | `name`. Created inside the folder the user is currently viewing. |
+| Move a document | `vault.moveDocument` | `documentId` + `folderId` (`null` = vault root). |
 | Edit a document's tags | `vault.manageTags` | `documentId`. Opens the tag editor sheet. |
 | Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |
 | Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |

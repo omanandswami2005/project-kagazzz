@@ -4,7 +4,10 @@
  * sort arrive with F-9/F-12/F-34.
  */
 import { create } from 'zustand';
-import type { DocumentEntity } from '@/infrastructure/database/types';
+import type {
+  DocumentEntity,
+  FolderEntity,
+} from '@/infrastructure/database/types';
 import type {
   UploadProgress,
   VaultErrorMessageKey,
@@ -35,6 +38,8 @@ export interface VaultState {
   sortBy: SortKey;
   /** Active sort direction (F-34). */
   sortDirection: SortDirection;
+  /** Folder path from root to the current folder (F-9); [] = root. */
+  folderPath: FolderEntity[];
 
   setDocuments: (documents: DocumentEntity[]) => void;
   prependDocuments: (documents: DocumentEntity[]) => void;
@@ -52,6 +57,15 @@ export interface VaultState {
   setSortBy: (key: SortKey) => void;
   /** Flips ascending/descending and re-sorts. */
   toggleSortDirection: () => void;
+  /** Enters a folder, appending it to the breadcrumb (F-9). */
+  enterFolder: (folder: FolderEntity) => void;
+  /** Jumps to a breadcrumb depth (0 = root, n = nth folder in the path). */
+  goToFolderDepth: (depth: number) => void;
+}
+
+/** The id of the folder currently being viewed (null = root). */
+export function currentFolderId(state: VaultState): string | null {
+  return state.folderPath.at(-1)?.id ?? null;
 }
 
 /** The document-vault Zustand store. */
@@ -64,6 +78,7 @@ export const useVaultStore = create<VaultState>((set) => ({
   lastUploadErrors: [],
   sortBy: DEFAULT_SORT_KEY,
   sortDirection: DEFAULT_SORT_DIRECTION,
+  folderPath: [],
 
   setDocuments: (documents): void =>
     set((state) => ({
@@ -108,4 +123,8 @@ export const useVaultStore = create<VaultState>((set) => ({
         documents: sortDocuments(state.documents, state.sortBy, sortDirection),
       };
     }),
+  enterFolder: (folder): void =>
+    set((state) => ({ folderPath: [...state.folderPath, folder] })),
+  goToFolderDepth: (depth): void =>
+    set((state) => ({ folderPath: state.folderPath.slice(0, depth) })),
 }));

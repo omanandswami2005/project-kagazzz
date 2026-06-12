@@ -31,8 +31,8 @@ export interface DocumentListItemProps {
   onToggleFavorite?: (document: DocumentEntity) => void;
   /** Tags assigned to this document (F-10), shown as chips. */
   tags?: TagEntity[];
-  /** Opens the tag selector for this document (F-10). Hidden when omitted. */
-  onManageTags?: (document: DocumentEntity) => void;
+  /** Opens the overflow menu (tags F-10, move F-9). Hidden when omitted. */
+  onMore?: (document: DocumentEntity) => void;
 }
 
 /** Name, type badge, size, and created date for one vault document. */
@@ -41,7 +41,7 @@ export function DocumentListItem({
   onOpen,
   onToggleFavorite,
   tags = [],
-  onManageTags,
+  onMore,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
@@ -100,19 +100,18 @@ export function DocumentListItem({
           {body}
         </div>
       )}
-      {(onToggleFavorite || onManageTags) && (
+      {(onToggleFavorite || onMore) && (
         <span className="kg-doc-item__actions">
-          {onManageTags && (
+          {onMore && (
             <button
               type="button"
               className="kg-doc-item__action"
-              data-agent-id={`vault.home.item-${document.id}.tags`}
-              data-agent-action="vault.manageTags"
+              data-agent-id={`vault.home.item-${document.id}.more`}
               data-agent-state="idle"
-              aria-label={t('actions.add_tag')}
-              onClick={() => onManageTags(document)}
+              aria-label={t('actions.more')}
+              onClick={() => onMore(document)}
             >
-              <Icon name="Tag" size={20} color="var(--text-muted)" />
+              <Icon name="MoreVertical" size={20} color="var(--text-muted)" />
             </button>
           )}
           {onToggleFavorite && (

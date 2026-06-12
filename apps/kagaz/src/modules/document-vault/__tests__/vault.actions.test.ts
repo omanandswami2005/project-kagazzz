@@ -9,6 +9,8 @@ function makeCtx(): VaultActionContext {
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 2 })),
     toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
     search: vi.fn(),
+    createFolder: vi.fn(() => Promise.resolve({ folderId: 'f-1' })),
+    moveDocument: vi.fn(() => Promise.resolve()),
     manageTags: vi.fn(),
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
   };
@@ -80,6 +82,32 @@ describe('vault.toggleFavorite (F-33)', () => {
     registry.register(vaultActions.toggleFavorite);
     const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault folder actions (F-9)', () => {
+  it('createFolder delegates to ctx and rejects empty names', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.createFolder.handler({ name: 'Taxes' }, ctx)
+    ).resolves.toEqual({ folderId: 'f-1' });
+    expect(ctx.createFolder).toHaveBeenCalledWith('Taxes');
+
+    const registry = new ActionRegistry<VaultActionContext>();
+    registry.register(vaultActions.createFolder);
+    const bad = await registry.invoke('vault.createFolder', { name: '' }, makeCtx());
+    expect(bad.ok).toBe(false);
+  });
+
+  it('moveDocument accepts a folder id or null (root)', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.moveDocument.handler(
+        { documentId: 'd1', folderId: null },
+        ctx
+      )
+    ).resolves.toEqual({ ok: true });
+    expect(ctx.moveDocument).toHaveBeenCalledWith('d1', null);
   });
 });
 

@@ -16,6 +16,8 @@ export const VaultHomePageAgent = definePage({
   availableActions: [
     vaultActions.uploadDocument,
     vaultActions.searchDocuments,
+    vaultActions.createFolder,
+    vaultActions.moveDocument,
     vaultActions.toggleFavorite,
     vaultActions.manageTags,
     vaultActions.tagDocument,
@@ -58,6 +60,11 @@ export const VaultHomePageAgent = definePage({
       args: { query: 'aadhaar' },
     },
     { utterance: 'favorite this document', action: 'vault.toggleFavorite' },
+    {
+      utterance: 'create a folder called Taxes',
+      action: 'vault.createFolder',
+      args: { name: 'Taxes' },
+    },
     { utterance: 'edit tags', action: 'vault.manageTags' },
     {
       utterance: 'tag this as important',

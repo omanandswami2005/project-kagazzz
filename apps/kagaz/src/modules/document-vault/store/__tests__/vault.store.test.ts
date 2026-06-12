@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { FolderEntity } from '@/infrastructure/database/types';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
-import { useVaultStore } from '../vault.store';
+import { currentFolderId, useVaultStore } from '../vault.store';
 
 const doc = (id: string): ReturnType<typeof entityFromNew> =>
   entityFromNew(
@@ -30,7 +31,16 @@ beforeEach(() => {
     lastUploadErrors: [],
     sortBy: 'createdAt',
     sortDirection: 'desc',
+    folderPath: [],
   });
+});
+
+const folder = (id: string, name: string): FolderEntity => ({
+  id,
+  name,
+  sortOrder: 0,
+  createdAt: '',
+  updatedAt: '',
 });
 
 describe('vault.store', () => {
@@ -74,6 +84,23 @@ describe('vault.store', () => {
   it('toggles the loading flag', () => {
     useVaultStore.getState().setLoading(true);
     expect(useVaultStore.getState().isLoading).toBe(true);
+  });
+
+  it('navigates folders via the breadcrumb (F-9)', () => {
+    expect(currentFolderId(useVaultStore.getState())).toBeNull();
+    useVaultStore.getState().enterFolder(folder('a', 'A'));
+    useVaultStore.getState().enterFolder(folder('b', 'B'));
+    expect(currentFolderId(useVaultStore.getState())).toBe('b');
+    expect(useVaultStore.getState().folderPath.map((f) => f.id)).toEqual([
+      'a',
+      'b',
+    ]);
+    // Jump back to depth 1 (folder A).
+    useVaultStore.getState().goToFolderDepth(1);
+    expect(currentFolderId(useVaultStore.getState())).toBe('a');
+    // Jump to root.
+    useVaultStore.getState().goToFolderDepth(0);
+    expect(useVaultStore.getState().folderPath).toEqual([]);
   });
 
   it('patchDocument updates one document; removeDocument drops it', () => {

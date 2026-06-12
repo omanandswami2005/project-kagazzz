@@ -12,7 +12,18 @@
     "rename": "Rename",
     "add_tag": "Add Tag",
     "favorite": "Add to favorites",
-    "unfavorite": "Remove from favorites"
+    "unfavorite": "Remove from favorites",
+    "more": "More actions",
+    "cancel": "Cancel"
+  },
+  "folders": {
+    "root": "My Vault",
+    "new": "New folder",
+    "create": "Create",
+    "name_placeholder": "Folder name",
+    "breadcrumb": "Folder path",
+    "move": "Move to folder",
+    "move_title": "Move to"
   },
   "upload": {
     "sheet_title": "Add a document",

@@ -4,9 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { docRow, entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
-import type { DocumentEntity } from '@/infrastructure/database/types';
+import type {
+  DocumentEntity,
+  FolderEntity,
+} from '@/infrastructure/database/types';
 import { DocumentListItem } from '../DocumentListItem';
 import { EmptyVaultState } from '../EmptyVaultState';
+import { FolderBreadcrumb } from '../FolderBreadcrumb';
+import { FolderCard } from '../FolderCard';
 import { RecentStrip } from '../RecentStrip';
 import { TagSelector } from '../TagSelector';
 import { UploadFAB } from '../UploadFAB';
@@ -59,8 +64,8 @@ describe('DocumentListItem', () => {
     expect(screen.getByText('ZIP')).toBeInTheDocument();
   });
 
-  it('renders assigned tag chips and a tag button (F-10)', async () => {
-    const onManageTags = vi.fn();
+  it('renders assigned tag chips and an overflow menu button (F-10/F-9)', async () => {
+    const onMore = vi.fn();
     render(
       <ul>
         <DocumentListItem
@@ -68,17 +73,17 @@ describe('DocumentListItem', () => {
           tags={[
             { id: 't-1', name: 'Government', color: '#3b82f6', createdAt: '' },
           ]}
-          onManageTags={onManageTags}
+          onMore={onMore}
         />
       </ul>
     );
     expect(screen.getByText('Government')).toBeInTheDocument();
     await userEvent.click(
       document.querySelector(
-        '[data-agent-id="vault.home.item-doc-1.tags"]'
+        '[data-agent-id="vault.home.item-doc-1.more"]'
       ) as Element
     );
-    expect(onManageTags).toHaveBeenCalledWith(doc);
+    expect(onMore).toHaveBeenCalledWith(doc);
   });
 
   it('shows a favorite star and reports toggles (F-33)', async () => {
@@ -130,6 +135,47 @@ describe('RecentStrip (F-32)', () => {
       ) as Element
     );
     expect(onOpen).toHaveBeenCalledWith(doc);
+  });
+});
+
+const folder: FolderEntity = {
+  id: 'f-1',
+  name: 'Taxes',
+  color: '#10b981',
+  sortOrder: 0,
+  createdAt: '',
+  updatedAt: '',
+};
+
+describe('FolderCard (F-9)', () => {
+  it('opens the folder on click', async () => {
+    const onOpen = vi.fn();
+    render(<FolderCard folder={folder} onOpen={onOpen} />);
+    expect(screen.getByText('Taxes')).toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.folder-f-1"]') as Element
+    );
+    expect(onOpen).toHaveBeenCalledWith(folder);
+  });
+});
+
+describe('FolderBreadcrumb (F-9)', () => {
+  it('renders nothing at the root', () => {
+    const { container } = render(
+      <FolderBreadcrumb path={[]} onNavigate={() => undefined} />
+    );
+    expect(container.querySelector('[data-agent-id="vault.home.breadcrumb"]')).toBeNull();
+  });
+
+  it('shows the path and navigates to a depth', async () => {
+    const onNavigate = vi.fn();
+    render(<FolderBreadcrumb path={[folder]} onNavigate={onNavigate} />);
+    await userEvent.click(screen.getByText('Taxes'));
+    expect(onNavigate).toHaveBeenCalledWith(1);
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.breadcrumb-root"]') as Element
+    );
+    expect(onNavigate).toHaveBeenCalledWith(0);
   });
 });
 

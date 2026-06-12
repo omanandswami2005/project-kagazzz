@@ -4,19 +4,24 @@
  * upload from camera/gallery/files. Folders, search, and bulk ops
  * arrive with F-9/F-11/F-25.
  */
-import { IonContent, IonPage, IonToast } from '@ionic/react';
+import { IonActionSheet, IonContent, IonPage, IonToast } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ProgressBar } from '@kagaz/ui';
+import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
+import { FolderBreadcrumb } from '../components/FolderBreadcrumb';
+import { FolderCard } from '../components/FolderCard';
+import { MoveToFolderDialog } from '../components/MoveToFolderDialog';
+import { NewFolderDialog } from '../components/NewFolderDialog';
 import { RecentStrip } from '../components/RecentStrip';
 import { SortControl } from '../components/SortControl';
 import { TagSelector } from '../components/TagSelector';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useDocuments } from '../hooks/useDocuments';
+import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
 import { useTags } from '../hooks/useTags';
 import { useUpload } from '../hooks/useUpload';
@@ -37,7 +42,14 @@ export function VaultHomePage(): ReactNode {
   const { toggleFavorite, markAccessed } = useVaultMutations();
   const recent = useRecentDocuments();
   const { tagsByDocument } = useTags();
+  const { folders, createFolder, moveDocument } = useFolders();
+  const folderPath = useVaultStore((s) => s.folderPath);
+  const enterFolder = useVaultStore((s) => s.enterFolder);
+  const goToFolderDepth = useVaultStore((s) => s.goToFolderDepth);
   const [tagDocId, setTagDocId] = useState<string | null>(null);
+  const [moveDocId, setMoveDocId] = useState<string | null>(null);
+  const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
+  const [isNewFolderOpen, setNewFolderOpen] = useState(false);
   const search = useSearch();
   // While searching, results replace the folder/list view.
   const visibleDocuments = search.isActive ? search.results : documents;
@@ -102,7 +114,10 @@ export function VaultHomePage(): ReactNode {
             </div>
           )}
 
-          {!isLoading && documents.length === 0 ? (
+          {!isLoading &&
+          documents.length === 0 &&
+          folders.length === 0 &&
+          folderPath.length === 0 ? (
             <EmptyVaultState />
           ) : (
             <>
@@ -129,14 +144,48 @@ export function VaultHomePage(): ReactNode {
                         tags={tagsByDocument.get(document.id) ?? []}
                         onOpen={handleOpen}
                         onToggleFavorite={(doc) => void toggleFavorite(doc)}
-                        onManageTags={(doc) => setTagDocId(doc.id)}
+                        onMore={(doc) => setMoreDoc(doc)}
                       />
                     ))}
                   </ul>
                 )
               ) : (
                 <>
-                  <RecentStrip documents={recent} onOpen={handleOpen} />
+                  <FolderBreadcrumb
+                    path={folderPath}
+                    onNavigate={goToFolderDepth}
+                  />
+
+                  {folderPath.length === 0 && (
+                    <RecentStrip documents={recent} onOpen={handleOpen} />
+                  )}
+
+                  <div className="kg-vault__folder-bar">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={<Icon name="FolderPlus" size={20} />}
+                      onClick={() => setNewFolderOpen(true)}
+                      agentId="vault.home.new-folder"
+                      agentAction="vault.createFolder"
+                    >
+                      {t('folders.new')}
+                    </Button>
+                  </div>
+
+                  {folders.length > 0 && (
+                    <ul
+                      className="kg-folder-grid"
+                      data-agent-id="vault.home.folders"
+                    >
+                      {folders.map((folder) => (
+                        <li key={folder.id}>
+                          <FolderCard folder={folder} onOpen={enterFolder} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
                   {documents.length > 1 && <SortControl />}
                   <ul
                     className="kg-vault__list"
@@ -150,7 +199,7 @@ export function VaultHomePage(): ReactNode {
                         tags={tagsByDocument.get(document.id) ?? []}
                         onOpen={handleOpen}
                         onToggleFavorite={(doc) => void toggleFavorite(doc)}
-                        onManageTags={(doc) => setTagDocId(doc.id)}
+                        onMore={(doc) => setMoreDoc(doc)}
                       />
                     ))}
                   </ul>
@@ -167,6 +216,45 @@ export function VaultHomePage(): ReactNode {
           onSelect={handleSelectSource}
         />
         <TagSelector documentId={tagDocId} onDismiss={() => setTagDocId(null)} />
+        <MoveToFolderDialog
+          documentId={moveDocId}
+          onDismiss={() => setMoveDocId(null)}
+          onMove={(docId, folderId) => {
+            void moveDocument(docId, folderId);
+            setMoveDocId(null);
+          }}
+        />
+        <NewFolderDialog
+          isOpen={isNewFolderOpen}
+          onDismiss={() => setNewFolderOpen(false)}
+          onCreate={(name) => {
+            void createFolder(name);
+            setNewFolderOpen(false);
+          }}
+        />
+        <IonActionSheet
+          isOpen={moreDoc !== null}
+          header={moreDoc?.name}
+          data-agent-id="vault.home.item-menu"
+          onDidDismiss={() => setMoreDoc(null)}
+          buttons={[
+            {
+              text: t('actions.add_tag'),
+              data: { action: 'tags' },
+              handler: (): void => {
+                if (moreDoc) setTagDocId(moreDoc.id);
+              },
+            },
+            {
+              text: t('folders.move'),
+              data: { action: 'move' },
+              handler: (): void => {
+                if (moreDoc) setMoveDocId(moreDoc.id);
+              },
+            },
+            { text: t('actions.cancel'), role: 'cancel' },
+          ]}
+        />
 
         <IonToast
           isOpen={uploadedCount > 0}

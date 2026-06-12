@@ -23,6 +23,10 @@ export interface VaultActionContext {
   toggleFavorite: (documentId: string) => Promise<{ isFavorite: boolean }>;
   /** Sets the vault search query (F-11). */
   search: (query: string) => void;
+  /** Creates a folder in the current folder (F-9). */
+  createFolder: (name: string) => Promise<{ folderId: string | null }>;
+  /** Moves a document into a folder, null = root (F-9). */
+  moveDocument: (documentId: string, folderId: string | null) => Promise<void>;
   /** Opens the tag selector for a document (F-10). */
   manageTags: (documentId: string) => void;
   /** Creates a tag (if new) and assigns it to a document (F-10). */
@@ -117,6 +121,36 @@ export const vaultActions = {
     ): Promise<{ query: string }> => {
       ctx.search(args.query);
       return Promise.resolve({ query: args.query });
+    },
+  }),
+
+  createFolder: defineAction({
+    id: 'vault.createFolder',
+    summary: 'Create a new folder in the current folder.',
+    voice: ['new folder', 'create a folder', 'नया फ़ोल्डर बनाओ'],
+    args: z.object({ name: z.string().min(1) }),
+    requiresConfirmation: false,
+    handler: (
+      args: { name: string },
+      ctx: VaultActionContext
+    ): Promise<{ folderId: string | null }> => ctx.createFolder(args.name),
+  }),
+
+  moveDocument: defineAction({
+    id: 'vault.moveDocument',
+    summary: 'Move a document into a folder (or to the vault root).',
+    voice: ['move to folder', 'move this document', 'इसे फ़ोल्डर में ले जाओ'],
+    args: z.object({
+      documentId: z.string().min(1),
+      folderId: z.string().nullable(),
+    }),
+    requiresConfirmation: false,
+    handler: async (
+      args: { documentId: string; folderId: string | null },
+      ctx: VaultActionContext
+    ): Promise<{ ok: true }> => {
+      await ctx.moveDocument(args.documentId, args.folderId);
+      return { ok: true };
     },
   }),
 

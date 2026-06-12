@@ -8,7 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
 import { DocumentDao } from '@/infrastructure/database/dao';
-import { useVaultStore } from '../store/vault.store';
+import { currentFolderId, useVaultStore } from '../store/vault.store';
 
 const logger = log('document-vault');
 
@@ -20,6 +20,7 @@ export function useDocuments(): {
   const { db } = useDatabase();
   const documents = useVaultStore((state) => state.documents);
   const isLoading = useVaultStore((state) => state.isLoading);
+  const folderId = useVaultStore(currentFolderId);
   const dao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export function useDocuments(): {
     let cancelled = false;
     useVaultStore.getState().setLoading(true);
     void dao
-      .findByFolder(null)
+      .findByFolder(folderId)
       .then((rows) => {
         if (!cancelled) {
           useVaultStore.getState().setDocuments(rows);
@@ -49,7 +50,7 @@ export function useDocuments(): {
     return (): void => {
       cancelled = true;
     };
-  }, [dao]);
+  }, [dao, folderId]);
 
   return { documents, isLoading };
 }
