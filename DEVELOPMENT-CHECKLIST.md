@@ -93,9 +93,9 @@
 
 ### PDF Engine module — [docs/architecture/03-pdf-engine-module.md](docs/architecture/03-pdf-engine-module.md) (all ops in Web Workers `[PERF]`)
 
-- [ ] F-3 PDF Merge 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
-- [ ] F-4 PDF Split 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
-- [ ] F-5 PDF Compress 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
+- [x] F-3 PDF Merge 🔴Must ✅ bccb465 (2026-06-12)
+- [x] F-4 PDF Split 🔴Must ✅ bccb465 (2026-06-12)
+- [x] F-5 PDF Compress 🔴Must ✅ bccb465 (2026-06-12)
 - [ ] F-6 PDF → Image 🔴Must
 - [ ] F-7 Image → PDF 🔴Must
 - [ ] F-21 PDF Encryption 🟡Should `[SEC]`
@@ -276,6 +276,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-12 · bccb465 · feat(pdf-engine) · implement F-3, F-4, F-5 core operations, workers, and contract tests · F-3, F-4, F-5
 - 2026-06-11 · _(this commit)_ · chore(kagaz) · F-1 stale-code sweep: unused heic-to dep dropped (HeicConverter stays a protocol for F-8), unused UPLOAD_ACCEPT_MIME export, dead .kg-home CSS, app/ README updated for the removed HomePage placeholder · F-1
 - 2026-06-11 · 7907a98 · fix(ci) · Lighthouse perf assertion temporarily 0.85 (scores 0.86; root cause = vendor chunk, same as the bundle-size allowance; G1-4 restores 0.9) — **CI fully green on develop for the first time** · P0-9, G1-4
 - 2026-06-11 · 4f62384 + 80b7db4 · fix(tooling)/fix(ci) · agent:sitemap made deterministic (generatedAt timestamp meant the CI drift check could never pass) + Lighthouse audits the SPA root '/' (auditing /index.html matched no route → NO_FCP every run) · P0-9
