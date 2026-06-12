@@ -92,7 +92,7 @@
 - [x] F-32 Recent Documents 🔵Could ✅ (develop) (2026-06-11) — migration 004 (last_accessed_at), findRecent/touchLastAccessed, RecentStrip; restored lastAccessedAt sort key
 - [x] F-33 Favorites 🔵Could ✅ (develop) (2026-06-11) — star toggle + DAO findFavorites + optimistic store; dedicated favorites section folds into F-12 filters
 - [x] F-34 Sort Options 🔵Could ✅ (develop) (2026-06-11) — client-side sort.service + store; lastAccessedAt key deferred to F-32 (needs the column)
-- [ ] F-30 Document Templates 🔵Could
+- [x] F-30 Document Templates 🔵Could ✅ (develop) (2026-06-12) — 7 starter folders (folder-templates) offered via the empty-state CTA; document-content templates (pre-filled forms) are a separate later idea
 - [ ] F-31 Export/Backup to local ZIP 🔵Could `[SEC]` (encrypted backup, §3.4 `backup_encryption_key`)
 
 ### Document Scanner module — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) (scan flows) + [04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
