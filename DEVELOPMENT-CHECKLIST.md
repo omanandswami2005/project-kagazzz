@@ -112,7 +112,7 @@
 
 ### Image Engine module — [docs/architecture/04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
 
-- [ ] F-8 Image Format Conversion (JPG/PNG/WEBP, HEIC in) 🔴Must
+- [x] F-8 Image Format Conversion (JPG/PNG/WEBP, HEIC in) 🔴Must ✅ 0ab5fb2 (2026-06-12) — native Canvas conversion (JPEG/PNG/WebP) + magic-byte format detector + getImageInfo, zero runtime deps. HEIC decode NOT bundled: every JS decoder is LGPL-3.0 (forbidden) → OS decodes HEIC natively at camera capture; imported .heic stored as-is until a native decoder lands (ADR-016). Worker offload + advanced ops (resize/filters) land with F-29
 - [ ] F-29 Image Filters/Enhancement 🔵Could
 
 ### Search module — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Search + [09-database-design.md](docs/architecture/09-database-design.md) (FTS5)
