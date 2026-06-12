@@ -388,7 +388,16 @@ interface UploadProgress {
 
 ## Document Scanning Flow
 
-The scanning feature uses ML Kit's document scanner for automatic edge detection, perspective correction, and image enhancement.
+> [!IMPORTANT]
+> **Engine superseded by [ADR-016](../architecture/08-tech-stack-decisions.md#adr-016-image-engine--document-scanner-offline-permissive-only).**
+> The sequence below names "ML Kit Scanner", but ML Kit downloads its model
+> via Google Play Services (network) — incompatible with V1's offline /
+> zero-network guarantee. F-2 instead uses **jscanify + OpenCV.js** (lazy
+> WASM, self-hosted, fully offline). The *flow* (live edge detection →
+> capture → perspective correction → review with draggable corners → save)
+> is unchanged; only the engine differs.
+
+The scanning feature provides automatic edge detection, perspective correction, and image enhancement, all on-device.
 
 ```mermaid
 sequenceDiagram
