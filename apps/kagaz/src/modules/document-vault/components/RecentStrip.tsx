@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import { useThumbnail } from '../hooks/useThumbnail';
 import { FileType } from '../types/document.types';
 
 const TYPE_ICONS: Partial<Record<string, IconName>> = {
@@ -17,6 +18,35 @@ const TYPE_ICONS: Partial<Record<string, IconName>> = {
   [FileType.HEIC]: 'FileImage',
   [FileType.WEBP]: 'FileImage',
 };
+
+/** One recent card: real thumbnail when available, type icon otherwise. */
+function RecentItem({
+  document,
+  onOpen,
+}: {
+  document: DocumentEntity;
+  onOpen: (document: DocumentEntity) => void;
+}): ReactNode {
+  const thumbnailUrl = useThumbnail(document.thumbnailPath);
+  return (
+    <li className="kg-recent__li">
+      <button
+        type="button"
+        className="kg-recent__item"
+        data-agent-id={`vault.home.recent-${document.id}`}
+        data-agent-state="idle"
+        onClick={() => onOpen(document)}
+      >
+        {thumbnailUrl ? (
+          <img className="kg-recent__thumb" src={thumbnailUrl} alt="" loading="lazy" />
+        ) : (
+          <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={32} />
+        )}
+        <span className="kg-recent__name">{document.name}</span>
+      </button>
+    </li>
+  );
+}
 
 /** Props for {@link RecentStrip}. */
 export interface RecentStripProps {
@@ -38,21 +68,7 @@ export function RecentStrip({
       <h2 className="kg-recent__title">{t('recent.title')}</h2>
       <ul className="kg-recent__row">
         {documents.map((document) => (
-          <li key={document.id} className="kg-recent__li">
-            <button
-              type="button"
-              className="kg-recent__item"
-              data-agent-id={`vault.home.recent-${document.id}`}
-              data-agent-state="idle"
-              onClick={() => onOpen(document)}
-            >
-              <Icon
-                name={TYPE_ICONS[document.fileType] ?? 'File'}
-                size={32}
-              />
-              <span className="kg-recent__name">{document.name}</span>
-            </button>
-          </li>
+          <RecentItem key={document.id} document={document} onOpen={onOpen} />
         ))}
       </ul>
     </section>

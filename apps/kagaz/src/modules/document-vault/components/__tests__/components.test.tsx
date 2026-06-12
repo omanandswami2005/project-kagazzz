@@ -157,6 +157,19 @@ describe('RecentStrip (F-32)', () => {
     );
     expect(onOpen).toHaveBeenCalledWith(doc);
   });
+
+  it('shows a thumbnail in the recent card when one exists (F-24)', () => {
+    thumbnailUrl.mockReturnValueOnce('blob:recent-thumb');
+    const { container } = render(
+      <RecentStrip
+        documents={[{ ...doc, thumbnailPath: 'thumbnails/r.jpg' }]}
+        onOpen={() => undefined}
+      />
+    );
+    const img = container.querySelector('img.kg-recent__thumb');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toBe('blob:recent-thumb');
+  });
 });
 
 const folder: FolderEntity = {
