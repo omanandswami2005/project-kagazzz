@@ -56,8 +56,11 @@ export function ThemeProvider({ children }: { children: ReactNode }): ReactNode 
 
   const apply = useCallback((): void => {
     const root = document.documentElement;
-    root.setAttribute(THEME_ATTRIBUTE, resolveTheme(theme));
+    const resolved = resolveTheme(theme);
+    root.setAttribute(THEME_ATTRIBUTE, resolved);
     root.setAttribute(DENSITY_ATTRIBUTE, density);
+    // Drive Ionic's class-based dark palette in lock-step with our tokens.
+    root.classList.toggle('ion-palette-dark', resolved === 'dark');
     if (highContrast) {
       root.setAttribute(CONTRAST_ATTRIBUTE, 'high');
     } else {

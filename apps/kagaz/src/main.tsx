@@ -6,6 +6,11 @@ import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
+// Ionic's full dark palette, activated by the `ion-palette-dark` class on
+// <html> (toggled in ThemeProvider). Without it only a handful of --ion-*
+// vars are themed and components like IonActionSheet / IonSelect /
+// IonSearchbar fall back to light defaults — unreadable in dark mode.
+import '@ionic/react/css/palettes/dark.class.css';
 import '@kagaz/design-tokens/css';
 import '@kagaz/ui/styles.css';
 import './app/app.css';
