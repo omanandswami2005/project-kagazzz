@@ -4,9 +4,19 @@
  * upload from camera/gallery/files. Folders, search, and bulk ops
  * arrive with F-9/F-11/F-25.
  */
-import { IonActionSheet, IonContent, IonPage, IonToast } from '@ionic/react';
+import {
+  IonActionSheet,
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToast,
+  IonToolbar,
+  useIonRouter,
+} from '@ionic/react';
 import { useState, type ReactNode } from 'react';
-import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -45,7 +55,7 @@ import './vault.css';
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
-  const history = useHistory();
+  const ionRouter = useIonRouter();
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
@@ -120,20 +130,22 @@ export function VaultHomePage(): ReactNode {
 
   return (
     <IonPage data-agent-id="vault.home">
-      <IonContent>
-        <main className="kg-vault" data-agent-id="vault.home.content">
-          <div className="kg-vault__header">
-            <h1>{t('title')}</h1>
-            <button
-              type="button"
-              className="kg-vault__storage-btn"
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>{t('title')}</IonTitle>
+          <IonButtons slot="end">
+            <IonButton
               aria-label={t('storage.title')}
               data-agent-id="vault.home.storage-link"
-              onClick={() => history.push('/storage')}
+              onClick={() => ionRouter.push('/storage', 'forward', 'push')}
             >
               <Icon name="HardDrive" size={24} />
-            </button>
-          </div>
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
+        <main className="kg-vault" data-agent-id="vault.home.content">
 
           {dbStatus === 'error' && (
             <p

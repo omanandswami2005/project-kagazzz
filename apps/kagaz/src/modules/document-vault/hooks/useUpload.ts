@@ -7,7 +7,7 @@ import { useCallback, useMemo } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import { createFileStorage } from '@/infrastructure/filesystem';
-import { useVaultStore } from '../store/vault.store';
+import { currentFolderId, useVaultStore } from '../store/vault.store';
 import { UploadService } from '../services/upload.service';
 import { pickFiles, type UploadSource } from '../services/upload-sources';
 import { generateThumbnail } from '../services/thumbnail.service';
@@ -52,7 +52,11 @@ export function useUpload(): UseUploadResult {
         service.onProgress((progress) =>
           useVaultStore.getState().setUploadProgress(progress)
         );
-        const result = await service.uploadFiles(files);
+        // Upload into the folder the user is currently viewing (null =
+        // root) so the document persists where it appears.
+        const result = await service.uploadFiles(files, {
+          folderId: currentFolderId(store) ?? undefined,
+        });
         useVaultStore
           .getState()
           .prependDocuments(

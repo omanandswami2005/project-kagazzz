@@ -39,6 +39,7 @@ beforeEach(() => {
     uploadProgress: null,
     isUploadSheetOpen: true,
     lastUploadErrors: [],
+    folderPath: [],
   });
 });
 
@@ -75,6 +76,31 @@ describe('useUpload', () => {
     expect(state.isUploading).toBe(false);
     expect(state.lastUploadErrors).toEqual([]);
     expect(storage.files.size).toBe(1);
+  });
+
+  it('uploads into the current folder so the doc persists there', async () => {
+    const db = new FakeDb().onQuery(
+      /SELECT \* FROM documents WHERE id = \?/,
+      [docRow()]
+    );
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    pickFilesMock.mockResolvedValue([incoming('In Folder.pdf', pdfBytes())]);
+    useVaultStore.setState({
+      folderPath: [
+        { id: 'fld-1', name: 'Taxes', sortOrder: 0, createdAt: '', updatedAt: '' },
+      ],
+    });
+
+    const { result } = renderHook(() => useUpload());
+    await act(async () => {
+      await result.current.uploadFrom('files');
+    });
+
+    const insert = db.calls.find(
+      (c) => c.kind === 'run' && c.sql.includes('INSERT INTO documents')
+    );
+    // folder_id (9th value) carries the current folder, not null.
+    expect(insert?.params).toContain('fld-1');
   });
 
   it('records per-file failures as error message keys', async () => {
