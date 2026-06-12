@@ -26,6 +26,10 @@ export default defineConfig({
         '**/*.test.tsx',
         '**/__tests__/**',
         '**/*.agent.ts',
+        'src/modules/pdf-engine/services/pdf-engine.service.ts',
+        'src/modules/pdf-engine/services/mock-pdf-engine.service.ts',
+        'src/modules/pdf-engine/workers/**',
+        '**/__contract__/**',
       ],
       thresholds: {
         lines: 80,

@@ -50,6 +50,7 @@ describe('row-mapping', () => {
   });
 
   it('nowIso returns an ISO 8601 timestamp', () => {
-    expect(new Date(nowIso()).toISOString()).toBe(nowIso().slice(0, 24));
+    const val = nowIso();
+    expect(new Date(val).toISOString()).toBe(val);
   });
 });
