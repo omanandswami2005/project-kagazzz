@@ -88,7 +88,7 @@
 - [x] F-10 Tags / Labels 🔴Must→🟢S ✅ (develop) (2026-06-11) — TagDao batch assignments, useTags, TagSelector sheet, inline chips + row tag button; tag-based filtering folds into F-12
 - [ ] F-24 Document Thumbnails (generate + cache) 🟡Should
 - [x] F-25 Bulk Operations (multi-select delete/move/tag/merge) 🟡Should ✅ (develop) (2026-06-12) — selection store + BulkActionBar (delete/move/favorite); bulk-tag folds into F-10's selector and bulk-merge needs F-3 (lane B)
-- [ ] F-26 Storage Statistics 🟡Should
+- [x] F-26 Storage Statistics 🟡Should ✅ (develop) (2026-06-12) — DAO aggregates + StoragePage (total, by-type, largest, duplicate hint); cleanup actions (compress/delete-dupes) are follow-ups
 - [x] F-32 Recent Documents 🔵Could ✅ (develop) (2026-06-11) — migration 004 (last_accessed_at), findRecent/touchLastAccessed, RecentStrip; restored lastAccessedAt sort key
 - [x] F-33 Favorites 🔵Could ✅ (develop) (2026-06-11) — star toggle + DAO findFavorites + optimistic store; dedicated favorites section folds into F-12 filters
 - [x] F-34 Sort Options 🔵Could ✅ (develop) (2026-06-11) — client-side sort.service + store; lastAccessedAt key deferred to F-32 (needs the column)
