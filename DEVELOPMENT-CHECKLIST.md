@@ -118,7 +118,7 @@
 ### Search module — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Search + [09-database-design.md](docs/architecture/09-database-design.md) (FTS5)
 
 - [x] F-11 Full-Text Search 🔴Must ✅ (develop) (2026-06-11) — search module: FTS5 prefix-query builder (Hindi-safe), debounced useSearch, SearchBar on vault home replacing the list with ranked results
-- [ ] F-12 Filters (type/date/size/tags/folder) 🔴Must
+- [x] F-12 Filters (type/date/size/tags/folder) 🔴Must ✅ (develop) (2026-06-12) — client-side filter.service (kind/size/tags/favorites, AND-combined) + FilterPanel sheet; date-range + saved presets are follow-ups
 - [ ] F-20 OCR Text Extraction (tesseract.js, worker) 🟡Should `[SEC]` (OCR text is sensitive data — encrypted DB only) `[I18N]` (Hindi OCR)
 
 ### AI Assistant module — [docs/architecture/05-ai-assistant-module.md](docs/architecture/05-ai-assistant-module.md)
