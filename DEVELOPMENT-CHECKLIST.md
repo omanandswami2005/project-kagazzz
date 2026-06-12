@@ -101,9 +101,9 @@
 
 ### PDF Engine module — [docs/architecture/03-pdf-engine-module.md](docs/architecture/03-pdf-engine-module.md) (all ops in Web Workers `[PERF]`)
 
-- [ ] F-3 PDF Merge 🔴Must
-- [ ] F-4 PDF Split 🔴Must
-- [ ] F-5 PDF Compress 🔴Must
+- [ ] F-3 PDF Merge 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
+- [ ] F-4 PDF Split 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
+- [ ] F-5 PDF Compress 🔴Must 🟨 claimed — feature/f3-pdf-merge · agent:antigravity · 2026-06-12
 - [ ] F-6 PDF → Image 🔴Must
 - [ ] F-7 Image → PDF 🔴Must
 - [ ] F-21 PDF Encryption 🟡Should `[SEC]`
