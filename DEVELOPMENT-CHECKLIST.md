@@ -87,7 +87,7 @@
 - [x] F-9 Folder Organization (CRUD, color-code, nesting, move docs) 🔴Must ✅ (develop) (2026-06-12) — folder nav (breadcrumb store), useFolders CRUD, FolderCard grid, move-to-folder; color picker UI + drag-reorder are follow-ups (DAO supports color/sortOrder)
 - [x] F-10 Tags / Labels 🔴Must→🟢S ✅ (develop) (2026-06-11) — TagDao batch assignments, useTags, TagSelector sheet, inline chips + row tag button; tag-based filtering folds into F-12
 - [ ] F-24 Document Thumbnails (generate + cache) 🟡Should
-- [ ] F-25 Bulk Operations (multi-select delete/move/tag/merge) 🟡Should
+- [x] F-25 Bulk Operations (multi-select delete/move/tag/merge) 🟡Should ✅ (develop) (2026-06-12) — selection store + BulkActionBar (delete/move/favorite); bulk-tag folds into F-10's selector and bulk-merge needs F-3 (lane B)
 - [ ] F-26 Storage Statistics 🟡Should
 - [x] F-32 Recent Documents 🔵Could ✅ (develop) (2026-06-11) — migration 004 (last_accessed_at), findRecent/touchLastAccessed, RecentStrip; restored lastAccessedAt sort key
 - [x] F-33 Favorites 🔵Could ✅ (develop) (2026-06-11) — star toggle + DAO findFavorites + optimistic store; dedicated favorites section folds into F-12 filters
