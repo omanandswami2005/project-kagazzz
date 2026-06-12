@@ -11,6 +11,8 @@ function makeCtx(): VaultActionContext {
     search: vi.fn(),
     createFolder: vi.fn(() => Promise.resolve({ folderId: 'f-1' })),
     moveDocument: vi.fn(() => Promise.resolve()),
+    openFilters: vi.fn(),
+    clearFilters: vi.fn(),
     manageTags: vi.fn(),
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
   };
@@ -82,6 +84,16 @@ describe('vault.toggleFavorite (F-33)', () => {
     registry.register(vaultActions.toggleFavorite);
     const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault filter actions (F-12)', () => {
+  it('openFilters and clearFilters delegate to the context', async () => {
+    const ctx = makeCtx();
+    await vaultActions.openFilters.handler({}, ctx);
+    await vaultActions.clearFilters.handler({}, ctx);
+    expect(ctx.openFilters).toHaveBeenCalledOnce();
+    expect(ctx.clearFilters).toHaveBeenCalledOnce();
   });
 });
 

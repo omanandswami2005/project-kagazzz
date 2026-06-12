@@ -27,6 +27,10 @@ export interface VaultActionContext {
   createFolder: (name: string) => Promise<{ folderId: string | null }>;
   /** Moves a document into a folder, null = root (F-9). */
   moveDocument: (documentId: string, folderId: string | null) => Promise<void>;
+  /** Opens the filter panel (F-12). */
+  openFilters: () => void;
+  /** Clears all active filters (F-12). */
+  clearFilters: () => void;
   /** Opens the tag selector for a document (F-10). */
   manageTags: (documentId: string) => void;
   /** Creates a tag (if new) and assigns it to a document (F-10). */
@@ -121,6 +125,30 @@ export const vaultActions = {
     ): Promise<{ query: string }> => {
       ctx.search(args.query);
       return Promise.resolve({ query: args.query });
+    },
+  }),
+
+  openFilters: defineAction({
+    id: 'vault.openFilters',
+    summary: 'Open the filter panel to narrow the document list.',
+    voice: ['filter documents', 'show filters', 'दस्तावेज़ फ़िल्टर करो'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.openFilters();
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
+  clearFilters: defineAction({
+    id: 'vault.clearFilters',
+    summary: 'Clear all active document filters.',
+    voice: ['clear filters', 'remove filters', 'फ़िल्टर हटाओ'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.clearFilters();
+      return Promise.resolve({ ok: true });
     },
   }),
 

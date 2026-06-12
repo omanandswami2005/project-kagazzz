@@ -8,8 +8,10 @@ import type {
   DocumentEntity,
   FolderEntity,
 } from '@/infrastructure/database/types';
+import { EMPTY_FILTERS } from '../../services/filter.service';
 import { DocumentListItem } from '../DocumentListItem';
 import { EmptyVaultState } from '../EmptyVaultState';
+import { FilterPanel } from '../FilterPanel';
 import { FolderBreadcrumb } from '../FolderBreadcrumb';
 import { FolderCard } from '../FolderCard';
 import { RecentStrip } from '../RecentStrip';
@@ -146,6 +148,49 @@ const folder: FolderEntity = {
   createdAt: '',
   updatedAt: '',
 };
+
+describe('FilterPanel (F-12)', () => {
+  it('toggles a kind chip and applies the draft', async () => {
+    const onApply = vi.fn();
+    render(
+      <IonPage>
+        <IonContent>
+          <FilterPanel
+            isOpen
+            filters={EMPTY_FILTERS}
+            tags={[]}
+            onDismiss={() => undefined}
+            onApply={onApply}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    await userEvent.click(await screen.findByText('PDF'));
+    await userEvent.click(screen.getByText('Apply'));
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({ kinds: ['pdf'] })
+    );
+  });
+
+  it('clear resets and applies empty filters', async () => {
+    const onApply = vi.fn();
+    render(
+      <IonPage>
+        <IonContent>
+          <FilterPanel
+            isOpen
+            filters={{ ...EMPTY_FILTERS, favoritesOnly: true }}
+            tags={[]}
+            onDismiss={() => undefined}
+            onApply={onApply}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    await userEvent.click(await screen.findByText('Clear all'));
+    expect(onApply).toHaveBeenCalledWith(EMPTY_FILTERS);
+  });
+});
 
 describe('FolderCard (F-9)', () => {
   it('opens the folder on click', async () => {

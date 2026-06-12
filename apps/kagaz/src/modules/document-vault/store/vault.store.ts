@@ -19,6 +19,7 @@ import {
   type SortDirection,
   type SortKey,
 } from '../services/sort.service';
+import { EMPTY_FILTERS, type DocumentFilters } from '../services/filter.service';
 
 /** State + actions for the vault screens. */
 export interface VaultState {
@@ -40,6 +41,8 @@ export interface VaultState {
   sortDirection: SortDirection;
   /** Folder path from root to the current folder (F-9); [] = root. */
   folderPath: FolderEntity[];
+  /** Active document filters (F-12). */
+  filters: DocumentFilters;
 
   setDocuments: (documents: DocumentEntity[]) => void;
   prependDocuments: (documents: DocumentEntity[]) => void;
@@ -61,6 +64,10 @@ export interface VaultState {
   enterFolder: (folder: FolderEntity) => void;
   /** Jumps to a breadcrumb depth (0 = root, n = nth folder in the path). */
   goToFolderDepth: (depth: number) => void;
+  /** Replaces the active filters (F-12). */
+  setFilters: (filters: DocumentFilters) => void;
+  /** Clears all filters (F-12). */
+  clearFilters: () => void;
 }
 
 /** The id of the folder currently being viewed (null = root). */
@@ -79,6 +86,7 @@ export const useVaultStore = create<VaultState>((set) => ({
   sortBy: DEFAULT_SORT_KEY,
   sortDirection: DEFAULT_SORT_DIRECTION,
   folderPath: [],
+  filters: EMPTY_FILTERS,
 
   setDocuments: (documents): void =>
     set((state) => ({
@@ -127,4 +135,6 @@ export const useVaultStore = create<VaultState>((set) => ({
     set((state) => ({ folderPath: [...state.folderPath, folder] })),
   goToFolderDepth: (depth): void =>
     set((state) => ({ folderPath: state.folderPath.slice(0, depth) })),
+  setFilters: (filters): void => set({ filters }),
+  clearFilters: (): void => set({ filters: EMPTY_FILTERS }),
 }));

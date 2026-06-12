@@ -78,6 +78,24 @@
     "placeholder": "Search documents",
     "no_results": "No documents match \"{{query}}\""
   },
+  "filters": {
+    "title": "Filter",
+    "active": "Filter ({{count}})",
+    "type": "File type",
+    "size": "File size",
+    "tags": "Tags",
+    "favorites_only": "Favorites only",
+    "kind_pdf": "PDF",
+    "kind_image": "Images",
+    "kind_other": "Other",
+    "size_lt1": "< 1 MB",
+    "size_1to5": "1–5 MB",
+    "size_5to25": "5–25 MB",
+    "size_gt25": "> 25 MB",
+    "apply": "Apply",
+    "clear": "Clear all",
+    "no_matches": "No documents match these filters"
+  },
   "tags": {
     "title": "Tags",
     "empty": "No tags yet. Create one below.",

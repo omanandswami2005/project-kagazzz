@@ -11,6 +11,7 @@ import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { EmptyVaultState } from '../components/EmptyVaultState';
+import { FilterPanel } from '../components/FilterPanel';
 import { FolderBreadcrumb } from '../components/FolderBreadcrumb';
 import { FolderCard } from '../components/FolderCard';
 import { MoveToFolderDialog } from '../components/MoveToFolderDialog';
@@ -28,6 +29,10 @@ import { useUpload } from '../hooks/useUpload';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import { SearchBar } from '@/modules/search/components/SearchBar';
 import { useSearch } from '@/modules/search/hooks/useSearch';
+import {
+  activeFilterCount,
+  applyFilters,
+} from '../services/filter.service';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
 import type { UploadSource } from '../services/upload-sources';
@@ -41,8 +46,14 @@ export function VaultHomePage(): ReactNode {
   const { isReady, uploadFrom } = useUpload();
   const { toggleFavorite, markAccessed } = useVaultMutations();
   const recent = useRecentDocuments();
-  const { tagsByDocument } = useTags();
+  const { tags, tagsByDocument } = useTags();
   const { folders, createFolder, moveDocument } = useFolders();
+  const filters = useVaultStore((s) => s.filters);
+  const setFilters = useVaultStore((s) => s.setFilters);
+  const [isFilterOpen, setFilterOpen] = useState(false);
+  const filterCount = activeFilterCount(filters);
+  // Filters apply to the current folder's documents (after sort).
+  const filteredDocuments = applyFilters(documents, filters, tagsByDocument);
   const folderPath = useVaultStore((s) => s.folderPath);
   const enterFolder = useVaultStore((s) => s.enterFolder);
   const goToFolderDepth = useVaultStore((s) => s.goToFolderDepth);
@@ -186,13 +197,37 @@ export function VaultHomePage(): ReactNode {
                     </ul>
                   )}
 
-                  {documents.length > 1 && <SortControl />}
+                  {documents.length > 0 && (
+                    <div className="kg-vault__controls">
+                      <Button
+                        variant={filterCount > 0 ? 'secondary' : 'ghost'}
+                        size="sm"
+                        icon={<Icon name="Filter" size={20} />}
+                        onClick={() => setFilterOpen(true)}
+                        agentId="vault.home.filter-button"
+                        agentAction="vault.openFilters"
+                      >
+                        {filterCount > 0
+                          ? t('filters.active', { count: filterCount })
+                          : t('filters.title')}
+                      </Button>
+                      {documents.length > 1 && <SortControl />}
+                    </div>
+                  )}
+                  {filteredDocuments.length === 0 && filterCount > 0 ? (
+                    <p
+                      className="kg-vault__no-results"
+                      data-agent-id="vault.home.no-filter-results"
+                    >
+                      {t('filters.no_matches')}
+                    </p>
+                  ) : (
                   <ul
                     className="kg-vault__list"
                     data-agent-id="vault.home.list"
                     data-agent-state={listState}
                   >
-                    {documents.map((document) => (
+                    {filteredDocuments.map((document) => (
                       <DocumentListItem
                         key={document.id}
                         document={document}
@@ -203,6 +238,7 @@ export function VaultHomePage(): ReactNode {
                       />
                     ))}
                   </ul>
+                  )}
                 </>
               )}
             </>
@@ -214,6 +250,17 @@ export function VaultHomePage(): ReactNode {
           isOpen={isSheetOpen}
           onDismiss={closeSheet}
           onSelect={handleSelectSource}
+        />
+        <FilterPanel
+          key={isFilterOpen ? 'filter-open' : 'filter-closed'}
+          isOpen={isFilterOpen}
+          filters={filters}
+          tags={tags}
+          onDismiss={() => setFilterOpen(false)}
+          onApply={(next) => {
+            setFilters(next);
+            setFilterOpen(false);
+          }}
         />
         <TagSelector documentId={tagDocId} onDismiss={() => setTagDocId(null)} />
         <MoveToFolderDialog
