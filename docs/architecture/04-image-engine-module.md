@@ -3,7 +3,17 @@
 > **Module**: `@kagaz/image-engine`
 > **Version**: 1.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-10
+> **Last Updated**: 2026-06-12
+
+> [!IMPORTANT]
+> **Superseded in part by [ADR-016](08-tech-stack-decisions.md#adr-016-image-engine--document-scanner-offline-permissive-only).**
+> The `heic-to` library named in §2 is **LGPL-3.0** (as are `heic2any` /
+> `libheif-js` — every JS HEIC decoder wraps libheif), which the
+> permissive-only license policy forbids. V1 therefore bundles **no JS
+> HEIC decoder**: format conversion (F-8) uses the **native Canvas API**
+> only (JPEG/PNG/WebP), and HEIC is decoded natively by the OS at camera
+> capture. F-2's document edge detection (listed under §14 as "V2") ships
+> in **V1** via jscanify + OpenCV.js — see ADR-016.
 
 ---
 

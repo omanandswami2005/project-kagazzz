@@ -22,6 +22,7 @@
 - [ADR-013: Pino for Structured Logging](#adr-013-pino-for-structured-logging)
 - [ADR-014: Biometric Auth Plugin Selection](#adr-014-biometric-auth-plugin-selection)
 - [ADR-015: pnpm Workspaces + Turborepo Monorepo](#adr-015-pnpm-workspaces--turborepo-monorepo)
+- [ADR-016: Image Engine & Document Scanner (offline, permissive-only)](#adr-016-image-engine--document-scanner-offline-permissive-only)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -45,6 +46,7 @@
 | 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
 | 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
 | 015 | Repo Structure | **pnpm workspaces + Turborepo** | Nx, single package | ✅ Accepted |
+| 016 | Image conversion / Doc scanner | **Canvas (native)** / **jscanify + OpenCV.js** | heic-to, ML Kit scanner | ✅ Accepted |
 
 ---
 
@@ -892,6 +894,61 @@ scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
 - One lockfile, one `node_modules` strategy, root-level lint/format; per-app builds and tests run via `turbo run <task>` with caching.
 - **Path convention:** architecture docs (`01`–`07`) describe module trees under `src/` — that always means `apps/kagaz/src/`. Do not rewrite historical docs; new docs should use full paths.
 - Shared code is extracted into `packages/` only when actually shared (rules in [packages/README.md](../../packages/README.md)) — no speculative packages.
+
+---
+
+## ADR-016: Image Engine & Document Scanner (offline, permissive-only)
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-12 |
+| **Decision** | **Image conversion (F-8):** convert among JPEG/PNG/WebP with the **native Canvas / OffscreenCanvas API** — zero bundle, on-device. **Do not bundle any JS HEIC decoder.** **Document scanner (F-2):** edge detection + perspective correction via **jscanify** (MIT) on **OpenCV.js** (`@techstark/opencv-js`, Apache-2.0), lazy-loaded WASM, self-hosted (never a CDN). |
+
+### Context
+
+Lane C needs image format conversion (F-8) and a document scanner (F-2,
+edge detection + perspective correction). Two hard constraints dominate
+the choice: V1 is **100% offline with zero network permission** (SEC
+§3.5, the privacy policy), and dependencies must be **permissive-licensed
+only** (MIT/Apache-2.0/BSD/ISC — copyleft is forbidden because the app
+ships proprietary/`UNLICENSED`).
+
+### HEIC: why no decoder is bundled
+
+The image-engine spec (04) originally named **`heic-to`**. On review,
+`heic-to`, `heic2any`, and the underlying `libheif-js` are **all
+LGPL-3.0** — every JS HEIC decoder wraps libheif, which is LGPL. Bundling
+any of them into a statically-linked app violates the permissive-only
+policy. There is no permissive pure-JS HEIC decoder.
+
+Resolution: HEIC is decoded by the **OS natively at camera capture** —
+`@capacitor/camera` returns JPEG, so HEIC never reaches the WebView as
+HEIC. Imported `.heic` files (file picker) are stored as-is (F-1's
+existing behavior); converting those would need a small **native**
+Capacitor decoder (ImageIO on iOS, `BitmapFactory` on Android 28+),
+tracked as a follow-up — still no bundled LGPL code.
+
+### Scanner: why not native ML Kit
+
+| Option | Verdict |
+|---|---|
+| **jscanify + OpenCV.js** (WASM, WebView) | ✅ Fully offline, permissive (MIT + Apache-2.0), cross-platform, no native maintenance. ~8 MB WASM, **lazy-loaded only on the scanner screen** (off the initial-load budget, [PERF]). Self-hosted, never from a CDN. |
+| **@capacitor-mlkit/document-scanner** / Cap-go (Google ML Kit) | ❌ Downloads its model via **Google Play Services at runtime** → needs INTERNET permission + Play Services. Breaks the zero-network offline guarantee and the privacy policy. |
+| **iOS VisionKit + jscanify (Android)** | ⚠️ Both offline, best per-platform UX, but two code paths — more complexity/testing than the win justifies for V1. |
+
+### Consequences
+
+- **F-8 adds no runtime dependency** — native Canvas only. Conversion logic
+  is injected (`ImageEngineDeps`) so it stays unit-testable (jsdom has no
+  canvas); the canvas path is device-verified.
+- **F-2** will add `jscanify` + `@techstark/opencv-js`, dynamically
+  imported so the WASM stays out of the initial chunk. OpenCV.js assets are
+  bundled/self-hosted (no network), preserving the offline guarantee.
+- **Supersedes** two statements in [04-image-engine-module.md](04-image-engine-module.md):
+  the `heic-to` library choice (§2) and the §14 note listing "document
+  edge detection" as V2 (F-2 ships it in V1). That doc is corrected to
+  point here.
 
 ---
 
