@@ -1,5 +1,6 @@
 {
   "app_name": "Kagaz",
+  "exit_hint": "Press back again to exit",
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",

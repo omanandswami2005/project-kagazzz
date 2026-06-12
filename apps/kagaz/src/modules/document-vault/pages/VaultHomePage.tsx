@@ -16,7 +16,8 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useState, type ReactNode } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -114,6 +115,37 @@ export function VaultHomePage(): ReactNode {
       setUploadedCount(uploaded);
     });
   };
+
+  // Android hardware back inside a folder pops one level (folder nav is
+  // store state, not a route, so Ionic's router back can't see it).
+  // Priority 10: above the app's route/exit handler (5) and above Ionic's
+  // own navigation handler (0) — Ionic's exits without chaining, so any
+  // folder handler below 0 would never run. When no folder is open we
+  // call next() to defer to the lower-priority handlers.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      return undefined;
+    }
+    const onBack = (event: Event): void => {
+      (
+        event as CustomEvent<{
+          register: (
+            priority: number,
+            handler: (next: () => void) => void
+          ) => void;
+        }>
+      ).detail.register(10, (next) => {
+        const state = useVaultStore.getState();
+        if (state.folderPath.length > 0) {
+          state.goToFolderDepth(state.folderPath.length - 1);
+        } else {
+          next();
+        }
+      });
+    };
+    document.addEventListener('ionBackButton', onBack);
+    return (): void => document.removeEventListener('ionBackButton', onBack);
+  }, []);
 
   // Opening a document records recency (F-32) and, until F-24 ships the
   // detail view, surfaces the "preview coming soon" stopgap.
