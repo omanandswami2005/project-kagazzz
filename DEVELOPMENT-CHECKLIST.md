@@ -97,7 +97,7 @@
 
 ### Document Scanner module — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) (scan flows) + [04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
 
-- [ ] F-2 Document Scanning (edge detection, perspective correction, crop) 🔴Must→🔴L
+- [ ] F-2 Document Scanning (edge detection, perspective correction, crop) 🔴Must→🔴L 🟨 in progress (agent:claude · 2026-06-12) — slice 1 done (5534bbe): pure scan geometry (orderCorners/quadOutputSize/isValidQuad) + scanner.service orchestration over a pluggable ScannerEngine, 18 tests. Engine choice = jscanify + OpenCV.js, lazy/offline (ADR-016, supersedes ML Kit in 02/04). Slice 2 (pending): OpenCV engine impl + camera UI + draggable-corner review + device verification
 
 ### PDF Engine module — [docs/architecture/03-pdf-engine-module.md](docs/architecture/03-pdf-engine-module.md) (all ops in Web Workers `[PERF]`)
 
