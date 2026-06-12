@@ -13,6 +13,8 @@ function makeCtx(): VaultActionContext {
     moveDocument: vi.fn(() => Promise.resolve()),
     openFilters: vi.fn(),
     clearFilters: vi.fn(),
+    bulkDelete: vi.fn(() => Promise.resolve({ count: 2 })),
+    bulkFavorite: vi.fn(() => Promise.resolve({ count: 2 })),
     manageTags: vi.fn(),
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
   };
@@ -84,6 +86,24 @@ describe('vault.toggleFavorite (F-33)', () => {
     registry.register(vaultActions.toggleFavorite);
     const result = await registry.invoke('vault.toggleFavorite', {}, makeCtx());
     expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault bulk actions (F-25)', () => {
+  it('bulkDelete requires confirmation and returns the count', async () => {
+    expect(vaultActions.bulkDelete.requiresConfirmation).toBe(true);
+    const ctx = makeCtx();
+    await expect(vaultActions.bulkDelete.handler({}, ctx)).resolves.toEqual({
+      count: 2,
+    });
+    expect(ctx.bulkDelete).toHaveBeenCalledOnce();
+  });
+
+  it('bulkFavorite is non-destructive and delegates', async () => {
+    expect(vaultActions.bulkFavorite.requiresConfirmation).toBe(false);
+    const ctx = makeCtx();
+    await vaultActions.bulkFavorite.handler({}, ctx);
+    expect(ctx.bulkFavorite).toHaveBeenCalledOnce();
   });
 });
 

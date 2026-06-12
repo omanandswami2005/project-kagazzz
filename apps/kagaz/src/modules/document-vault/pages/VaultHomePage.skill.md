@@ -13,6 +13,8 @@ shipped yet.
 | Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
 | Filter the list | `vault.openFilters` | Opens the filter panel (type / size / tags / favorites). |
 | Remove filters | `vault.clearFilters` | Clears every active filter. |
+| Delete selected (bulk) | `vault.bulkDelete` | Soft-deletes the multi-selected documents. Destructive — confirm the count first. |
+| Favorite selected (bulk) | `vault.bulkFavorite` | Stars the multi-selected documents. |
 | Favorite / unfavorite | `vault.toggleFavorite` | `documentId` — resolve from the document the user means. Toggles the star. |
 | Create a folder | `vault.createFolder` | `name`. Created inside the folder the user is currently viewing. |
 | Move a document | `vault.moveDocument` | `documentId` + `folderId` (`null` = vault root). |

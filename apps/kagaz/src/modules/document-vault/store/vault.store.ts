@@ -43,6 +43,10 @@ export interface VaultState {
   folderPath: FolderEntity[];
   /** Active document filters (F-12). */
   filters: DocumentFilters;
+  /** Whether multi-select mode is active (F-25). */
+  selectionMode: boolean;
+  /** Ids of the selected documents (F-25). */
+  selectedIds: string[];
 
   setDocuments: (documents: DocumentEntity[]) => void;
   prependDocuments: (documents: DocumentEntity[]) => void;
@@ -68,6 +72,14 @@ export interface VaultState {
   setFilters: (filters: DocumentFilters) => void;
   /** Clears all filters (F-12). */
   clearFilters: () => void;
+  /** Enters multi-select with one document pre-selected (F-25). */
+  enterSelection: (id: string) => void;
+  /** Toggles a document in the selection (F-25). */
+  toggleSelection: (id: string) => void;
+  /** Selects every id passed (F-25). */
+  selectAll: (ids: string[]) => void;
+  /** Exits multi-select and clears the selection (F-25). */
+  clearSelection: () => void;
 }
 
 /** The id of the folder currently being viewed (null = root). */
@@ -87,6 +99,8 @@ export const useVaultStore = create<VaultState>((set) => ({
   sortDirection: DEFAULT_SORT_DIRECTION,
   folderPath: [],
   filters: EMPTY_FILTERS,
+  selectionMode: false,
+  selectedIds: [],
 
   setDocuments: (documents): void =>
     set((state) => ({
@@ -137,4 +151,13 @@ export const useVaultStore = create<VaultState>((set) => ({
     set((state) => ({ folderPath: state.folderPath.slice(0, depth) })),
   setFilters: (filters): void => set({ filters }),
   clearFilters: (): void => set({ filters: EMPTY_FILTERS }),
+  enterSelection: (id): void => set({ selectionMode: true, selectedIds: [id] }),
+  toggleSelection: (id): void =>
+    set((state) => ({
+      selectedIds: state.selectedIds.includes(id)
+        ? state.selectedIds.filter((x) => x !== id)
+        : [...state.selectedIds, id],
+    })),
+  selectAll: (ids): void => set({ selectionMode: true, selectedIds: ids }),
+  clearSelection: (): void => set({ selectionMode: false, selectedIds: [] }),
 }));

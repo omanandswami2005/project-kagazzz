@@ -32,6 +32,8 @@ beforeEach(() => {
     sortBy: 'createdAt',
     sortDirection: 'desc',
     folderPath: [],
+    selectionMode: false,
+    selectedIds: [],
   });
 });
 
@@ -84,6 +86,20 @@ describe('vault.store', () => {
   it('toggles the loading flag', () => {
     useVaultStore.getState().setLoading(true);
     expect(useVaultStore.getState().isLoading).toBe(true);
+  });
+
+  it('manages multi-select state (F-25)', () => {
+    useVaultStore.getState().enterSelection('a');
+    expect(useVaultStore.getState().selectionMode).toBe(true);
+    expect(useVaultStore.getState().selectedIds).toEqual(['a']);
+    useVaultStore.getState().toggleSelection('b');
+    useVaultStore.getState().toggleSelection('a'); // deselect a
+    expect(useVaultStore.getState().selectedIds).toEqual(['b']);
+    useVaultStore.getState().selectAll(['a', 'b', 'c']);
+    expect(useVaultStore.getState().selectedIds).toEqual(['a', 'b', 'c']);
+    useVaultStore.getState().clearSelection();
+    expect(useVaultStore.getState().selectionMode).toBe(false);
+    expect(useVaultStore.getState().selectedIds).toEqual([]);
   });
 
   it('navigates folders via the breadcrumb (F-9)', () => {

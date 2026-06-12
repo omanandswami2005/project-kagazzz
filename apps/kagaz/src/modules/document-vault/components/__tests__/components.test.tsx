@@ -9,6 +9,7 @@ import type {
   FolderEntity,
 } from '@/infrastructure/database/types';
 import { EMPTY_FILTERS } from '../../services/filter.service';
+import { BulkActionBar } from '../BulkActionBar';
 import { DocumentListItem } from '../DocumentListItem';
 import { EmptyVaultState } from '../EmptyVaultState';
 import { FilterPanel } from '../FilterPanel';
@@ -148,6 +149,46 @@ const folder: FolderEntity = {
   createdAt: '',
   updatedAt: '',
 };
+
+describe('BulkActionBar (F-25)', () => {
+  it('shows the count and fires favorite/cancel', async () => {
+    const onFavorite = vi.fn();
+    const onCancel = vi.fn();
+    render(
+      <BulkActionBar
+        count={3}
+        onCancel={onCancel}
+        onDelete={() => undefined}
+        onMove={() => undefined}
+        onFavorite={onFavorite}
+      />
+    );
+    expect(screen.getByText('3 selected')).toBeInTheDocument();
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.bulk-favorite"]') as Element
+    );
+    expect(onFavorite).toHaveBeenCalledOnce();
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.bulk-cancel"]') as Element
+    );
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it('disables actions when nothing is selected', () => {
+    render(
+      <BulkActionBar
+        count={0}
+        onCancel={() => undefined}
+        onDelete={() => undefined}
+        onMove={() => undefined}
+        onFavorite={() => undefined}
+      />
+    );
+    expect(
+      document.querySelector('[data-agent-id="vault.home.bulk-delete"]')
+    ).toBeDisabled();
+  });
+});
 
 describe('FilterPanel (F-12)', () => {
   it('toggles a kind chip and applies the draft', async () => {

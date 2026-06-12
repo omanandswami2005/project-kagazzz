@@ -31,6 +31,10 @@ export interface VaultActionContext {
   openFilters: () => void;
   /** Clears all active filters (F-12). */
   clearFilters: () => void;
+  /** Soft-deletes the selected documents (F-25). */
+  bulkDelete: () => Promise<{ count: number }>;
+  /** Marks the selected documents as favorites (F-25). */
+  bulkFavorite: () => Promise<{ count: number }>;
   /** Opens the tag selector for a document (F-10). */
   manageTags: (documentId: string) => void;
   /** Creates a tag (if new) and assigns it to a document (F-10). */
@@ -126,6 +130,27 @@ export const vaultActions = {
       ctx.search(args.query);
       return Promise.resolve({ query: args.query });
     },
+  }),
+
+  bulkDelete: defineAction({
+    id: 'vault.bulkDelete',
+    summary: 'Delete the currently selected documents.',
+    voice: ['delete selected', 'delete these', 'चयनित हटाओ'],
+    args: z.object({}),
+    // Destructive + multi-document — confirmation card required.
+    requiresConfirmation: true,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ count: number }> =>
+      ctx.bulkDelete(),
+  }),
+
+  bulkFavorite: defineAction({
+    id: 'vault.bulkFavorite',
+    summary: 'Mark the currently selected documents as favorites.',
+    voice: ['favorite selected', 'star these', 'इन्हें पसंदीदा बनाओ'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ count: number }> =>
+      ctx.bulkFavorite(),
   }),
 
   openFilters: defineAction({

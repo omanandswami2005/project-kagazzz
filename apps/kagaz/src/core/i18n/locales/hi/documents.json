@@ -78,6 +78,14 @@
     "placeholder": "दस्तावेज़ खोजें",
     "no_results": "\"{{query}}\" से कोई दस्तावेज़ मेल नहीं खाता"
   },
+  "bulk": {
+    "select": "चुनें",
+    "toolbar": "बल्क क्रियाएँ",
+    "cancel": "चयन रद्द करें",
+    "selected": "{{count}} चयनित",
+    "delete": "हटाएं",
+    "delete_confirm": "{{count}} दस्तावेज़ हटाएं?"
+  },
   "filters": {
     "title": "फ़िल्टर",
     "active": "फ़िल्टर ({{count}})",

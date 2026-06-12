@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
+import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
 import { FilterPanel } from '../components/FilterPanel';
 import { FolderBreadcrumb } from '../components/FolderBreadcrumb';
@@ -21,6 +22,7 @@ import { SortControl } from '../components/SortControl';
 import { TagSelector } from '../components/TagSelector';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
+import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -50,6 +52,13 @@ export function VaultHomePage(): ReactNode {
   const { folders, createFolder, moveDocument } = useFolders();
   const filters = useVaultStore((s) => s.filters);
   const setFilters = useVaultStore((s) => s.setFilters);
+  const selectionMode = useVaultStore((s) => s.selectionMode);
+  const selectedIds = useVaultStore((s) => s.selectedIds);
+  const enterSelection = useVaultStore((s) => s.enterSelection);
+  const toggleSelection = useVaultStore((s) => s.toggleSelection);
+  const clearSelection = useVaultStore((s) => s.clearSelection);
+  const { bulkDelete, bulkMove, bulkFavorite } = useBulkActions();
+  const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const filterCount = activeFilterCount(filters);
   // Filters apply to the current folder's documents (after sort).
@@ -156,6 +165,9 @@ export function VaultHomePage(): ReactNode {
                         onOpen={handleOpen}
                         onToggleFavorite={(doc) => void toggleFavorite(doc)}
                         onMore={(doc) => setMoreDoc(doc)}
+                        selectionMode={selectionMode}
+                        selected={selectedIds.includes(document.id)}
+                        onToggleSelect={(doc) => toggleSelection(doc.id)}
                       />
                     ))}
                   </ul>
@@ -235,6 +247,9 @@ export function VaultHomePage(): ReactNode {
                         onOpen={handleOpen}
                         onToggleFavorite={(doc) => void toggleFavorite(doc)}
                         onMore={(doc) => setMoreDoc(doc)}
+                        selectionMode={selectionMode}
+                        selected={selectedIds.includes(document.id)}
+                        onToggleSelect={(doc) => toggleSelection(doc.id)}
                       />
                     ))}
                   </ul>
@@ -299,8 +314,33 @@ export function VaultHomePage(): ReactNode {
                 if (moreDoc) setMoveDocId(moreDoc.id);
               },
             },
+            {
+              text: t('bulk.select'),
+              data: { action: 'select' },
+              handler: (): void => {
+                if (moreDoc) enterSelection(moreDoc.id);
+              },
+            },
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
+        />
+
+        {selectionMode && (
+          <BulkActionBar
+            count={selectedIds.length}
+            onCancel={clearSelection}
+            onDelete={() => void bulkDelete()}
+            onMove={() => setBulkMoveOpen(true)}
+            onFavorite={() => void bulkFavorite()}
+          />
+        )}
+        <MoveToFolderDialog
+          documentId={bulkMoveOpen ? '__bulk__' : null}
+          onDismiss={() => setBulkMoveOpen(false)}
+          onMove={(_docId, folderId) => {
+            void bulkMove(folderId);
+            setBulkMoveOpen(false);
+          }}
         />
 
         <IonToast

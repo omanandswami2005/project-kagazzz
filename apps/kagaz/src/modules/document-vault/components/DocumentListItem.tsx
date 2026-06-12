@@ -33,6 +33,12 @@ export interface DocumentListItemProps {
   tags?: TagEntity[];
   /** Opens the overflow menu (tags F-10, move F-9). Hidden when omitted. */
   onMore?: (document: DocumentEntity) => void;
+  /** Multi-select mode active (F-25): tapping selects instead of opening. */
+  selectionMode?: boolean;
+  /** Whether this row is selected (F-25). */
+  selected?: boolean;
+  /** Toggles this row's selection (F-25). */
+  onToggleSelect?: (document: DocumentEntity) => void;
 }
 
 /** Name, type badge, size, and created date for one vault document. */
@@ -42,12 +48,24 @@ export function DocumentListItem({
   onToggleFavorite,
   tags = [],
   onMore,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
 
   const body = (
     <>
+      {selectionMode && (
+        <span className="kg-doc-item__check" aria-hidden="true">
+          <Icon
+            name={selected ? 'Check' : 'File'}
+            size={20}
+            color={selected ? 'var(--color-primary)' : 'var(--text-muted)'}
+          />
+        </span>
+      )}
       <span className="kg-doc-item__icon" aria-hidden="true">
         <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={24} />
       </span>
@@ -77,17 +95,28 @@ export function DocumentListItem({
 
   const agentId = `vault.home.item-${document.id}`;
 
-  // A real <button> when openable (native focus + Enter/Space); a plain
-  // row otherwise. Full preview/detail lands with F-24/F-25.
+  // In selection mode the whole row toggles selection; otherwise it opens.
+  const rowClick = selectionMode
+    ? onToggleSelect
+      ? (): void => onToggleSelect(document)
+      : undefined
+    : onOpen
+      ? (): void => onOpen(document)
+      : undefined;
+  const rowState = selectionMode && selected ? 'selected' : 'idle';
+
+  // A real <button> when interactive (native focus + Enter/Space); a plain
+  // row otherwise. Full preview/detail lands with F-24.
   return (
     <li className="kg-doc-item__li">
-      {onOpen ? (
+      {rowClick ? (
         <button
           type="button"
           className="kg-doc-item kg-doc-item--button"
           data-agent-id={agentId}
-          data-agent-state="idle"
-          onClick={() => onOpen(document)}
+          data-agent-state={rowState}
+          aria-pressed={selectionMode ? selected : undefined}
+          onClick={rowClick}
         >
           {body}
         </button>
@@ -95,12 +124,12 @@ export function DocumentListItem({
         <div
           className="kg-doc-item"
           data-agent-id={agentId}
-          data-agent-state="idle"
+          data-agent-state={rowState}
         >
           {body}
         </div>
       )}
-      {(onToggleFavorite || onMore) && (
+      {!selectionMode && (onToggleFavorite || onMore) && (
         <span className="kg-doc-item__actions">
           {onMore && (
             <button

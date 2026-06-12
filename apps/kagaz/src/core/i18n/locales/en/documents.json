@@ -78,6 +78,14 @@
     "placeholder": "Search documents",
     "no_results": "No documents match \"{{query}}\""
   },
+  "bulk": {
+    "select": "Select",
+    "toolbar": "Bulk actions",
+    "cancel": "Cancel selection",
+    "selected": "{{count}} selected",
+    "delete": "Delete",
+    "delete_confirm": "Delete {{count}} document(s)?"
+  },
   "filters": {
     "title": "Filter",
     "active": "Filter ({{count}})",

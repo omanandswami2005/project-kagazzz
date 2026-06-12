@@ -18,6 +18,8 @@ export const VaultHomePageAgent = definePage({
     vaultActions.searchDocuments,
     vaultActions.openFilters,
     vaultActions.clearFilters,
+    vaultActions.bulkDelete,
+    vaultActions.bulkFavorite,
     vaultActions.createFolder,
     vaultActions.moveDocument,
     vaultActions.toggleFavorite,
@@ -63,6 +65,8 @@ export const VaultHomePageAgent = definePage({
     },
     { utterance: 'filter documents', action: 'vault.openFilters' },
     { utterance: 'clear filters', action: 'vault.clearFilters' },
+    { utterance: 'delete selected', action: 'vault.bulkDelete' },
+    { utterance: 'favorite these', action: 'vault.bulkFavorite' },
     { utterance: 'favorite this document', action: 'vault.toggleFavorite' },
     {
       utterance: 'create a folder called Taxes',
