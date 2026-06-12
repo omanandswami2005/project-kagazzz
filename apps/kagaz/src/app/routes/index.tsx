@@ -12,7 +12,7 @@ import { IonRouterOutlet } from '@ionic/react';
 import { Suspense, type ReactNode } from 'react';
 import { Route } from 'react-router-dom';
 import { Spinner } from '@kagaz/ui';
-import { LazyVaultHomePage } from './lazy-imports';
+import { LazyStoragePage, LazyVaultHomePage } from './lazy-imports';
 
 /** Top-level routes inside the Ionic router outlet. */
 export function AppRoutes(): ReactNode {
@@ -20,6 +20,7 @@ export function AppRoutes(): ReactNode {
     <IonRouterOutlet>
       <Suspense fallback={<Spinner size="lg" label="Loading..." />}>
         <Route exact path={['/', '/vault']} component={LazyVaultHomePage} />
+        <Route exact path="/storage" component={LazyStoragePage} />
       </Suspense>
     </IonRouterOutlet>
   );

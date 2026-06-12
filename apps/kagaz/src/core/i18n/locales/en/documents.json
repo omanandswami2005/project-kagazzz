@@ -78,6 +78,14 @@
     "placeholder": "Search documents",
     "no_results": "No documents match \"{{query}}\""
   },
+  "storage": {
+    "title": "Storage",
+    "loading": "Calculating storage…",
+    "used": "{{count}} document(s)",
+    "by_type": "By file type",
+    "largest": "Largest documents",
+    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed"
+  },
   "bulk": {
     "select": "Select",
     "toolbar": "Bulk actions",

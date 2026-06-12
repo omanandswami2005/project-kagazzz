@@ -73,6 +73,38 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('getStorageTotals sums size and counts (F-26)', async () => {
+    db.onQuery(/SUM\(file_size\)/, [{ total: 5000, n: 3 }]);
+    const totals = await dao.getStorageTotals();
+    expect(totals).toEqual({ totalBytes: 5000, count: 3 });
+  });
+
+  it('getUsageByType groups by file_type ordered by bytes (F-26)', async () => {
+    db.onQuery(/GROUP BY file_type/, [
+      { file_type: 'pdf', bytes: 4000, n: 2 },
+      { file_type: 'jpg', bytes: 1000, n: 1 },
+    ]);
+    const usage = await dao.getUsageByType();
+    expect(usage[0]).toEqual({ fileType: 'pdf', bytes: 4000, count: 2 });
+  });
+
+  it('getLargestDocuments orders by size desc, binds limit (F-26)', async () => {
+    db.onQuery(/ORDER BY file_size DESC/, [docRow()]);
+    const docs = await dao.getLargestDocuments(3);
+    expect(docs).toHaveLength(1);
+    expect(db.calls[0]?.params).toEqual([3]);
+  });
+
+  it('getDuplicateStats counts groups and reclaimable bytes (F-26)', async () => {
+    db.onQuery(/GROUP BY file_hash HAVING/, [
+      { file_hash: 'h1', n: 3, size: 100 },
+      { file_hash: 'h2', n: 2, size: 50 },
+    ]);
+    const dupes = await dao.getDuplicateStats();
+    // (3-1)*100 + (2-1)*50 = 250
+    expect(dupes).toEqual({ groups: 2, wastedBytes: 250 });
+  });
+
   it('findRecent filters last_accessed_at, orders desc, binds limit', async () => {
     db.onQuery(/last_accessed_at IS NOT NULL/, [
       docRow({ last_accessed_at: '2026-06-11T00:00:00.000Z' }),

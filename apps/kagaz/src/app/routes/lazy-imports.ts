@@ -8,3 +8,7 @@ import { lazy } from 'react';
 export const LazyVaultHomePage = lazy(
   () => import('@/modules/document-vault/pages/VaultHomePage')
 );
+
+export const LazyStoragePage = lazy(
+  () => import('@/modules/document-vault/pages/StoragePage')
+);

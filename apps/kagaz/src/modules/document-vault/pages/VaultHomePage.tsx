@@ -6,6 +6,7 @@
  */
 import { IonActionSheet, IonContent, IonPage, IonToast } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
+import { useHistory } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -43,6 +44,7 @@ import './vault.css';
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  const history = useHistory();
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
@@ -107,7 +109,18 @@ export function VaultHomePage(): ReactNode {
     <IonPage data-agent-id="vault.home">
       <IonContent>
         <main className="kg-vault" data-agent-id="vault.home.content">
-          <h1>{t('title')}</h1>
+          <div className="kg-vault__header">
+            <h1>{t('title')}</h1>
+            <button
+              type="button"
+              className="kg-vault__storage-btn"
+              aria-label={t('storage.title')}
+              data-agent-id="vault.home.storage-link"
+              onClick={() => history.push('/storage')}
+            >
+              <Icon name="HardDrive" size={24} />
+            </button>
+          </div>
 
           {dbStatus === 'error' && (
             <p

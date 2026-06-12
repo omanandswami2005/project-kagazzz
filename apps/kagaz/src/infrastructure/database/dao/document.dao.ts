@@ -69,6 +69,62 @@ export class DocumentDao {
     return rows.map(mapRow);
   }
 
+  /** Total bytes + document count across the (non-deleted) vault (F-26). */
+  async getStorageTotals(): Promise<{ totalBytes: number; count: number }> {
+    const rows = await this.db.query(
+      `SELECT COALESCE(SUM(file_size), 0) AS total, COUNT(*) AS n
+       FROM documents WHERE deleted_at IS NULL`
+    );
+    return {
+      totalBytes: asNumber(rows[0] ?? {}, 'total'),
+      count: asNumber(rows[0] ?? {}, 'n'),
+    };
+  }
+
+  /** Bytes + count grouped by file type, largest first (F-26). */
+  async getUsageByType(): Promise<
+    { fileType: string; bytes: number; count: number }[]
+  > {
+    const rows = await this.db.query(
+      `SELECT file_type, SUM(file_size) AS bytes, COUNT(*) AS n
+       FROM documents WHERE deleted_at IS NULL
+       GROUP BY file_type ORDER BY bytes DESC`
+    );
+    return rows.map((row) => ({
+      fileType: asString(row, 'file_type'),
+      bytes: asNumber(row, 'bytes'),
+      count: asNumber(row, 'n'),
+    }));
+  }
+
+  /** The largest non-deleted documents (F-26). */
+  async getLargestDocuments(limit = 10): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NULL
+       ORDER BY file_size DESC LIMIT ?`,
+      [limit]
+    );
+    return rows.map(mapRow);
+  }
+
+  /** Counts duplicate groups (same file_hash) and their reclaimable bytes (F-26). */
+  async getDuplicateStats(): Promise<{ groups: number; wastedBytes: number }> {
+    const rows = await this.db.query(
+      `SELECT file_hash, COUNT(*) AS n, MAX(file_size) AS size
+       FROM documents
+       WHERE deleted_at IS NULL AND file_hash IS NOT NULL
+       GROUP BY file_hash HAVING n > 1`
+    );
+    let groups = 0;
+    let wastedBytes = 0;
+    for (const row of rows) {
+      groups += 1;
+      // Keeping one copy, the rest (n-1) are reclaimable.
+      wastedBytes += (asNumber(row, 'n') - 1) * asNumber(row, 'size');
+    }
+    return { groups, wastedBytes };
+  }
+
   /** Most-recently-opened non-deleted documents (F-32). */
   async findRecent(limit = 10): Promise<DocumentEntity[]> {
     const rows = await this.db.query(
