@@ -23,6 +23,18 @@
   --color-info: #0ea5e9;
   --color-info-light: #38bdf8;
 
+  /* ── Data-viz palette ─────────────────────────────────────────────
+     Categorical series colors for charts (storage donut, etc.). Ordered
+     for maximum adjacent contrast; cycle with modulo past --chart-6. */
+  --chart-1: #0ea5e9;
+  --chart-2: #f59e0b;
+  --chart-3: #10b981;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  --chart-6: #64748b;
+  /* Track behind chart arcs/bars. */
+  --chart-track: var(--surface-3);
+
   /* ── Surfaces (light) ─────────────────────────────────────────── */
   --surface-1: #f8fafc;
   --surface-2: #f1f5f9;

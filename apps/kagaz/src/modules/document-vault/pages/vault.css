@@ -73,13 +73,6 @@
   letter-spacing: 0.04em;
 }
 
-.kg-storage__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-2);
-}
-
 .kg-storage__row-size {
   font-size: var(--text-sm);
   color: var(--text-secondary);
@@ -258,6 +251,15 @@
   border-radius: var(--radius-md);
   color: var(--color-primary);
   cursor: pointer;
+}
+
+.kg-recent__thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  animation: kg-fade-in var(--duration-normal) var(--ease-out);
 }
 
 .kg-recent__name {
@@ -574,4 +576,174 @@
   margin: 0 0 var(--space-2);
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────
+   Entrance + press feedback. All timings come from the motion tokens,
+   which collapse to 0ms under prefers-reduced-motion (tokens.css), so
+   these effects disable themselves for users who ask for less motion. */
+@keyframes kg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kg-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kg-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Document rows cascade in; entering a folder remounts the list, so the
+   new contents animate too. Stagger only the first handful to keep long
+   lists snappy. */
+.kg-doc-item__li {
+  animation: kg-fade-in-up var(--duration-normal) var(--ease-out) both;
+}
+.kg-doc-item__li:nth-child(2) {
+  animation-delay: 30ms;
+}
+.kg-doc-item__li:nth-child(3) {
+  animation-delay: 60ms;
+}
+.kg-doc-item__li:nth-child(4) {
+  animation-delay: 90ms;
+}
+.kg-doc-item__li:nth-child(5) {
+  animation-delay: 120ms;
+}
+.kg-doc-item__li:nth-child(n + 6) {
+  animation-delay: 150ms;
+}
+
+/* Tactile press feedback on the interactive row. */
+.kg-doc-item {
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.kg-doc-item--button:active {
+  transform: scale(0.985);
+}
+
+/* Thumbnails fade in as their object URL resolves, instead of popping. */
+.kg-doc-item__thumb {
+  animation: kg-fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* Folder cards pop in and depress on tap. */
+.kg-folder-card {
+  animation: kg-pop-in var(--duration-normal) var(--ease-spring) both;
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.kg-folder-card:active {
+  transform: scale(0.95);
+}
+
+/* Recent-strip cards share the folder press feel. */
+.kg-recent__item {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.kg-recent__item:active {
+  transform: scale(0.95);
+}
+
+/* ── Storage donut (F-26) ────────────────────────────────────────── */
+.kg-donut {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+  animation: kg-pop-in var(--duration-normal) var(--ease-spring) both;
+}
+
+.kg-donut__svg {
+  width: 200px;
+  max-width: 60%;
+  height: auto;
+}
+
+.kg-donut__track {
+  stroke: var(--chart-track);
+}
+
+.kg-donut__ring circle {
+  /* Animate arc growth on first paint. */
+  transition: stroke-dashoffset var(--duration-slow) var(--ease-out);
+}
+
+.kg-donut__value {
+  fill: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: 26px;
+  font-weight: var(--font-bold);
+}
+
+.kg-donut__caption {
+  fill: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: 12px;
+}
+
+.kg-donut__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-donut__legend-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.kg-donut__swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.kg-donut__legend-label {
+  flex: 1 1 auto;
+  font-weight: var(--font-medium);
+}
+
+.kg-donut__legend-size {
+  color: var(--text-secondary);
+}
+
+.kg-donut__legend-pct {
+  min-width: 3ch;
+  text-align: right;
+  color: var(--text-muted);
 }

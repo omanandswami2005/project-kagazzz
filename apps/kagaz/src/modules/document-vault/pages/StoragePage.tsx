@@ -12,8 +12,8 @@ import {
 } from '@ionic/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge, ProgressBar } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
+import { StorageDonut } from '../components/StorageDonut';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
 
@@ -36,35 +36,35 @@ export function StoragePage(): ReactNode {
             <p data-agent-id="vault.storage.loading">{t('storage.loading')}</p>
           ) : (
             <>
-              <section
-                className="kg-storage__total"
-                data-agent-id="vault.storage.total"
-              >
-                <span className="kg-storage__total-value">
-                  {formatFileSize(stats.totalBytes)}
-                </span>
-                <span className="kg-storage__total-label">
-                  {t('storage.used', { count: stats.documentCount })}
-                </span>
-              </section>
-
-              <section data-agent-id="vault.storage.by-type">
-                <h2 className="kg-storage__heading">{t('storage.by_type')}</h2>
-                {stats.byType.map((row) => (
-                  <div key={row.fileType} className="kg-storage__row">
-                    <Badge size="sm" variant="info">
-                      {row.fileType.toUpperCase()}
-                    </Badge>
-                    <ProgressBar
-                      value={Math.round(row.fraction * 100)}
-                      aria-label={`${row.fileType} ${Math.round(row.fraction * 100)}%`}
-                    />
-                    <span className="kg-storage__row-size">
-                      {formatFileSize(row.bytes)}
-                    </span>
-                  </div>
-                ))}
-              </section>
+              {stats.byType.length > 0 ? (
+                <section data-agent-id="vault.storage.by-type">
+                  <h2 className="kg-storage__heading">{t('storage.by_type')}</h2>
+                  <StorageDonut
+                    segments={stats.byType.map((row) => ({
+                      label: row.fileType.toUpperCase(),
+                      sizeLabel: formatFileSize(row.bytes),
+                      fraction: row.fraction,
+                    }))}
+                    centerValue={formatFileSize(stats.totalBytes)}
+                    centerLabel={t('storage.used', {
+                      count: stats.documentCount,
+                    })}
+                    ariaLabel={t('storage.by_type')}
+                  />
+                </section>
+              ) : (
+                <section
+                  className="kg-storage__total"
+                  data-agent-id="vault.storage.total"
+                >
+                  <span className="kg-storage__total-value">
+                    {formatFileSize(stats.totalBytes)}
+                  </span>
+                  <span className="kg-storage__total-label">
+                    {t('storage.used', { count: stats.documentCount })}
+                  </span>
+                </section>
+              )}
 
               {stats.duplicateGroups > 0 && (
                 <section
