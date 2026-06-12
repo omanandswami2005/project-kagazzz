@@ -21,6 +21,7 @@ export const VaultHomePageAgent = definePage({
     vaultActions.bulkDelete,
     vaultActions.bulkFavorite,
     vaultActions.createFolder,
+    vaultActions.createStarterFolders,
     vaultActions.moveDocument,
     vaultActions.toggleFavorite,
     vaultActions.manageTags,
@@ -72,6 +73,10 @@ export const VaultHomePageAgent = definePage({
       utterance: 'create a folder called Taxes',
       action: 'vault.createFolder',
       args: { name: 'Taxes' },
+    },
+    {
+      utterance: 'set up starter folders',
+      action: 'vault.createStarterFolders',
     },
     { utterance: 'edit tags', action: 'vault.manageTags' },
     {

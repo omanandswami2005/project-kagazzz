@@ -78,6 +78,16 @@
     "placeholder": "Search documents",
     "no_results": "No documents match \"{{query}}\""
   },
+  "templates": {
+    "cta": "Set up starter folders",
+    "identity": "Identity Documents",
+    "education": "Education",
+    "financial": "Financial",
+    "health": "Health",
+    "property": "Property",
+    "employment": "Employment",
+    "misc": "Miscellaneous"
+  },
   "storage": {
     "title": "Storage",
     "loading": "Calculating storage…",

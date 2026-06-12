@@ -78,4 +78,23 @@ describe('useFolders (F-9)', () => {
     await expect(result.current.createFolder('x')).resolves.toBeNull();
     await expect(result.current.moveDocument('d', null)).resolves.toBeUndefined();
   });
+
+  it('createDefaultFolders inserts each starter folder (F-30)', async () => {
+    const db = new FakeDb()
+      .onQuery(/parent_id IS NULL/, [])
+      .onQuery(/FROM folders WHERE id/, [folderRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useFolders());
+
+    const count = await result.current.createDefaultFolders([
+      { name: 'Identity', icon: 'Lock', color: '#3b82f6' },
+      { name: 'Health', icon: 'Heart', color: '#ef4444' },
+    ]);
+    expect(count).toBe(2);
+    const inserts = db.calls.filter(
+      (c) => c.kind === 'run' && c.sql.includes('INSERT INTO folders')
+    );
+    expect(inserts).toHaveLength(2);
+    expect(inserts[0]?.params).toContain('Identity');
+  });
 });

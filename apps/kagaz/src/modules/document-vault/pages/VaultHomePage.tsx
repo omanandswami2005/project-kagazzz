@@ -30,6 +30,7 @@ import { useRecentDocuments } from '../hooks/useRecentDocuments';
 import { useTags } from '../hooks/useTags';
 import { useUpload } from '../hooks/useUpload';
 import { useVaultMutations } from '../hooks/useVaultMutations';
+import { FOLDER_TEMPLATES } from '../services/folder-templates';
 import { SearchBar } from '@/modules/search/components/SearchBar';
 import { useSearch } from '@/modules/search/hooks/useSearch';
 import {
@@ -51,7 +52,19 @@ export function VaultHomePage(): ReactNode {
   const { toggleFavorite, markAccessed } = useVaultMutations();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
-  const { folders, createFolder, moveDocument } = useFolders();
+  const { folders, createFolder, moveDocument, createDefaultFolders } =
+    useFolders();
+
+  // F-30: localized starter folders, created from the empty state.
+  const setUpStarterFolders = (): void => {
+    void createDefaultFolders(
+      FOLDER_TEMPLATES.map((tpl) => ({
+        name: t(tpl.labelKey),
+        icon: tpl.icon,
+        color: tpl.color,
+      }))
+    );
+  };
   const filters = useVaultStore((s) => s.filters);
   const setFilters = useVaultStore((s) => s.setFilters);
   const selectionMode = useVaultStore((s) => s.selectionMode);
@@ -151,7 +164,7 @@ export function VaultHomePage(): ReactNode {
           documents.length === 0 &&
           folders.length === 0 &&
           folderPath.length === 0 ? (
-            <EmptyVaultState />
+            <EmptyVaultState onSetUpFolders={setUpStarterFolders} />
           ) : (
             <>
               <SearchBar value={search.query} onChange={search.setQuery} />

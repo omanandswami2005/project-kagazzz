@@ -25,6 +25,8 @@ export interface VaultActionContext {
   search: (query: string) => void;
   /** Creates a folder in the current folder (F-9). */
   createFolder: (name: string) => Promise<{ folderId: string | null }>;
+  /** Creates the starter folder set (F-30). */
+  createStarterFolders: () => Promise<{ count: number }>;
   /** Moves a document into a folder, null = root (F-9). */
   moveDocument: (documentId: string, folderId: string | null) => Promise<void>;
   /** Opens the filter panel (F-12). */
@@ -187,6 +189,20 @@ export const vaultActions = {
       args: { name: string },
       ctx: VaultActionContext
     ): Promise<{ folderId: string | null }> => ctx.createFolder(args.name),
+  }),
+
+  createStarterFolders: defineAction({
+    id: 'vault.createStarterFolders',
+    summary: 'Create the default starter folders (Identity, Education, …).',
+    voice: [
+      'set up folders',
+      'create starter folders',
+      'प्रारंभिक फ़ोल्डर बनाओ',
+    ],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ count: number }> =>
+      ctx.createStarterFolders(),
   }),
 
   moveDocument: defineAction({

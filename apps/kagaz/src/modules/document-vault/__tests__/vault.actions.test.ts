@@ -10,6 +10,7 @@ function makeCtx(): VaultActionContext {
     toggleFavorite: vi.fn(() => Promise.resolve({ isFavorite: true })),
     search: vi.fn(),
     createFolder: vi.fn(() => Promise.resolve({ folderId: 'f-1' })),
+    createStarterFolders: vi.fn(() => Promise.resolve({ count: 7 })),
     moveDocument: vi.fn(() => Promise.resolve()),
     openFilters: vi.fn(),
     clearFilters: vi.fn(),
@@ -129,6 +130,14 @@ describe('vault folder actions (F-9)', () => {
     registry.register(vaultActions.createFolder);
     const bad = await registry.invoke('vault.createFolder', { name: '' }, makeCtx());
     expect(bad.ok).toBe(false);
+  });
+
+  it('createStarterFolders delegates and returns the count (F-30)', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.createStarterFolders.handler({}, ctx)
+    ).resolves.toEqual({ count: 7 });
+    expect(ctx.createStarterFolders).toHaveBeenCalledOnce();
   });
 
   it('moveDocument accepts a folder id or null (root)', async () => {

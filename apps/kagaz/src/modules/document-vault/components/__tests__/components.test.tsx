@@ -305,6 +305,15 @@ describe('EmptyVaultState', () => {
       screen.getByText(/Scan or upload your first document/)
     ).toBeInTheDocument();
   });
+
+  it('offers the starter-folders CTA when wired (F-30)', async () => {
+    const onSetUpFolders = vi.fn();
+    render(<EmptyVaultState onSetUpFolders={onSetUpFolders} />);
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.setup-folders"]') as Element
+    );
+    expect(onSetUpFolders).toHaveBeenCalledOnce();
+  });
 });
 
 describe('UploadFAB', () => {

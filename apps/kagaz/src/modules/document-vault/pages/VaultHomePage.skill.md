@@ -17,6 +17,7 @@ shipped yet.
 | Favorite selected (bulk) | `vault.bulkFavorite` | Stars the multi-selected documents. |
 | Favorite / unfavorite | `vault.toggleFavorite` | `documentId` — resolve from the document the user means. Toggles the star. |
 | Create a folder | `vault.createFolder` | `name`. Created inside the folder the user is currently viewing. |
+| Set up starter folders | `vault.createStarterFolders` | One-tap default set (Identity, Education, Financial, Health, Property, Employment, Misc). Best for an empty vault. |
 | Move a document | `vault.moveDocument` | `documentId` + `folderId` (`null` = vault root). |
 | Edit a document's tags | `vault.manageTags` | `documentId`. Opens the tag editor sheet. |
 | Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |

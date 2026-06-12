@@ -25,6 +25,10 @@ export interface UseFoldersResult {
   deleteFolder: (id: string) => Promise<void>;
   /** Moves a document into a folder (null = root) and drops it from view. */
   moveDocument: (documentId: string, folderId: string | null) => Promise<void>;
+  /** Creates the starter folders (F-30) with the given localized names. */
+  createDefaultFolders: (
+    folders: { name: string; icon: string; color: string }[]
+  ) => Promise<number>;
 }
 
 /** Loads subfolders for the current folder and exposes folder mutations. */
@@ -112,6 +116,38 @@ export function useFolders(): UseFoldersResult {
     [folderDao, load]
   );
 
+  const createDefaultFolders = useCallback(
+    async (
+      defaults: { name: string; icon: string; color: string }[]
+    ): Promise<number> => {
+      if (!folderDao) {
+        return 0;
+      }
+      let created = 0;
+      for (const [index, def] of defaults.entries()) {
+        try {
+          await folderDao.create({
+            name: def.name,
+            parentId: undefined,
+            icon: def.icon,
+            color: def.color,
+            sortOrder: index,
+          });
+          created += 1;
+        } catch (error) {
+          logger.error({
+            event: 'vault.folder.template.failed',
+            err: { message: String(error) },
+          });
+        }
+      }
+      logger.info({ event: 'vault.folder.templates', count: created });
+      await load();
+      return created;
+    },
+    [folderDao, load]
+  );
+
   const moveDocument = useCallback(
     async (documentId: string, folderId: string | null): Promise<void> => {
       if (!documentDao) {
@@ -125,5 +161,12 @@ export function useFolders(): UseFoldersResult {
     [documentDao]
   );
 
-  return { folders, createFolder, renameFolder, deleteFolder, moveDocument };
+  return {
+    folders,
+    createFolder,
+    renameFolder,
+    deleteFolder,
+    moveDocument,
+    createDefaultFolders,
+  };
 }
