@@ -22,10 +22,22 @@ const KB = 1024;
  */
 const VENDOR_TEMP_ALLOWANCE_KB = 320;
 
+/**
+ * `pdfjs-dist` (PDF thumbnails F-24, PDF preview) is a heavy but
+ * lazy-loaded dependency: its library chunk (~121 KB gz) and its worker
+ * (assets/mjs/, not counted here) load only the first time a PDF is
+ * rendered — never on the initial route, so they do not affect FCP or
+ * initial load. They are therefore measured against a dedicated budget
+ * and excluded from the initial-load TOTAL. Tracked against G1-4: keep
+ * pdfjs strictly off the initial route.
+ */
+const PDF_LAZY_BUDGET_KB = 140;
+
 const BUDGETS = {
   vendor: VENDOR_TEMP_ALLOWANCE_KB * KB,
   app: 150 * KB,
   lazy: 100 * KB,
+  pdf: PDF_LAZY_BUDGET_KB * KB,
   total: 500 * KB,
 };
 
@@ -45,13 +57,18 @@ const rows = [];
 
 for (const file of files) {
   const gzipped = gzipSync(readFileSync(join(jsDir, file))).length;
-  totalGzip += gzipped;
 
-  const kind = file.startsWith('vendor.')
-    ? 'vendor'
-    : file.startsWith('index.')
-      ? 'app'
-      : 'lazy';
+  const kind = file.startsWith('pdf')
+    ? 'pdf'
+    : file.startsWith('vendor.')
+      ? 'vendor'
+      : file.startsWith('index.')
+        ? 'app'
+        : 'lazy';
+  // pdfjs is off the initial route — excluded from the initial-load total.
+  if (kind !== 'pdf') {
+    totalGzip += gzipped;
+  }
   const budget = BUDGETS[kind];
   const ok = gzipped <= budget;
   rows.push(

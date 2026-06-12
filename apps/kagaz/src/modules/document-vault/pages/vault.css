@@ -466,6 +466,15 @@
 .kg-doc-item__icon {
   color: var(--color-primary);
   display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.kg-doc-item__thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 
 .kg-doc-item__body {

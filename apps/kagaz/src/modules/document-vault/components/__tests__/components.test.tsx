@@ -25,6 +25,12 @@ vi.mock('@/app/providers/DatabaseProvider', () => ({
   useDatabase: () => ({ status: 'error', db: null }),
 }));
 
+// DocumentListItem loads thumbnails via useThumbnail (F-24); control it here.
+const thumbnailUrl = vi.fn<() => string | null>(() => null);
+vi.mock('../../hooks/useThumbnail', () => ({
+  useThumbnail: () => thumbnailUrl(),
+}));
+
 beforeAll(async () => {
   await initI18n();
   await i18n.changeLanguage('en');
@@ -65,6 +71,18 @@ describe('DocumentListItem', () => {
       </ul>
     );
     expect(screen.getByText('ZIP')).toBeInTheDocument();
+  });
+
+  it('renders a cached thumbnail image when available (F-24)', () => {
+    thumbnailUrl.mockReturnValueOnce('blob:thumb-1');
+    render(
+      <ul>
+        <DocumentListItem document={{ ...doc, thumbnailPath: 'thumbnails/a.jpg' }} />
+      </ul>
+    );
+    const img = document.querySelector('img.kg-doc-item__thumb');
+    expect(img).not.toBeNull();
+    expect(img).toHaveAttribute('src', 'blob:thumb-1');
   });
 
   it('renders assigned tag chips and an overflow menu button (F-10/F-9)', async () => {

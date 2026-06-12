@@ -11,6 +11,7 @@ import type {
   DocumentEntity,
   TagEntity,
 } from '@/infrastructure/database/types';
+import { useThumbnail } from '../hooks/useThumbnail';
 import { FileType } from '../types/document.types';
 
 const TYPE_ICONS: Partial<Record<string, IconName>> = {
@@ -54,6 +55,7 @@ export function DocumentListItem({
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
+  const thumbnailUrl = useThumbnail(document.thumbnailPath);
 
   const body = (
     <>
@@ -67,7 +69,16 @@ export function DocumentListItem({
         </span>
       )}
       <span className="kg-doc-item__icon" aria-hidden="true">
-        <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={24} />
+        {thumbnailUrl ? (
+          <img
+            className="kg-doc-item__thumb"
+            src={thumbnailUrl}
+            alt=""
+            loading="lazy"
+          />
+        ) : (
+          <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={24} />
+        )}
       </span>
       <span className="kg-doc-item__body">
         <span className="kg-doc-item__name">{document.name}</span>

@@ -10,6 +10,7 @@ import { createFileStorage } from '@/infrastructure/filesystem';
 import { useVaultStore } from '../store/vault.store';
 import { UploadService } from '../services/upload.service';
 import { pickFiles, type UploadSource } from '../services/upload-sources';
+import { generateThumbnail } from '../services/thumbnail.service';
 
 /** What {@link useUpload} exposes to pages and actions. */
 export interface UseUploadResult {
@@ -30,6 +31,8 @@ export function useUpload(): UseUploadResult {
     return new UploadService({
       storage: createFileStorage(),
       documents: new DocumentDao(db),
+      makeThumbnail: (blob, fileType): Promise<Uint8Array | null> =>
+        generateThumbnail(blob, fileType),
     });
   }, [db]);
 
