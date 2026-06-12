@@ -1,6 +1,11 @@
 {
   "app_name": "Kagaz",
   "exit_hint": "बाहर निकलने के लिए फिर से बैक दबाएं",
+  "tabs": {
+    "documents": "दस्तावेज़",
+    "favorites": "पसंदीदा",
+    "storage": "स्टोरेज"
+  },
   "buttons": {
     "save": "सहेजें",
     "cancel": "रद्द करें",

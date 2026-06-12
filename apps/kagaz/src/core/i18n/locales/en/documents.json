@@ -74,6 +74,11 @@
   "recent": {
     "title": "Recent"
   },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet",
+    "empty_hint": "Tap the star on any document to keep it here"
+  },
   "search": {
     "placeholder": "Search documents",
     "no_results": "No documents match \"{{query}}\""

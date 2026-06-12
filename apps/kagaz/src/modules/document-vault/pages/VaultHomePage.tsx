@@ -6,15 +6,12 @@
  */
 import {
   IonActionSheet,
-  IonButton,
-  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
   IonTitle,
   IonToast,
   IonToolbar,
-  useIonRouter,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -56,7 +53,6 @@ import './vault.css';
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
-  const ionRouter = useIonRouter();
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
@@ -165,15 +161,6 @@ export function VaultHomePage(): ReactNode {
       <IonHeader>
         <IonToolbar>
           <IonTitle>{t('title')}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton
-              aria-label={t('storage.title')}
-              data-agent-id="vault.home.storage-link"
-              onClick={() => ionRouter.push('/storage', 'forward', 'push')}
-            >
-              <Icon name="HardDrive" size={24} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>

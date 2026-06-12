@@ -9,6 +9,10 @@ export const LazyVaultHomePage = lazy(
   () => import('@/modules/document-vault/pages/VaultHomePage')
 );
 
+export const LazyFavoritesPage = lazy(
+  () => import('@/modules/document-vault/pages/FavoritesPage')
+);
+
 export const LazyStoragePage = lazy(
   () => import('@/modules/document-vault/pages/StoragePage')
 );

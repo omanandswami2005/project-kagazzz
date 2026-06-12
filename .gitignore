@@ -19,3 +19,6 @@ Thumbs.db
 # a future shared .claude/settings.json must not carry permission modes)
 .claude/settings.json
 .claude/settings.local.json
+
+# Ad-hoc device-verification screenshots pulled via adb (root-level only)
+/*.png

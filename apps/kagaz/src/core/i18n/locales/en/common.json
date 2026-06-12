@@ -1,6 +1,11 @@
 {
   "app_name": "Kagaz",
   "exit_hint": "Press back again to exit",
+  "tabs": {
+    "documents": "Documents",
+    "favorites": "Favorites",
+    "storage": "Storage"
+  },
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",

@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-06-07
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-06-12
 
 ---
 
@@ -247,11 +247,31 @@ src/modules/document-vault/
 │   └── tag.types.ts               # Tag types
 │
 └── pages/
-    ├── VaultHomePage.tsx           # Main vault page (grid/list + folders)
+    ├── VaultHomePage.tsx           # Main vault page (grid/list + folders) — "Documents" tab
     ├── FolderPage.tsx              # Contents of a specific folder
     ├── DocumentDetailPage.tsx      # Document detail + operations
-    └── StoragePage.tsx             # Storage management page
+    ├── FavoritesPage.tsx           # Starred documents (F-33) — "Favorites" tab
+    └── StoragePage.tsx             # Storage management page — "Storage" tab
 ```
+
+### Bottom-tab navigation
+
+The app shell (`app/routes/index.tsx`) wraps the router outlet in an
+`IonTabs` bottom bar with three destinations, each a vault page:
+
+| Tab | Route | Page | Icon |
+|-----|-------|------|------|
+| **Documents** | `/vault` | `VaultHomePage` | folder |
+| **Favorites** | `/favorites` | `FavoritesPage` | star |
+| **Storage** | `/storage` | `StoragePage` | hard-drive |
+
+`/` redirects to `/vault` via `<Redirect>` (a history *replace*, so it
+adds no back-stack entry). `IonTabs` reserves the bar's height plus the
+device safe-area inset, so each tab's `IonContent` — and the upload FAB
+(`IonFab slot="fixed"`) — sits *above* the bar, never behind it. The
+Android hardware-back handler lives above Ionic's navigation handler so
+that back pops a folder → pops the route → double-back-to-exit at the
+true root (see `app/routes/index.tsx` header comment).
 
 ---
 

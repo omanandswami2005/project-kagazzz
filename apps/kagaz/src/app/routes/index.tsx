@@ -3,19 +3,32 @@
  * bump, see ADR/Dependency Version Policy). Guards (auth/version) arrive
  * with F-16.
  *
- * The vault home answers on both '/' and '/vault' (no redirect): a
- * redirect at '/' put an extra entry in the history stack, so the
- * Android hardware back button looped through it instead of leaving
- * the app.
+ * Wrapped in a bottom tab bar (Documents / Favorites / Storage). '/'
+ * redirects to '/vault' via <Redirect> (history.replace, so it adds no
+ * stack entry — the earlier back-loop came from a *pushing* redirect);
+ * the canonical '/vault' path is what lets the Documents tab highlight
+ * on cold start.
  */
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { IonRouterOutlet, useIonRouter, useIonToast } from '@ionic/react';
+import {
+  IonLabel,
+  IonRouterOutlet,
+  IonTabBar,
+  IonTabButton,
+  IonTabs,
+  useIonRouter,
+  useIonToast,
+} from '@ionic/react';
 import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Route } from 'react-router-dom';
-import { Spinner } from '@kagaz/ui';
-import { LazyStoragePage, LazyVaultHomePage } from './lazy-imports';
+import { Redirect, Route } from 'react-router-dom';
+import { Icon, Spinner } from '@kagaz/ui';
+import {
+  LazyFavoritesPage,
+  LazyStoragePage,
+  LazyVaultHomePage,
+} from './lazy-imports';
 
 /**
  * Android hardware back. Ionic registers its own navigation handler at
@@ -73,15 +86,51 @@ function useHardwareBack(): void {
   }, [ionRouter, t, presentToast, dismissToast]);
 }
 
-/** Top-level routes inside the Ionic router outlet. */
+/**
+ * Top-level shell: a bottom tab bar (Documents / Favorites / Storage)
+ * wrapping the router outlet. IonTabs reserves the tab bar's height and
+ * safe-area inset itself, so each tab's IonContent scrolls *above* the
+ * bar — nothing renders behind it. '/' redirects to the Documents tab so
+ * that tab highlights on cold start (Redirect replaces, no extra history
+ * entry — the hardware-back handler above still owns the root exit).
+ */
 export function AppRoutes(): ReactNode {
   useHardwareBack();
+  const { t } = useTranslation('common');
   return (
-    <IonRouterOutlet>
-      <Suspense fallback={<Spinner size="lg" label="Loading..." />}>
-        <Route exact path={['/', '/vault']} component={LazyVaultHomePage} />
-        <Route exact path="/storage" component={LazyStoragePage} />
-      </Suspense>
-    </IonRouterOutlet>
+    <IonTabs>
+      <IonRouterOutlet>
+        <Suspense fallback={<Spinner size="lg" label="Loading..." />}>
+          <Route exact path="/vault" component={LazyVaultHomePage} />
+          <Route exact path="/favorites" component={LazyFavoritesPage} />
+          <Route exact path="/storage" component={LazyStoragePage} />
+          <Route exact path="/">
+            <Redirect to="/vault" />
+          </Route>
+        </Suspense>
+      </IonRouterOutlet>
+      <IonTabBar slot="bottom" data-agent-id="app.tab-bar">
+        <IonTabButton tab="vault" href="/vault" data-agent-id="app.tab.documents">
+          <Icon name="Folder" size={24} aria-hidden />
+          <IonLabel>{t('tabs.documents')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton
+          tab="favorites"
+          href="/favorites"
+          data-agent-id="app.tab.favorites"
+        >
+          <Icon name="Star" size={24} aria-hidden />
+          <IonLabel>{t('tabs.favorites')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton
+          tab="storage"
+          href="/storage"
+          data-agent-id="app.tab.storage"
+        >
+          <Icon name="HardDrive" size={24} aria-hidden />
+          <IonLabel>{t('tabs.storage')}</IonLabel>
+        </IonTabButton>
+      </IonTabBar>
+    </IonTabs>
   );
 }

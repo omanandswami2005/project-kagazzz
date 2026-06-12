@@ -4,8 +4,6 @@
  * duplicate-reclaim hints (F-26). Read-only.
  */
 import {
-  IonBackButton,
-  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -29,9 +27,6 @@ export function StoragePage(): ReactNode {
     <IonPage data-agent-id="vault.storage">
       <IonHeader>
         <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/vault" />
-          </IonButtons>
           <IonTitle>{t('storage.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
