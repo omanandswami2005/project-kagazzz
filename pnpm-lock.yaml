@@ -240,6 +240,9 @@ importers:
       '@vitest/ui':
         specifier: ^4.1.8
         version: 4.1.8(vitest@4.1.8)
+      '@vitest/web-worker':
+        specifier: 4.1.8
+        version: 4.1.8(vitest@4.1.8)
       axe-core:
         specifier: ^4.12.0
         version: 4.12.0
@@ -2206,6 +2209,11 @@ packages:
 
   '@vitest/utils@4.1.8':
     resolution: {integrity: sha512-uOJamYALNhfJ6iolExyQM40yIQwDqYnkKtQ5VCiSe17E33H0aQ/u+1GlRuz4LZBk6Mm3sg90G9hEbmEt37C1Zg==}
+
+  '@vitest/web-worker@4.1.8':
+    resolution: {integrity: sha512-xQdWTsvnXgHo9CYRhHKJ68DMhWAK66GFguOhvnL0dQ4LWOlmtD4om002VNyoSLtaIy3/N9gyERJJ/ZJlCURqag==}
+    peerDependencies:
+      vitest: 4.1.8
 
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
@@ -6967,6 +6975,11 @@ snapshots:
       '@vitest/pretty-format': 4.1.8
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
+
+  '@vitest/web-worker@4.1.8(vitest@4.1.8)':
+    dependencies:
+      obug: 2.1.2
+      vitest: 4.1.8(@types/node@24.13.1)(@vitest/coverage-v8@4.1.8)(@vitest/ui@4.1.8)(jsdom@29.1.1)(vite@8.0.16(@types/node@24.13.1)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
   '@xmldom/xmldom@0.9.10': {}
 

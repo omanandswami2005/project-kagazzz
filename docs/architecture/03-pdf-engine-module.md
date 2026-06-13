@@ -2,10 +2,22 @@
 
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
-> **Status**: Draft
-> **Last Updated**: 2026-06-10
+> **Status**: Partially implemented (F-3/F-4/F-5)
+> **Last Updated**: 2026-06-13
 
 ---
+
+> [!NOTE]
+> **Implementation status (2026-06-13).** F-3 (merge), F-4 (split), and F-5
+> (compress) are implemented as the **real** worker-backed `PdfEngineServiceImpl`
+> (`apps/kagaz/src/modules/pdf-engine/`) — no mock in the shipped path. The
+> behavioural contract runs against the real service via `@vitest/web-worker`.
+> Compression's byte-reduction step rasterises pages (needs a canvas), so that
+> assertion is **device-verified** rather than run in jsdom CI. The rest of the
+> API below (creation, conversion, security, OCR, forms, metadata, annotation)
+> is the target design for later items. Code samples here predate the React
+> decision (ADR-001) and show Angular `@Injectable` for illustration only — the
+> app is React.
 
 ## 1. Overview
 

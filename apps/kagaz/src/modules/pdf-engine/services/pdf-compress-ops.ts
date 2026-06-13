@@ -3,7 +3,7 @@ import { loadAndValidatePdf } from './pdf-ops';
 import {
   type CompressionLevel,
   type ProgressCallback,
-  PdfEngineException
+  PdfEngineException,
 } from '../types/pdf-engine.types';
 
 /**
@@ -34,8 +34,16 @@ export async function compressPdfImpl(
       preset = 'balanced';
   }
 
+  // Pass exactly the PDF bytes: a Uint8Array can be a view into a larger
+  // buffer, so only hand over `.buffer` directly when it's a tight fit;
+  // otherwise copy out the precise slice.
+  const input =
+    pdf.byteOffset === 0 && pdf.byteLength === pdf.buffer.byteLength
+      ? (pdf.buffer as ArrayBuffer)
+      : pdf.slice().buffer;
+
   try {
-    const result = await compress(pdf.buffer as ArrayBuffer, {
+    const result = await compress(input, {
       preset,
       onProgress: (event) => {
         if (onProgress) {
@@ -47,10 +55,10 @@ export async function compressPdfImpl(
               event.message ? ` - ${event.message}` : ''
             }`,
             currentStep: event.currentChunk,
-            totalSteps: event.totalChunks
+            totalSteps: event.totalChunks,
           });
         }
-      }
+      },
     });
 
     if (onProgress) {
@@ -58,7 +66,7 @@ export async function compressPdfImpl(
         operationId: 'compress',
         operation: op,
         percent: 100,
-        message: 'Done'
+        message: 'Done',
       });
     }
 

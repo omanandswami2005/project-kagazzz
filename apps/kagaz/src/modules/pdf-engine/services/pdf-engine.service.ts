@@ -7,7 +7,7 @@ import {
   type ProgressCallback,
   type PdfErrorCode,
   type ProgressEvent,
-  PdfEngineException
+  PdfEngineException,
 } from '../types/pdf-engine.types';
 
 // Vite worker loaders
@@ -26,7 +26,7 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       onProgress?: ProgressCallback;
     }
   >();
-  
+
   private cleanupManipulationRelay: (() => void) | null = null;
   private cleanupCompressRelay: (() => void) | null = null;
   private serviceLogger = log('pdf-engine');
@@ -51,9 +51,9 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       const mainSink = {
         write: (record: Record<string, unknown>): void => {
           log('worker').info(record);
-        }
+        },
       };
-      
+
       this.cleanupManipulationRelay = attachWorkerLogRelay(this.manipulationWorker, mainSink);
       this.cleanupCompressRelay = attachWorkerLogRelay(this.compressWorker, mainSink);
 
@@ -95,11 +95,7 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     // Reject all pending requests
     for (const active of this.activeRequests.values()) {
       active.reject(
-        new PdfEngineException(
-          'PDF Engine destroyed',
-          'OPERATION_CANCELLED',
-          'destroy'
-        )
+        new PdfEngineException('PDF Engine destroyed', 'OPERATION_CANCELLED', 'destroy')
       );
     }
     this.activeRequests.clear();
@@ -154,9 +150,7 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         const message = error?.message || 'Unknown worker error';
         const operation = error?.operation || 'unknown';
         const details = error?.details;
-        active.reject(
-          new PdfEngineException(message, code, operation, undefined, details)
-        );
+        active.reject(new PdfEngineException(message, code, operation, undefined, details));
         this.activeRequests.delete(id);
       }
     });
@@ -187,21 +181,25 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       this.activeRequests.set(id, { resolve, reject, onProgress });
 
       // Clone buffers to avoid detaching caller's data
-      const clonedPdfs = pdfs.map(p => new Uint8Array(p.slice()));
-      const transferables = clonedPdfs.map(p => p.buffer);
+      const clonedPdfs = pdfs.map((p) => new Uint8Array(p.slice()));
+      const transferables = clonedPdfs.map((p) => p.buffer);
 
       this.manipulationWorker!.postMessage(
         {
           id,
           operation: op,
-          payload: { pdfs: clonedPdfs }
+          payload: { pdfs: clonedPdfs },
         },
         transferables
       );
     });
   }
 
-  async splitPdf(pdf: Uint8Array, ranges: PageRange[], onProgress?: ProgressCallback): Promise<Uint8Array[]> {
+  async splitPdf(
+    pdf: Uint8Array,
+    ranges: PageRange[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array[]> {
     this.ensureInitialized();
     const op = 'splitPdf';
     const id = crypto.randomUUID();
@@ -218,14 +216,18 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         {
           id,
           operation: op,
-          payload: { pdf: clonedPdf, ranges }
+          payload: { pdf: clonedPdf, ranges },
         },
         [clonedPdf.buffer]
       );
     });
   }
 
-  async compressPdf(pdf: Uint8Array, quality: CompressionLevel, onProgress?: ProgressCallback): Promise<Uint8Array> {
+  async compressPdf(
+    pdf: Uint8Array,
+    quality: CompressionLevel,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
     this.ensureInitialized();
     const op = 'compressPdf';
     const id = crypto.randomUUID();
@@ -242,7 +244,7 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         {
           id,
           operation: op,
-          payload: { pdf: clonedPdf, quality }
+          payload: { pdf: clonedPdf, quality },
         },
         [clonedPdf.buffer]
       );

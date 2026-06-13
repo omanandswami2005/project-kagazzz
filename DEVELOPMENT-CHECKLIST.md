@@ -101,9 +101,9 @@
 
 ### PDF Engine module — [docs/architecture/03-pdf-engine-module.md](docs/architecture/03-pdf-engine-module.md) (all ops in Web Workers `[PERF]`)
 
-- [x] F-3 PDF Merge 🔴Must ✅ bccb465 (2026-06-12)
-- [x] F-4 PDF Split 🔴Must ✅ bccb465 (2026-06-12)
-- [x] F-5 PDF Compress 🔴Must ✅ bccb465 (2026-06-12)
+- [ ] F-3 PDF Merge 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker-backed `PdfEngineServiceImpl` (pdf-lib in pdf-manipulation.worker), contract runs against the REAL service via `@vitest/web-worker` (no mock). **Not closed:** worker round-trip + UI not device-verified per protocol step 5.
+- [ ] F-4 PDF Split 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker split with page-range validation (PAGE_OUT_OF_RANGE); real-service contract tests. **Not closed:** device verification pending.
+- [ ] F-5 PDF Compress 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker compress via `@quicktoolsone/pdf-compress`; validation + error paths tested against the real service. **Byte-reduction rasterises pages (canvas) → device-verified only** (skipped in jsdom CI). **Not closed:** device verification pending.
 - [ ] F-6 PDF → Image 🔴Must
 - [ ] F-7 Image → PDF 🔴Must
 - [ ] F-21 PDF Encryption 🟡Should `[SEC]`

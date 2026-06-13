@@ -2,7 +2,7 @@ import { PDFDocument } from 'pdf-lib';
 import {
   type PageRange,
   type ProgressCallback,
-  PdfEngineException
+  PdfEngineException,
 } from '../types/pdf-engine.types';
 
 /**
@@ -10,22 +10,13 @@ import {
  */
 export async function loadAndValidatePdf(pdf: Uint8Array, operation: string): Promise<PDFDocument> {
   if (!pdf || pdf.length === 0) {
-    throw new PdfEngineException(
-      'Empty or missing PDF data',
-      'INVALID_PDF',
-      operation
-    );
+    throw new PdfEngineException('Empty or missing PDF data', 'INVALID_PDF', operation);
   }
   try {
     return await PDFDocument.load(pdf);
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
-    throw new PdfEngineException(
-      `Invalid PDF: ${error.message}`,
-      'INVALID_PDF',
-      operation,
-      error
-    );
+    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', operation, error);
   }
 }
 
@@ -52,7 +43,7 @@ export async function mergePdfsImpl(
       operationId: 'merge',
       operation: op,
       percent: 10,
-      message: 'Validating PDFs...'
+      message: 'Validating PDFs...',
     });
   }
 
@@ -69,7 +60,7 @@ export async function mergePdfsImpl(
         operationId: 'merge',
         operation: op,
         percent: Math.round(10 + ((i + 1) / docs.length) * 90),
-        message: `Merged document ${i + 1} of ${docs.length}`
+        message: `Merged document ${i + 1} of ${docs.length}`,
       });
     }
   }
@@ -81,7 +72,7 @@ export async function mergePdfsImpl(
       operationId: 'merge',
       operation: op,
       percent: 100,
-      message: 'Done'
+      message: 'Done',
     });
   }
 
@@ -105,7 +96,7 @@ export async function splitPdfImpl(
       operationId: 'split',
       operation: op,
       percent: 10,
-      message: 'Validating split ranges...'
+      message: 'Validating split ranges...',
     });
   }
 
@@ -139,7 +130,7 @@ export async function splitPdfImpl(
         operationId: 'split',
         operation: op,
         percent: Math.round(10 + ((i + 1) / ranges.length) * 90),
-        message: `Split range ${i + 1} of ${ranges.length}`
+        message: `Split range ${i + 1} of ${ranges.length}`,
       });
     }
   }
@@ -149,7 +140,7 @@ export async function splitPdfImpl(
       operationId: 'split',
       operation: op,
       percent: 100,
-      message: 'Done'
+      message: 'Done',
     });
   }
 

@@ -43,18 +43,15 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
   try {
     if (operation === 'mergePdfs') {
       const { pdfs } = payload as { pdfs: Uint8Array[] };
-      
+
       const result = await mergePdfsImpl(pdfs, (progress) => {
         ctx.postMessage({ id, type: 'progress', event: progress });
       });
 
       logger.info({ event: 'worker.request.success', opId: id, operation });
-      
+
       // Transfer the buffer for zero-copy efficiency
-      ctx.postMessage(
-        { id, type: 'result', data: result },
-        [result.buffer]
-      );
+      ctx.postMessage({ id, type: 'result', data: result }, [result.buffer]);
     } else if (operation === 'splitPdf') {
       const { pdf, ranges } = payload as { pdf: Uint8Array; ranges: PageRange[] };
 
@@ -65,11 +62,8 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
       logger.info({ event: 'worker.request.success', opId: id, operation });
 
       // Transfer all resulting buffers
-      const transferables = results.map(r => r.buffer);
-      ctx.postMessage(
-        { id, type: 'result', data: results },
-        transferables
-      );
+      const transferables = results.map((r) => r.buffer);
+      ctx.postMessage({ id, type: 'result', data: results }, transferables);
     } else {
       throw new PdfEngineException(
         `Unsupported worker operation: ${operation}`,
@@ -86,14 +80,14 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
       event: 'worker.request.error',
       opId: id,
       operation,
-      err: error.message
+      err: error.message,
     });
 
     const errPayload = {
       code,
       message: error.message,
       operation,
-      details
+      details,
     };
 
     ctx.postMessage({ id, type: 'error', error: errPayload });

@@ -85,7 +85,7 @@ export class PdfEngineException extends Error implements PdfEngineError {
     this.operation = operation;
     this.cause = cause;
     this.details = details;
-    
+
     // Restore prototype chain
     Object.setPrototypeOf(this, new.target.prototype);
   }
@@ -99,16 +99,24 @@ export class PdfEngineException extends Error implements PdfEngineError {
 export interface PdfEngineService {
   /** Merge multiple PDFs into a single document */
   mergePdfs(pdfs: Uint8Array[], onProgress?: ProgressCallback): Promise<Uint8Array>;
-  
+
   /** Split a PDF into multiple documents by page ranges */
-  splitPdf(pdf: Uint8Array, ranges: PageRange[], onProgress?: ProgressCallback): Promise<Uint8Array[]>;
-  
+  splitPdf(
+    pdf: Uint8Array,
+    ranges: PageRange[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array[]>;
+
   /** Compress a PDF to reduce file size */
-  compressPdf(pdf: Uint8Array, quality: CompressionLevel, onProgress?: ProgressCallback): Promise<Uint8Array>;
-  
+  compressPdf(
+    pdf: Uint8Array,
+    quality: CompressionLevel,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array>;
+
   /** Initialize the engine (preload WASM, spawn workers) */
   initialize(): Promise<void>;
-  
+
   /** Terminate all workers and free resources */
   destroy(): Promise<void>;
 }

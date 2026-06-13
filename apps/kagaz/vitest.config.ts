@@ -26,8 +26,10 @@ export default defineConfig({
         '**/*.test.tsx',
         '**/__tests__/**',
         '**/*.agent.ts',
+        // Worker orchestration + the worker entry modules: integration-tested
+        // by the real contract (pdf-engine.contract.test) via @vitest/web-worker,
+        // but coverage instrumentation through the worker polyfill is unreliable.
         'src/modules/pdf-engine/services/pdf-engine.service.ts',
-        'src/modules/pdf-engine/services/mock-pdf-engine.service.ts',
         'src/modules/pdf-engine/workers/**',
         '**/__contract__/**',
       ],

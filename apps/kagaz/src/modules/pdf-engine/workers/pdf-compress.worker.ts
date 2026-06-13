@@ -51,10 +51,7 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
       logger.info({ event: 'worker.request.success', opId: id, operation });
 
       // Transfer the buffer for zero-copy efficiency
-      ctx.postMessage(
-        { id, type: 'result', data: result },
-        [result.buffer]
-      );
+      ctx.postMessage({ id, type: 'result', data: result }, [result.buffer]);
     } else {
       throw new PdfEngineException(
         `Unsupported worker operation: ${operation}`,
@@ -71,14 +68,14 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
       event: 'worker.request.error',
       opId: id,
       operation,
-      err: error.message
+      err: error.message,
     });
 
     const errPayload = {
       code,
       message: error.message,
       operation,
-      details
+      details,
     };
 
     ctx.postMessage({ id, type: 'error', error: errPayload });

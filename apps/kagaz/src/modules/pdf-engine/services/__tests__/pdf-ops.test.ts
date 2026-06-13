@@ -8,7 +8,7 @@ import { compress } from '@quicktoolsone/pdf-compress';
 // Mock the heavy WASM compressor
 vi.mock('@quicktoolsone/pdf-compress', () => {
   return {
-    compress: vi.fn()
+    compress: vi.fn(),
   };
 });
 
@@ -34,7 +34,7 @@ describe('PDF Engine Core Operations Implementation', () => {
           progress: 50,
           currentChunk: 1,
           totalChunks: 1,
-          message: 'Compressing images'
+          message: 'Compressing images',
         });
       }
       return Promise.resolve({
@@ -47,8 +47,8 @@ describe('PDF Engine Core Operations Implementation', () => {
           percentageSaved: 0,
           presetUsed: options?.preset || 'balanced',
           processingTime: 123,
-          chunksProcessed: 1
-        }
+          chunksProcessed: 1,
+        },
       });
     });
   });
@@ -67,23 +67,19 @@ describe('PDF Engine Core Operations Implementation', () => {
     });
 
     it('should throw INVALID_PDF if PDF is empty', async () => {
-      await expect(
-        loadAndValidatePdf(new Uint8Array(0), 'test')
-      ).rejects.toThrowError(
+      await expect(loadAndValidatePdf(new Uint8Array(0), 'test')).rejects.toThrowError(
         expect.objectContaining({
           code: 'INVALID_PDF',
-          operation: 'test'
+          operation: 'test',
         })
       );
     });
 
     it('should throw INVALID_PDF if PDF bytes are corrupt', async () => {
-      await expect(
-        loadAndValidatePdf(invalidPdf, 'test')
-      ).rejects.toThrowError(
+      await expect(loadAndValidatePdf(invalidPdf, 'test')).rejects.toThrowError(
         expect.objectContaining({
           code: 'INVALID_PDF',
-          operation: 'test'
+          operation: 'test',
         })
       );
     });
@@ -92,13 +88,12 @@ describe('PDF Engine Core Operations Implementation', () => {
   describe('mergePdfsImpl', () => {
     it('should merge documents and report progress', async () => {
       const progress: ProgressEvent[] = [];
-      const result = await mergePdfsImpl(
-        [valid1PagePdf, valid2PagePdf],
-        (event) => progress.push(event)
+      const result = await mergePdfsImpl([valid1PagePdf, valid2PagePdf], (event) =>
+        progress.push(event)
       );
 
       expect(result).toBeInstanceOf(Uint8Array);
-      
+
       const mergedDoc = await PDFDocument.load(result);
       expect(mergedDoc.getPageCount()).toBe(3);
 
@@ -108,12 +103,10 @@ describe('PDF Engine Core Operations Implementation', () => {
     });
 
     it('should throw error if input list is empty', async () => {
-      await expect(
-        mergePdfsImpl([])
-      ).rejects.toThrowError(
+      await expect(mergePdfsImpl([])).rejects.toThrowError(
         expect.objectContaining({
           code: 'INVALID_PDF',
-          operation: 'mergePdfs'
+          operation: 'mergePdfs',
         })
       );
     });
@@ -128,7 +121,7 @@ describe('PDF Engine Core Operations Implementation', () => {
         threePagePdf,
         [
           { start: 0, end: 1 },
-          { start: 2, end: 2 }
+          { start: 2, end: 2 },
         ],
         (event) => progress.push(event)
       );
@@ -142,34 +135,28 @@ describe('PDF Engine Core Operations Implementation', () => {
     });
 
     it('should throw PAGE_OUT_OF_RANGE if start index is negative', async () => {
-      await expect(
-        splitPdfImpl(valid2PagePdf, [{ start: -1, end: 0 }])
-      ).rejects.toThrowError(
+      await expect(splitPdfImpl(valid2PagePdf, [{ start: -1, end: 0 }])).rejects.toThrowError(
         expect.objectContaining({
           code: 'PAGE_OUT_OF_RANGE',
-          operation: 'splitPdf'
+          operation: 'splitPdf',
         })
       );
     });
 
     it('should throw PAGE_OUT_OF_RANGE if end index is out of bounds', async () => {
-      await expect(
-        splitPdfImpl(valid2PagePdf, [{ start: 0, end: 2 }])
-      ).rejects.toThrowError(
+      await expect(splitPdfImpl(valid2PagePdf, [{ start: 0, end: 2 }])).rejects.toThrowError(
         expect.objectContaining({
           code: 'PAGE_OUT_OF_RANGE',
-          operation: 'splitPdf'
+          operation: 'splitPdf',
         })
       );
     });
 
     it('should throw PAGE_OUT_OF_RANGE if start > end', async () => {
-      await expect(
-        splitPdfImpl(valid2PagePdf, [{ start: 1, end: 0 }])
-      ).rejects.toThrowError(
+      await expect(splitPdfImpl(valid2PagePdf, [{ start: 1, end: 0 }])).rejects.toThrowError(
         expect.objectContaining({
           code: 'PAGE_OUT_OF_RANGE',
-          operation: 'splitPdf'
+          operation: 'splitPdf',
         })
       );
     });
@@ -179,18 +166,16 @@ describe('PDF Engine Core Operations Implementation', () => {
     it('should map compression levels and call compress library', async () => {
       const progress: ProgressEvent[] = [];
       const mockCompress = vi.mocked(compress);
-      
+
       mockCompress.mockClear();
 
-      const result = await compressPdfImpl(
-        valid2PagePdf,
-        'medium',
-        (event) => progress.push(event)
+      const result = await compressPdfImpl(valid2PagePdf, 'medium', (event) =>
+        progress.push(event)
       );
 
       expect(result).toBeInstanceOf(Uint8Array);
       expect(mockCompress).toHaveBeenCalledTimes(1);
-      
+
       // 'medium' should map to 'balanced' preset
       const firstCallArgs = mockCompress.mock.calls[0];
       const options = firstCallArgs[1];
@@ -224,12 +209,10 @@ describe('PDF Engine Core Operations Implementation', () => {
       const mockCompress = vi.mocked(compress);
       mockCompress.mockImplementationOnce(() => Promise.reject(new Error('wasm panic')));
 
-      await expect(
-        compressPdfImpl(valid2PagePdf, 'medium')
-      ).rejects.toThrowError(
+      await expect(compressPdfImpl(valid2PagePdf, 'medium')).rejects.toThrowError(
         expect.objectContaining({
           code: 'COMPRESSION_FAILED',
-          operation: 'compressPdf'
+          operation: 'compressPdf',
         })
       );
     });
