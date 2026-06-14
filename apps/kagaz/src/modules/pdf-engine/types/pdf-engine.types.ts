@@ -18,6 +18,46 @@ export interface PageRange {
  */
 export type CompressionLevel = 'low' | 'medium' | 'high';
 
+/** An image to place onto a PDF page (F-7, images → PDF). */
+export interface ImageInput {
+  /** Raw image bytes. */
+  data: Uint8Array;
+  /** MIME type — only `image/jpeg` and `image/png` are embeddable by pdf-lib. */
+  mimeType: string;
+}
+
+/** Options for rendering PDF pages to images (F-6, PDF → image). */
+export interface RenderOptions {
+  /** Output raster format. */
+  format: 'png' | 'jpeg';
+  /** Scale factor (1 = 72 DPI, 2 = 144 DPI, …). Default 2. */
+  scale?: number;
+  /** Specific 0-indexed pages to render (undefined = all). */
+  pages?: number[];
+  /** JPEG quality (0–1, JPEG only). Default 0.92. */
+  quality?: number;
+}
+
+/** Encryption options (F-21). Defaults to AES-256 with a user password. */
+export interface EncryptOptions {
+  /** Separate owner (permissions) password. Defaults to the user password. */
+  ownerPassword?: string;
+  /** Cipher; AES-256 is the secure default. */
+  algorithm?: 'AES-256' | 'RC4';
+}
+
+/** A fillable form field discovered in a PDF (F-28). */
+export interface FormField {
+  /** Internal field name (the key used to fill it). */
+  name: string;
+  /** Field kind. */
+  type: 'text' | 'checkbox' | 'radio' | 'dropdown' | 'optionlist' | 'button' | 'signature';
+  /** Current value as a string ('true'/'false' for checkboxes). */
+  value: string;
+  /** Selectable options for radio/dropdown/optionlist fields. */
+  options?: string[];
+}
+
 export interface ProgressEvent {
   /** Operation identifier */
   operationId: string;
@@ -64,6 +104,28 @@ export interface PdfEngineError {
   operation: string;
   /** Additional context */
   details?: Record<string, unknown>;
+}
+
+/**
+ * Reads the error code + details off an unknown error by shape, not by
+ * `instanceof`. A `PdfEngineException` thrown inside a worker is a *different*
+ * class instance than the one the worker entry imports (separate module realm),
+ * so `instanceof` returns false there; duck-typing keeps the code intact.
+ */
+export function pdfErrorInfoOf(e: unknown): {
+  code: PdfErrorCode;
+  details?: Record<string, unknown>;
+} {
+  if (
+    e !== null &&
+    typeof e === 'object' &&
+    'code' in e &&
+    typeof (e as PdfEngineError).code === 'string'
+  ) {
+    const err = e as PdfEngineError;
+    return { code: err.code, details: err.details };
+  }
+  return { code: 'UNKNOWN' };
 }
 
 export class PdfEngineException extends Error implements PdfEngineError {
@@ -113,6 +175,32 @@ export interface PdfEngineService {
     quality: CompressionLevel,
     onProgress?: ProgressCallback
   ): Promise<Uint8Array>;
+
+  /** Combine one or more images into a single PDF (F-7) */
+  imagesToPdf(images: ImageInput[], onProgress?: ProgressCallback): Promise<Uint8Array>;
+
+  /** Render PDF pages to image blobs (F-6) */
+  pdfToImages(
+    pdf: Uint8Array,
+    options: RenderOptions,
+    onProgress?: ProgressCallback
+  ): Promise<Blob[]>;
+
+  /** Encrypt a PDF with a password (F-21, AES-256 by default) */
+  encryptPdf(
+    pdf: Uint8Array,
+    password: string,
+    options?: EncryptOptions
+  ): Promise<Uint8Array>;
+
+  /** Decrypt a password-protected PDF (F-22) */
+  decryptPdf(pdf: Uint8Array, password: string): Promise<Uint8Array>;
+
+  /** List the fillable form fields in a PDF (F-28) */
+  getFormFields(pdf: Uint8Array): Promise<FormField[]>;
+
+  /** Fill form fields by name and flatten the result (F-28) */
+  fillForm(pdf: Uint8Array, values: Record<string, string>): Promise<Uint8Array>;
 
   /** Initialize the engine (preload WASM, spawn workers) */
   initialize(): Promise<void>;

@@ -22,6 +22,25 @@ async function getPageCount(pdfBytes: Uint8Array): Promise<number> {
   return pdfDoc.getPageCount();
 }
 
+/** A 1×1 PNG, for the images → PDF contract (F-7). */
+function tinyPng(): Uint8Array {
+  const base64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+/** A PDF with one text field ('fullName') and one checkbox ('agree') (F-28). */
+async function createTestFormPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([300, 200]);
+  const form = doc.getForm();
+  const name = form.createTextField('fullName');
+  name.addToPage(page, { x: 50, y: 120, width: 200, height: 20 });
+  const agree = form.createCheckBox('agree');
+  agree.addToPage(page, { x: 50, y: 80, width: 15, height: 15 });
+  return doc.save();
+}
+
 /**
  * True when a real 2D canvas is available. The compressor (@quicktoolsone/
  * pdf-compress) rasterises pages to images, which needs a canvas — jsdom has
@@ -191,6 +210,109 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
             operation: 'compressPdf',
           })
         );
+      });
+    });
+
+    describe('F-7: Images → PDF', () => {
+      it('should build a one-page PDF from a single image', async () => {
+        const result = await engine.imagesToPdf([
+          { data: tinyPng(), mimeType: 'image/png' },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(1);
+      });
+
+      it('should build a multi-page PDF from multiple images', async () => {
+        const result = await engine.imagesToPdf([
+          { data: tinyPng(), mimeType: 'image/png' },
+          { data: tinyPng(), mimeType: 'image/png' },
+        ]);
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should throw UNSUPPORTED_FORMAT for an unsupported image type', async () => {
+        await expect(
+          engine.imagesToPdf([{ data: tinyPng(), mimeType: 'image/gif' }])
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+    });
+
+    describe('F-21 / F-22: Encrypt + Decrypt', () => {
+      it('should encrypt a PDF and round-trip it back with decrypt', async () => {
+        const original = await createTestPdf(2, 'Secret');
+        const encrypted = await engine.encryptPdf(original, 'pa55word');
+        expect(encrypted).toBeInstanceOf(Uint8Array);
+
+        // The encrypted bytes can no longer be opened without the password.
+        await expect(PDFDocument.load(encrypted)).rejects.toBeTruthy();
+
+        const decrypted = await engine.decryptPdf(encrypted, 'pa55word');
+        expect(await getPageCount(decrypted)).toBe(2);
+      });
+
+      it('should reject decrypt with the wrong password (WRONG_PASSWORD)', async () => {
+        const encrypted = await engine.encryptPdf(
+          await createTestPdf(1),
+          'correct-horse'
+        );
+        await expect(engine.decryptPdf(encrypted, 'wrong')).rejects.toThrowError(
+          expect.objectContaining({ code: 'WRONG_PASSWORD' })
+        );
+      });
+
+      it('should require a password to encrypt (PASSWORD_REQUIRED)', async () => {
+        await expect(
+          engine.encryptPdf(await createTestPdf(1), '')
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'PASSWORD_REQUIRED' })
+        );
+      });
+
+      it('should reject decrypting a non-encrypted PDF (INVALID_PDF)', async () => {
+        await expect(
+          engine.decryptPdf(await createTestPdf(1), 'whatever')
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-28: Form fields', () => {
+      it('should list the fillable fields', async () => {
+        const fields = await engine.getFormFields(await createTestFormPdf());
+        const byName = Object.fromEntries(fields.map((f) => [f.name, f]));
+        expect(byName['fullName']?.type).toBe('text');
+        expect(byName['agree']?.type).toBe('checkbox');
+      });
+
+      it('should fill text + checkbox fields and flatten', async () => {
+        const filled = await engine.fillForm(await createTestFormPdf(), {
+          fullName: 'Asha Rao',
+          agree: 'true',
+        });
+        expect(filled).toBeInstanceOf(Uint8Array);
+        // Flattened → no live form fields remain.
+        const reloaded = await PDFDocument.load(filled);
+        expect(reloaded.getForm().getFields()).toHaveLength(0);
+      });
+    });
+
+    describe('F-6: PDF → Images', () => {
+      // Rasterising needs a canvas (jsdom has none) — device-verified.
+      it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {
+        const blobs = await engine.pdfToImages(await createTestPdf(2), {
+          format: 'png',
+          scale: 1,
+        });
+        expect(blobs).toHaveLength(2);
+        expect(blobs[0]).toBeInstanceOf(Blob);
+      });
+
+      // pdfjs itself only loads with browser globals (DOMMatrix, …) — device.
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(
+          engine.pdfToImages(invalidPdf, { format: 'png' })
+        ).rejects.toMatchObject({ code: 'INVALID_PDF', operation: 'pdfToImages' });
       });
     });
   });

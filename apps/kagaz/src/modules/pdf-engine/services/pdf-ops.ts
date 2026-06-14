@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
 import {
+  type ImageInput,
   type PageRange,
   type ProgressCallback,
   PdfEngineException,
@@ -145,4 +146,69 @@ export async function splitPdfImpl(
   }
 
   return results;
+}
+
+/** Embeddable image MIME types (pdf-lib supports JPEG + PNG). */
+const JPEG_TYPES = new Set(['image/jpeg', 'image/jpg']);
+
+/**
+ * Builds a single PDF from images, one image per page sized to the image
+ * (F-7). Only JPEG and PNG embed in pdf-lib.
+ */
+export async function imagesToPdfImpl(
+  images: ImageInput[],
+  onProgress?: ProgressCallback
+): Promise<Uint8Array> {
+  const op = 'imagesToPdf';
+  if (!images || images.length === 0) {
+    throw new PdfEngineException('No images provided', 'UNSUPPORTED_FORMAT', op);
+  }
+
+  const doc = await PDFDocument.create();
+  for (let i = 0; i < images.length; i++) {
+    const image = images[i];
+    const type = image.mimeType.toLowerCase();
+    let embedded;
+    try {
+      if (JPEG_TYPES.has(type)) {
+        embedded = await doc.embedJpg(image.data);
+      } else if (type === 'image/png') {
+        embedded = await doc.embedPng(image.data);
+      } else {
+        throw new PdfEngineException(
+          `Unsupported image type "${image.mimeType}" — use JPEG or PNG`,
+          'UNSUPPORTED_FORMAT',
+          op
+        );
+      }
+    } catch (e: unknown) {
+      if (e instanceof PdfEngineException) {
+        throw e;
+      }
+      const error = e instanceof Error ? e : new Error(String(e));
+      throw new PdfEngineException(
+        `Could not read image ${i + 1}: ${error.message}`,
+        'CORRUPTED_FILE',
+        op,
+        error
+      );
+    }
+
+    const page = doc.addPage([embedded.width, embedded.height]);
+    page.drawImage(embedded, {
+      x: 0,
+      y: 0,
+      width: embedded.width,
+      height: embedded.height,
+    });
+
+    onProgress?.({
+      operationId: 'imagesToPdf',
+      operation: op,
+      percent: Math.round(((i + 1) / images.length) * 100),
+      message: `Added image ${i + 1} of ${images.length}`,
+    });
+  }
+
+  return doc.save();
 }

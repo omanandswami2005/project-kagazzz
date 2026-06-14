@@ -30,6 +30,8 @@ export default defineConfig({
         // by the real contract (pdf-engine.contract.test) via @vitest/web-worker,
         // but coverage instrumentation through the worker polyfill is unreliable.
         'src/modules/pdf-engine/services/pdf-engine.service.ts',
+        // pdfjs + canvas rendering (F-6) only runs on a device, not jsdom.
+        'src/modules/pdf-engine/services/pdf-render-ops.ts',
         'src/modules/pdf-engine/workers/**',
         '**/__contract__/**',
       ],

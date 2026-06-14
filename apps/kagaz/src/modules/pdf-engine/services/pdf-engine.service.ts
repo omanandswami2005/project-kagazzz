@@ -4,15 +4,24 @@ import {
   type PdfEngineService,
   type PageRange,
   type CompressionLevel,
+  type EncryptOptions,
+  type FormField,
+  type ImageInput,
   type ProgressCallback,
   type PdfErrorCode,
   type ProgressEvent,
+  type RenderOptions,
   PdfEngineException,
 } from '../types/pdf-engine.types';
+
+import { pdfToImagesImpl } from './pdf-render-ops';
 
 // Vite worker loaders
 import PdfManipulationWorker from '../workers/pdf-manipulation.worker?worker';
 import PdfCompressWorker from '../workers/pdf-compress.worker?worker';
+
+/** Clones a Uint8Array so transferring its buffer never detaches the caller's. */
+const clone = (data: Uint8Array): Uint8Array => new Uint8Array(data.slice());
 
 export class PdfEngineServiceImpl implements PdfEngineService {
   private manipulationWorker: Worker | null = null;
@@ -166,6 +175,26 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     }
   }
 
+  /**
+   * Posts one request to a worker and resolves with its result. The caller
+   * is responsible for cloning any buffers it lists in `transfer` (so the
+   * original data is never detached).
+   */
+  private dispatch<T>(
+    worker: Worker,
+    operation: string,
+    payload: Record<string, unknown>,
+    transfer: Transferable[],
+    onProgress?: ProgressCallback
+  ): Promise<T> {
+    const id = crypto.randomUUID();
+    this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation });
+    return new Promise<T>((resolve, reject) => {
+      this.activeRequests.set(id, { resolve, reject, onProgress });
+      worker.postMessage({ id, operation, payload }, transfer);
+    });
+  }
+
   async mergePdfs(pdfs: Uint8Array[], onProgress?: ProgressCallback): Promise<Uint8Array> {
     this.ensureInitialized();
     const op = 'mergePdfs';
@@ -249,5 +278,104 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         [clonedPdf.buffer]
       );
     });
+  }
+
+  async imagesToPdf(
+    images: ImageInput[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    if (!images || images.length === 0) {
+      throw new PdfEngineException('No images provided', 'UNSUPPORTED_FORMAT', 'imagesToPdf');
+    }
+    const cloned = images.map((img) => ({
+      data: clone(img.data),
+      mimeType: img.mimeType,
+    }));
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'imagesToPdf',
+      { images: cloned },
+      cloned.map((img) => img.data.buffer),
+      onProgress
+    );
+  }
+
+  async pdfToImages(
+    pdf: Uint8Array,
+    options: RenderOptions,
+    onProgress?: ProgressCallback
+  ): Promise<Blob[]> {
+    this.ensureInitialized();
+    // pdfjs rendering needs a canvas, so this runs on the main thread (the
+    // same proven path the vault uses for thumbnails) rather than a worker —
+    // pdfjs does not initialise reliably inside a Vite module worker.
+    const id = crypto.randomUUID();
+    this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: 'pdfToImages' });
+    try {
+      const blobs = await pdfToImagesImpl(clone(pdf), options, onProgress);
+      this.serviceLogger.info({ event: 'engine.request.success', opId: id, operation: 'pdfToImages' });
+      return blobs;
+    } catch (e: unknown) {
+      this.serviceLogger.error({
+        event: 'engine.request.error',
+        opId: id,
+        operation: 'pdfToImages',
+        err: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
+  }
+
+  async encryptPdf(
+    pdf: Uint8Array,
+    password: string,
+    options?: EncryptOptions
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    // [SEC] password travels only in the payload — never logged.
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'encryptPdf',
+      { pdf: clonedPdf, password, options },
+      [clonedPdf.buffer]
+    );
+  }
+
+  async decryptPdf(pdf: Uint8Array, password: string): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'decryptPdf',
+      { pdf: clonedPdf, password },
+      [clonedPdf.buffer]
+    );
+  }
+
+  async getFormFields(pdf: Uint8Array): Promise<FormField[]> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<FormField[]>(
+      this.manipulationWorker!,
+      'getFormFields',
+      { pdf: clonedPdf },
+      [clonedPdf.buffer]
+    );
+  }
+
+  async fillForm(
+    pdf: Uint8Array,
+    values: Record<string, string>
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'fillForm',
+      { pdf: clonedPdf, values },
+      [clonedPdf.buffer]
+    );
   }
 }

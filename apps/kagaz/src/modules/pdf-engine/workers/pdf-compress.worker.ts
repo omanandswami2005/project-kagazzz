@@ -1,6 +1,10 @@
 import { createWorkerLogger } from '@/core/logging/worker-relay';
 import { compressPdfImpl } from '../services/pdf-compress-ops';
-import { type CompressionLevel, PdfEngineException } from '../types/pdf-engine.types';
+import {
+  type CompressionLevel,
+  PdfEngineException,
+  pdfErrorInfoOf,
+} from '../types/pdf-engine.types';
 
 const ctx = self as unknown as {
   postMessage: (message: unknown, transfer?: Transferable[]) => void;
@@ -61,8 +65,7 @@ self.onmessage = async (event: MessageEvent): Promise<void> => {
     }
   } catch (e: unknown) {
     const error = e instanceof Error ? e : new Error(String(e));
-    const code = e instanceof PdfEngineException ? e.code : 'UNKNOWN';
-    const details = e instanceof PdfEngineException ? e.details : undefined;
+    const { code, details } = pdfErrorInfoOf(e);
 
     logger.error({
       event: 'worker.request.error',
