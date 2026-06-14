@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-06-11 (F-1 Document Upload shipped — first V1 feature; Phase 0 complete; lanes A/B/C/E/F unblocked per the Parallel Workstreams table)
+> Last updated: 2026-06-14 (Lane B engine complete: F-3..F-7 + F-21/F-22/F-28 implemented + the PDF Tools hub UI on develop; all 8 lane-B ops now pending one device-verification pass)
 
 ---
 
@@ -104,11 +104,11 @@
 - [ ] F-3 PDF Merge 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker-backed `PdfEngineServiceImpl` (pdf-lib in pdf-manipulation.worker), contract runs against the REAL service via `@vitest/web-worker` (no mock). **Not closed:** worker round-trip + UI not device-verified per protocol step 5.
 - [ ] F-4 PDF Split 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker split with page-range validation (PAGE_OUT_OF_RANGE); real-service contract tests. **Not closed:** device verification pending.
 - [ ] F-5 PDF Compress 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker compress via `@quicktoolsone/pdf-compress`; validation + error paths tested against the real service. **Byte-reduction rasterises pages (canvas) → device-verified only** (skipped in jsdom CI). **Not closed:** device verification pending.
-- [ ] F-6 PDF → Image 🔴Must
-- [ ] F-7 Image → PDF 🔴Must
-- [ ] F-21 PDF Encryption 🟡Should `[SEC]`
-- [ ] F-22 PDF Decryption 🟡Should `[SEC]` (never log/store passwords)
-- [ ] F-28 PDF Form Filling 🔵Could
+- [ ] F-6 PDF → Image 🔴Must 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `pdfToImages` (pdfjs → PNG/JPEG blobs per page) on the **main thread** (canvas; the proven thumbnail path — pdfjs won't init in a Vite module worker). Driven from the PDF Tools UI. **Device-verified only** (canvas/pdfjs absent in jsdom).
+- [ ] F-7 Image → PDF 🔴Must 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `imagesToPdf` (pdf-lib embedJpg/embedPng, one page per image) in the manipulation worker; real-service contract tests.
+- [ ] F-21 PDF Encryption 🟡Should `[SEC]` 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `encryptPdf` (@pdfsmaller/pdf-encrypt, AES-256) in the worker; password lives in the payload only, **never logged/persisted**; contract round-trips encrypt→decrypt.
+- [ ] F-22 PDF Decryption 🟡Should `[SEC]` (never log/store passwords) 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `decryptPdf` (@pdfsmaller/pdf-decrypt); wrong password → WRONG_PASSWORD, non-encrypted → INVALID_PDF; contract-tested.
+- [ ] F-28 PDF Form Filling 🔵Could 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `getFormFields`/`fillForm` (pdf-lib forms; text/checkbox/dropdown/radio; flattens on fill); PDF Tools renders a field per input. Contract-tested.
 
 ### Image Engine module — [docs/architecture/04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
 
@@ -284,7 +284,9 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
-- 2026-06-14 · _(this commit)_ · chore(repo) · stale-code sweep: removed 11 dead `.gitkeep` files from now-populated directories (pdf-engine, search, dao, migrations, filesystem, app/providers, i18n/locales). Verified all "unused" deps are deliberate V1 reservations (native plugins, packages/ usage, or reserved for F-16/F-20/F-21/F-22/F-31/AI lane) — none obsolete, none removed · cleanup
+- 2026-06-14 · 4cc846e · feat(pdf-engine) · PDF Tools hub UI (/pdf-tools): grid of 8 ops → adaptive op sheet (pick vault docs + params → run engine → save to vault), usePdfEngine, PdfDocPicker, parse-ranges; tools.openPdfTools action + agent trio + en/hi i18n; vault header entry; useUpload.ingestFiles shared save path · F-3..F-7, F-21, F-22, F-28
+- 2026-06-14 · 41eac4b · feat(pdf-engine) · F-6 pdfToImages (pdfjs, main thread), F-7 imagesToPdf, F-21/F-22 encrypt/decrypt (@pdfsmaller AES-256, [SEC] no password logging), F-28 forms (pdf-lib); manipulation worker switch dispatch; real-service contract for every op; cross-realm error codes via pdfErrorInfoOf · F-6, F-7, F-21, F-22, F-28
+- 2026-06-14 · ae59754 · chore(repo) · stale-code sweep: removed 11 dead `.gitkeep` files from now-populated directories (pdf-engine, search, dao, migrations, filesystem, app/providers, i18n/locales). Verified all "unused" deps are deliberate V1 reservations (native plugins, packages/ usage, or reserved for F-16/F-20/F-21/F-22/F-31/AI lane) — none obsolete, none removed · cleanup
 - 2026-06-13 · a772c03 · fix(pdf-engine) · F-3/4/5 contract runs the REAL worker-backed service (no mock) via @vitest/web-worker; compress byte-reduction device-gated (canvas); tight-buffer fix; F-3/4/5 downgraded to "implemented — pending device verification". Also moved the impl to develop (it had landed only on main) and reset main off the mistaken PR #2 (backup: origin/backup/main-bad-pr2-20260613) · F-3, F-4, F-5
 - 2026-06-12 · bccb465 · feat(pdf-engine) · implement F-3, F-4, F-5 core operations, workers, and contract tests · F-3, F-4, F-5
 - 2026-06-11 · _(this commit)_ · chore(kagaz) · F-1 stale-code sweep: unused heic-to dep dropped (HeicConverter stays a protocol for F-8), unused UPLOAD_ACCEPT_MIME export, dead .kg-home CSS, app/ README updated for the removed HomePage placeholder · F-1

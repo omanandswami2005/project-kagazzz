@@ -38,9 +38,34 @@ Real, worker-backed. No mock in the shipped path.
   rasterises pages to images, which needs a canvas jsdom doesn't have, so that
   one assertion is `skipIf(no canvas)` — it runs on a real device, not in CI.
 
+## Implemented — F-6 / F-7 / F-21 / F-22 / F-28 (pending device verification)
+
+- `services/pdf-ops.ts` — `imagesToPdfImpl` (F-7, pdf-lib embedJpg/embedPng).
+- `services/pdf-security-ops.ts` — `encryptPdfImpl` / `decryptPdfImpl` (F-21/F-22,
+  @pdfsmaller AES-256). **[SEC]** the password is used for the op only — never
+  logged, never persisted. Wrong password → `WRONG_PASSWORD`.
+- `services/pdf-forms-ops.ts` — `getFormFieldsImpl` / `fillFormImpl` (F-28,
+  pdf-lib forms; fill flattens the result).
+- `services/pdf-render-ops.ts` — `pdfToImagesImpl` (F-6, pdfjs → image blobs).
+  Runs on the **main thread** (canvas; the proven thumbnail path), not a worker.
+- F-7/F-21/F-22/F-28 route through `pdf-manipulation.worker` (switch dispatch);
+  the service gained the six methods + a `dispatch` helper. `pdfErrorInfoOf`
+  duck-types error codes across the worker boundary.
+
+## PDF Tools UI (the hub that drives all of the above)
+
+- `pages/PdfToolsPage.tsx` (`/pdf-tools`, reached from the vault header) — a grid
+  of the eight operations + `pages/PdfToolsPage.agent.ts` / `.skill.md`.
+- `components/PdfOpSheet.tsx` — one adaptive modal per op: pick vault document(s)
+  (`components/PdfDocPicker.tsx`), set params, run with progress, save to vault.
+- `hooks/usePdfEngine.ts` — one `PdfEngineServiceImpl` per screen; reads input
+  bytes from FileStorage, runs ops, ingests results via `useUpload.ingestFiles`.
+- `services/parse-ranges.ts` — "1-3, 5" → 0-based `PageRange[]` (pure, tested).
+- `pdf-tools.actions.ts` — `tools.openPdfTools` (surfaced on the vault home too).
+
 ### Not done yet
 
-- Device verification of the worker round-trip + the eventual UI (protocol
-  step 5). F-3/4/5 stay open until then.
-- F-6 (PDF→image), F-7 (image→PDF), F-21/22 (encrypt/decrypt), F-28, and the
-  rest of the spec API are later items.
+- **Device verification** of all eight ops end-to-end (protocol step 5) — the
+  worker round-trip, the canvas/pdfjs paths (compress byte-reduction, F-6
+  render), and the PDF Tools UI. Every lane-B item stays open until then.
+- The rest of the spec API (create, watermark/stamp, metadata, OCR) — later items.
