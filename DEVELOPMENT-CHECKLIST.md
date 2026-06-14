@@ -284,6 +284,8 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-06-14 · _(this commit)_ · chore(repo) · stale-code sweep: removed 11 dead `.gitkeep` files from now-populated directories (pdf-engine, search, dao, migrations, filesystem, app/providers, i18n/locales). Verified all "unused" deps are deliberate V1 reservations (native plugins, packages/ usage, or reserved for F-16/F-20/F-21/F-22/F-31/AI lane) — none obsolete, none removed · cleanup
+- 2026-06-13 · a772c03 · fix(pdf-engine) · F-3/4/5 contract runs the REAL worker-backed service (no mock) via @vitest/web-worker; compress byte-reduction device-gated (canvas); tight-buffer fix; F-3/4/5 downgraded to "implemented — pending device verification". Also moved the impl to develop (it had landed only on main) and reset main off the mistaken PR #2 (backup: origin/backup/main-bad-pr2-20260613) · F-3, F-4, F-5
 - 2026-06-12 · bccb465 · feat(pdf-engine) · implement F-3, F-4, F-5 core operations, workers, and contract tests · F-3, F-4, F-5
 - 2026-06-11 · _(this commit)_ · chore(kagaz) · F-1 stale-code sweep: unused heic-to dep dropped (HeicConverter stays a protocol for F-8), unused UPLOAD_ACCEPT_MIME export, dead .kg-home CSS, app/ README updated for the removed HomePage placeholder · F-1
 - 2026-06-11 · 7907a98 · fix(ci) · Lighthouse perf assertion temporarily 0.85 (scores 0.86; root cause = vendor chunk, same as the bundle-size allowance; G1-4 restores 0.9) — **CI fully green on develop for the first time** · P0-9, G1-4
