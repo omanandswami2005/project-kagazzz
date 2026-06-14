@@ -32,6 +32,9 @@ export default defineConfig({
         'src/modules/pdf-engine/services/pdf-engine.service.ts',
         // pdfjs + canvas rendering (F-6) only runs on a device, not jsdom.
         'src/modules/pdf-engine/services/pdf-render-ops.ts',
+        // Compress: primary lib path is unit-tested; the rasterise fallback
+        // (pdfjs/canvas) is device-only.
+        'src/modules/pdf-engine/services/pdf-compress-ops.ts',
         'src/modules/pdf-engine/workers/**',
         '**/__contract__/**',
         // PDF Tools: engine + FileStorage I/O and the multi-op modal are

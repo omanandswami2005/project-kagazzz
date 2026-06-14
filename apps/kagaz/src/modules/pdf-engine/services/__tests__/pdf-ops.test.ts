@@ -12,6 +12,12 @@ vi.mock('@quicktoolsone/pdf-compress', () => {
   };
 });
 
+// The compress fallback rasterises via pdfjs (needs a canvas — device only).
+// Mock it to fail so the "library throws" path resolves deterministically.
+vi.mock('../pdf-render-ops', () => ({
+  pdfToImagesImpl: vi.fn(() => Promise.reject(new Error('no canvas in jsdom'))),
+}));
+
 async function createTestPdf(pagesCount: number): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   for (let i = 0; i < pagesCount; i++) {

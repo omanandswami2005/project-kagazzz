@@ -15,17 +15,16 @@ import {
 } from '../types/pdf-engine.types';
 
 import { pdfToImagesImpl } from './pdf-render-ops';
+import { compressPdfImpl } from './pdf-compress-ops';
 
-// Vite worker loaders
+// Vite worker loader (pdf-lib / pdfsmaller ops — no DOM needed).
 import PdfManipulationWorker from '../workers/pdf-manipulation.worker?worker';
-import PdfCompressWorker from '../workers/pdf-compress.worker?worker';
 
 /** Clones a Uint8Array so transferring its buffer never detaches the caller's. */
 const clone = (data: Uint8Array): Uint8Array => new Uint8Array(data.slice());
 
 export class PdfEngineServiceImpl implements PdfEngineService {
   private manipulationWorker: Worker | null = null;
-  private compressWorker: Worker | null = null;
   private activeRequests = new Map<
     string,
     {
@@ -37,26 +36,22 @@ export class PdfEngineServiceImpl implements PdfEngineService {
   >();
 
   private cleanupManipulationRelay: (() => void) | null = null;
-  private cleanupCompressRelay: (() => void) | null = null;
   private serviceLogger = log('pdf-engine');
 
   async initialize(): Promise<void> {
-    if (this.manipulationWorker && this.compressWorker) {
+    if (this.manipulationWorker) {
       return;
     }
 
     try {
       this.serviceLogger.info({ event: 'engine.initialize.start' });
 
-      // Instantiate workers
+      // Instantiate the manipulation worker (compress + render run on the
+      // main thread because their libraries need a DOM canvas).
       this.manipulationWorker = new PdfManipulationWorker();
-      this.compressWorker = new PdfCompressWorker();
-
-      // Set up worker listeners
       this.setupWorkerListener(this.manipulationWorker);
-      this.setupWorkerListener(this.compressWorker);
 
-      // Attach log relays
+      // Attach the log relay.
       const mainSink = {
         write: (record: Record<string, unknown>): void => {
           log('worker').info(record);
@@ -64,7 +59,6 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       };
 
       this.cleanupManipulationRelay = attachWorkerLogRelay(this.manipulationWorker, mainSink);
-      this.cleanupCompressRelay = attachWorkerLogRelay(this.compressWorker, mainSink);
 
       this.serviceLogger.info({ event: 'engine.initialize.success' });
       await Promise.resolve();
@@ -87,18 +81,9 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       this.cleanupManipulationRelay();
       this.cleanupManipulationRelay = null;
     }
-    if (this.cleanupCompressRelay) {
-      this.cleanupCompressRelay();
-      this.cleanupCompressRelay = null;
-    }
-
     if (this.manipulationWorker) {
       this.manipulationWorker.terminate();
       this.manipulationWorker = null;
-    }
-    if (this.compressWorker) {
-      this.compressWorker.terminate();
-      this.compressWorker = null;
     }
 
     // Reject all pending requests
@@ -166,7 +151,7 @@ export class PdfEngineServiceImpl implements PdfEngineService {
   }
 
   private ensureInitialized(): void {
-    if (!this.manipulationWorker || !this.compressWorker) {
+    if (!this.manipulationWorker) {
       throw new PdfEngineException(
         'PDF Engine is not initialized. Call initialize() first.',
         'WORKER_ERROR',
@@ -260,24 +245,22 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     this.ensureInitialized();
     const op = 'compressPdf';
     const id = crypto.randomUUID();
-
+    // @quicktoolsone/pdf-compress rasterises pages with a DOM canvas, which a
+    // Web Worker doesn't have — so compression runs on the main thread.
     this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: op });
-
-    return new Promise<Uint8Array>((resolve, reject) => {
-      this.activeRequests.set(id, { resolve, reject, onProgress });
-
-      // Clone to avoid detaching caller's data
-      const clonedPdf = new Uint8Array(pdf.slice());
-
-      this.compressWorker!.postMessage(
-        {
-          id,
-          operation: op,
-          payload: { pdf: clonedPdf, quality },
-        },
-        [clonedPdf.buffer]
-      );
-    });
+    try {
+      const out = await compressPdfImpl(clone(pdf), quality, onProgress);
+      this.serviceLogger.info({ event: 'engine.request.success', opId: id, operation: op });
+      return out;
+    } catch (e: unknown) {
+      this.serviceLogger.error({
+        event: 'engine.request.error',
+        opId: id,
+        operation: op,
+        err: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
   }
 
   async imagesToPdf(
