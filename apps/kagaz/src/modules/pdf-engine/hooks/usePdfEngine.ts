@@ -1,0 +1,277 @@
+/**
+ * PDF Tools engine hook (F-3..F-7, F-21, F-22, F-28). Owns one
+ * {@link PdfEngineServiceImpl} for the screen's lifetime, reads input bytes
+ * from the vault's FileStorage, runs an operation in the engine's workers, and
+ * saves the result(s) back into the vault through the upload pipeline. Exposes
+ * a single busy/progress/error state the page renders.
+ */
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { log } from '@/core/logging';
+import { createFileStorage } from '@/infrastructure/filesystem';
+import type { DocumentEntity } from '@/infrastructure/database/types';
+import { useUpload } from '@/modules/document-vault/hooks/useUpload';
+import type { IncomingFile } from '@/modules/document-vault/types/document.types';
+import { PdfEngineServiceImpl } from '../services/pdf-engine.service';
+import type {
+  CompressionLevel,
+  FormField,
+  PageRange,
+  ProgressEvent,
+  RenderOptions,
+} from '../types/pdf-engine.types';
+
+const logger = log('pdf-engine');
+
+/** Strips a file extension for building derived output names. */
+function baseName(name: string): string {
+  return name.replace(/\.[^/.]+$/, '');
+}
+
+/** Live status of the current operation. */
+export interface PdfRunState {
+  busy: boolean;
+  /** 0–100. */
+  percent: number;
+  message: string;
+  /** Error text to show, or null. */
+  error: string | null;
+}
+
+const IDLE: PdfRunState = { busy: false, percent: 0, message: '', error: null };
+
+/** What {@link usePdfEngine} exposes to the PDF Tools page. */
+export interface UsePdfEngineResult {
+  state: PdfRunState;
+  /** Clears any error so the UI can retry. */
+  reset: () => void;
+  mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
+  splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
+  compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
+  imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
+  pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
+  encryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
+  decryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
+  /** Reads a form PDF's fields (no save). */
+  loadFormFields: (doc: DocumentEntity) => Promise<FormField[]>;
+  fillForm: (doc: DocumentEntity, values: Record<string, string>) => Promise<number>;
+}
+
+const MIME_FOR: Record<string, string> = {
+  pdf: 'application/pdf',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+};
+
+/** Wires the PDF engine into the PDF Tools screen. */
+export function usePdfEngine(): UsePdfEngineResult {
+  const { ingestFiles } = useUpload();
+  const engineRef = useRef<PdfEngineServiceImpl | null>(null);
+  const storageRef = useRef(createFileStorage());
+  const [state, setState] = useState<PdfRunState>(IDLE);
+
+  // One engine per screen; torn down (workers terminated) on unmount.
+  useEffect(() => {
+    return (): void => {
+      void engineRef.current?.destroy();
+      engineRef.current = null;
+    };
+  }, []);
+
+  const getEngine = useCallback(async (): Promise<PdfEngineServiceImpl> => {
+    if (!engineRef.current) {
+      const engine = new PdfEngineServiceImpl();
+      await engine.initialize();
+      engineRef.current = engine;
+    }
+    return engineRef.current;
+  }, []);
+
+  const readBytes = useCallback(
+    (doc: DocumentEntity): Promise<Uint8Array> => storageRef.current.read(doc.filePath),
+    []
+  );
+
+  const save = useCallback(
+    async (files: IncomingFile[]): Promise<number> => {
+      const { uploaded } = await ingestFiles(files);
+      return uploaded;
+    },
+    [ingestFiles]
+  );
+
+  const reset = useCallback(() => setState(IDLE), []);
+
+  /** Runs `op` with busy/progress/error bookkeeping; resolves the saved count. */
+  const run = useCallback(
+    async (
+      op: (
+        engine: PdfEngineServiceImpl,
+        onProgress: (e: ProgressEvent) => void
+      ) => Promise<number>
+    ): Promise<number> => {
+      setState({ ...IDLE, busy: true });
+      try {
+        const engine = await getEngine();
+        const count = await op(engine, (e) =>
+          setState((s) => ({ ...s, percent: e.percent, message: e.message }))
+        );
+        setState((s) => ({ ...s, busy: false, percent: 100 }));
+        return count;
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error({ event: 'pdf.tool.failed', err: { message } });
+        setState((s) => ({ ...s, busy: false, error: message }));
+        return 0;
+      }
+    },
+    [getEngine]
+  );
+
+  const mergePdfs = useCallback(
+    (docs: DocumentEntity[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const inputs = await Promise.all(docs.map(readBytes));
+        const merged = await engine.mergePdfs(inputs, onProgress);
+        return save([
+          { name: 'Merged document.pdf', blob: blobOf(merged, 'pdf'), source: 'ai_generated' },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const splitPdf = useCallback(
+    (doc: DocumentEntity, ranges: PageRange[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const parts = await engine.splitPdf(await readBytes(doc), ranges, onProgress);
+        return save(
+          parts.map((part, i) => ({
+            name: `${baseName(doc.name)}_part${i + 1}.pdf`,
+            blob: blobOf(part, 'pdf'),
+            source: 'ai_generated' as const,
+          }))
+        );
+      }),
+    [run, readBytes, save]
+  );
+
+  const compressPdf = useCallback(
+    (doc: DocumentEntity, quality: CompressionLevel): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const out = await engine.compressPdf(await readBytes(doc), quality, onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_compressed.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const imagesToPdf = useCallback(
+    (images: DocumentEntity[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const inputs = await Promise.all(
+          images.map(async (doc) => ({
+            data: await readBytes(doc),
+            mimeType: MIME_FOR[doc.fileType.toLowerCase()] ?? 'image/jpeg',
+          }))
+        );
+        const pdf = await engine.imagesToPdf(inputs, onProgress);
+        return save([
+          { name: 'Images.pdf', blob: blobOf(pdf, 'pdf'), source: 'ai_generated' },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const pdfToImages = useCallback(
+    (doc: DocumentEntity, options: RenderOptions): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const blobs = await engine.pdfToImages(await readBytes(doc), options, onProgress);
+        const ext = options.format === 'jpeg' ? 'jpg' : 'png';
+        return save(
+          blobs.map((blob, i) => ({
+            name: `${baseName(doc.name)}_page${i + 1}.${ext}`,
+            blob,
+            source: 'ai_generated' as const,
+          }))
+        );
+      }),
+    [run, readBytes, save]
+  );
+
+  const encryptPdf = useCallback(
+    (doc: DocumentEntity, password: string): Promise<number> =>
+      run(async (engine) => {
+        const out = await engine.encryptPdf(await readBytes(doc), password);
+        return save([
+          {
+            name: `${baseName(doc.name)}_locked.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const decryptPdf = useCallback(
+    (doc: DocumentEntity, password: string): Promise<number> =>
+      run(async (engine) => {
+        const out = await engine.decryptPdf(await readBytes(doc), password);
+        return save([
+          {
+            name: `${baseName(doc.name)}_unlocked.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const loadFormFields = useCallback(
+    async (doc: DocumentEntity): Promise<FormField[]> => {
+      const engine = await getEngine();
+      return engine.getFormFields(await readBytes(doc));
+    },
+    [getEngine, readBytes]
+  );
+
+  const fillForm = useCallback(
+    (doc: DocumentEntity, values: Record<string, string>): Promise<number> =>
+      run(async (engine) => {
+        const out = await engine.fillForm(await readBytes(doc), values);
+        return save([
+          {
+            name: `${baseName(doc.name)}_filled.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  return {
+    state,
+    reset,
+    mergePdfs,
+    splitPdf,
+    compressPdf,
+    imagesToPdf,
+    pdfToImages,
+    encryptPdf,
+    decryptPdf,
+    loadFormFields,
+    fillForm,
+  };
+}
+
+/** Wraps engine bytes in a typed Blob for the upload pipeline. */
+function blobOf(bytes: Uint8Array, fileType: 'pdf'): Blob {
+  return new Blob([bytes as BlobPart], { type: MIME_FOR[fileType] });
+}

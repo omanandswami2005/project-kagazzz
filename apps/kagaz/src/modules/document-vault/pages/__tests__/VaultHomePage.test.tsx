@@ -48,6 +48,7 @@ beforeEach(() => {
   useUploadMock.mockReturnValue({
     isReady: true,
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 1 })),
+    ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 1 })),
   });
   useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
 });
@@ -84,7 +85,11 @@ describe('VaultHomePage', () => {
 
   it('starts the upload when a source is chosen from the sheet', async () => {
     const uploadFrom = vi.fn(() => Promise.resolve({ uploaded: 2 }));
-    useUploadMock.mockReturnValue({ isReady: true, uploadFrom });
+    useUploadMock.mockReturnValue({
+      isReady: true,
+      uploadFrom,
+      ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 0 })),
+    });
     useVaultStore.setState({ isUploadSheetOpen: true });
 
     render(<VaultHomePage />);

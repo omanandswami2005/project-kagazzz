@@ -16,3 +16,7 @@ export const LazyFavoritesPage = lazy(
 export const LazyStoragePage = lazy(
   () => import('@/modules/document-vault/pages/StoragePage')
 );
+
+export const LazyPdfToolsPage = lazy(
+  () => import('@/modules/pdf-engine/pages/PdfToolsPage')
+);

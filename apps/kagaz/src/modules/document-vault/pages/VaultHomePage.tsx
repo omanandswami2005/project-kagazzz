@@ -6,12 +6,14 @@
  */
 import {
   IonActionSheet,
+  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
   IonTitle,
   IonToast,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -53,6 +55,7 @@ import './vault.css';
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  const router = useIonRouter();
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
@@ -161,6 +164,18 @@ export function VaultHomePage(): ReactNode {
       <IonHeader>
         <IonToolbar>
           <IonTitle>{t('title')}</IonTitle>
+          <IonButtons slot="end">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Icon name="FileText" size={24} />}
+              onClick={() => router.push('/pdf-tools', 'forward', 'push')}
+              agentId="vault.home.pdf-tools"
+              agentAction="tools.openPdfTools"
+            >
+              {t('pdf_tools')}
+            </Button>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>

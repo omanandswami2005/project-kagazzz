@@ -34,6 +34,10 @@ export default defineConfig({
         'src/modules/pdf-engine/services/pdf-render-ops.ts',
         'src/modules/pdf-engine/workers/**',
         '**/__contract__/**',
+        // PDF Tools: engine + FileStorage I/O and the multi-op modal are
+        // integration/device-verified (real workers, real files, IonModal).
+        'src/modules/pdf-engine/hooks/usePdfEngine.ts',
+        'src/modules/pdf-engine/components/PdfOpSheet.tsx',
       ],
       thresholds: {
         lines: 80,

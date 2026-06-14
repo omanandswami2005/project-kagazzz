@@ -10,6 +10,7 @@ shipped yet.
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
+| Open PDF tools | `tools.openPdfTools` | Opens the PDF Tools hub (merge, split, compress, PDF↔image, password protect/unlock, fill form). Pass `op` to jump straight to one tool. |
 | Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
 | Filter the list | `vault.openFilters` | Opens the filter panel (type / size / tags / favorites). |
 | Remove filters | `vault.clearFilters` | Clears every active filter. |

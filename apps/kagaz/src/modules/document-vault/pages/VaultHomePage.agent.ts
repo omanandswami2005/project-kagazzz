@@ -3,6 +3,7 @@
  * (docs/design-system/agent-interface.md §Layer 3).
  */
 import { definePage } from '@kagaz/agent-kit';
+import { toolsActions } from '@/modules/pdf-engine/pdf-tools.actions';
 import { useVaultStore } from '../store/vault.store';
 import { vaultActions } from '../vault.actions';
 
@@ -15,6 +16,7 @@ export const VaultHomePageAgent = definePage({
   primaryAction: vaultActions.uploadDocument,
   availableActions: [
     vaultActions.uploadDocument,
+    toolsActions.openPdfTools,
     vaultActions.searchDocuments,
     vaultActions.openFilters,
     vaultActions.clearFilters,
@@ -45,6 +47,8 @@ export const VaultHomePageAgent = definePage({
   },
   voiceExamples: [
     { utterance: 'upload a document', action: 'vault.uploadDocument' },
+    { utterance: 'open pdf tools', action: 'tools.openPdfTools' },
+    { utterance: 'merge pdfs', action: 'tools.openPdfTools', args: { op: 'merge' } },
     {
       utterance: 'take a photo of my document',
       action: 'vault.uploadDocument',
