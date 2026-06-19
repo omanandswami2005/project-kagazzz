@@ -17,9 +17,15 @@ Real, worker-backed. No mock in the shipped path.
   maps worker errors back to `PdfEngineException`.
 - `services/pdf-ops.ts` — `mergePdfsImpl` (F-3), `splitPdfImpl` (F-4),
   `loadAndValidatePdf`, on **pdf-lib**. Progress callbacks per file/range.
-- `services/pdf-compress-ops.ts` — `compressPdfImpl` (F-5) on
-  **@quicktoolsone/pdf-compress** (quality → preset). Hands the compressor a
-  tight buffer (handles subarray views).
+- `services/pdf-compress-ops.ts` — `compressPdfImpl` (F-5) by **rasterise-and-
+  rebuild**: render each page to a JPEG (pdfjs) at a quality-dependent DPI, then
+  rebuild a PDF from those images (pdf-lib). Chosen deliberately — the better
+  text-preserving compressors are either AGPL (MuPDF, Ghostscript — forbidden)
+  or CDN + WASM-eval dependent (`@quicktoolsone/pdf-compress`, which fails on
+  the zero-network app). MIT, fully offline, no WASM/CDN/CSP change; lossy
+  (text→raster), fine for the scans/photos compression mostly runs on. Runs on
+  the main thread (pdfjs + canvas). MuPDF-commercial is the lossless upgrade
+  path. See ADR-017 / the media-library rule in CLAUDE.md.
 - `workers/pdf-manipulation.worker.ts`, `workers/pdf-compress.worker.ts` — thin
   shells that run the ops off the main thread and post `result`/`progress`/`error`.
 - `types/pdf-engine.types.ts` — `PdfEngineService`, `PageRange`,

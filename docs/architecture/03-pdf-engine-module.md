@@ -36,7 +36,7 @@ The PDF Engine module is the core document-processing backbone of Kagaz. It prov
 | **pdfjs-dist** | Apache 2.0 | Rendering — PDF → image, text extraction, in-app PDF viewing | ~400 KB |
 | **@pdfsmaller/pdf-encrypt** | MIT | AES-256 + RC4 encryption | ~18 KB |
 | **@pdfsmaller/pdf-decrypt** | MIT | Decryption (matching encrypt counterpart) | ~18 KB |
-| **@quicktoolsone/pdf-compress** | MIT | True PDF compression via WASM | ~150 KB |
+| **pdfjs-dist + pdf-lib** (rasterise) | Apache 2.0 / MIT | Compression — render pages → JPEG → rebuild PDF (F-5). ~~@quicktoolsone/pdf-compress~~ dropped: it loads a Go WASM + pdfjs worker from a CDN, which fails on the zero-network app (see implementation note + ADR-017) | (reuses pdfjs) |
 | **tesseract.js** | Apache 2.0 | OCR for scanned documents (50+ languages) | ~1 MB (core) + language data |
 
 ### Library Responsibility Matrix
@@ -69,7 +69,7 @@ graph LR
 | PDF manipulation | pdf-lib | Pure JS, no native deps, excellent TypeScript support, actively maintained |
 | PDF rendering | pdfjs-dist | Mozilla's battle-tested renderer, used by Firefox, only viable browser option |
 | Encryption | @pdfsmaller/pdf-encrypt + pdf-decrypt | Tiny (~36 KB combined), AES-256 + RC4, MIT licensed |
-| Compression | @quicktoolsone/pdf-compress | WASM-based = near-native performance, true recompression (not just zip) |
+| Compression | pdfjs-dist + pdf-lib (rasterise) | The only offline + permissive (MIT/Apache) + no-CSP-eval path. Lossy (text→raster), fine for scans/photos. MuPDF/Ghostscript (lossless) are AGPL — forbidden; MuPDF-commercial is the upgrade path |
 | OCR | tesseract.js | Industry-standard Tesseract via WASM, 50+ languages, Web Worker native |
 
 ---

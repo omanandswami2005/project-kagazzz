@@ -2,21 +2,30 @@ import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { PDFDocument } from 'pdf-lib';
 import { mergePdfsImpl, splitPdfImpl, loadAndValidatePdf } from '../pdf-ops';
 import { compressPdfImpl } from '../pdf-compress-ops';
+import { pdfToImagesImpl } from '../pdf-render-ops';
 import { type ProgressEvent } from '../../types/pdf-engine.types';
-import { compress } from '@quicktoolsone/pdf-compress';
 
-// Mock the heavy WASM compressor
-vi.mock('@quicktoolsone/pdf-compress', () => {
-  return {
-    compress: vi.fn(),
-  };
-});
-
-// The compress fallback rasterises via pdfjs (needs a canvas — device only).
-// Mock it to fail so the "library throws" path resolves deterministically.
+// Compression rasterises each page via pdfjs (needs a canvas — device only),
+// so mock the render step. The compress logic under test is the validate →
+// render → rebuild orchestration (rebuild uses real pdf-lib embedJpg).
 vi.mock('../pdf-render-ops', () => ({
-  pdfToImagesImpl: vi.fn(() => Promise.reject(new Error('no canvas in jsdom'))),
+  pdfToImagesImpl: vi.fn(),
 }));
+
+/** A real 1×1 JPEG so pdf-lib's embedJpg can parse it during rebuild. */
+const TINY_JPEG = Uint8Array.from(
+  atob(
+    '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof' +
+      'Hh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAAB' +
+      'AAAAAAAAAAAAAAAAAAAAAP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AfwD/2Q=='
+  ),
+  (c) => c.charCodeAt(0)
+);
+
+/** A 1×1 JPEG blob stand-in for a rendered page. */
+function fakePageBlob(): Blob {
+  return new Blob([TINY_JPEG], { type: 'image/jpeg' });
+}
 
 async function createTestPdf(pagesCount: number): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
@@ -33,30 +42,8 @@ describe('PDF Engine Core Operations Implementation', () => {
   let invalidPdf: Uint8Array;
 
   beforeEach(() => {
-    vi.mocked(compress).mockImplementation((pdfBuffer, options) => {
-      if (options?.onProgress) {
-        options.onProgress({
-          phase: 'compressing',
-          progress: 50,
-          currentChunk: 1,
-          totalChunks: 1,
-          message: 'Compressing images',
-        });
-      }
-      return Promise.resolve({
-        pdf: pdfBuffer,
-        stats: {
-          originalSize: pdfBuffer.byteLength,
-          compressedSize: pdfBuffer.byteLength,
-          ratio: 1.0,
-          bytesSaved: 0,
-          percentageSaved: 0,
-          presetUsed: options?.preset || 'balanced',
-          processingTime: 123,
-          chunksProcessed: 1,
-        },
-      });
-    });
+    // Default: render yields one fake JPEG per requested behaviour.
+    vi.mocked(pdfToImagesImpl).mockResolvedValue([fakePageBlob()]);
   });
 
   beforeAll(async () => {
@@ -168,53 +155,43 @@ describe('PDF Engine Core Operations Implementation', () => {
     });
   });
 
-  describe('compressPdfImpl', () => {
-    it('should map compression levels and call compress library', async () => {
-      const progress: ProgressEvent[] = [];
-      const mockCompress = vi.mocked(compress);
+  describe('compressPdfImpl (rasterise-and-rebuild)', () => {
+    it('renders the PDF to JPEGs and rebuilds a valid PDF', async () => {
+      vi.mocked(pdfToImagesImpl).mockResolvedValue([fakePageBlob(), fakePageBlob()]);
 
-      mockCompress.mockClear();
-
-      const result = await compressPdfImpl(valid2PagePdf, 'medium', (event) =>
-        progress.push(event)
-      );
+      const result = await compressPdfImpl(valid2PagePdf, 'medium');
 
       expect(result).toBeInstanceOf(Uint8Array);
-      expect(mockCompress).toHaveBeenCalledTimes(1);
-
-      // 'medium' should map to 'balanced' preset
-      const firstCallArgs = mockCompress.mock.calls[0];
-      const options = firstCallArgs[1];
-      expect(options?.preset).toBe('balanced');
-
-      expect(progress.length).toBeGreaterThan(0);
-      expect(progress[progress.length - 1].percent).toBe(100);
+      // Rebuilt from 2 rendered pages → a loadable 2-page PDF.
+      const reloaded = await PDFDocument.load(result);
+      expect(reloaded.getPageCount()).toBe(2);
     });
 
-    it('should map quality low to max preset', async () => {
-      const mockCompress = vi.mocked(compress);
-      mockCompress.mockClear();
+    it('renders as JPEG and maps quality to a scale + JPEG quality', async () => {
+      vi.mocked(pdfToImagesImpl).mockResolvedValue([fakePageBlob()]);
 
       await compressPdfImpl(valid2PagePdf, 'low');
-      const firstCallArgs = mockCompress.mock.calls[0];
-      const options = firstCallArgs[1];
-      expect(options?.preset).toBe('max');
+      const [, options] = vi.mocked(pdfToImagesImpl).mock.calls[0];
+      expect(options.format).toBe('jpeg');
+      expect(options.scale).toBeLessThanOrEqual(1); // 'low' = smallest
+      expect(options.quality).toBeLessThan(0.6);
     });
 
-    it('should map quality high to lossless preset', async () => {
-      const mockCompress = vi.mocked(compress);
-      mockCompress.mockClear();
-
-      await compressPdfImpl(valid2PagePdf, 'high');
-      const firstCallArgs = mockCompress.mock.calls[0];
-      const options = firstCallArgs[1];
-      expect(options?.preset).toBe('lossless');
+    it('reports completion progress', async () => {
+      const progress: ProgressEvent[] = [];
+      await compressPdfImpl(valid2PagePdf, 'high', (e) => progress.push(e));
+      expect(progress.at(-1)?.percent).toBe(100);
     });
 
-    it('should throw error if compression library throws', async () => {
-      const mockCompress = vi.mocked(compress);
-      mockCompress.mockImplementationOnce(() => Promise.reject(new Error('wasm panic')));
+    it('rejects an invalid PDF before rendering (INVALID_PDF)', async () => {
+      await expect(compressPdfImpl(invalidPdf, 'medium')).rejects.toThrowError(
+        expect.objectContaining({ code: 'INVALID_PDF', operation: 'compressPdf' })
+      );
+      expect(pdfToImagesImpl).not.toHaveBeenCalled();
+    });
 
+    it('wraps a render failure as COMPRESSION_FAILED', async () => {
+      vi.mocked(pdfToImagesImpl).mockRejectedValueOnce(new Error('render boom'));
       await expect(compressPdfImpl(valid2PagePdf, 'medium')).rejects.toThrowError(
         expect.objectContaining({
           code: 'COMPRESSION_FAILED',

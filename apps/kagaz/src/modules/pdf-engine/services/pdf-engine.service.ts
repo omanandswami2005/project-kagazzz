@@ -245,8 +245,8 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     this.ensureInitialized();
     const op = 'compressPdf';
     const id = crypto.randomUUID();
-    // @quicktoolsone/pdf-compress rasterises pages with a DOM canvas, which a
-    // Web Worker doesn't have — so compression runs on the main thread.
+    // Compression rasterises pages via pdfjs + canvas, which a Web Worker
+    // lacks — so it runs on the main thread (like F-6 render).
     this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: op });
     try {
       const out = await compressPdfImpl(clone(pdf), quality, onProgress);
