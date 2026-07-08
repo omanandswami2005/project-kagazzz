@@ -20,7 +20,7 @@
     "cap:open:android": "pnpm exec cap open android",
     "cap:open:ios": "pnpm exec cap open ios",
     "cap:sync": "pnpm exec cap sync",
-    "build:android": "pnpm build:capacitor && cd android && gradlew.bat assembleDebug",
+    "build:android": "pnpm build:capacitor && cd android && ./gradlew assembleDebug",
     "cap:sync:ios": "pnpm exec cap sync ios",
     "cap:sync:android": "pnpm exec cap sync android"
   },

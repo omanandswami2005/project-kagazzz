@@ -103,7 +103,7 @@ adb exec-out screencap -p > /tmp/kagaz-verify.png                       # captur
 - App id is **`in.kagaz.app`** (from `capacitor.config.ts` / `android/app/build.gradle`).
 - Useful helpers: `adb shell input keyevent KEYCODE_BACK` (hardware back), `adb shell "cmd uimode night yes|no"` (toggle dark mode), set the app locale to Hindi via device Settings → Languages, or launch with a locale override.
 
-> **Known repo quirk:** the app-level `build:android` script calls `gradlew.bat` (Windows-only) and won't run on macOS/Linux — use the `./gradlew assembleDebug` invocation above until that script is fixed.
+> **Shortcut:** steps 2–3 are wrapped by `pnpm --filter kagaz build:android` (`build:capacitor` + `./gradlew assembleDebug`); then run only the `adb install -r …` line from step 3. Run the steps unwrapped when you need to see where a build breaks.
 
 ---
 
@@ -144,7 +144,7 @@ hardware back returns to PDF Tools hub ✓, offline (airplane mode) ✓.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `adb: no devices/emulators found` | emulator not booted, or `adb`/`emulator` not on PATH | §2 setup; `adb wait-for-device`; `adb kill-server && adb start-server` |
-| `./gradlew: command not found` or `.bat` error | wrong wrapper for the OS | use `./gradlew assembleDebug` on macOS/Linux, not `gradlew.bat` |
+| `./gradlew: command not found` or `.bat` error | wrong wrapper for the OS | use `./gradlew assembleDebug` on macOS/Linux (native Windows: `gradlew.bat`) |
 | `JAVA_HOME is not set` / wrong Java | JDK not exported | point `JAVA_HOME` at Studio's JBR (§2) |
 | App boots to **empty vault / disabled FAB** | SQLCipher not activated → DB failed to open | check `CapacitorSQLite` encryption flags in `capacitor.config.ts`; read logcat for the real DB error |
 | A media op (PDF/image/OCR) **fails on-device only** | library fetches a worker/WASM/model from a CDN at runtime → blocked on the zero-network app | grep the lib's `dist/` for `workerSrc\|jsdelivr\|wasmUrl\|GlobalWorkerOptions`; bundle the asset locally or swap the lib. This is exactly why F-5 dropped `@quicktoolsone/pdf-compress`. See the media-library rule in [CLAUDE.md](../../CLAUDE.md) and [08-tech-stack-decisions.md](../architecture/08-tech-stack-decisions.md) ADR-017. |
