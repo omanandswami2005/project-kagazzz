@@ -61,8 +61,10 @@ export function useSearch(): UseSearchResult {
       }
       try {
         const rows = await dao.search(match, 50);
-        setResults(rows);
-        logger.info({ event: 'search.run', resultCount: rows.length });
+        // [SEC] SEC-V1 §8 #4: locked documents never appear in search results.
+        const visible = rows.filter((row) => !row.isLocked);
+        setResults(visible);
+        logger.info({ event: 'search.run', resultCount: visible.length });
       } catch (error) {
         setResults([]);
         logger.error({

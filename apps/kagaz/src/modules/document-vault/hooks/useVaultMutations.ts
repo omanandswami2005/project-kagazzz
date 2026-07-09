@@ -16,6 +16,8 @@ const logger = log('document-vault');
 export interface UseVaultMutationsResult {
   /** Flips a document's favorite flag (persisted + reflected in the list). */
   toggleFavorite: (document: DocumentEntity) => Promise<void>;
+  /** Sets a document's per-document lock flag (F-16/SEC-V1 #4). */
+  setLocked: (document: DocumentEntity, locked: boolean) => Promise<void>;
   /** Records that a document was opened, for the Recent list (F-32). */
   markAccessed: (document: DocumentEntity) => Promise<void>;
 }
@@ -54,6 +56,33 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
+  const setLocked = useCallback(
+    async (document: DocumentEntity, locked: boolean): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      useVaultStore.getState().patchDocument(document.id, { isLocked: locked });
+      try {
+        await dao.update(document.id, { isLocked: locked });
+        logger.info({
+          event: 'vault.lock.set',
+          documentId: document.id,
+          isLocked: locked,
+        });
+      } catch (error) {
+        useVaultStore
+          .getState()
+          .patchDocument(document.id, { isLocked: document.isLocked });
+        logger.error({
+          event: 'vault.lock.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
   const markAccessed = useCallback(
     async (document: DocumentEntity): Promise<void> => {
       if (!dao) {
@@ -73,5 +102,5 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite, markAccessed };
+  return { toggleFavorite, setLocked, markAccessed };
 }
