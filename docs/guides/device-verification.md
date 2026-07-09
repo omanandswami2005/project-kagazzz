@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Purpose:** How to build, install, and exercise the app on an Android emulator/device to satisfy the mandatory device-verification gate before closing a checklist item.
-> **Last Updated:** 2026-07-08
+> **Last Updated:** 2026-07-09
 
 This guide is the **operational companion** to [DEVELOPMENT-CHECKLIST.md](../../DEVELOPMENT-CHECKLIST.md) protocol **step 5** (*"Device verification (mandatory before closing any device-affecting item)"*). The checklist defines **what** must be verified; this guide defines **how** — the exact terminal commands to boot an emulator, produce a debug APK, install it, and drive the flow, plus a copy-paste journal template.
 
@@ -15,9 +15,10 @@ This guide is the **operational companion** to [DEVELOPMENT-CHECKLIST.md](../../
 - [1. When an item is "device-affecting"](#1-when-an-item-is-device-affecting)
 - [2. One-time machine setup (macOS)](#2-one-time-machine-setup-macos)
 - [3. The verify loop](#3-the-verify-loop)
-- [4. The step-5 checklist (per item)](#4-the-step-5-checklist-per-item)
-- [5. Journal template](#5-journal-template)
-- [6. Troubleshooting](#6-troubleshooting)
+- [4. Text-first driving (preferred over screenshots)](#4-text-first-driving-preferred-over-screenshots)
+- [5. The step-5 checklist (per item)](#5-the-step-5-checklist-per-item)
+- [6. Journal template](#6-journal-template)
+- [7. Troubleshooting](#7-troubleshooting)
 
 ---
 
@@ -107,20 +108,52 @@ adb exec-out screencap -p > /tmp/kagaz-verify.png                       # captur
 
 ---
 
-## 4. The step-5 checklist (per item)
+## 4. Text-first driving (preferred over screenshots)
 
-Verify **all** of these on the running device before checking the box. Copy the template in §5 and fill each line.
+**Reading screenshots is expensive and fragile** (pixel taps drift, and vision is costly for an agent). Kagaz is a debuggable Capacitor **WebView** instrumented with `data-agent-id` on every interactive element ([agent-interface.md](../design-system/agent-interface.md)), so drive and assert it in **text** instead — over the Chrome DevTools Protocol, addressing the UI by agent id. Screenshots then become an occasional *visual* spot-check (dark-mode contrast, layout), not the way you check flow logic.
+
+Two signals, used together:
+
+1. **CDP driver** — [`scripts/device-e2e/cdp.mjs`](../../scripts/device-e2e/cdp.mjs) (zero-dep Node; forwards a port to the WebView devtools socket and talks CDP). Address elements by `data-agent-id`:
+
+   ```bash
+   node scripts/device-e2e/cdp.mjs dump                         # every [data-agent-id] on screen (id, tag, state, text)
+   node scripts/device-e2e/cdp.mjs tap  pdf-tools.op-split       # click (React onClick fires)
+   node scripts/device-e2e/cdp.mjs type pdf-tools.op-sheet.ranges "1-2, 3-5"   # set an input the React way
+   node scripts/device-e2e/cdp.mjs wait pdf-tools.saved-toast    # block until present → exit 0/1
+   node scripts/device-e2e/cdp.mjs text pdf-tools.op-sheet.run   # read textContent / state
+   ```
+
+   `dump` is the cheap "what's on screen + what can I tap" — start there to discover ids, then `tap`/`type`/`wait`. No pixel coordinates, no screenshots. (`uiautomator dump` is useless here — Ionic renders inside a single WebView node, opaque to it.)
+
+2. **logcat event assertions** — the app emits structured pino events to logcat ([observability-logging.md](../architecture/14-observability-logging.md)); assert on the event id instead of eyeballing a toast. The engine event names match the Action Registry op ids:
+
+   ```bash
+   adb logcat -c                                            # clear before the action
+   # …drive the op via CDP…
+   adb logcat -d | grep -aoE '"operation":"splitPdf"|worker.request.success|vault.upload.start'
+   ```
+
+   `worker.request.success` = the op actually ran in the worker; each `vault.upload.start` = one output saved. (This is how F-3/F-4 were verified: `mergePdfs`/`splitPdf` → `worker.request.success` → the right number of `vault.upload.start`.)
+
+**Recipe:** `logcat -c` → CDP `tap`/`type` the flow → `grep` the expected events → CDP `dump`/`text` to confirm the resulting UI/vault state. Fall back to `screencap` only for the visual checks in §5 (dark mode, Hindi readability).
+
+---
+
+## 5. The step-5 checklist (per item)
+
+Verify **all** of these on the running device before checking the box. Copy the template in §6 and fill each line.
 
 - [ ] **Cold start** — the app boots to the expected screen with no silently degraded state (empty vault, disabled FAB = a failure, not "empty").
 - [ ] **Primary flow end-to-end** — exercise the item's core path on-device (e.g. PDF merge: pick 2 PDFs → merge → result opens/saves → survives an app restart).
 - [ ] **Dark mode** — flip it; every new screen stays readable (token-driven contrast, no hardcoded colors).
 - [ ] **Hindi locale** — switch to `hi`; every new screen is translated (no raw i18n keys) and readable.
 - [ ] **Hardware back** — press it from every new screen: sane navigation, and the app leaves cleanly from the root.
-- [ ] **Offline sanity** — the op runs with no network (V1 is 100% offline); watch logcat for any CDN/WASM fetch failure (see §6).
+- [ ] **Offline sanity** — the op runs with no network (V1 is 100% offline); watch logcat for any CDN/WASM fetch failure (see §7).
 
 ---
 
-## 5. Journal template
+## 6. Journal template
 
 Paste this into the item's checklist line (or the Commit Journal) once green, replacing the placeholders:
 
@@ -139,7 +172,7 @@ hardware back returns to PDF Tools hub ✓, offline (airplane mode) ✓.
 
 ---
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
