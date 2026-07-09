@@ -1,0 +1,41 @@
+/**
+ * App-lock screen styles (F-16). Tokens only. Fills the viewport above
+ * everything else so the vault is never visible while locked.
+ */
+
+.kg-lock {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--page-padding);
+  text-align: center;
+  background: var(--surface-0, var(--surface-1));
+  color: var(--color-primary);
+}
+
+.kg-lock__title {
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.kg-lock__subtitle {
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  margin: 0;
+  max-width: 28ch;
+}
+
+.kg-lock__error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  margin: 0;
+}
