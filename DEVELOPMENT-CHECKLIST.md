@@ -130,7 +130,7 @@
 
 ### Auth & Security module — [10-security-architecture.md](docs/architecture/10-security-architecture.md) §3
 
-- [ ] F-16 Biometric Lock (app-level, auto-lock on background) 🔴Must `[SEC]`
+- [ ] F-16 Biometric Lock (app-level, auto-lock on background) 🔴Must `[SEC]` 🟨 claimed — feature/f16-biometric-lock · agent:claude · 2026-07-09
 - [ ] SEC-V1 Complete **all 13 V1 items** in [10-security-architecture.md](docs/architecture/10-security-architecture.md) §8 checklist (SQLCipher, key storage, per-doc lock, screenshot prevention, app-switcher blur, temp cleanup, no network perms, no analytics SDKs, root-detection warning, encrypted backup, full data erasure, CSP). **All P0s block release.**
 
 ### Settings & UX — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Settings
