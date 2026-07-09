@@ -20,6 +20,7 @@ import type { CompressionLevel, FormField } from '../types/pdf-engine.types';
 import type { UsePdfEngineResult } from '../hooks/usePdfEngine';
 import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
 import { parsePageRanges } from '../services/parse-ranges';
+import { pdfErrorMessageKey } from '../services/pdf-error-message';
 import { PdfDocPicker } from './PdfDocPicker';
 
 /** Props for {@link PdfOpSheet}. */
@@ -183,7 +184,10 @@ export function PdfOpSheet({
   };
 
   const busy = engine.state.busy;
-  const error = localError ?? (engine.state.error ? t('errors.failed') : null);
+  // Show a specific, actionable message (e.g. wrong password) mapped from the
+  // engine's error code, falling back to the generic failure text.
+  const engineErrorKey = pdfErrorMessageKey(engine.state.errorCode);
+  const error = localError ?? (engineErrorKey ? t(engineErrorKey) : null);
 
   return (
     <IonModal

@@ -12,12 +12,14 @@ import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
 import type { IncomingFile } from '@/modules/document-vault/types/document.types';
 import { PdfEngineServiceImpl } from '../services/pdf-engine.service';
-import type {
-  CompressionLevel,
-  FormField,
-  PageRange,
-  ProgressEvent,
-  RenderOptions,
+import {
+  pdfErrorInfoOf,
+  type CompressionLevel,
+  type FormField,
+  type PageRange,
+  type PdfErrorCode,
+  type ProgressEvent,
+  type RenderOptions,
 } from '../types/pdf-engine.types';
 
 const logger = log('pdf-engine');
@@ -33,11 +35,19 @@ export interface PdfRunState {
   /** 0–100. */
   percent: number;
   message: string;
-  /** Error text to show, or null. */
+  /** Raw error message (diagnostics), or null. */
   error: string | null;
+  /** Machine-readable code so the UI can show a specific message, or null. */
+  errorCode: PdfErrorCode | null;
 }
 
-const IDLE: PdfRunState = { busy: false, percent: 0, message: '', error: null };
+const IDLE: PdfRunState = {
+  busy: false,
+  percent: 0,
+  message: '',
+  error: null,
+  errorCode: null,
+};
 
 /** What {@link usePdfEngine} exposes to the PDF Tools page. */
 export interface UsePdfEngineResult {
@@ -120,8 +130,9 @@ export function usePdfEngine(): UsePdfEngineResult {
         return count;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
-        logger.error({ event: 'pdf.tool.failed', err: { message } });
-        setState((s) => ({ ...s, busy: false, error: message }));
+        const { code } = pdfErrorInfoOf(err);
+        logger.error({ event: 'pdf.tool.failed', code, err: { message } });
+        setState((s) => ({ ...s, busy: false, error: message, errorCode: code }));
         return 0;
       }
     },
