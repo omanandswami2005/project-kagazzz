@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-06-14 (Lane B engine complete: F-3..F-7 + F-21/F-22/F-28 implemented + the PDF Tools hub UI on develop; all 8 lane-B ops now pending one device-verification pass)
+> Last updated: 2026-07-09 (F-3 PDF Merge device-verified on the Medium_Phone emulator and closed — first Lane-B op through the device-verification gate; the other 7 lane-B ops (F-4, F-5, F-6, F-7, F-21, F-22, F-28) remain implemented pending their own verification pass)
 
 ---
 
@@ -101,7 +101,7 @@
 
 ### PDF Engine module — [docs/architecture/03-pdf-engine-module.md](docs/architecture/03-pdf-engine-module.md) (all ops in Web Workers `[PERF]`)
 
-- [ ] F-3 PDF Merge 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker-backed `PdfEngineServiceImpl` (pdf-lib in pdf-manipulation.worker), contract runs against the REAL service via `@vitest/web-worker` (no mock). **Not closed:** worker round-trip + UI not device-verified per protocol step 5.
+- [x] F-3 PDF Merge 🔴Must ✅ (develop) (2026-07-09) — real worker-backed `PdfEngineServiceImpl` (pdf-lib in pdf-manipulation.worker), contract runs against the REAL service via `@vitest/web-worker` (no mock). **Device-verified** on Medium_Phone (API 37) 2026-07-09: uploaded 2 PDFs → Tools → Merge → selected both → Run → **"Merged document" (2.1 KB = A+B) saved to vault**; logcat shows `engine.request.start`→`worker.request.received`→`worker.request.success` for `mergePdfs`; pulled output is a valid `%PDF-1.7` (`com.adobe.pdf`); ran **offline** (worker served from `localhost`); dark mode readable; hardware back → vault clean. **Hindi-locale check deferred to F-17** (no app-wide language switching yet — not an F-3 defect). Loop: [docs/guides/device-verification.md](docs/guides/device-verification.md).
 - [ ] F-4 PDF Split 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker split with page-range validation (PAGE_OUT_OF_RANGE); real-service contract tests. **Not closed:** device verification pending.
 - [ ] F-5 PDF Compress 🔴Must 🟨 implemented — pending device verification (agent:antigravity, bccb465; on develop 2026-06-13) — real worker compress via `@quicktoolsone/pdf-compress`; validation + error paths tested against the real service. **Byte-reduction rasterises pages (canvas) → device-verified only** (skipped in jsdom CI). **Not closed:** device verification pending.
 - [ ] F-6 PDF → Image 🔴Must 🟨 implemented — pending device verification (agent:claude · develop · 2026-06-14) — `pdfToImages` (pdfjs → PNG/JPEG blobs per page) on the **main thread** (canvas; the proven thumbnail path — pdfjs won't init in a Vite module worker). Driven from the PDF Tools UI. **Device-verified only** (canvas/pdfjs absent in jsdom).
@@ -284,6 +284,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-07-09 · _(this commit)_ · docs(checklist) · F-3 PDF Merge **device-verified** on Medium_Phone (API 37): uploaded 2 PDFs → merge → 2.1 KB merged doc saved to vault; logcat `mergePdfs` `worker.request.success`; output valid `%PDF-1.7`; ran offline; dark mode + hardware-back OK; Hindi deferred to F-17. First real run of the device-verification guide (also surfaced/fixed the macOS native-build issues in 918aebd + 7fe0f44) · F-3
 - 2026-06-14 · 4cc846e · feat(pdf-engine) · PDF Tools hub UI (/pdf-tools): grid of 8 ops → adaptive op sheet (pick vault docs + params → run engine → save to vault), usePdfEngine, PdfDocPicker, parse-ranges; tools.openPdfTools action + agent trio + en/hi i18n; vault header entry; useUpload.ingestFiles shared save path · F-3..F-7, F-21, F-22, F-28
 - 2026-06-14 · 41eac4b · feat(pdf-engine) · F-6 pdfToImages (pdfjs, main thread), F-7 imagesToPdf, F-21/F-22 encrypt/decrypt (@pdfsmaller AES-256, [SEC] no password logging), F-28 forms (pdf-lib); manipulation worker switch dispatch; real-service contract for every op; cross-realm error codes via pdfErrorInfoOf · F-6, F-7, F-21, F-22, F-28
 - 2026-06-14 · ae59754 · chore(repo) · stale-code sweep: removed 11 dead `.gitkeep` files from now-populated directories (pdf-engine, search, dao, migrations, filesystem, app/providers, i18n/locales). Verified all "unused" deps are deliberate V1 reservations (native plugins, packages/ usage, or reserved for F-16/F-20/F-21/F-22/F-31/AI lane) — none obsolete, none removed · cleanup
