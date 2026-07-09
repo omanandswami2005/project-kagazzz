@@ -137,5 +137,6 @@
     "moved_to_trash": "Document moved to Trash",
     "undo": "Undo"
   },
-  "pdf_tools": "Tools"
+  "pdf_tools": "Tools",
+  "settings": "Settings"
 }

@@ -20,3 +20,7 @@ export const LazyStoragePage = lazy(
 export const LazyPdfToolsPage = lazy(
   () => import('@/modules/pdf-engine/pages/PdfToolsPage')
 );
+
+export const LazySettingsPage = lazy(
+  () => import('@/modules/settings/pages/SettingsPage')
+);
