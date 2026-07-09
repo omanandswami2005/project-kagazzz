@@ -3,7 +3,7 @@
 > **The single source of truth for development progress.** Any agent or human starting work MUST read this file first, pick the next unblocked item, and update this file when done.
 > Feature numbers (F-1 … F-107) come from [docs/business-model/feature-priorities.md](docs/business-model/feature-priorities.md) — that file owns priority/effort/impact; this file owns *status*.
 >
-> Last updated: 2026-07-09 (Lane-B device-verification pass on the Medium_Phone emulator, text-first via scripts/device-e2e/cdp.mjs: **7 of 8 ops closed** — F-3 Merge, F-4 Split, F-5 Compress, F-6 PDF→Images, F-7 Images→PDF, F-21 Encrypt, F-22 Decrypt. F-22's wrong-password message was found generic and **fixed** (b4f283d). Only **F-28 Form Filling** remains open — getFormFields verified on-device, but the fill happy-path is blocked by this AVD's flaky native file picker; retry on a real device)
+> Last updated: 2026-07-09 (**F-18 Dark Mode** shipped + device-verified — first Settings screen, persisted theme; ef52af3. Earlier today: Lane-B device-verification pass, **7 of 8 ops closed** (F-3…F-7, F-21, F-22) text-first via scripts/device-e2e/cdp.mjs, F-22 wrong-password message fixed (b4f283d); **F-28 Form Filling** still open — fill happy-path blocked by this AVD's flaky file picker, retry on a real device. Next Lane-E Must items: F-16 Biometric, F-17 Multilingual, F-19 Offline-First verify)
 
 ---
 
@@ -136,7 +136,7 @@
 ### Settings & UX — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Settings
 
 - [ ] F-17 Multilingual UI (hi + en, all strings externalized) 🔴Must `[I18N]` `[A11Y]`
-- [ ] F-18 Dark Mode (system + manual) 🔴Must — dark tokens in [design-tokens.md](docs/design-system/design-tokens.md) 🟨 claimed — feature/f18-dark-mode · agent:claude · 2026-07-09 (claim push pending — remote access blocked this session)
+- [x] F-18 Dark Mode (system + manual) 🔴Must — dark tokens in [design-tokens.md](docs/design-system/design-tokens.md) ✅ ef52af3 (2026-07-09) — new **Settings** screen (`modules/settings/pages/SettingsPage` trio + `/settings` route + gear on `vault.home`) with an Appearance→Theme control (System/Light/Dark); `ThemeProvider` persists the choice to `localStorage` (`kagaz:theme`, synchronous, restored on mount — it mounts outside `DatabaseProvider` so the DAO isn't an option). Tests: persistence + page toggle. **Device-verified** on Medium_Phone (API 37), **text-first** via [scripts/device-e2e/cdp.mjs](scripts/device-e2e/cdp.mjs): tap Dark → `data-theme=dark` + `ion-palette-dark` + body `rgb(18,18,18)` + `localStorage=dark`; **restart → boots dark** (persistence); dark screen readable; hardware back → vault. **Hindi** strings shipped (settings.json en/hi) but live switching still needs F-17. (Also fixed pre-existing i18n `config.test.ts` via a jsdom localStorage shim, b3319a9.)
 - [ ] F-27 Onboarding Tutorial 🟡Should `[A11Y]` (8th-grade reading level)
 - [ ] F-19 Offline-First Architecture (verify: airplane-mode test of every feature) 🔴Must `[SEC]` §3.5
 
@@ -284,6 +284,8 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-07-09 · ef52af3 · feat(settings) · **F-18 Dark Mode**: first Settings screen (SettingsPage trio + `/settings` + gear on vault.home) with a System/Light/Dark control; ThemeProvider persists to localStorage (`kagaz:theme`, restored on mount, no DB dep); settings.actions (open/setTheme); en/hi 'settings' label; tests. Device-verified (dark applies + persists across restart) · F-18
+- 2026-07-09 · b3319a9 · test(setup) · in-memory localStorage shim for jsdom (Node 26's experimental localStorage needs --localstorage-file) — fixes the pre-existing i18n config.test.ts crash and enables theme-persistence tests · F-18, test-infra
 - 2026-07-09 · _(this commit)_ · docs(checklist) · F-28 Form Filling **partial** device verification: getFormFields runs on-device (non-form PDF → correct "no fillable fields" empty-state); fill+flatten happy-path blocked by this AVD's flaky native file picker (kills the app mid-pick), so F-28 stays open · F-28
 - 2026-07-09 · b4f283d · fix(pdf-engine) · F-22 wrong-password message: thread the engine's `WRONG_PASSWORD` code through `usePdfEngine` (new `errorCode`) + pure `pdfErrorMessageKey` map so the sheet shows "Incorrect password…" not the generic "Something went wrong"; en/hi strings; unit-tested; re-verified on-device · F-22
 - 2026-07-09 · _(this commit)_ · docs(checklist) · F-21 Encrypt + F-22 Decrypt **device-verified** (text-first): encrypt kagaz-A (1.2→2.8 KB) then decrypt back (2.7 KB); [SEC] password 0× in logcat; wrong password rejected (engine "Incorrect password"). **Follow-up:** wrong-password UI shows generic "Something went wrong" instead of a password-specific message · F-21, F-22

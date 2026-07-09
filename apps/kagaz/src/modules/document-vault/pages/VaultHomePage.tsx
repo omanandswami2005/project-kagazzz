@@ -175,6 +175,16 @@ export function VaultHomePage(): ReactNode {
             >
               {t('pdf_tools')}
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Icon name="Settings" size={24} />}
+              aria-label={t('settings')}
+              onClick={() => router.push('/settings', 'forward', 'push')}
+              agentId="vault.home.settings"
+              agentAction="settings.open"
+            />
           </IonButtons>
         </IonToolbar>
       </IonHeader>
