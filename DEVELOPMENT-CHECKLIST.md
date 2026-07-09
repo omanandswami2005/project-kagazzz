@@ -135,7 +135,7 @@
 
 ### Settings & UX — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Settings
 
-- [ ] F-17 Multilingual UI (hi + en, all strings externalized) 🔴Must `[I18N]` `[A11Y]`
+- [ ] F-17 Multilingual UI (hi + en, all strings externalized) 🔴Must `[I18N]` `[A11Y]` 🟨 claimed — feature/f17-multilingual · agent:claude · 2026-07-09
 - [x] F-18 Dark Mode (system + manual) 🔴Must — dark tokens in [design-tokens.md](docs/design-system/design-tokens.md) ✅ ef52af3 (2026-07-09) — new **Settings** screen (`modules/settings/pages/SettingsPage` trio + `/settings` route + gear on `vault.home`) with an Appearance→Theme control (System/Light/Dark); `ThemeProvider` persists the choice to `localStorage` (`kagaz:theme`, synchronous, restored on mount — it mounts outside `DatabaseProvider` so the DAO isn't an option). Tests: persistence + page toggle. **Device-verified** on Medium_Phone (API 37), **text-first** via [scripts/device-e2e/cdp.mjs](scripts/device-e2e/cdp.mjs): tap Dark → `data-theme=dark` + `ion-palette-dark` + body `rgb(18,18,18)` + `localStorage=dark`; **restart → boots dark** (persistence); dark screen readable; hardware back → vault. **Hindi** strings shipped (settings.json en/hi) but live switching still needs F-17. (Also fixed pre-existing i18n `config.test.ts` via a jsdom localStorage shim, b3319a9.)
 - [ ] F-27 Onboarding Tutorial 🟡Should `[A11Y]` (8th-grade reading level)
 - [ ] F-19 Offline-First Architecture (verify: airplane-mode test of every feature) 🔴Must `[SEC]` §3.5
