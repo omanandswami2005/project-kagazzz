@@ -15,12 +15,14 @@ import {
 } from '@ionic/react';
 import { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@kagaz/ui';
+import { Button, Toggle } from '@kagaz/ui';
 import {
   useLocale,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from '@/core/i18n';
+import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
+import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import './settings.css';
 
@@ -36,6 +38,7 @@ export function SettingsPage(): ReactNode {
   const { t, i18n } = useTranslation('settings');
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
+  const lock = useLockSettings();
 
   return (
     <IonPage data-agent-id="settings">
@@ -105,6 +108,52 @@ export function SettingsPage(): ReactNode {
                 ))}
               </div>
             </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-security">
+              {t('security.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={lock.enabled}
+                disabled={lock.available === false || lock.busy}
+                label={t('security.biometric_lock')}
+                onChange={lock.toggle}
+                agentId="settings.biometric-lock"
+              />
+              <p className="kg-settings__hint">
+                {lock.available === false
+                  ? t('security.biometric_unavailable')
+                  : t('security.biometric_lock_hint')}
+              </p>
+            </div>
+            {lock.enabled && (
+              <div className="kg-settings__row">
+                <span className="kg-settings__label" id="settings-autolock">
+                  {t('security.auto_lock')}
+                </span>
+                <div
+                  className="kg-settings__choices"
+                  role="group"
+                  aria-labelledby="settings-autolock"
+                  data-agent-id="settings.auto-lock"
+                  data-agent-state={lock.timeout}
+                >
+                  {AUTO_LOCK_TIMEOUTS.map((option) => (
+                    <Button
+                      key={option}
+                      variant={lock.timeout === option ? 'primary' : 'secondary'}
+                      size="sm"
+                      onClick={() => lock.setAutoLock(option)}
+                      agentId={`settings.auto-lock-${option}`}
+                    >
+                      {t(`security.auto_lock_${option}`)}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         </main>
       </IonContent>

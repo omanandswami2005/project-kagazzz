@@ -19,7 +19,13 @@
   "security": {
     "title": "सुरक्षा",
     "biometric_lock": "बायोमेट्रिक लॉक",
-    "auto_lock": "स्वतः लॉक"
+    "biometric_lock_hint": "Kagaz खोलने के लिए अपनी फ़िंगरप्रिंट, चेहरे या डिवाइस PIN की आवश्यकता हो।",
+    "biometric_unavailable": "पहले अपने डिवाइस पर स्क्रीन लॉक (फ़िंगरप्रिंट, चेहरा या PIN) सेट करें।",
+    "auto_lock": "इतने समय बाद स्वतः लॉक करें",
+    "auto_lock_immediate": "तुरंत",
+    "auto_lock_30s": "30 सेकंड",
+    "auto_lock_1min": "1 मिनट",
+    "auto_lock_5min": "5 मिनट"
   },
   "about": {
     "title": "जानकारी",

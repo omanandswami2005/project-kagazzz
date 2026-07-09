@@ -37,6 +37,13 @@
     "body": "Your documents are safe. Restart the app to continue.",
     "restart": "Restart"
   },
+  "lock": {
+    "title": "Kagaz is locked",
+    "subtitle": "Unlock with your fingerprint, face, or device PIN to continue.",
+    "unlock": "Unlock",
+    "failed": "Couldn't verify. Try again.",
+    "reason": "Unlock Kagaz"
+  },
   "confirmations": {
     "delete_title": "Delete Document?",
     "delete_message": "\"{{name}}\" will be permanently deleted. This cannot be undone.",

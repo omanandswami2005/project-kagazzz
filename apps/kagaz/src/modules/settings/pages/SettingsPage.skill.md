@@ -2,9 +2,9 @@
 
 ## Purpose
 The user is on the app Settings screen. In V1 it exposes **Language**
-(English / हिन्दी) and **Appearance → Theme** (System / Light / Dark). Both are
-applied immediately and **persist across app restarts**. Biometric lock,
-density, and About arrive with later items.
+(English / हिन्दी), **Appearance → Theme** (System / Light / Dark), and
+**Security → Biometric lock** (with an auto-lock timeout). Language and theme
+apply immediately and persist. Density and About arrive with later items.
 
 ## What I (the AI) can do here
 
@@ -35,8 +35,10 @@ Tapping a language/theme button is also a **direct manipulation** — the user c
 
 ## Things I must NOT do
 - Don't claim a specific colour when the user is on `system` — it follows the OS.
-- Don't offer biometric lock or density here yet — those controls are not built
-  (F-16, and density). Say they're coming rather than pretend.
+- **Never enable/disable the biometric lock or unlock the app on the user's
+  behalf.** [SEC] The Security toggle and the lock screen are user-only direct
+  manipulations with no registry action, so the AI cannot bypass the lock.
+- Don't offer a density control here yet — not built. Say it's coming.
 
 ## Cross-page handoffs
 - Back returns to `vault.home` (the header back button, `settings.back`).
