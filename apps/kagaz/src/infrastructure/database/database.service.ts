@@ -112,10 +112,23 @@ export async function openDatabase(
  */
 export async function deleteDatabase(): Promise<void> {
   const sqlite = new SQLiteConnection(CapacitorSQLite);
+  // The app's live connection was opened by a *different* SQLiteConnection
+  // instance; this fresh wrapper's local map is empty, so createConnection
+  // would collide ("Connection kagaz already exists"). Sync the map with the
+  // native registry first, then retrieve the existing connection.
+  await sqlite.checkConnectionsConsistency().catch(() => undefined);
   const { result: isConn } = await sqlite.isConnection(DATABASE_NAME, false);
   const db = isConn
     ? await sqlite.retrieveConnection(DATABASE_NAME, false)
     : await sqlite.createConnection(DATABASE_NAME, true, 'secret', 1, false);
+  if (!(await db.isDBOpen()).result) {
+    await db.open();
+  }
   await db.delete();
   await sqlite.closeConnection(DATABASE_NAME, false).catch(() => undefined);
+  // NB: the SQLCipher secret is deliberately NOT cleared here. Deleting the
+  // file already removes all data; regenerating the key/secret on the next
+  // launch left the fresh DB unable to persist writes across restarts. The
+  // retained key protects nothing (there is no old DB), and keeps the
+  // re-created empty DB stable.
 }

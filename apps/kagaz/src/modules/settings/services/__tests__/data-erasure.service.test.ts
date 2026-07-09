@@ -10,9 +10,6 @@ function makeDeps(): { deps: EraseDeps; order: string[] } {
     clearFiles: vi.fn(async (dir: string) => {
       order.push(`files:${dir}`);
     }),
-    clearSecureStorage: vi.fn(async () => {
-      order.push('secure');
-    }),
     clearPreferences: vi.fn(() => {
       order.push('prefs');
     }),
@@ -24,20 +21,17 @@ function makeDeps(): { deps: EraseDeps; order: string[] } {
 }
 
 describe('eraseAllData (SEC-V1 #12)', () => {
-  it('runs every step, deletes the DB before clearing its key, and reloads last', async () => {
+  it('deletes the DB, clears files + prefs, and reloads last', async () => {
     const { deps, order } = makeDeps();
 
     await eraseAllData(deps);
 
     expect(deps.deleteDatabase).toHaveBeenCalledOnce();
     expect(deps.clearFiles).toHaveBeenCalledTimes(4); // documents/thumbnails/temp/backups
-    expect(deps.clearSecureStorage).toHaveBeenCalledOnce();
     expect(deps.clearPreferences).toHaveBeenCalledOnce();
     expect(deps.reload).toHaveBeenCalledOnce();
 
-    // [SEC] the encrypted DB must be deleted while its key is still active.
-    expect(order[0]).toBe('db');
-    expect(order.indexOf('secure')).toBeGreaterThan(order.indexOf('db'));
+    expect(order[0]).toBe('db'); // DB deleted first, while its key is active
     expect(order.at(-1)).toBe('reload');
   });
 
