@@ -6,16 +6,16 @@ include ':aparajita-capacitor-biometric-auth'
 project(':aparajita-capacitor-biometric-auth').projectDir = new File('../../../node_modules/.pnpm/@aparajita+capacitor-biometric-auth@10.0.0/node_modules/@aparajita/capacitor-biometric-auth/android')
 
 include ':capacitor-community-speech-recognition'
-project(':capacitor-community-speech-recognition').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+speech_9661d8c145f703cdc4b242594f7624df/node_modules/@capacitor-community/speech-recognition/android')
+project(':capacitor-community-speech-recognition').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+speech-recognition@7.0.1_@capacitor+core@8.4.0/node_modules/@capacitor-community/speech-recognition/android')
 
 include ':capacitor-community-sqlite'
 project(':capacitor-community-sqlite').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+sqlite@8.1.0_@capacitor+core@8.4.0/node_modules/@capacitor-community/sqlite/android')
 
 include ':capacitor-community-text-to-speech'
-project(':capacitor-community-text-to-speech').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+text-t_a3061f62eb1854a8f71021e7134e6350/node_modules/@capacitor-community/text-to-speech/android')
+project(':capacitor-community-text-to-speech').projectDir = new File('../../../node_modules/.pnpm/@capacitor-community+text-to-speech@8.0.1_@capacitor+core@8.4.0/node_modules/@capacitor-community/text-to-speech/android')
 
 include ':capacitor-mlkit-document-scanner'
-project(':capacitor-mlkit-document-scanner').projectDir = new File('../../../node_modules/.pnpm/@capacitor-mlkit+document-s_8711f2a62c60a0ce15f82585a5906090/node_modules/@capacitor-mlkit/document-scanner/android')
+project(':capacitor-mlkit-document-scanner').projectDir = new File('../../../node_modules/.pnpm/@capacitor-mlkit+document-scanner@8.1.0_@capacitor+core@8.4.0/node_modules/@capacitor-mlkit/document-scanner/android')
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../../../node_modules/.pnpm/@capacitor+app@8.1.0_@capacitor+core@8.4.0/node_modules/@capacitor/app/android')
