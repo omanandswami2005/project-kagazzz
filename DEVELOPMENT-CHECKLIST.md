@@ -136,7 +136,7 @@
 ### Settings & UX — [02-document-vault-module.md](docs/architecture/02-document-vault-module.md) §Settings
 
 - [ ] F-17 Multilingual UI (hi + en, all strings externalized) 🔴Must `[I18N]` `[A11Y]`
-- [ ] F-18 Dark Mode (system + manual) 🔴Must — dark tokens in [design-tokens.md](docs/design-system/design-tokens.md)
+- [ ] F-18 Dark Mode (system + manual) 🔴Must — dark tokens in [design-tokens.md](docs/design-system/design-tokens.md) 🟨 claimed — feature/f18-dark-mode · agent:claude · 2026-07-09 (claim push pending — remote access blocked this session)
 - [ ] F-27 Onboarding Tutorial 🟡Should `[A11Y]` (8th-grade reading level)
 - [ ] F-19 Offline-First Architecture (verify: airplane-mode test of every feature) 🔴Must `[SEC]` §3.5
 
