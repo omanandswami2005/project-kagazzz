@@ -27,6 +27,17 @@
     "auto_lock_1min": "1 minute",
     "auto_lock_5min": "5 minutes"
   },
+  "data": {
+    "title": "Data & Privacy",
+    "delete_all": "Delete all data",
+    "delete_all_hint": "Permanently remove every document, folder, tag, and setting from this device.",
+    "confirm_title": "Delete everything?",
+    "confirm_body": "This permanently erases all your documents, folders, tags, and settings from this device. This cannot be undone.",
+    "confirm_keyword": "DELETE",
+    "confirm_prompt": "Type {{keyword}} to confirm",
+    "confirm_button": "Delete everything",
+    "cancel": "Cancel"
+  },
   "about": {
     "title": "About",
     "privacy_policy": "Privacy Policy",
