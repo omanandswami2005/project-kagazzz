@@ -16,15 +16,26 @@ import {
 import { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@kagaz/ui';
+import {
+  useLocale,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from '@/core/i18n';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import './settings.css';
 
 const THEME_OPTIONS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
+/** Native names shown in each language's own script (settings namespace keys). */
+const LANGUAGE_LABEL = {
+  en: 'english',
+  hi: 'hindi',
+} as const satisfies Record<SupportedLanguage, string>;
 
 /** The app Settings page. */
 export function SettingsPage(): ReactNode {
-  const { t } = useTranslation('settings');
+  const { t, i18n } = useTranslation('settings');
   const { theme, setTheme } = useTheme();
+  const { locale } = useLocale();
 
   return (
     <IonPage data-agent-id="settings">
@@ -39,6 +50,32 @@ export function SettingsPage(): ReactNode {
 
       <IonContent>
         <main className="kg-settings" data-agent-id="settings.content">
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-language">
+              {t('language.title')}
+            </h2>
+            <div
+              className="kg-settings__choices"
+              role="group"
+              aria-labelledby="settings-language"
+              data-agent-id="settings.language"
+              data-agent-state={locale}
+            >
+              {SUPPORTED_LANGUAGES.map((lng) => (
+                <Button
+                  key={lng}
+                  variant={locale === lng ? 'primary' : 'secondary'}
+                  size="sm"
+                  onClick={() => void i18n.changeLanguage(lng)}
+                  agentId={`settings.language-${lng}`}
+                  agentAction="settings.setLanguage"
+                >
+                  {t(`language.${LANGUAGE_LABEL[lng]}`)}
+                </Button>
+              ))}
+            </div>
+          </section>
+
           <section className="kg-settings__section">
             <h2 className="kg-settings__section-title" id="settings-appearance">
               {t('appearance.title')}
