@@ -69,7 +69,23 @@ export function DocumentListItem({
         </span>
       )}
       <span className="kg-doc-item__icon" aria-hidden="true">
-        {thumbnailUrl ? (
+        {document.isLocked ? (
+          // [SEC] locked docs (§3.1): blur any thumbnail + overlay a lock.
+          <span
+            className="kg-doc-item__locked"
+            data-agent-id={`vault.home.item-${document.id}.locked`}
+          >
+            {thumbnailUrl && (
+              <img
+                className="kg-doc-item__thumb kg-doc-item__thumb--locked"
+                src={thumbnailUrl}
+                alt=""
+                loading="lazy"
+              />
+            )}
+            <Icon name="Lock" size={20} />
+          </span>
+        ) : thumbnailUrl ? (
           <img
             className="kg-doc-item__thumb"
             src={thumbnailUrl}

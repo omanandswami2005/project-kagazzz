@@ -34,6 +34,7 @@ import { TagSelector } from '../components/TagSelector';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useBulkActions } from '../hooks/useBulkActions';
+import { useDocLock } from '../hooks/useDocLock';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -60,6 +61,7 @@ export function VaultHomePage(): ReactNode {
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
   const { toggleFavorite, markAccessed } = useVaultMutations();
+  const { toggleLock, authorizeView } = useDocLock();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
   const { folders, createFolder, moveDocument, createDefaultFolders } =
@@ -108,6 +110,8 @@ export function VaultHomePage(): ReactNode {
   // Stopgap until F-24 ships document preview/detail: tapping a row tells
   // the user the feature is coming rather than appearing dead.
   const [showPreviewToast, setShowPreviewToast] = useState(false);
+  // Shown when opening a locked document is declined at the biometric prompt.
+  const [showLockedToast, setShowLockedToast] = useState(false);
 
   const handleSelectSource = (source: UploadSource): void => {
     void uploadFrom(source).then(({ uploaded }) => {
@@ -149,8 +153,15 @@ export function VaultHomePage(): ReactNode {
   // Opening a document records recency (F-32) and, until F-24 ships the
   // detail view, surfaces the "preview coming soon" stopgap.
   const handleOpen = (document: DocumentEntity): void => {
-    void markAccessed(document);
-    setShowPreviewToast(true);
+    // [SEC] §3.1: a locked document needs a biometric prompt before it opens.
+    void authorizeView(document).then((allowed) => {
+      if (!allowed) {
+        setShowLockedToast(true);
+        return;
+      }
+      void markAccessed(document);
+      setShowPreviewToast(true);
+    });
   };
 
   const listState = isLoading
@@ -403,6 +414,13 @@ export function VaultHomePage(): ReactNode {
                 if (moreDoc) enterSelection(moreDoc.id);
               },
             },
+            {
+              text: t(moreDoc?.isLocked ? 'actions.unlock' : 'actions.lock'),
+              data: { action: 'lock' },
+              handler: (): void => {
+                if (moreDoc) void toggleLock(moreDoc);
+              },
+            },
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
         />
@@ -446,6 +464,13 @@ export function VaultHomePage(): ReactNode {
           message={t('preview.coming_soon')}
           onDidDismiss={() => setShowPreviewToast(false)}
           data-agent-id="vault.home.preview-toast"
+        />
+        <IonToast
+          isOpen={showLockedToast}
+          duration={2500}
+          message={t('lock.blocked')}
+          onDidDismiss={() => setShowLockedToast(false)}
+          data-agent-id="vault.home.locked-toast"
         />
       </IonContent>
     </IonPage>

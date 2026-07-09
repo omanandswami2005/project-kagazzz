@@ -462,6 +462,28 @@
   background: var(--surface-2);
 }
 
+/* Per-document lock (§3.1): blurred thumbnail behind a lock glyph. */
+.kg-doc-item__locked {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+
+.kg-doc-item__thumb--locked {
+  filter: blur(6px);
+  opacity: 0.55;
+}
+
+.kg-doc-item__locked > :not(.kg-doc-item__thumb--locked) {
+  position: absolute;
+}
+
 .kg-doc-item__body {
   display: flex;
   flex-direction: column;

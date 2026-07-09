@@ -13,8 +13,14 @@
     "add_tag": "Add Tag",
     "favorite": "Add to favorites",
     "unfavorite": "Remove from favorites",
+    "lock": "Lock document",
+    "unlock": "Unlock document",
     "more": "More actions",
     "cancel": "Cancel"
+  },
+  "lock": {
+    "reason": "Unlock this document",
+    "blocked": "Unlock to open this document"
   },
   "folders": {
     "root": "My Vault",

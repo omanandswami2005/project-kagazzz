@@ -48,6 +48,7 @@ beforeEach(() => {
   });
   useVaultMutationsMock.mockReturnValue({
     toggleFavorite: vi.fn().mockResolvedValue(undefined),
+    setLocked: vi.fn().mockResolvedValue(undefined),
     markAccessed: vi.fn().mockResolvedValue(undefined),
   });
 });
