@@ -103,3 +103,19 @@ export async function openDatabase(
   await runMigrations(connection, migrations, onMigrationApplied);
   return connection;
 }
+
+/**
+ * Deletes the encrypted database file (SEC-V1 §8 #12 full data erasure). Must
+ * run while the SQLCipher secret is still active (i.e. before the secure-storage
+ * key is removed) — otherwise the encrypted file can't be opened to delete it.
+ * Best-effort: resolves even if there is nothing to delete.
+ */
+export async function deleteDatabase(): Promise<void> {
+  const sqlite = new SQLiteConnection(CapacitorSQLite);
+  const { result: isConn } = await sqlite.isConnection(DATABASE_NAME, false);
+  const db = isConn
+    ? await sqlite.retrieveConnection(DATABASE_NAME, false)
+    : await sqlite.createConnection(DATABASE_NAME, true, 'secret', 1, false);
+  await db.delete();
+  await sqlite.closeConnection(DATABASE_NAME, false).catch(() => undefined);
+}

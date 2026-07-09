@@ -13,9 +13,10 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Toggle } from '@kagaz/ui';
+import { DeleteAllDataDialog } from '../components/DeleteAllDataDialog';
 import {
   useLocale,
   SUPPORTED_LANGUAGES,
@@ -39,6 +40,7 @@ export function SettingsPage(): ReactNode {
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
   const lock = useLockSettings();
+  const [eraseOpen, setEraseOpen] = useState(false);
 
   return (
     <IonPage data-agent-id="settings">
@@ -155,7 +157,29 @@ export function SettingsPage(): ReactNode {
               </div>
             )}
           </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-data">
+              {t('data.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setEraseOpen(true)}
+                agentId="settings.delete-all-data"
+              >
+                {t('data.delete_all')}
+              </Button>
+              <p className="kg-settings__hint">{t('data.delete_all_hint')}</p>
+            </div>
+          </section>
         </main>
+
+        <DeleteAllDataDialog
+          isOpen={eraseOpen}
+          onDismiss={() => setEraseOpen(false)}
+        />
       </IonContent>
     </IonPage>
   );
