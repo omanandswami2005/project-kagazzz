@@ -1,21 +1,24 @@
 # Skill: settings (Settings)
 
 ## Purpose
-The user is on the app Settings screen. In V1 it exposes **Appearance → Theme**:
-follow the **System** setting, or force **Light** or **Dark**. The choice is
-applied immediately and **persists across app restarts**. Language, biometric
-lock, density, and About arrive with later items.
+The user is on the app Settings screen. In V1 it exposes **Language**
+(English / हिन्दी) and **Appearance → Theme** (System / Light / Dark). Both are
+applied immediately and **persist across app restarts**. Biometric lock,
+density, and About arrive with later items.
 
 ## What I (the AI) can do here
 
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
 | Open settings | `settings.open` | Navigates to `/settings`. |
+| Switch language | `settings.setLanguage` | `language` = `'en'` \| `'hi'`. |
 | Switch theme | `settings.setTheme` | `theme` = `'system'` \| `'light'` \| `'dark'`. |
 
-Tapping a theme button is also a **direct manipulation** — the user can do it by hand.
+Tapping a language/theme button is also a **direct manipulation** — the user can do it by hand.
 
 ## Voice examples I should recognize
+- "switch to hindi" / "हिंदी में बदलो" → `settings.setLanguage({ language: 'hi' })`
+- "change language to english" / "अंग्रेज़ी में बदलो" → `settings.setLanguage({ language: 'en' })`
 - "dark mode" / "turn on dark mode" → `settings.setTheme({ theme: 'dark' })`
 - "light mode" → `settings.setTheme({ theme: 'light' })`
 - "use the system theme" / "match my phone" → `settings.setTheme({ theme: 'system' })`
@@ -23,16 +26,17 @@ Tapping a theme button is also a **direct manipulation** — the user can do it 
 - "open settings" / "सेटिंग्स खोलो" → `settings.open`
 
 ## State I should check first
-- The active theme is on the `settings.theme` group's `data-agent-state`
-  (`system` | `light` | `dark`) — read it to confirm a change took effect, and
-  to avoid re-selecting the value that is already active.
+- The active language is on the `settings.language` group's `data-agent-state`
+  (`en` | `hi`); the active theme is on `settings.theme` (`system` | `light` |
+  `dark`). Read them to confirm a change took effect and to avoid re-selecting
+  the value that is already active.
 - `system` resolves to light or dark from the OS; the actual applied palette is
   on `<html data-theme>` (`light` | `dark`).
 
 ## Things I must NOT do
 - Don't claim a specific colour when the user is on `system` — it follows the OS.
-- Don't offer language, biometric lock, or density here yet — those screens/
-  controls are not built (F-16, F-17). Say they're coming rather than pretend.
+- Don't offer biometric lock or density here yet — those controls are not built
+  (F-16, and density). Say they're coming rather than pretend.
 
 ## Cross-page handoffs
 - Back returns to `vault.home` (the header back button, `settings.back`).

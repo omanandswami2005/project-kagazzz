@@ -32,6 +32,11 @@
     "unsupported_format": "This file format is not supported.",
     "biometric_failed": "Authentication failed. Please try again."
   },
+  "crash": {
+    "title": "Something went wrong",
+    "body": "Your documents are safe. Restart the app to continue.",
+    "restart": "Restart"
+  },
   "confirmations": {
     "delete_title": "Delete Document?",
     "delete_message": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
