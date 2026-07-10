@@ -44,6 +44,10 @@
     "failed": "Couldn't verify. Try again.",
     "reason": "Unlock Kagaz"
   },
+  "root_warning": {
+    "message": "This device looks rooted — your documents may be less secure.",
+    "dismiss": "Dismiss"
+  },
   "confirmations": {
     "delete_title": "Delete Document?",
     "delete_message": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
