@@ -1,0 +1,36 @@
+/* Hold-to-speak mic button (F-15). */
+
+.kg-mic {
+  flex: 0 0 auto;
+  color: var(--color-text-secondary);
+}
+
+/* Listening: tint with the brand colour and pulse so it's obvious the mic is
+   hot (mirrors interaction-patterns.md "active capture" affordance). */
+.kg-mic--on {
+  color: var(--color-primary);
+  animation: kg-mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes kg-mic-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kg-mic--on {
+    animation: none;
+  }
+}
+
+.kg-mic__hint {
+  flex: 1 1 100%;
+  margin-top: var(--space-1);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}

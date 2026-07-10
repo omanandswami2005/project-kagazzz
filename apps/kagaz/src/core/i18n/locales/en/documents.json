@@ -87,7 +87,12 @@
   },
   "search": {
     "placeholder": "Search documents",
-    "no_results": "No documents match \"{{query}}\""
+    "no_results": "No documents match \"{{query}}\"",
+    "voice": {
+      "start": "Search by voice",
+      "stop": "Stop listening",
+      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice."
+    }
   },
   "templates": {
     "cta": "Set up starter folders",

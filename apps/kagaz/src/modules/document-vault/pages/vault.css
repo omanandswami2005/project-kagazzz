@@ -30,6 +30,19 @@
   margin-block: var(--space-2);
 }
 
+/* F-15: searchbar + hold-to-speak mic on one row; the permission hint wraps
+   onto its own line beneath (flex-wrap). */
+.kg-vault__search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kg-vault__search-row .kg-vault__search {
+  flex: 1 1 auto;
+}
+
 .kg-vault__no-results {
   padding-block: var(--space-8);
   text-align: center;
