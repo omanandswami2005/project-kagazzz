@@ -36,6 +36,11 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // F-20 OCR (ADR-019): bundled ML Kit Text Recognition models (Latin + Hindi/
+    // Devanagari). Statically linked into the APK → offline on install, no
+    // runtime download, no WASM/CSP. Used by the custom OcrPlugin.
+    implementation "com.google.mlkit:text-recognition:16.0.1"
+    implementation "com.google.mlkit:text-recognition-devanagari:16.0.1"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

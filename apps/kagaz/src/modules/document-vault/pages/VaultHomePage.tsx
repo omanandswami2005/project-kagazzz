@@ -35,6 +35,7 @@ import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocLock } from '../hooks/useDocLock';
+import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -63,6 +64,7 @@ export function VaultHomePage(): ReactNode {
   const { isReady, uploadFrom } = useUpload();
   const { toggleFavorite, markAccessed } = useVaultMutations();
   const { toggleLock, authorizeView } = useDocLock();
+  const { extractText } = useDocumentOcr();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
   const { folders, createFolder, moveDocument, createDefaultFolders } =
@@ -97,7 +99,14 @@ export function VaultHomePage(): ReactNode {
   const [tagDocId, setTagDocId] = useState<string | null>(null);
   const [moveDocId, setMoveDocId] = useState<string | null>(null);
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
+  const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
+
+  // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
+  const handleOcr = async (document: DocumentEntity): Promise<void> => {
+    const text = await extractText(document);
+    setOcrMsg(text === null ? t('ocr.failed') : text.trim() ? t('ocr.done') : t('ocr.none'));
+  };
   const search = useSearch();
   // While searching, results replace the folder/list view.
   const visibleDocuments = search.isActive ? search.results : documents;
@@ -426,6 +435,18 @@ export function VaultHomePage(): ReactNode {
                 if (moreDoc) void toggleLock(moreDoc);
               },
             },
+            // F-20: OCR only offered for image documents on a native platform.
+            ...(moreDoc && canOcr(moreDoc)
+              ? [
+                  {
+                    text: t('actions.extract_text'),
+                    data: { action: 'ocr' },
+                    handler: (): void => {
+                      if (moreDoc) void handleOcr(moreDoc);
+                    },
+                  },
+                ]
+              : []),
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
         />
@@ -469,6 +490,13 @@ export function VaultHomePage(): ReactNode {
           message={t('preview.coming_soon')}
           onDidDismiss={() => setShowPreviewToast(false)}
           data-agent-id="vault.home.preview-toast"
+        />
+        <IonToast
+          isOpen={ocrMsg !== null}
+          duration={2500}
+          message={ocrMsg ?? ''}
+          onDidDismiss={() => setOcrMsg(null)}
+          data-agent-id="vault.home.ocr-toast"
         />
         <IonToast
           isOpen={showLockedToast}

@@ -25,6 +25,7 @@
 - [ADR-016: Image Engine & Document Scanner (offline, permissive-only)](#adr-016-image-engine--document-scanner-offline-permissive-only)
 - [ADR-017: Offline CSP & no runtime-fetched WASM/models](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)
 - [ADR-018: Document Scanner — Google ML Kit (via Play Services)](#adr-018-document-scanner--google-ml-kit-via-play-services)
+- [ADR-019: OCR — bundled native ML Kit Text Recognition](#adr-019-ocr--bundled-native-ml-kit-text-recognition)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -43,7 +44,7 @@
 | 008 | State Management | **Zustand** | Redux, MobX, Jotai | ✅ Accepted |
 | 009 | Build Tool | **Vite** | Webpack, Parcel, esbuild | ✅ Accepted |
 | 010 | Language | **TypeScript** | JavaScript | ✅ Accepted |
-| 011 | OCR Engine | **Tesseract.js** | Google Vision, AWS Textract | ✅ Accepted |
+| 011 | OCR Engine | ~~Tesseract.js~~ | Google Vision, AWS Textract | ⚠️ Superseded → ADR-019 |
 | 012 | Speech I/O | **Native Capacitor Plugins** | Web Speech API | ✅ Accepted |
 | 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
 | 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
@@ -51,6 +52,7 @@
 | 016 | Image conversion / Doc scanner | **Canvas (native)** / ~~jscanify + OpenCV.js~~ | heic-to, ML Kit scanner | ✅ Accepted (F-8) · scanner → ADR-018 |
 | 017 | OpenCV scanner CSP | `wasm-unsafe-eval` weakening | — | ⚠️ Moot (scanner → ML Kit, ADR-018) |
 | 018 | Document Scanner | **Google ML Kit** (`@capacitor-mlkit/document-scanner`, native/Play Services) | jscanify + OpenCV.js (ADR-016) | ✅ Accepted |
+| 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
 
 ---
 
@@ -631,9 +633,9 @@ Kagaz is a complex application with multiple subsystems: document management, PD
 
 | Field | Detail |
 |---|---|
-| **Status** | ✅ Accepted |
+| **Status** | ⚠️ **SUPERSEDED by [ADR-019](#adr-019-ocr--bundled-native-ml-kit-text-recognition) (2026-07-10)** |
 | **Date** | 2026-06-07 |
-| **Decision** | Use **Tesseract.js** for on-device Optical Character Recognition (OCR) instead of cloud-based services. |
+| **Decision** | ~~Use **Tesseract.js** for on-device OCR.~~ **Reversed — see ADR-019.** Tesseract.js is a WASM engine in the WebView: it needs `wasm-unsafe-eval` (weakens the strict CSP on a PII app, [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)) and ~30 MB of bundled `eng`/`hin` traineddata, and is slower on mid-range phones than native OCR. F-20 uses **bundled native ML Kit text recognition** instead. `tesseract.js` is removed from the dependencies. |
 
 ### Context
 
@@ -1045,6 +1047,50 @@ disproved**: the plugin adds no `INTERNET`/`CAMERA` permission to our app.
   images, so none of it runs).
 - Scanned pages import through the existing vault upload pipeline as
   `IncomingFile`s with `source: 'scanner'`.
+
+---
+
+## ADR-019: OCR — bundled native ML Kit Text Recognition
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-10 |
+| **Supersedes** | [ADR-011](#adr-011-tesseractjs-for-ocr) (Tesseract.js). |
+| **Decision** | **F-20 OCR** uses **Google ML Kit Text Recognition v2 with its models statically bundled in the APK** (`com.google.mlkit:text-recognition` + `com.google.mlkit:text-recognition-devanagari`), via a **thin custom Capacitor plugin** (`OcrPlugin`, like `RootCheckPlugin`). Native, Android/iOS; **no WASM, no CSP change, no runtime download** — OCR works offline the instant the app installs, Hindi (Devanagari) + English. Web degrades (no ML Kit web SDK). |
+
+### Context
+
+F-20 must OCR scanned documents/photos in English **and** Hindi, on-device,
+fully offline, with everything **bundled in the APK** (no runtime/CDN/Play-
+Services download). It should also not reintroduce the WASM/CSP weakening that
+[ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels) exists to avoid
+and that [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services)
+removed from the scanner.
+
+### Options considered
+
+| Option | Verdict |
+|---|---|
+| **Tesseract.js / LiteParse-web** (WASM in WebView) | ❌ Needs `wasm-unsafe-eval` (CSP weakening, ADR-017); ~30 MB `eng`/`hin` traineddata; slower on mid-range phones. LiteParse's edge is PDF *layout parsing*, not raw image OCR (it delegates to Tesseract). Web-capable, but the CSP cost is disqualifying on a PII app. |
+| **Native LiteParse plugin** (cross-compile Rust + native libtesseract) | ❌ Weeks of custom Rust/NDK/JNI work with no upstream Android build; OCR quality still lands at Tesseract; LiteParse's parsing win is out of F-20's scope. Earmarked for a *future* smart-PDF-parsing feature, not OCR. |
+| **`@capacitor-mlkit/text-recognition`** (Capawesome) | ❌ Not on public npm — a paid **Capawesome Insiders** plugin. |
+| **`@jcesarmobile/capacitor-ocr`** (MIT, public) | ⚠️ Bundled `com.google.mlkit:text-recognition` but **Latin-only** — no Devanagari, fails the Hindi requirement. |
+| **`@capacitor-community/image-to-text`** | ❌ Licensed **Hippocratic License 2.0** — not permissive (violates the MIT/Apache/BSD/ISC-only policy; legal risk for a proprietary/`UNLICENSED` app). Also uses the deprecated *Firebase* ML Kit and shows no Devanagari support. |
+| **`@pantrist/capacitor-plugin-ml-kit-text-recognition`** (MIT) | ❌ Uses the **unbundled** `play-services-mlkit-text-recognition` — **downloads the model at runtime** (fails the in-APK / no-download requirement); no documented Devanagari support. |
+| **Custom `OcrPlugin` over bundled ML Kit** ✅ — the only option that is permissive **and** in-APK **and** supports Hindi. | Thin Java Capacitor plugin (RootCheck precedent) adding the bundled `text-recognition` + `text-recognition-devanagari` Gradle deps. Full control, Hindi + English, in-APK, offline, no CSP/WASM, no third-party/paywall. ML Kit is Apache-2.0. |
+
+### Consequences
+
+- Adds `com.google.mlkit:text-recognition:16.0.1` +
+  `com.google.mlkit:text-recognition-devanagari:16.0.1` to the Android build
+  (**bundled** models, ~a few MB each). No new app permission (processes a
+  local image path; no camera/internet).
+- `tesseract.js` removed from `package.json` (was unused — OCR module hadn't
+  shipped). The search module README note is corrected.
+- **[SEC]** OCR text is sensitive → stored only in the encrypted `documents.ocr_text`
+  column (feeds FTS search); never logged.
+- Android/iOS only; the Web build has no OCR (degrades, like the scanner).
 
 ---
 

@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Purpose:** How to build, install, and exercise the app on an Android emulator/device to satisfy the mandatory device-verification gate before closing a checklist item.
-> **Last Updated:** 2026-07-09
+> **Last Updated:** 2026-07-10
 
 This guide is the **operational companion** to [DEVELOPMENT-CHECKLIST.md](../../DEVELOPMENT-CHECKLIST.md) protocol **step 5** (*"Device verification (mandatory before closing any device-affecting item)"*). The checklist defines **what** must be verified; this guide defines **how** — the exact terminal commands to boot an emulator, produce a debug APK, install it, and drive the flow, plus a copy-paste journal template.
 
@@ -76,6 +76,7 @@ Run from the repo root. Steps 2–4 are the inner loop you repeat per change.
 emulator -avd Medium_Phone &        # or your AVD name from -list-avds
 adb wait-for-device                 # blocks until the device registers
 adb shell getprop sys.boot_completed # prints 1 when fully booted
+adb shell dumpsys user | grep RUNNING_UNLOCKED # must be unlocked before launch
 ```
 
 **2 — Build the web bundle + sync native:**
@@ -177,6 +178,7 @@ hardware back returns to PDF Tools hub ✓, offline (airplane mode) ✓.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `adb: no devices/emulators found` | emulator not booted, or `adb`/`emulator` not on PATH | §2 setup; `adb wait-for-device`; `adb kill-server && adb start-server` |
+| `adb install` says `Success`, but launcher/`monkey` says `No activities found to run`, or `am start` says `Activity class ... does not exist` | the AVD user is still locked (`dumpsys user` shows `RUNNING_LOCKED`), so Android hides non-direct-boot launcher activities | wake + unlock the emulator first (`adb shell input keyevent KEYCODE_WAKEUP`; swipe up; enter the test PIN if one was set, e.g. `adb shell input text 1234 && adb shell input keyevent ENTER`), then confirm `RUNNING_UNLOCKED` before launch |
 | `./gradlew: command not found` or `.bat` error | wrong wrapper for the OS | use `./gradlew assembleDebug` on macOS/Linux (native Windows: `gradlew.bat`) |
 | `JAVA_HOME is not set` / wrong Java | JDK not exported | point `JAVA_HOME` at Studio's JBR (§2) |
 | App boots to **empty vault / disabled FAB** | SQLCipher not activated → DB failed to open | check `CapacitorSQLite` encryption flags in `capacitor.config.ts`; read logcat for the real DB error |

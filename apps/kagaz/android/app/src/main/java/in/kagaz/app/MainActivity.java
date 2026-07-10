@@ -10,6 +10,8 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         // SEC-V1 §8 #10: register the root-detection plugin before the bridge.
         registerPlugin(RootCheckPlugin.class);
+        // F-20 OCR (ADR-019): bundled ML Kit text recognition.
+        registerPlugin(OcrPlugin.class);
         super.onCreate(savedInstanceState);
         // [SEC] SEC-V1 §8 items #5 (screenshot prevention) + #6 (app-switcher
         // blur): this app holds Aadhaar/PAN-grade PII, so FLAG_SECURE blocks
