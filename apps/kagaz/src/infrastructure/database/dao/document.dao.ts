@@ -285,6 +285,32 @@ export class DocumentDao {
     return result.changes;
   }
 
+  /**
+   * Lists soft-deleted documents (the Trash, F-57), most-recently-deleted
+   * first. These are hidden from every other query by the `deleted_at IS NULL`
+   * filter; this is the only view that surfaces them.
+   */
+  async findTrashed(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NOT NULL
+       ORDER BY deleted_at DESC`
+    );
+    return rows.map(mapRow);
+  }
+
+  /**
+   * Permanently removes a document row (F-57). Guarded to trashed rows only, so
+   * a live document can never be hard-deleted without first going to Trash. The
+   * caller is responsible for deleting the associated files.
+   */
+  async hardDelete(id: string): Promise<number> {
+    const result = await this.db.run(
+      'DELETE FROM documents WHERE id = ? AND deleted_at IS NOT NULL',
+      [id]
+    );
+    return result.changes;
+  }
+
   /** FTS5 search across name/description/ocr_text (§6), rank order. */
   async search(query: string, limit = 20): Promise<DocumentEntity[]> {
     const rows = await this.db.query(
