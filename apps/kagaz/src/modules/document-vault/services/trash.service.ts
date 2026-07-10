@@ -12,7 +12,10 @@
  * so ordering + expiry are unit-testable without native storage.
  */
 import { log } from '@/core/logging';
+import type { DbConnection } from '@/infrastructure/database/connection';
+import { DocumentDao } from '@/infrastructure/database/dao';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import type { FileStorage } from '@/infrastructure/filesystem';
 
 const logger = log('document-vault');
 
@@ -31,6 +34,18 @@ export interface TrashDeps {
   deleteFile: (path: string) => Promise<void>;
   /** Current time in ms (injected for deterministic expiry in tests). */
   now: () => number;
+}
+
+/** Wires {@link TrashDeps} to the live DAO + filesystem (used by the launch
+ *  purge and the Trash page). */
+export function createTrashDeps(db: DbConnection, files: FileStorage): TrashDeps {
+  const dao = new DocumentDao(db);
+  return {
+    listTrashed: () => dao.findTrashed(),
+    hardDelete: (id) => dao.hardDelete(id),
+    deleteFile: (path) => files.delete(path),
+    now: () => Date.now(),
+  };
 }
 
 /** True when a document has been in the Trash beyond the retention window. */

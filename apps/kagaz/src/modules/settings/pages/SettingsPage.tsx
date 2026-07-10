@@ -12,6 +12,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,7 @@ export function SettingsPage(): ReactNode {
   const { locale } = useLocale();
   const lock = useLockSettings();
   const backup = useBackupExport();
+  const router = useIonRouter();
   const [eraseOpen, setEraseOpen] = useState(false);
 
   return (
@@ -164,6 +166,17 @@ export function SettingsPage(): ReactNode {
             <h2 className="kg-settings__section-title" id="settings-data">
               {t('data.title')}
             </h2>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.push('/trash')}
+                agentId="settings.open-trash"
+              >
+                {t('data.trash')}
+              </Button>
+              <p className="kg-settings__hint">{t('data.trash_hint')}</p>
+            </div>
             <div className="kg-settings__row">
               <Button
                 variant="secondary"
