@@ -42,4 +42,17 @@
          debug builds get it from src/debug/AndroidManifest.xml for live
          reload only). Re-adding it here is a release-blocking defect until
          V2 sharing ships with its consent + E2E requirements. -->
+
+    <!-- [SEC] F-15 voice input (05-ai-assistant-module.md §6.1): on-device
+         speech-to-text. RECORD_AUDIO is a hardware (mic) permission, NOT a
+         network one — audio and transcripts stay on the device. Also merged
+         from @capacitor-community/speech-recognition; declared here so the
+         permission is intentional and auditable. The <queries> lets Android 11+
+         resolve the on-device RecognitionService. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
 </manifest>

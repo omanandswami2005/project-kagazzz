@@ -44,6 +44,7 @@ import { useVaultMutations } from '../hooks/useVaultMutations';
 import { FOLDER_TEMPLATES } from '../services/folder-templates';
 import { SearchBar } from '@/modules/search/components/SearchBar';
 import { useSearch } from '@/modules/search/hooks/useSearch';
+import { MicButton } from '@/modules/ai-assistant/components/MicButton';
 import {
   activeFilterCount,
   applyFilters,
@@ -234,7 +235,11 @@ export function VaultHomePage(): ReactNode {
             <EmptyVaultState onSetUpFolders={setUpStarterFolders} />
           ) : (
             <>
-              <SearchBar value={search.query} onChange={search.setQuery} />
+              <div className="kg-vault__search-row">
+                <SearchBar value={search.query} onChange={search.setQuery} />
+                {/* F-15: hold-to-speak dictation into the search box. */}
+                <MicButton onResult={search.setQuery} onPartial={search.setQuery} />
+              </div>
 
               {search.isActive ? (
                 visibleDocuments.length === 0 && !search.isSearching ? (
