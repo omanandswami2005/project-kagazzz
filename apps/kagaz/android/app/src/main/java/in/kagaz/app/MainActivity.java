@@ -8,6 +8,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // SEC-V1 §8 #10: register the root-detection plugin before the bridge.
+        registerPlugin(RootCheckPlugin.class);
         super.onCreate(savedInstanceState);
         // [SEC] SEC-V1 §8 items #5 (screenshot prevention) + #6 (app-switcher
         // blur): this app holds Aadhaar/PAN-grade PII, so FLAG_SECURE blocks

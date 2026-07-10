@@ -1,0 +1,26 @@
+/**
+ * Rooted-device warning banner (SEC-V1 §10). Tokens only. Fixed to the top,
+ * below modals/lock so it never covers the crash or lock screens.
+ */
+
+.kg-root-warning {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: calc(var(--z-modal, 1000) - 1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-3)
+    var(--space-2);
+  background: var(--color-warning);
+  color: #000;
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+}
+
+.kg-root-warning__text {
+  flex: 1;
+  margin: 0;
+}
