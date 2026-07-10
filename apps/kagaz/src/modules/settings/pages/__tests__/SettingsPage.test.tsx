@@ -1,8 +1,15 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
+
+// The backup hook reaches for the DB + native plugins; stub it so this page
+// test stays focused on the theme/language/security UI (covered in its own test).
+vi.mock('../../hooks/useBackupExport', () => ({
+  useBackupExport: () => ({ status: 'idle', result: null, exportBackup: vi.fn() }),
+}));
+
 import { SettingsPage } from '../SettingsPage';
 
 beforeAll(async () => {

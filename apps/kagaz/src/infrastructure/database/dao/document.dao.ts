@@ -69,6 +69,17 @@ export class DocumentDao {
     return rows.map(mapRow);
   }
 
+  /**
+   * Lists every non-deleted document across all folders, newest first.
+   * Used by the encrypted-backup export (SEC-V1 §8 #11 / F-31).
+   */
+  async findAll(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      'SELECT * FROM documents WHERE deleted_at IS NULL ORDER BY created_at DESC'
+    );
+    return rows.map(mapRow);
+  }
+
   /** Total bytes + document count across the (non-deleted) vault (F-26). */
   async getStorageTotals(): Promise<{ totalBytes: number; count: number }> {
     const rows = await this.db.query(
