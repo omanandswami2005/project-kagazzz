@@ -389,15 +389,19 @@ interface UploadProgress {
 ## Document Scanning Flow
 
 > [!IMPORTANT]
-> **Engine superseded by [ADR-016](../architecture/08-tech-stack-decisions.md#adr-016-image-engine--document-scanner-offline-permissive-only).**
-> The sequence below names "ML Kit Scanner", but ML Kit downloads its model
-> via Google Play Services (network) — incompatible with V1's offline /
-> zero-network guarantee. F-2 instead uses **jscanify + OpenCV.js** (lazy
-> WASM, self-hosted, fully offline). The *flow* (live edge detection →
-> capture → perspective correction → review with draggable corners → save)
-> is unchanged; only the engine differs.
+> **Engine confirmed by [ADR-018](../architecture/08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)** (2026-07-10).
+> F-2 uses **Google ML Kit Document Scanner** via `@capacitor-mlkit/document-scanner`
+> — exactly the "ML Kit Scanner" this sequence names. (An intermediate
+> decision, ADR-016, briefly switched to jscanify + OpenCV.js over an offline
+> concern that verification disproved — the plugin adds **no** `INTERNET`/`CAMERA`
+> permission; Play Services fetches the model out-of-process. ADR-018 reverses
+> that.) Unlike the flow drawn below, ML Kit renders its **own** native
+> full-screen scan UI (edge detection → capture → perspective correction →
+> multi-page review → filters), so the app does not build a custom camera or
+> draggable-corner screen; it receives finished JPEG/PDF pages and imports
+> them. **Android-only** (scan hidden where Play Services is absent).
 
-The scanning feature provides automatic edge detection, perspective correction, and image enhancement, all on-device.
+The scanning feature provides automatic edge detection, perspective correction, and image enhancement, all on-device (Android, via Play Services).
 
 ```mermaid
 sequenceDiagram

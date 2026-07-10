@@ -54,7 +54,7 @@ These features define the core product. Without any one of them, Kagaz does not 
 | # | Feature | Description | Effort | Impact | Dependencies |
 |---|---|---|---|---|---|
 | 1 | **Document Upload** | Upload documents via camera, gallery, or file picker. Support PDF, JPG, PNG, HEIC, WEBP. | 🟡 M | ⭐⭐⭐ | Capacitor Camera/Filesystem plugins |
-| 2 | **Document Scanning** | Camera-based scanner with auto-edge detection, perspective correction, and crop adjustment. | 🔴 L | ⭐⭐⭐ | OpenCV.js or custom edge detection |
+| 2 | **Document Scanning** | Camera-based scanner with auto-edge detection, perspective correction, and crop adjustment. | 🔴 L | ⭐⭐⭐ | Google ML Kit Document Scanner (native, Play Services; ADR-018) |
 | 3 | **PDF Merge** | Combine multiple PDF files into a single document. Select order, preview result. | 🟡 M | ⭐⭐⭐ | pdf-lib |
 | 4 | **PDF Split** | Extract specific pages from a PDF into a new document. Page range selection UI. | 🟡 M | ⭐⭐⭐ | pdf-lib |
 | 5 | **PDF Compress** | Reduce PDF file size by compressing images and removing metadata. Compression level options. | 🟡 M | ⭐⭐⭐ | pdf-lib, image compression |

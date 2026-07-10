@@ -13,7 +13,9 @@
 > HEIC decoder**: format conversion (F-8) uses the **native Canvas API**
 > only (JPEG/PNG/WebP), and HEIC is decoded natively by the OS at camera
 > capture. F-2's document edge detection (listed under §14 as "V2") ships
-> in **V1** via jscanify + OpenCV.js — see ADR-016.
+> in **V1** via **Google ML Kit Document Scanner** (native, Play Services) —
+> see [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)
+> (which supersedes ADR-016's earlier jscanify + OpenCV.js choice).
 
 ---
 

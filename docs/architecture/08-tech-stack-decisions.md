@@ -23,6 +23,8 @@
 - [ADR-014: Biometric Auth Plugin Selection](#adr-014-biometric-auth-plugin-selection)
 - [ADR-015: pnpm Workspaces + Turborepo Monorepo](#adr-015-pnpm-workspaces--turborepo-monorepo)
 - [ADR-016: Image Engine & Document Scanner (offline, permissive-only)](#adr-016-image-engine--document-scanner-offline-permissive-only)
+- [ADR-017: Offline CSP & no runtime-fetched WASM/models](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)
+- [ADR-018: Document Scanner — Google ML Kit (via Play Services)](#adr-018-document-scanner--google-ml-kit-via-play-services)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -46,7 +48,9 @@
 | 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
 | 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
 | 015 | Repo Structure | **pnpm workspaces + Turborepo** | Nx, single package | ✅ Accepted |
-| 016 | Image conversion / Doc scanner | **Canvas (native)** / **jscanify + OpenCV.js** | heic-to, ML Kit scanner | ✅ Accepted |
+| 016 | Image conversion / Doc scanner | **Canvas (native)** / ~~jscanify + OpenCV.js~~ | heic-to, ML Kit scanner | ✅ Accepted (F-8) · scanner → ADR-018 |
+| 017 | OpenCV scanner CSP | `wasm-unsafe-eval` weakening | — | ⚠️ Moot (scanner → ML Kit, ADR-018) |
+| 018 | Document Scanner | **Google ML Kit** (`@capacitor-mlkit/document-scanner`, native/Play Services) | jscanify + OpenCV.js (ADR-016) | ✅ Accepted |
 
 ---
 
@@ -901,9 +905,11 @@ scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
 
 | Field | Detail |
 |---|---|
-| **Status** | ✅ Accepted |
+| **Status** | ✅ Accepted (image conversion, F-8) · ⚠️ **Scanner portion SUPERSEDED by [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services) (2026-07-10)** |
 | **Date** | 2026-06-12 |
-| **Decision** | **Image conversion (F-8):** convert among JPEG/PNG/WebP with the **native Canvas / OffscreenCanvas API** — zero bundle, on-device. **Do not bundle any JS HEIC decoder.** **Document scanner (F-2):** edge detection + perspective correction via **jscanify** (MIT) on **OpenCV.js** (`@techstark/opencv-js`, Apache-2.0), lazy-loaded WASM, self-hosted (never a CDN). |
+| **Decision** | **Image conversion (F-8):** convert among JPEG/PNG/WebP with the **native Canvas / OffscreenCanvas API** — zero bundle, on-device. **Do not bundle any JS HEIC decoder.** ~~**Document scanner (F-2):** edge detection + perspective correction via **jscanify** (MIT) on **OpenCV.js**…~~ **← reversed; see ADR-018.** The scanner now uses Google's ML Kit Document Scanner (native, via Play Services). |
+
+> **⚠️ 2026-07-10 — the scanner half of this ADR is superseded by [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services).** The "why not native ML Kit" rejection below rested on an **incorrect premise**: verification of `@capacitor-mlkit/document-scanner@8.1.0` shows its Android manifest declares **no `INTERNET` and no `CAMERA` permission** — Google Play Services hosts the scan UI and fetches the model out-of-process, so adopting it does **not** add a network permission to our app. The real trade-off (Play-Services dependency + one-time model download, Android-only) is weighed in ADR-018. The image-conversion (F-8) decision stands unchanged.
 
 ### Context
 
@@ -942,13 +948,103 @@ tracked as a follow-up — still no bundled LGPL code.
 - **F-8 adds no runtime dependency** — native Canvas only. Conversion logic
   is injected (`ImageEngineDeps`) so it stays unit-testable (jsdom has no
   canvas); the canvas path is device-verified.
-- **F-2** will add `jscanify` + `@techstark/opencv-js`, dynamically
-  imported so the WASM stays out of the initial chunk. OpenCV.js assets are
-  bundled/self-hosted (no network), preserving the offline guarantee.
+- ~~**F-2** will add `jscanify` + `@techstark/opencv-js`…~~ **Reversed by ADR-018:** F-2 uses ML Kit's native scanner instead — no `jscanify`/`opencv-js` dependency, no ~8 MB WASM, no CSP weakening (cf. ADR-017).
 - **Supersedes** two statements in [04-image-engine-module.md](04-image-engine-module.md):
   the `heic-to` library choice (§2) and the §14 note listing "document
   edge detection" as V2 (F-2 ships it in V1). That doc is corrected to
   point here.
+
+---
+
+## ADR-017: Offline CSP & no runtime-fetched WASM/models
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-14 |
+| **Decision** | The V1 Content-Security-Policy stays **strict**: no `unsafe-eval`, no `wasm-unsafe-eval`, `connect-src 'self'`. A media library is **rejected** if it (a) needs an eval-class CSP relaxation for a WASM/Emscripten/Go runtime, or (b) fetches a worker/WASM/model from a CDN at runtime. Assets must be bundled/self-hosted; heavy engines run natively instead. |
+
+### Context
+
+This app handles Aadhaar/PAN-grade PII and is offline-first with zero
+network permission. Two recurring library behaviours violate that posture:
+runtime CDN fetches (a "works on my machine" library silently fails on the
+zero-network device) and WASM runtimes that demand `wasm-unsafe-eval`,
+which materially weakens the CSP on a PII app.
+
+### Evidence that drove it
+
+- **F-5 compression** dropped **`@quicktoolsone/pdf-compress`**: it loads a
+  pdfjs worker + Go WASM from jsdelivr by default → fails offline
+  (see [03-pdf-engine-module.md](03-pdf-engine-module.md)).
+- **F-2 scanner (OpenCV.js)** required `wasm-unsafe-eval` — the CSP
+  weakening this ADR exists to avoid. Combined with ADR-018's finding that
+  the native ML Kit scanner needs **no** WebView runtime at all, this
+  reversed the scanner engine choice (jscanify/OpenCV.js → ML Kit).
+
+### Consequences
+
+- Before adding any PDF/image/CV/OCR/AI library, grep its `dist/` for
+  `workerSrc|jsdelivr|wasmUrl|GlobalWorkerOptions` and check its CSP needs
+  (the checklist in [CLAUDE.md](../../CLAUDE.md) and
+  [device-verification.md](../guides/device-verification.md)).
+- Prefer **native** engines (Capacitor plugins) for heavy media work that
+  would otherwise need an eval-class CSP.
+
+---
+
+## ADR-018: Document Scanner — Google ML Kit (via Play Services)
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-10 |
+| **Supersedes** | The **scanner half** of [ADR-016](#adr-016-image-engine--document-scanner-offline-permissive-only) (jscanify + OpenCV.js). Image conversion (F-8) in ADR-016 is unchanged. |
+| **Decision** | **Document scanner (F-2):** use **Google ML Kit Document Scanner** via **`@capacitor-mlkit/document-scanner`** (Apache-2.0). Play Services hosts a full-screen native scan flow (auto edge detection, perspective correction, filters, ML page-cleaning, multi-page, JPEG/PDF output); we import the returned image URIs through the existing vault pipeline. **Android-only**; scanning is hidden where unsupported. |
+
+### Context
+
+ADR-016 chose jscanify + OpenCV.js to keep scanning 100% offline and
+permissive-licensed. In practice that path carried real costs: ~8 MB of
+lazy WASM, a **CSP weakening** to allow `wasm-unsafe-eval` on a PII app
+(ADR-017), a hand-built camera + draggable-corner review UI,
+and cross-platform WASM maintenance — all to approximate UX that the OS
+already provides. ADR-016 rejected ML Kit for a reason that **verification
+disproved**: the plugin adds no `INTERNET`/`CAMERA` permission to our app.
+
+### Verification (per the media-library rules in CLAUDE.md)
+
+- **Permissions/network:** `@capacitor-mlkit/document-scanner@8.1.0`'s
+  Android manifest declares **no permissions** (only `minSdk 24`). Google
+  Play Services renders the scan UI in its own process and downloads the
+  scanner model itself → **our app keeps its zero-`INTERNET`, zero-`CAMERA`
+  manifest**.
+- **License:** Apache-2.0 (plugin) over `play-services-mlkit-document-scanner`
+  — permissive, allowed.
+- **No WebView runtime deps:** no WASM, no CDN fetch, no CSP change — the
+  scanner runs natively, entirely outside the WebView.
+
+### Trade-offs accepted
+
+| Gain | Cost |
+|---|---|
+| Best-in-class native UX (auto-capture, edge detect, filters, ML cleanup, multi-page, PDF) | **Requires Google Play Services** on the device |
+| No ~8 MB WASM in our bundle; no CSP weakening (ADR-017 moot for the scanner) | **One-time model download** via Play Services (the "one-time internet" for this feature only) |
+| No app camera/network permission; less attack surface | **Android-only** (no iOS/web scanner path in V1) |
+| Deletes the geometry + corner-review + engine-seam code we'd have to maintain | Devices without Play Services (rare, de-Googled) can't scan |
+
+### Consequences
+
+- The rest of V1 stays 100% offline with no network permission; **the
+  scanner is the single, documented feature that needs Play Services + a
+  one-time download** (see [10-security §3.5](10-security-architecture.md)).
+  It **degrades gracefully**: the Scan entry is hidden when unsupported.
+- F-2 slice-1's OpenCV-oriented seam is removed as stale code:
+  `scan-geometry.ts`, the `ScannerEngine` interface + JS-warp path, and the
+  `Quad`/`Point`/`ScanResult` geometry types (ML Kit returns finished
+  images, so none of it runs).
+- Scanned pages import through the existing vault upload pipeline as
+  `IncomingFile`s with `source: 'scanner'`.
 
 ---
 
