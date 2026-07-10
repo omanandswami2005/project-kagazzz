@@ -20,6 +20,7 @@ import {
   type ImageInfo,
 } from '../types/image.types';
 import { detectFormat } from './format-detector';
+import type { PixelFilter } from './image-filters';
 
 /** Default JPEG/WebP encode quality (0–1). */
 export const DEFAULT_QUALITY = 0.92;
@@ -111,6 +112,69 @@ export async function convertFormat(
       'CONVERSION_FAILED',
       'convertFormat',
       `Encoder produced no output for ${target}.`
+    );
+  }
+  return out;
+}
+
+/**
+ * Decodes a blob, applies a {@link PixelFilter} to its pixels, and re-encodes
+ * (F-29). WebView only — jsdom has no canvas; tests inject `deps.process`.
+ */
+export type ImageDataProcessor = (
+  blob: Blob,
+  filter: PixelFilter,
+  mime: string,
+  quality: number
+) => Promise<Blob | null>;
+
+const defaultProcess: ImageDataProcessor = async (blob, filter, mime, quality) => {
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return null;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    filter(imageData.data);
+    ctx.putImageData(imageData, 0, 0);
+    return await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((out) => resolve(out), mime, quality)
+    );
+  } finally {
+    bitmap.close();
+  }
+};
+
+/** Injectable canvas processor for {@link applyImageFilter}. */
+export interface FilterDeps {
+  process?: ImageDataProcessor;
+  /** Output MIME (default image/jpeg — filters usually target photos/scans). */
+  mime?: string;
+}
+
+/**
+ * Applies an image filter (F-29) and returns the filtered blob. Throws
+ * {@link ImageEngineError} `CANVAS_ERROR` when the canvas yields no output.
+ */
+export async function applyImageFilter(
+  blob: Blob,
+  filter: PixelFilter,
+  deps: FilterDeps = {},
+  quality: number = DEFAULT_QUALITY
+): Promise<Blob> {
+  const process = deps.process ?? defaultProcess;
+  const mime = deps.mime ?? 'image/jpeg';
+  const out = await process(blob, filter, mime, quality);
+  if (!out) {
+    throw new ImageEngineError(
+      'CANVAS_ERROR',
+      'applyImageFilter',
+      'Filter produced no output (canvas unavailable).'
     );
   }
   return out;

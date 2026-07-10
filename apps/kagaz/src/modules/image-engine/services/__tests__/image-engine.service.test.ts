@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ImageEngineError } from '../../types/image.types';
 import {
+  applyImageFilter,
   convertFormat,
   getImageInfo,
 } from '../image-engine.service';
+import { grayscale } from '../image-filters';
 
 const jpegBlob = (): Blob => new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0x00])]);
 
@@ -48,5 +50,28 @@ describe('getImageInfo (F-8)', () => {
       mimeType: 'image/jpeg',
     });
     expect(info.fileSize).toBeGreaterThan(0);
+  });
+});
+
+describe('applyImageFilter (F-29)', () => {
+  it('runs the blob through the injected processor with the filter', async () => {
+    const filtered = new Blob(['filtered'], { type: 'image/jpeg' });
+    const process = vi.fn().mockResolvedValue(filtered);
+    const out = await applyImageFilter(jpegBlob(), grayscale, { process }, 0.7);
+    expect(out).toBe(filtered);
+    expect(process).toHaveBeenCalledWith(expect.any(Blob), grayscale, 'image/jpeg', 0.7);
+  });
+
+  it('honours a custom output mime', async () => {
+    const process = vi.fn().mockResolvedValue(new Blob(['x']));
+    await applyImageFilter(jpegBlob(), grayscale, { process, mime: 'image/png' });
+    expect(process).toHaveBeenCalledWith(expect.any(Blob), grayscale, 'image/png', expect.any(Number));
+  });
+
+  it('throws CANVAS_ERROR when the processor yields nothing', async () => {
+    const process = vi.fn().mockResolvedValue(null);
+    await expect(applyImageFilter(jpegBlob(), grayscale, { process })).rejects.toMatchObject({
+      code: 'CANVAS_ERROR',
+    });
   });
 });

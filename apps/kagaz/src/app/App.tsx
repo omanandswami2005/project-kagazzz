@@ -6,6 +6,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import type { ReactNode } from 'react';
 import { LockGate } from '@/modules/auth/components/LockGate';
 import { RootWarningBanner } from '@/modules/auth/components/RootWarningBanner';
+import { OnboardingGate } from './onboarding/OnboardingGate';
 import { AppProviders } from './providers/AppProviders';
 import { AppRoutes } from './routes';
 
@@ -20,6 +21,8 @@ export function App(): ReactNode {
         <LockGate>
           {/* SEC-V1 #10: rooted-device warning (dismissible, non-blocking). */}
           <RootWarningBanner />
+          {/* F-27: first-launch walkthrough overlay (renders once, then null). */}
+          <OnboardingGate />
           <IonReactRouter>
             <AppRoutes />
           </IonReactRouter>
