@@ -1,77 +1,72 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { Point, Quad } from '../../types/scanner.types';
-import {
-  applyCorners,
-  scanDocument,
-  type ScannerEngine,
-} from '../scanner.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const RECT: Point[] = [
-  { x: 10, y: 10 },
-  { x: 110, y: 10 },
-  { x: 110, y: 70 },
-  { x: 10, y: 70 },
-];
+const scanner = vi.hoisted(() => ({ scanDocument: vi.fn() }));
+const platform = vi.hoisted((): { value: string } => ({ value: 'android' }));
 
-function fakeEngine(
-  corners: Point[] | null,
-  imageArea = 100 * 100
-): ScannerEngine & { warp: ReturnType<typeof vi.fn> } {
-  const warp = vi.fn(
-    (_quad: Quad, width: number, height: number): Promise<Blob> =>
-      Promise.resolve(new Blob([`${width}x${height}`], { type: 'image/jpeg' }))
-  );
-  return {
-    imageArea,
-    detectCorners: () => Promise.resolve(corners),
-    warp,
-  };
-}
+vi.mock('@capacitor-mlkit/document-scanner', () => ({ DocumentScanner: scanner }));
+vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => platform.value } }));
 
-describe('scanDocument', () => {
-  it('detects, validates, and de-skews a document', async () => {
-    const engine = fakeEngine(RECT);
-    const result = await scanDocument(engine);
-    expect(result).not.toBeNull();
-    expect(result?.width).toBe(100);
-    expect(result?.height).toBe(60);
-    expect(result?.corners.topLeft).toEqual({ x: 10, y: 10 });
-    expect(engine.warp).toHaveBeenCalledWith(
-      expect.any(Object),
-      100,
-      60,
-      0.92
-    );
-  });
+import { isScanningSupported, scanDocument } from '../scanner.service';
 
-  it('returns null when no corners are detected', async () => {
-    expect(await scanDocument(fakeEngine(null))).toBeNull();
-  });
+beforeEach(() => {
+  vi.clearAllMocks();
+  platform.value = 'android';
+});
 
-  it('returns null when fewer than four corners are found', async () => {
-    expect(await scanDocument(fakeEngine(RECT.slice(0, 3)))).toBeNull();
-  });
-
-  it('returns null when the document covers too little of the frame', async () => {
-    const engine = fakeEngine(RECT, 10_000_000);
-    expect(await scanDocument(engine)).toBeNull();
-    expect(engine.warp).not.toHaveBeenCalled();
-  });
-
-  it('passes a custom JPEG quality through to the warp', async () => {
-    const engine = fakeEngine(RECT);
-    await scanDocument(engine, { quality: 0.6 });
-    expect(engine.warp).toHaveBeenCalledWith(expect.any(Object), 100, 60, 0.6);
+describe('isScanningSupported', () => {
+  it('is true on Android, false elsewhere', () => {
+    expect(isScanningSupported()).toBe(true);
+    platform.value = 'ios';
+    expect(isScanningSupported()).toBe(false);
+    platform.value = 'web';
+    expect(isScanningSupported()).toBe(false);
   });
 });
 
-describe('applyCorners', () => {
-  it('normalises and warps user-adjusted corners', async () => {
-    const engine = fakeEngine(null); // detection unused here
-    const scrambled = [RECT[2], RECT[0], RECT[3], RECT[1]];
-    const result = await applyCorners(engine, scrambled);
-    expect(result.corners.topLeft).toEqual({ x: 10, y: 10 });
-    expect(result.width).toBe(100);
-    expect(engine.warp).toHaveBeenCalledOnce();
+describe('scanDocument (F-2 / ADR-018)', () => {
+  it('returns the scanned pages + combined PDF, with the right options', async () => {
+    scanner.scanDocument.mockResolvedValue({
+      scannedImages: ['file:///a.jpg', 'file:///b.jpg'],
+      pdf: { uri: 'file:///scan.pdf', pageCount: 2 },
+    });
+    const result = await scanDocument();
+    expect(result).toEqual({
+      imageUris: ['file:///a.jpg', 'file:///b.jpg'],
+      pdfUri: 'file:///scan.pdf',
+      pageCount: 2,
+    });
+    expect(scanner.scanDocument).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resultFormats: 'JPEG_PDF',
+        scannerMode: 'FULL',
+        galleryImportAllowed: false,
+      })
+    );
+  });
+
+  it('falls back to the image count when no PDF is returned', async () => {
+    scanner.scanDocument.mockResolvedValue({ scannedImages: ['file:///a.jpg'] });
+    expect((await scanDocument())?.pageCount).toBe(1);
+  });
+
+  it('returns null on an unsupported platform without calling the plugin', async () => {
+    platform.value = 'ios';
+    expect(await scanDocument()).toBeNull();
+    expect(scanner.scanDocument).not.toHaveBeenCalled();
+  });
+
+  it('returns null when the user cancels', async () => {
+    scanner.scanDocument.mockRejectedValue(new Error('The scan was cancelled'));
+    expect(await scanDocument()).toBeNull();
+  });
+
+  it('returns null when nothing was captured', async () => {
+    scanner.scanDocument.mockResolvedValue({ scannedImages: [] });
+    expect(await scanDocument()).toBeNull();
+  });
+
+  it('rethrows a genuine failure', async () => {
+    scanner.scanDocument.mockRejectedValue(new Error('play services unavailable'));
+    await expect(scanDocument()).rejects.toThrow('play services');
   });
 });

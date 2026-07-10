@@ -46,19 +46,21 @@ export interface VaultActionContext {
   ) => Promise<{ tagId: string }>;
 }
 
-const uploadSourceSchema = z.enum(['camera', 'gallery', 'files']);
+const uploadSourceSchema = z.enum(['camera', 'gallery', 'files', 'scanner']);
 
 /** All document-vault actions, registered by id. */
 export const vaultActions = {
   uploadDocument: defineAction({
     id: 'vault.uploadDocument',
     summary:
-      'Add a document to the vault from the camera, the photo gallery, or the file picker.',
+      'Add a document to the vault from the camera, the photo gallery, the file picker, or the native document scanner (F-2, Android).',
     voice: [
       'upload a document',
       'add a file',
+      'scan a document',
       'दस्तावेज़ अपलोड करो',
       'फोटो जोड़ो',
+      'दस्तावेज़ स्कैन करो',
     ],
     args: z.object({
       source: uploadSourceSchema.optional(),

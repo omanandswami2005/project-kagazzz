@@ -1,80 +1,76 @@
 /**
- * Scanner orchestration (F-2). Ties the pure geometry to a pluggable
- * {@link ScannerEngine} — the thing that actually runs OpenCV.js/jscanify
- * edge detection and the perspective warp (ADR-016, lands with the camera
- * UI). Keeping the engine behind an interface means this flow is unit-
- * tested with a fake and the WASM stays out of jsdom.
+ * Document scanner (F-2, ADR-018). Wraps Google ML Kit's Document Scanner
+ * (`@capacitor-mlkit/document-scanner`) — a fully native, Play-Services-hosted
+ * scan flow (auto edge detection, perspective correction, filters, ML page
+ * cleanup, multi-page → JPEG/PDF). We never build a camera or corner-review UI;
+ * the plugin returns finished page URIs which the vault imports.
+ *
+ * Android-only. The app declares no `INTERNET`/`CAMERA` permission — Play
+ * Services hosts the UI and downloads the model out-of-process on first use
+ * (10-security §3.5). Callers gate on {@link isScanningSupported}.
  */
-import type { Point, Quad, ScanOptions, ScanResult } from '../types/scanner.types';
-import { isValidQuad, orderCorners, quadOutputSize } from './scan-geometry';
+import { DocumentScanner } from '@capacitor-mlkit/document-scanner';
+import { Capacitor } from '@capacitor/core';
+import { log } from '@/core/logging';
 
-/** Default JPEG quality for the corrected page. */
-export const DEFAULT_SCAN_QUALITY = 0.92;
+const logger = log('document-scanner');
 
-/**
- * A source-bound engine: created for one image/frame, it can locate the
- * document corners in that frame and warp a quad out of it. The OpenCV.js
- * implementation arrives with the scanner UI; tests pass a fake.
- */
-export interface ScannerEngine {
-  /** Area (width × height) of the bound frame, in pixels². */
-  readonly imageArea: number;
-  /** Detect the document's four corners, or null if none are found. */
-  detectCorners(): Promise<Point[] | null>;
-  /** Perspective-correct `quad` to a flat `width`×`height` JPEG. */
-  warp(
-    quad: Quad,
-    width: number,
-    height: number,
-    quality: number
-  ): Promise<Blob>;
+/** Max pages a single scan session may capture. */
+export const SCAN_PAGE_LIMIT = 10;
+
+/** A completed scan: finished page images plus an optional combined PDF. */
+export interface ScannedDocument {
+  /** File URIs of the scanned JPEG pages (device paths). */
+  imageUris: string[];
+  /** URI of the combined multi-page PDF, when the plugin produced one. */
+  pdfUri?: string;
+  /** Number of scanned pages. */
+  pageCount: number;
+}
+
+/** True when native document scanning is available (Android + Play Services). */
+export function isScanningSupported(): boolean {
+  return Capacitor.getPlatform() === 'android';
+}
+
+/** True when an error is the user backing out of the scanner (not a failure). */
+function isCancellation(error: unknown): boolean {
+  return /cancel/i.test(error instanceof Error ? error.message : String(error));
 }
 
 /**
- * Auto-scan: detect the document, validate it covers enough of the frame,
- * and de-skew it. Returns null when no plausible document is found (the UI
- * then falls back to manual corner placement).
+ * Launches the native scan flow. Resolves to the scanned pages, or `null` when
+ * the user cancels or the platform is unsupported. Play Services downloads the
+ * scanner model on first use (one-time), so the first call may pause briefly.
  */
-export async function scanDocument(
-  engine: ScannerEngine,
-  opts: ScanOptions = {}
-): Promise<ScanResult | null> {
-  const raw = await engine.detectCorners();
-  if (!raw || raw.length !== 4) {
+export async function scanDocument(pageLimit = SCAN_PAGE_LIMIT): Promise<ScannedDocument | null> {
+  if (!isScanningSupported()) {
     return null;
   }
-  const corners = orderCorners(raw);
-  if (!isValidQuad(corners, engine.imageArea, opts.minAreaRatio)) {
-    return null;
+  try {
+    const result = await DocumentScanner.scanDocument({
+      // JPEG for single pages, PDF for multi-page (the caller picks per count).
+      resultFormats: 'JPEG_PDF',
+      scannerMode: 'FULL',
+      pageLimit,
+      galleryImportAllowed: false,
+    });
+    const imageUris = result.scannedImages ?? [];
+    if (imageUris.length === 0) {
+      return null;
+    }
+    logger.info({ event: 'scanner.scan.success', pages: imageUris.length });
+    return {
+      imageUris,
+      pdfUri: result.pdf?.uri,
+      pageCount: result.pdf?.pageCount ?? imageUris.length,
+    };
+  } catch (error) {
+    if (isCancellation(error)) {
+      logger.debug({ event: 'scanner.scan.cancelled' });
+      return null;
+    }
+    logger.warn({ event: 'scanner.scan.error', err: { message: String(error) } });
+    throw error;
   }
-  return correctToPage(engine, corners, opts);
-}
-
-/**
- * Warps an explicit set of corners — used after the user drags the corner
- * handles in the review screen (02 §Document Scanning Flow). Points may be
- * in any order; they are normalised first.
- */
-export async function applyCorners(
-  engine: ScannerEngine,
-  rawCorners: readonly Point[],
-  opts: ScanOptions = {}
-): Promise<ScanResult> {
-  return correctToPage(engine, orderCorners(rawCorners), opts);
-}
-
-/** Shared tail: size the page from the quad and warp it. */
-async function correctToPage(
-  engine: ScannerEngine,
-  corners: Quad,
-  opts: ScanOptions
-): Promise<ScanResult> {
-  const { width, height } = quadOutputSize(corners);
-  const image = await engine.warp(
-    corners,
-    width,
-    height,
-    opts.quality ?? DEFAULT_SCAN_QUALITY
-  );
-  return { image, width, height, corners };
 }

@@ -34,6 +34,7 @@
   "upload": {
     "sheet_title": "Add a document",
     "sources": {
+      "scan": "Scan document",
       "camera": "Take a photo",
       "gallery": "Choose from gallery",
       "files": "Browse files"
