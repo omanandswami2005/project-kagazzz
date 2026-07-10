@@ -146,7 +146,17 @@
   },
   "trash": {
     "moved_to_trash": "Document moved to Trash",
-    "undo": "Undo"
+    "undo": "Undo",
+    "title": "Trash",
+    "retention_note": "Deleted documents are kept for {{days}} days, then removed permanently.",
+    "empty_state": "Trash is empty",
+    "deleted_on": "Deleted {{date}}",
+    "restore": "Restore",
+    "delete_forever": "Delete forever",
+    "empty_trash": "Empty Trash",
+    "empty_confirm": "Permanently delete everything in Trash?",
+    "empty_confirm_yes": "Delete all",
+    "cancel": "Cancel"
   },
   "pdf_tools": "Tools",
   "settings": "Settings"

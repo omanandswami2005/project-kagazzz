@@ -248,4 +248,19 @@ describe('DocumentDao', () => {
     await dao.search('aadhaar');
     expect(db.calls[0]?.params).toEqual(['aadhaar', 20]);
   });
+
+  it('findTrashed lists soft-deleted rows, newest-deleted first', async () => {
+    db.onQuery(/deleted_at IS NOT NULL/, [docRow({ deleted_at: '2026-07-01T00:00:00.000Z' })]);
+    const trashed = await dao.findTrashed();
+    expect(trashed).toHaveLength(1);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
+    expect(db.calls[0]?.sql).toContain('ORDER BY deleted_at DESC');
+  });
+
+  it('hardDelete removes trashed rows only', async () => {
+    await dao.hardDelete('doc-1');
+    expect(db.calls[0]?.sql).toContain('DELETE FROM documents');
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
+    expect(db.calls[0]?.params).toEqual(['doc-1']);
+  });
 });

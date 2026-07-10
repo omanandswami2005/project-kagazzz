@@ -29,6 +29,7 @@ import {
   LazyPdfToolsPage,
   LazySettingsPage,
   LazyStoragePage,
+  LazyTrashPage,
   LazyVaultHomePage,
 } from './lazy-imports';
 
@@ -106,6 +107,7 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/vault" component={LazyVaultHomePage} />
           <Route exact path="/pdf-tools" component={LazyPdfToolsPage} />
           <Route exact path="/settings" component={LazySettingsPage} />
+          <Route exact path="/trash" component={LazyTrashPage} />
           <Route exact path="/favorites" component={LazyFavoritesPage} />
           <Route exact path="/storage" component={LazyStoragePage} />
           <Route exact path="/">
