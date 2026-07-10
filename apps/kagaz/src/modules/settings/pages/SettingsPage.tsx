@@ -17,6 +17,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Toggle } from '@kagaz/ui';
 import { DeleteAllDataDialog } from '../components/DeleteAllDataDialog';
+import { useBackupExport } from '../hooks/useBackupExport';
 import {
   useLocale,
   SUPPORTED_LANGUAGES,
@@ -40,6 +41,7 @@ export function SettingsPage(): ReactNode {
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
   const lock = useLockSettings();
+  const backup = useBackupExport();
   const [eraseOpen, setEraseOpen] = useState(false);
 
   return (
@@ -162,6 +164,28 @@ export function SettingsPage(): ReactNode {
             <h2 className="kg-settings__section-title" id="settings-data">
               {t('data.title')}
             </h2>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void backup.exportBackup()}
+                loading={backup.status === 'running'}
+                agentId="settings.export-backup"
+              >
+                {t('data.backup')}
+              </Button>
+              <p
+                className="kg-settings__hint"
+                data-agent-id="settings.backup-status"
+                data-agent-state={backup.status}
+              >
+                {backup.status === 'done' && backup.result
+                  ? t('data.backup_done', { count: backup.result.documentCount })
+                  : backup.status === 'error'
+                    ? t('data.backup_error')
+                    : t('data.backup_hint')}
+              </p>
+            </div>
             <div className="kg-settings__row">
               <Button
                 variant="danger"

@@ -29,6 +29,11 @@
   },
   "data": {
     "title": "Data & Privacy",
+    "backup": "Export encrypted backup",
+    "backup_hint": "Save an encrypted archive of all your documents. Only this app, on this device, can open it.",
+    "backup_done_one": "Encrypted backup saved — {{count}} document.",
+    "backup_done_other": "Encrypted backup saved — {{count}} documents.",
+    "backup_error": "Backup failed. Please try again.",
     "delete_all": "Delete all data",
     "delete_all_hint": "Permanently remove every document, folder, tag, and setting from this device.",
     "confirm_title": "Delete everything?",
