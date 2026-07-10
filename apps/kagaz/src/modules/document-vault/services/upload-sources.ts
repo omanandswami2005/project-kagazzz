@@ -12,14 +12,16 @@ import {
   type GalleryPhoto,
   type Photo,
 } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { log } from '@/core/logging';
+import { scanDocument } from '@/modules/document-scanner/services/scanner.service';
 import type { IncomingFile } from '../types/document.types';
 import { UPLOAD_ACCEPT_ATTR } from './file-validation';
 
 const logger = log('document-vault');
 
-/** The three F-1 upload sources (scanner arrives with F-2). */
-export type UploadSource = 'camera' | 'gallery' | 'files';
+/** Upload input sources: F-1's camera/gallery/files + F-2's native scanner. */
+export type UploadSource = 'camera' | 'gallery' | 'files' | 'scanner';
 
 /** Capacitor plugins throw on user cancellation — detect, don't fail. */
 function isCancellation(error: unknown): boolean {
@@ -113,6 +115,41 @@ export function pickFromFiles(
   });
 }
 
+/** Reads a device file URI into a Blob via the Capacitor file bridge. */
+async function uriToBlob(uri: string): Promise<Blob | null> {
+  try {
+    // convertFileSrc yields a capacitor://localhost URL the WebView can fetch —
+    // still local, no network.
+    return await (await fetch(Capacitor.convertFileSrc(uri))).blob();
+  } catch (error) {
+    logger.warn({ event: 'vault.scan.read_error', err: { message: String(error) } });
+    return null;
+  }
+}
+
+/**
+ * Runs the native ML Kit scan (F-2, ADR-018) and returns its pages as
+ * IncomingFiles. A multi-page scan imports as a single combined PDF; a single
+ * page imports as a JPEG. Empty array = cancelled / nothing scanned.
+ */
+export async function pickFromScanner(): Promise<IncomingFile[]> {
+  const scan = await scanDocument();
+  if (!scan) {
+    return [];
+  }
+  if (scan.pageCount > 1 && scan.pdfUri) {
+    const blob = await uriToBlob(scan.pdfUri);
+    return blob ? [{ name: captureName('Scan', 'pdf'), blob, source: 'scanner' }] : [];
+  }
+  const files = await Promise.all(
+    scan.imageUris.map(async (uri): Promise<IncomingFile | null> => {
+      const blob = await uriToBlob(uri);
+      return blob ? { name: captureName('Scan', 'jpg'), blob, source: 'scanner' } : null;
+    })
+  );
+  return files.filter((file): file is IncomingFile => file !== null);
+}
+
 /** Dispatches to the picker for a source. */
 export async function pickFiles(source: UploadSource): Promise<IncomingFile[]> {
   logger.debug({ event: 'vault.upload.pick', source });
@@ -123,5 +160,7 @@ export async function pickFiles(source: UploadSource): Promise<IncomingFile[]> {
       return pickFromGallery();
     case 'files':
       return pickFromFiles();
+    case 'scanner':
+      return pickFromScanner();
   }
 }

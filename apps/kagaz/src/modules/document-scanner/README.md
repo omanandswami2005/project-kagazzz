@@ -1,27 +1,25 @@
 # document-scanner (V1 · Lane C)
 
-Camera scanning: edge detection, perspective correction, crop. Item F-2
-(🔴L, in progress).
+Camera scanning: edge detection, perspective correction, crop, multi-page.
+Item F-2 (🔴L).
 
 - Spec: [02-document-vault-module.md](../../../../../docs/architecture/02-document-vault-module.md) (scan flows) + [04-image-engine-module.md](../../../../../docs/architecture/04-image-engine-module.md)
-- Engine: [ADR-016](../../../../../docs/architecture/08-tech-stack-decisions.md#adr-016-image-engine--document-scanner-offline-permissive-only) — jscanify + OpenCV.js (lazy WASM, offline), **not** ML Kit
-- Depends on (interfaces only): `infrastructure/capacitor`, `image-engine`, `document-vault`
+- Engine: [ADR-018](../../../../../docs/architecture/08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services) — **Google ML Kit Document Scanner** (`@capacitor-mlkit/document-scanner`, native via Play Services). Supersedes ADR-016's jscanify + OpenCV.js.
+- Depends on (interfaces only): `document-vault` (import pipeline)
 
-## Done — geometry + orchestration core
+## Design
 
-Pure, library-agnostic, fully unit-tested (no WASM in jsdom):
+ML Kit renders its **own** native full-screen scan UI (auto edge detection,
+perspective correction, filters, ML page cleanup, multi-page → JPEG/PDF), so
+this module has **no** camera page, corner-review UI, or geometry math — the
+OpenCV-era `scan-geometry`/`scanner.types`/`ScannerEngine` seam was removed
+(ADR-018). Android-only; the app keeps its zero-`INTERNET`/zero-`CAMERA`
+manifest (Play Services hosts the UI + downloads the model out-of-process).
 
-- `types/scanner.types.ts` — `Point`, `Quad` (TL/TR/BR/BL), `ScanResult`, `ScanOptions`.
-- `services/scan-geometry.ts` — `orderCorners` (unordered points → canonical
-  clockwise quad), `quadOutputSize` (de-skew output dims), `isValidQuad`
-  (convex + min-area), `quadArea`, `distance`.
-- `services/scanner.service.ts` — `scanDocument(engine, opts)` (auto) and
-  `applyCorners(engine, points, opts)` (after the user drags corner handles),
-  both over a pluggable `ScannerEngine`.
+- `services/scanner.service.ts` — `isScanningSupported()` (Android) and
+  `scanDocument()` → `ScannedDocument` (page image URIs + optional combined
+  PDF). Cancellation resolves to `null`.
 
-## Pending (Slice 2)
-
-- OpenCV.js/jscanify `ScannerEngine` implementation (lazy-loaded, self-hosted).
-- Camera capture page + live edge highlight + draggable-corner review
-  (`pages/`, `components/`), `.agent.ts`/`.skill.md`, i18n, vault save.
-- Device verification (camera, real CV) — the one part green unit tests can't prove.
+Scanned pages are imported through the vault's existing upload pipeline as
+`IncomingFile`s (`source: 'scanner'`) — see `document-vault`
+`services/upload-sources.ts` (`pickFromScanner`).

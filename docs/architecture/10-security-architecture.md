@@ -251,6 +251,9 @@ In V1, Kagaz enforces a strict **no-network** policy:
 > [!NOTE]
 > Users can verify the offline nature of V1 by using the app in airplane mode — every feature works identically with no network connection.
 
+> [!IMPORTANT]
+> **One documented exception — the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)).** It uses Google ML Kit via **Play Services**, which downloads its scanning model **once** on first use (the only feature needing connectivity, and only that one time). This does **not** relax the measures above: the app still declares **no `INTERNET` (or `CAMERA`) permission** — Play Services performs the download and hosts the scan UI out-of-process; no app HTTP client, no CDN in our bundle, CSP unchanged. On devices without Play Services or that one-time connectivity, scanning is simply unavailable (the Scan entry is hidden); everything else remains 100% offline. This exception is disclosed in the privacy policy's data-safety section.
+
 ---
 
 ## 4. Sharing Security (V2)
