@@ -152,6 +152,7 @@
 - [ ] G1-7 "Must-do before launch" items in [docs/indian-compliance-checklist.md](docs/indian-compliance-checklist.md) §V1-relevant `[LEGAL]`
 - [ ] G1-8 Landing page implemented per [docs/landing-page.md](docs/landing-page.md)
 - [ ] G1-9 DPIA reviewed for V1 scope `[DPIA]`
+- [ ] G1-10 **Real-device capture verification** (emulator cannot exercise these — greyed camera shutter, no mic-audio injection, AVD picker app-kill; see memory `avd-native-capture-limitation`): **F-2** scan → imported document; **F-15** speech → text into search; **F-57** delete → appears in Trash → restore → delete-forever → empty-confirm → 30-day launch purge (fast-clock). All logic is unit-tested; this gate confirms the capture→result tails on physical hardware.
 
 ---
 
