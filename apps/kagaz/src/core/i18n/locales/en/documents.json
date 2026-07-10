@@ -15,8 +15,15 @@
     "unfavorite": "Remove from favorites",
     "lock": "Lock document",
     "unlock": "Unlock document",
+    "extract_text": "Extract text",
     "more": "More actions",
     "cancel": "Cancel"
+  },
+  "ocr": {
+    "running": "Reading text…",
+    "done": "Text saved — now searchable",
+    "none": "No text found in this image",
+    "failed": "Couldn't read text. Please try again."
   },
   "lock": {
     "reason": "Unlock this document",
