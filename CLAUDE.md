@@ -64,7 +64,7 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - **Imports**: relative paths within a module; the `@/` alias (= `apps/kagaz/src/`) for anything cross-module (`import { log } from '@/core/logging'`). Workspace packages via `@kagaz/*`.
 - Tests live in `__tests__/` folders beside the implementation.
 - Tech choices are ADRs in `docs/architecture/08-tech-stack-decisions.md` — changing a technology requires updating the ADR.
-- Offline-first is non-negotiable: V1 is 100% offline (no HTTP clients, analytics, or network permission); cloud is always an enhancement.
+- Offline-first is non-negotiable: V1 makes **no network calls of its own** (no HTTP clients, no analytics); cloud is always an enhancement. ⚠️ **Caveat (2026-07-11):** the release APK *does* carry `INTERNET`+`ACCESS_NETWORK_STATE`, merged transitively by the Play-Services ML Kit **scanner** (ADR-018) — the app never uses them; they serve only Play Services' one-time scanner model download. So it's "no app-initiated network," not "no network permission." See [10-security §3.5](docs/architecture/10-security-architecture.md).
 
 ## Design System (`docs/design-system/` — read `README.md` there for the file order; the rules win over any screen that contradicts them)
 

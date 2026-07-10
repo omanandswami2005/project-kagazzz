@@ -1016,11 +1016,21 @@ disproved**: the plugin adds no `INTERNET`/`CAMERA` permission to our app.
 
 ### Verification (per the media-library rules in CLAUDE.md)
 
-- **Permissions/network:** `@capacitor-mlkit/document-scanner@8.1.0`'s
-  Android manifest declares **no permissions** (only `minSdk 24`). Google
-  Play Services renders the scan UI in its own process and downloads the
-  scanner model itself → **our app keeps its zero-`INTERNET`, zero-`CAMERA`
-  manifest**.
+- **Permissions/network:** `@capacitor-mlkit/document-scanner@8.1.0`'s **own**
+  Android manifest declares no permissions (only `minSdk 24`), and Play
+  Services renders the scan UI + downloads the model in its own process — so no
+  app `CAMERA` permission is needed (verified: `CAMERA` is absent from the
+  release APK).
+  > ⚠️ **Correction (2026-07-11):** the original claim that our app "keeps a
+  > zero-`INTERNET` manifest" was **wrong**. Building the release APK and
+  > running `aapt dump permissions` shows `INTERNET` + `ACCESS_NETWORK_STATE`
+  > **are** merged in — the plugin depends on `play-services-mlkit-document-scanner`,
+  > whose transitive Play-Services libraries declare them, and the manifest
+  > merger folds them into the app. Decision: **accept + document** (not strip)
+  > — the app makes no network calls of its own; the permission exists only for
+  > the Play-Services scanner model download. See
+  > [10-security §3.5](10-security-architecture.md) and update the Play
+  > data-safety declaration (G1-6).
 - **License:** Apache-2.0 (plugin) over `play-services-mlkit-document-scanner`
   — permissive, allowed.
 - **No WebView runtime deps:** no WASM, no CDN fetch, no CSP change — the

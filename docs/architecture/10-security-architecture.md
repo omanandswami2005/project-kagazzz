@@ -245,14 +245,16 @@ In V1, Kagaz enforces a strict **no-network** policy:
 | **No crash reporting** | Errors logged locally only |
 | **No remote config** | All configuration is bundled and local |
 | **No push notifications** | No FCM/APNs integration |
-| **Network permissions** | Not requested in app manifest (V1) |
-| **CSP headers** | Content Security Policy blocks all outbound connections |
+| **No HTTP calls in app code** | No API endpoints, no REST/GraphQL clients; the only `fetch()` reads local `blob:`/`capacitor:` URLs (F-19 audit) |
+| **Network permissions** | ⚠️ `INTERNET` + `ACCESS_NETWORK_STATE` **are present in the release manifest**, merged transitively by the Play-Services ML Kit scanner (ADR-018). The app's own code makes no network calls; the permission exists only so Play Services can perform the one-time scanner model download. `CAMERA` is **not** requested. See the note below. |
+| **CSP headers** | Content Security Policy blocks all outbound connections from the WebView |
 
 > [!NOTE]
-> Users can verify the offline nature of V1 by using the app in airplane mode — every feature works identically with no network connection.
+> Users can verify the app makes no network calls of its own by using it in airplane mode — every feature except the (first-run) scanner works identically with no connection.
 
 > [!IMPORTANT]
-> **One documented exception — the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)).** It uses Google ML Kit via **Play Services**, which downloads its scanning model **once** on first use (the only feature needing connectivity, and only that one time). This does **not** relax the measures above: the app still declares **no `INTERNET` (or `CAMERA`) permission** — Play Services performs the download and hosts the scan UI out-of-process; no app HTTP client, no CDN in our bundle, CSP unchanged. On devices without Play Services or that one-time connectivity, scanning is simply unavailable (the Scan entry is hidden); everything else remains 100% offline. This exception is disclosed in the privacy policy's data-safety section.
+> **Network-permission reality (corrected 2026-07-11).** An earlier revision claimed the app ships with **no `INTERNET` permission**. Building and inspecting the **release** APK (`aapt dump permissions`) disproved that: the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)) depends on `play-services-mlkit-document-scanner`, whose transitive Play-Services libraries declare `INTERNET` + `ACCESS_NETWORK_STATE`, and the manifest merger folds them into our app manifest. The **plugin's own** manifest declares no permissions (that part of the ADR-018 verification was right) — but the **merged** result carries them.
+> **Accepted, not stripped** (decision 2026-07-11): the permission is real but the app never uses it — it makes no HTTP calls (F-19 audit), ships no analytics/CDN, and the CSP blocks WebView egress. It exists solely so Play Services can fetch the scanner model once. Stripping it via `tools:node="remove"` was considered and rejected (risk to the Play-Services download path). **Consequence:** the "zero network permission, airplane-mode-provable" claim is downgraded to **"the app makes no network calls of its own; the `INTERNET` permission is present only for the Play-Services scanner model download."** This must be reflected in the Play **data-safety** declaration (G1-6) and the privacy policy. On devices without Play Services, scanning is unavailable; everything else is 100% offline.
 
 ---
 
