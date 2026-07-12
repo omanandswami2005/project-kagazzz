@@ -148,10 +148,10 @@
 - [x] UX-3 **Mic inline** in the search bar ✅ (2026-07-12) — shared rounded container holds a transparent IonSearchbar + mic at the trailing end; reads as one field.
 - [x] UX-4 **Upload sheet** clips "Browse files" ✅ (2026-07-12) — breakpoint 0.35→0.6 (+0.9 expand) for the 4th (Scan) source, scrollable content + safe-area bottom padding.
 - [x] UX-5 **List row** decluttered/redesigned ✅ (2026-07-12) — dropped the type Badge chrome; the name is the only strong element, with one muted single-line meta (`type · size · date`, `--text-xs`/`--text-muted`) + capped tags (UX-2). `shortType()` maps MIME/extension → e.g. "PDF". Tests updated (24). `feature/ux5-list-row-redesign`
-- [ ] UX-6 **Document viewer** `/doc/:id` (image + PDF) — the missing preview; includes the OCR/extracted-text panel `[SEC]` (respects per-doc lock) `feature/ux6-document-viewer`
+- [x] UX-6 **Document viewer** `/doc/:id` (image + PDF) — the missing preview ✅ (2026-07-12) — `DocumentViewerPage` trio + route: `useDocument`/`useDocumentFile` (images → object URL; PDFs → every page via the pdf-engine `pdfToImagesImpl` pdfjs path), an **Extracted-text panel** (shows/copies OCR text; "Extract text" for images with none) that finally surfaces OCR, and a ⋮ Delete→Trash. Replaces the "coming soon" stopgap in VaultHomePage **and** FavoritesPage (both now authorize locked docs before navigating; stale preview toast/i18n swept). Unit-tested (6). Device-verify needs a real doc → G1-10. `feature/ux6-document-viewer`
 - [ ] UX-7 **View modes** (list / grid / compact), user-selectable + persisted `feature/ux7-view-modes`
 - [ ] UX-8 **Rename prompt** after scan/add (pre-filled default) + Settings toggle to disable `feature/ux8-rename-on-add`
-- [ ] UX-9 **OCR result visibility** (folded into UX-6) + image-only clarity
+- [x] UX-9 **OCR result visibility** ✅ (2026-07-12) — resolved by UX-6's Extracted-text panel (read + Copy); "Extract text" appears only for images (`canOcr`), with a "works on images and scans" hint for other types.
 - [ ] UX-10 **PDF merge** slow after 100% — profile (thumbnail regen / buffer transfer / save) + fix `bugfix/ux10-merge-perf` `[PERF]`
 - [ ] UX-11 **PDF compress** slow for 1-page — profile (warm pdfjs worker / render DPI) + fix `bugfix/ux11-compress-perf` `[PERF]`
 - [ ] UX-12 **Design-system pass** (density, hierarchy, tokens) threaded through UX-5/6/7 `feature/ux12-design-pass`

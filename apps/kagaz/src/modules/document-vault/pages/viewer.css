@@ -1,0 +1,68 @@
+/* Document viewer (UX-6). */
+
+.kg-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+
+.kg-viewer__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  color: var(--text-muted);
+}
+
+.kg-viewer__pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--surface-2);
+}
+
+.kg-viewer__page {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.kg-viewer__text {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: 1px solid var(--surface-3, var(--surface-2));
+}
+
+.kg-viewer__text-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+}
+
+.kg-viewer__text-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.kg-viewer__text-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.kg-viewer__menu-btn {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  color: var(--text-primary);
+  cursor: pointer;
+}

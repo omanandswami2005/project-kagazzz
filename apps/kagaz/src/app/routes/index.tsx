@@ -27,6 +27,7 @@ import { Icon, Spinner } from '@kagaz/ui';
 import {
   LazyFavoritesPage,
   LazyPdfToolsPage,
+  LazyDocumentViewerPage,
   LazySettingsPage,
   LazyStoragePage,
   LazyTrashPage,
@@ -108,6 +109,7 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/pdf-tools" component={LazyPdfToolsPage} />
           <Route exact path="/settings" component={LazySettingsPage} />
           <Route exact path="/trash" component={LazyTrashPage} />
+          <Route exact path="/doc/:id" component={LazyDocumentViewerPage} />
           <Route exact path="/favorites" component={LazyFavoritesPage} />
           <Route exact path="/storage" component={LazyStoragePage} />
           <Route exact path="/">

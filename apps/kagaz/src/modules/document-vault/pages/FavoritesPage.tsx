@@ -9,6 +9,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
   useIonToast,
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
@@ -16,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Icon } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../components/DocumentListItem';
+import { useDocLock } from '../hooks/useDocLock';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
@@ -28,6 +30,8 @@ export function FavoritesPage(): ReactNode {
   const { favorites, isLoading } = useFavorites(reloadKey);
   const { tagsByDocument } = useTags();
   const { toggleFavorite, markAccessed } = useVaultMutations();
+  const { authorizeView } = useDocLock();
+  const router = useIonRouter();
   const [presentToast] = useIonToast();
 
   const handleToggleFavorite = useCallback(
@@ -39,14 +43,17 @@ export function FavoritesPage(): ReactNode {
 
   const handleOpen = useCallback(
     (doc: DocumentEntity): void => {
-      void markAccessed(doc);
-      void presentToast({
-        message: t('preview.coming_soon'),
-        duration: 1500,
-        position: 'bottom',
+      // [SEC] §3.1: authorize a locked document before opening the viewer.
+      void authorizeView(doc).then((allowed) => {
+        if (!allowed) {
+          void presentToast({ message: t('lock.blocked'), duration: 1500, position: 'bottom' });
+          return;
+        }
+        void markAccessed(doc);
+        router.push(`/doc/${doc.id}`);
       });
     },
-    [markAccessed, presentToast, t]
+    [authorizeView, markAccessed, presentToast, router, t]
   );
 
   const listState = isLoading
