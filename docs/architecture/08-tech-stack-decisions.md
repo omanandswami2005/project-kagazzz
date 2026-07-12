@@ -1104,6 +1104,51 @@ removed from the scanner.
 
 ---
 
+## ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-13 |
+| **Decision** | The "PDF Power Tools" conversion features (PDF→Word, PDF→Excel/CSV, open Word) use three **pure-JavaScript, permissively-licensed** libraries, each **lazy-loaded per tool** (never in the main chunk): **[`docx`](https://www.npmjs.com/package/docx)** (MIT) to generate `.docx`, **[SheetJS `xlsx`](https://docs.sheetjs.com/) Community Edition** (Apache-2.0) to read/write spreadsheets, and **[`mammoth`](https://github.com/mwilliamson/mammoth.js)** (BSD-2-Clause) to convert `.docx`→HTML for viewing. All run **fully offline in the WebView** — **no WASM, no CSP change, no runtime/CDN fetch** — so they satisfy [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels). **LibreOffice-WASM/ZetaOffice and all commercial SDKs are rejected** (below). |
+
+### Context
+
+Users ask for PDF↔Office conversion (esp. "PDF to Word"). V1 makes **no network
+calls** (offline-first), depends only on **MIT/Apache/BSD/ISC** code, cannot
+weaken the strict CSP on Aadhaar/PAN-grade PII (ADR-017), and has a tight JS
+budget (< 500 KB gzipped total). Any conversion must run **on-device**. Note the
+honest limitation: **faithful, layout-preserving PDF→DOCX is not achievable**
+with small permissive offline libraries — it needs a LibreOffice-class engine.
+So V1 targets the **usable, content-first 80%** (extract text/tables into an
+*editable* Office file), with an explicit in-UI disclaimer, not pixel-fidelity.
+
+### Options considered
+
+| Option | Verdict |
+|---|---|
+| **`docx`** (MIT), **SheetJS `xlsx`** (Apache-2.0), **`mammoth`** (BSD-2) ✅ | Pure JS, no WASM/worker/CDN fetch → no CSP change, vendorable offline. Cover generate-Word, read/write-Excel, view-Word. Lazy-loaded per tool (SheetJS full ≈ 300 KB gz, `docx`/`mammoth` smaller) so the main + PDF chunks stay within budget. **Chosen.** |
+| **ZetaOffice / LibreOffice-WASM** (`zetajs` wrapper MIT; engine MPL-2.0/LGPL) | ❌ 50–250 MB WASM fetched from a **CDN** at runtime + needs `unsafe-eval`. Violates the bundle budget, offline-no-CDN (ADR-017), **and** the CSP. The *only* faithful converter, but only viable **later as an optional V2 server-side** conversion on an India-residency server — never bundled in V1. |
+| **Nutrient / Apryse (PDFTron) / Aspose / Cloudmersive / ConvertAPI** | ❌ Non-permissive commercial SDKs and/or cloud APIs (data leaves the device). Disqualified on license **and** offline policy. |
+
+### Consequences
+
+- Adds `docx`, `xlsx` (SheetJS Community), `mammoth` to `package.json`. Each is
+  **dynamically `import()`-ed inside its tool's code path** so it lands in a lazy
+  chunk, not the app/vendor chunk (enforce with the perf budget check).
+- **Before adding each**: verify it's on npm and grep its `dist` for
+  `workerSrc|jsdelivr|wasm|fetch(` — same media-lib gate that caught the bad PDF
+  compressors — to confirm no runtime network/WASM dependency.
+- **[SEC]** conversion outputs are document content (PII) → treated exactly like
+  documents: written only through `FileStorage` into the encrypted vault, never
+  logged; the source never leaves the device.
+- **Honest UX:** PDF→Word/Excel is **text/table-first, not layout-faithful** —
+  the tool shows a one-line "text extracted, layout may differ" note. Faithful
+  conversion is explicitly out of V1 scope (see ZetaOffice row).
+- Web + native both supported (pure JS); no new native permission.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1118,4 +1163,4 @@ removed from the scanner.
 
 ---
 
-*Last updated: 2026-06-10 · Kagaz Architecture Decision Records v1.1*
+*Last updated: 2026-07-13 · Kagaz Architecture Decision Records v1.2 (ADR-020 client-side Office interop)*
