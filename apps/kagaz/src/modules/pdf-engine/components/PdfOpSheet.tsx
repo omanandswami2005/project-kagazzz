@@ -243,9 +243,12 @@ export function PdfOpSheet({
                 value={engine.state.percent}
                 aria-label={t('running')}
                 showLabel
+                indeterminate={engine.state.saving}
               />
               <p className="kg-pdf-op__status">
-                {engine.state.message || t('running')}
+                {engine.state.saving
+                  ? t('finalizing')
+                  : engine.state.message || t('running')}
               </p>
             </div>
           )}
