@@ -544,12 +544,21 @@
   white-space: nowrap;
 }
 
+/* UX-5: one quiet metadata line (type · size · date) — muted, small, single
+   line; the name above is the only strong element. */
 .kg-doc-item__meta {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kg-doc-item__dot {
+  opacity: 0.6;
 }
 
 .kg-vault-empty {
