@@ -155,7 +155,7 @@
 - [ ] UX-10 **PDF merge** slow after 100% — profile (thumbnail regen / buffer transfer / save) + fix `bugfix/ux10-merge-perf` `[PERF]`
 - [ ] UX-11 **PDF compress** slow for 1-page — profile (warm pdfjs worker / render DPI) + fix `bugfix/ux11-compress-perf` `[PERF]`
 - [ ] UX-12 **Design-system pass** (density, hierarchy, tokens) threaded through UX-5/6/7 `feature/ux12-design-pass`
-- [ ] UX-13 **Text extraction for all docs** — PDFs with a text layer via pdfjs `getTextContent` (fast, no OCR), image/scanned via ML Kit OCR (UX-9); store in `documents.ocr_text` → **feeds FTS search now, WebLLM/AI later** `[SEC]` (encrypted DB only) `feature/ux13-doc-text-extraction`
+- [x] UX-13 **Text extraction for all docs** ✅ (2026-07-12) — new `extractPdfTextImpl` (pdfjs `getTextContent`, main-thread, canvas-free) pulls a PDF's embedded text layer; `useDocumentOcr` now dispatches by type (`canExtractText` = image OCR **or** PDF text-layer, PDFs not platform-gated) and stores the result in `documents.ocr_text` → **FTS-searchable now, on-device AI later**. The viewer's "Extract text" button + panel (UX-6/9) now works for PDFs too. `[SEC]` extracted text → encrypted DB only, never logged (char count only). Tests: canExtractText (3), PDF-path extraction (hook + viewer). Full gate green (600). Device-verify a real text-layer PDF → G1-10. `feature/ux13-doc-text-extraction`
 
 ### V1 Release Gate (all must pass before store submission)
 

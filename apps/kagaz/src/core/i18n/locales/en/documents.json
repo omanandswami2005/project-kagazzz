@@ -71,7 +71,7 @@
     "extracted_text": "Extracted text",
     "copy": "Copy text",
     "copied": "Text copied",
-    "no_text": "No text extracted. Extraction works on images and scans."
+    "no_text": "No text extracted. Extraction works on images, scans, and PDFs."
   },
   "detail": {
     "size": "Size",

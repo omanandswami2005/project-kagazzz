@@ -2,9 +2,18 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
-const { isOcrSupported, recognizeDocumentText, update, useDatabase } = vi.hoisted(() => ({
+const {
+  isOcrSupported,
+  recognizeDocumentText,
+  extractPdfText,
+  readFile,
+  update,
+  useDatabase,
+} = vi.hoisted(() => ({
   isOcrSupported: vi.fn(() => true),
   recognizeDocumentText: vi.fn(),
+  extractPdfText: vi.fn(),
+  readFile: vi.fn(),
   update: vi.fn(),
   useDatabase: vi.fn(),
 }));
@@ -14,6 +23,12 @@ vi.mock('@/modules/image-engine/services/ocr.service', () => ({
   isOcrSupported,
   recognizeDocumentText,
 }));
+vi.mock('@/modules/pdf-engine/services/pdf-render-ops', () => ({
+  extractPdfTextImpl: extractPdfText,
+}));
+vi.mock('@/infrastructure/filesystem', () => ({
+  createFileStorage: () => ({ read: readFile }),
+}));
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase }));
 vi.mock('@/core/i18n', () => ({ useLocale: () => ({ locale: locale.value }) }));
 vi.mock('@/infrastructure/database/dao', () => ({
@@ -22,7 +37,7 @@ vi.mock('@/infrastructure/database/dao', () => ({
   },
 }));
 
-import { canOcr, useDocumentOcr } from '../useDocumentOcr';
+import { canExtractText, canOcr, useDocumentOcr } from '../useDocumentOcr';
 
 const doc = (over: Partial<DocumentEntity> = {}): DocumentEntity =>
   ({ id: 'd1', filePath: 'documents/d1.jpg', fileType: 'image/jpeg', ...over }) as DocumentEntity;
@@ -33,6 +48,8 @@ beforeEach(() => {
   locale.value = 'en';
   useDatabase.mockReturnValue({ db: {}, status: 'ready' });
   recognizeDocumentText.mockResolvedValue('AADHAAR 1234 5678');
+  extractPdfText.mockResolvedValue('INVOICE #42 total 999');
+  readFile.mockResolvedValue(new Uint8Array([1, 2, 3]));
   update.mockResolvedValue(1);
 });
 
@@ -46,6 +63,19 @@ describe('canOcr', () => {
   it('is false when OCR is unsupported (web)', () => {
     isOcrSupported.mockReturnValue(false);
     expect(canOcr(doc())).toBe(false);
+  });
+});
+
+describe('canExtractText (UX-13)', () => {
+  it('is true for images (OCR)', () => {
+    expect(canExtractText(doc())).toBe(true);
+  });
+  it('is true for PDFs (text layer) even when OCR is unsupported', () => {
+    isOcrSupported.mockReturnValue(false);
+    expect(canExtractText(doc({ fileType: 'application/pdf' }))).toBe(true);
+  });
+  it('is false for other types', () => {
+    expect(canExtractText(doc({ fileType: 'text/plain' }))).toBe(false);
   });
 });
 
@@ -70,14 +100,30 @@ describe('useDocumentOcr (F-20)', () => {
     expect(recognizeDocumentText).toHaveBeenCalledWith('documents/d1.jpg', 'hi');
   });
 
-  it('is a no-op on a non-image document', async () => {
+  it('extracts a PDF text layer and stores it (UX-13)', async () => {
+    const { result } = renderHook(() => useDocumentOcr());
+    let text: string | null = null;
+    await act(async () => {
+      text = await result.current.extractText(
+        doc({ filePath: 'documents/d1.pdf', fileType: 'application/pdf' })
+      );
+    });
+    expect(text).toBe('INVOICE #42 total 999');
+    expect(readFile).toHaveBeenCalledWith('documents/d1.pdf');
+    expect(extractPdfText).toHaveBeenCalled();
+    expect(recognizeDocumentText).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith('d1', { ocrText: 'INVOICE #42 total 999' });
+  });
+
+  it('is a no-op on a document whose text cannot be extracted', async () => {
     const { result } = renderHook(() => useDocumentOcr());
     let out: string | null = 'x';
     await act(async () => {
-      out = await result.current.extractText(doc({ fileType: 'application/pdf' }));
+      out = await result.current.extractText(doc({ fileType: 'text/plain' }));
     });
     expect(out).toBeNull();
     expect(recognizeDocumentText).not.toHaveBeenCalled();
+    expect(extractPdfText).not.toHaveBeenCalled();
   });
 
   it('returns null (no throw) when recognition fails', async () => {

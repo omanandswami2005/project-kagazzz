@@ -24,6 +24,53 @@ async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
   return pdfjsReady;
 }
 
+/**
+ * Extracts the embedded text layer from a PDF (UX-13) via pdfjs `getTextContent`
+ * — fast and OCR-free for PDFs that carry real text (most generated/exported
+ * PDFs). Scanned/image-only PDFs have no text layer and return "" (the caller
+ * can fall back to image OCR). Runs on the MAIN thread with pdfjs, but needs no
+ * canvas, so it is lighter than rasterising. WebView/web only.
+ *
+ * [SEC] the returned text is document content — the caller stores it only in
+ * the encrypted DB and never logs it.
+ */
+export async function extractPdfTextImpl(pdf: Uint8Array): Promise<string> {
+  const op = 'extractPdfText';
+  if (!pdf || pdf.length === 0) {
+    throw new PdfEngineException('Empty or missing PDF data', 'INVALID_PDF', op);
+  }
+
+  const pdfjs = await loadPdfjs();
+  const loadingTask = pdfjs.getDocument({ data: pdf });
+  let doc: Awaited<typeof loadingTask.promise>;
+  try {
+    doc = await loadingTask.promise;
+  } catch (e: unknown) {
+    await loadingTask.destroy().catch(() => undefined);
+    const error = e instanceof Error ? e : new Error(String(e));
+    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+  }
+
+  try {
+    const pages: string[] = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item) => ('str' in item ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (pageText) {
+        pages.push(pageText);
+      }
+    }
+    return pages.join('\n\n').trim();
+  } finally {
+    await loadingTask.destroy().catch(() => undefined);
+  }
+}
+
 /** Renders the requested pages of `pdf` to image blobs. */
 export async function pdfToImagesImpl(
   pdf: Uint8Array,
