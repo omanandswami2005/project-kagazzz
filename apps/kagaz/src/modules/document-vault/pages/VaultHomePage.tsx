@@ -31,6 +31,7 @@ import { NewFolderDialog } from '../components/NewFolderDialog';
 import { RecentStrip } from '../components/RecentStrip';
 import { SortControl } from '../components/SortControl';
 import { TagSelector } from '../components/TagSelector';
+import { ViewModeControl } from '../components/ViewModeControl';
 import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useBulkActions } from '../hooks/useBulkActions';
@@ -41,6 +42,7 @@ import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
 import { useTags } from '../hooks/useTags';
 import { useUpload } from '../hooks/useUpload';
+import { useViewMode } from '../hooks/useViewMode';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import { FOLDER_TEMPLATES } from '../services/folder-templates';
 import { SearchBar } from '@/modules/search/components/SearchBar';
@@ -65,6 +67,7 @@ export function VaultHomePage(): ReactNode {
   const { toggleFavorite, markAccessed, softDelete, restore } = useVaultMutations();
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
+  const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
   const { folders, createFolder, moveDocument, createDefaultFolders } =
@@ -259,7 +262,7 @@ export function VaultHomePage(): ReactNode {
                   </p>
                 ) : (
                   <ul
-                    className="kg-vault__list"
+                    className={`kg-vault__list kg-vault__list--${viewMode}`}
                     data-agent-id="vault.home.search-results"
                     data-agent-state={search.isSearching ? 'loading' : 'success'}
                   >
@@ -330,6 +333,8 @@ export function VaultHomePage(): ReactNode {
                           : t('filters.title')}
                       </Button>
                       {documents.length > 1 && <SortControl />}
+                      {/* UX-7: List / Grid / Compact, persisted across launches. */}
+                      <ViewModeControl mode={viewMode} onChange={setViewMode} />
                     </div>
                   )}
                   {filteredDocuments.length === 0 && filterCount > 0 ? (
@@ -341,7 +346,7 @@ export function VaultHomePage(): ReactNode {
                     </p>
                   ) : (
                   <ul
-                    className="kg-vault__list"
+                    className={`kg-vault__list kg-vault__list--${viewMode}`}
                     data-agent-id="vault.home.list"
                     data-agent-state={listState}
                   >
