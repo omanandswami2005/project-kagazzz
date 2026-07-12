@@ -35,7 +35,7 @@ vi.mock('../../hooks/useDocumentFile', () => ({
   useDocumentFile: () => ({ pages: state.pages, loading: state.fileLoading, error: state.error }),
 }));
 vi.mock('../../hooks/useDocumentOcr', () => ({
-  canOcr: () => state.canOcr,
+  canExtractText: () => state.canOcr,
   useDocumentOcr: () => ({ extractText: state.extractText, runningId: null }),
 }));
 vi.mock('../../hooks/useVaultMutations', () => ({
@@ -93,9 +93,20 @@ describe('DocumentViewerPage (UX-6)', () => {
     expect(state.extractText).toHaveBeenCalled();
   });
 
-  it('shows a no-text hint for non-image docs without text', () => {
-    state.canOcr = false;
+  it('offers Extract text for a PDF with no stored text (UX-13)', async () => {
+    state.canOcr = true; // canExtractText → true for a PDF (text-layer path)
     state.document = doc({ fileType: 'application/pdf', ocrText: undefined });
+    render(<DocumentViewerPage />);
+    expect(q('vault.viewer.extract-text')).not.toBeNull();
+    await act(async () => {
+      fireEvent.click(q('vault.viewer.extract-text')!);
+    });
+    expect(state.extractText).toHaveBeenCalled();
+  });
+
+  it('shows a no-text hint for docs whose text cannot be extracted', () => {
+    state.canOcr = false;
+    state.document = doc({ fileType: 'text/plain', ocrText: undefined });
     render(<DocumentViewerPage />);
     expect(q('vault.viewer.extract-text')).toBeNull();
     expect(screen.getByText('viewer.no_text')).toBeInTheDocument();

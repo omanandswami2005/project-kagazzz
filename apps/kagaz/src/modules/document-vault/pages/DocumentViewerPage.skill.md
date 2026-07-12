@@ -13,9 +13,10 @@ Action Registry entries).
 
 ## State I should check first
 - Still loading / rendering pages → tell the user to wait.
-- No extracted text yet + it's an image → point to the "Extract text" button.
-- No extracted text + it's a PDF/other → tell the user text isn't available yet
-  (PDF text extraction is a separate feature).
+- No extracted text yet + it's an image or a PDF → point to the "Extract text"
+  button (images use OCR; PDFs read their embedded text layer, UX-13).
+- No extracted text + the "Extract text" button is absent → the type can't be
+  extracted; tell the user text isn't available.
 
 ## Things I must NOT do
 - Never delete the document or trigger extraction on the user's behalf.

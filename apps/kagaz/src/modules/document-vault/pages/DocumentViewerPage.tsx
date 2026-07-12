@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocumentFile } from '../hooks/useDocumentFile';
-import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
+import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
 
@@ -139,7 +139,7 @@ export function DocumentViewerPage(): ReactNode {
                       {t('viewer.copy')}
                     </Button>
                   </>
-                ) : canOcr(document) ? (
+                ) : canExtractText(document) ? (
                   <Button
                     variant="secondary"
                     size="sm"
