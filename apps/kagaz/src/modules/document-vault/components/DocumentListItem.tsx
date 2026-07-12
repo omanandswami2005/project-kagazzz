@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Icon, Tag, type IconName } from '@kagaz/ui';
+import { Icon, Tag, type IconName } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import type {
   DocumentEntity,
@@ -22,6 +22,12 @@ const TYPE_ICONS: Partial<Record<string, IconName>> = {
   [FileType.HEIC]: 'FileImage',
   [FileType.WEBP]: 'FileImage',
 };
+
+/** Short, human type label for the meta line — MIME or extension → e.g. "PDF". */
+function shortType(fileType: string): string {
+  const sub = fileType.includes('/') ? fileType.split('/')[1] : fileType;
+  return sub.replace('jpeg', 'jpg').toUpperCase();
+}
 
 /** Props for {@link DocumentListItem}. */
 export interface DocumentListItemProps {
@@ -98,16 +104,18 @@ export function DocumentListItem({
       </span>
       <span className="kg-doc-item__body">
         <span className="kg-doc-item__name">{document.name}</span>
+        {/* UX-5: one muted metadata line — type · size · date — no badge chrome,
+           so the document name is the only strong element in the row. */}
         <span className="kg-doc-item__meta">
-          <Badge size="sm" variant="info">
-            {document.fileType.toUpperCase()}
-          </Badge>
-          <span aria-label={t('detail.size')}>
-            {formatFileSize(document.fileSize)}
+          {shortType(document.fileType)}
+          <span className="kg-doc-item__dot" aria-hidden>
+            ·
           </span>
-          <span aria-label={t('detail.created')}>
-            {formatDate(document.createdAt)}
+          {formatFileSize(document.fileSize)}
+          <span className="kg-doc-item__dot" aria-hidden>
+            ·
           </span>
+          {formatDate(document.createdAt)}
         </span>
         {tags.length > 0 && (
           <span className="kg-doc-item__tags">

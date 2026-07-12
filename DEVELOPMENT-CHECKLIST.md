@@ -147,7 +147,7 @@
 - [x] UX-2 **Tag chips** blow up row height ✅ (2026-07-12) — `.kg-doc-item__tags` single-line (nowrap + overflow hidden), capped to 2 chips + "+N"; adding tags no longer grows the row.
 - [x] UX-3 **Mic inline** in the search bar ✅ (2026-07-12) — shared rounded container holds a transparent IonSearchbar + mic at the trailing end; reads as one field.
 - [x] UX-4 **Upload sheet** clips "Browse files" ✅ (2026-07-12) — breakpoint 0.35→0.6 (+0.9 expand) for the 4th (Scan) source, scrollable content + safe-area bottom padding.
-- [ ] UX-5 **List row** decluttered/redesigned (two-line hierarchy, muted metadata) `feature/ux5-list-row-redesign`
+- [x] UX-5 **List row** decluttered/redesigned ✅ (2026-07-12) — dropped the type Badge chrome; the name is the only strong element, with one muted single-line meta (`type · size · date`, `--text-xs`/`--text-muted`) + capped tags (UX-2). `shortType()` maps MIME/extension → e.g. "PDF". Tests updated (24). `feature/ux5-list-row-redesign`
 - [ ] UX-6 **Document viewer** `/doc/:id` (image + PDF) — the missing preview; includes the OCR/extracted-text panel `[SEC]` (respects per-doc lock) `feature/ux6-document-viewer`
 - [ ] UX-7 **View modes** (list / grid / compact), user-selectable + persisted `feature/ux7-view-modes`
 - [ ] UX-8 **Rename prompt** after scan/add (pre-filled default) + Settings toggle to disable `feature/ux8-rename-on-add`

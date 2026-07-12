@@ -49,28 +49,29 @@ const doc: DocumentEntity = entityFromNew({
 });
 
 describe('DocumentListItem', () => {
-  it('shows name, type badge, size, and agent id', () => {
+  it('shows name and a muted type · size · date meta line, and agent id (UX-5)', () => {
     render(
       <ul>
         <DocumentListItem document={doc} />
       </ul>
     );
     expect(screen.getByText('Aadhaar')).toBeInTheDocument();
-    expect(screen.getByText('PDF')).toBeInTheDocument();
-    expect(screen.getByText(/2\.4\s?MB/)).toBeInTheDocument();
+    const meta = document.querySelector('.kg-doc-item__meta');
+    expect(meta?.textContent).toContain('PDF');
+    expect(meta?.textContent).toMatch(/2\.4\s?MB/);
     expect(
       document.querySelector('[data-agent-id="vault.home.item-doc-1"]')
     ).not.toBeNull();
   });
 
-  it('falls back to a generic icon for unknown types', () => {
-    const odd = { ...doc, fileType: 'zip' };
+  it('renders a short type label for unknown/MIME types', () => {
+    const odd = { ...doc, fileType: 'application/zip' };
     render(
       <ul>
         <DocumentListItem document={odd} />
       </ul>
     );
-    expect(screen.getByText('ZIP')).toBeInTheDocument();
+    expect(document.querySelector('.kg-doc-item__meta')?.textContent).toContain('ZIP');
   });
 
   it('renders a cached thumbnail image when available (F-24)', () => {
