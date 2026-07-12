@@ -179,7 +179,7 @@ export interface PdfEngineService {
   /** Combine one or more images into a single PDF (F-7) */
   imagesToPdf(images: ImageInput[], onProgress?: ProgressCallback): Promise<Uint8Array>;
 
-  /** Stamp a diagonal text watermark across every page (F-62) */
+  /** Stamp a diagonal text watermark across every page (F-37) */
   watermarkPdf(
     pdf: Uint8Array,
     text: string,

@@ -215,7 +215,7 @@ export async function imagesToPdfImpl(
 
 /**
  * Stamps a diagonal text watermark (e.g. "COPY", "CONFIDENTIAL") across the
- * centre of every page (F-62). Semi-transparent grey so the underlying content
+ * centre of every page (F-37). Semi-transparent grey so the underlying content
  * stays readable. pdf-lib only, offline.
  */
 export async function watermarkPdfImpl(

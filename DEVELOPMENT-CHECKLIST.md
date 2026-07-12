@@ -112,20 +112,20 @@
 
 ### PDF Power Tools (V1) — the most-requested extras · design research in this session; libs governed by [ADR-020](docs/architecture/08-tech-stack-decisions.md)
 
-> **Tier 1 — `pdf-lib` only (no new dependency)**, fit the existing PDF Tools op pattern (card → op sheet → run → save):
+> **IDs use the free F-35–F-44 gap** (F-60+ were already assigned to V2/V3 — incl. F-60 *Document Watermarking*, a distinct **V2 sharing** leak-trace watermark, not this V1 PDF tool). **Tier 1 — `pdf-lib` only (no new dependency)**, fit the existing PDF Tools op pattern (card → op sheet → run → save):
 
-- [ ] F-60 **Organize pages** — reorder / rotate / delete individual pages 🟡Should — `pdf-lib` `copyPages`/`removePage`/`setRotation`; a page-thumbnail grid UI (reuse `pdfToImagesImpl` for previews) with drag-reorder + per-page rotate/delete. Highest-value; complements the UX-6 viewer. `feature/f60-organize-pages`
-- [ ] F-61 **Add page numbers** 🔵Could — `pdf-lib` `drawText` loop (position/format options). Single-shot op, fits `PdfOpSheet`. `feature/f61-page-numbers`
-- [x] F-62 **Watermark / stamp** ✅ (2026-07-13) — `watermarkPdfImpl` (pdf-lib: semi-transparent grey HelveticaBold, rotated 45°, auto-sized to the page, on **every** page) wired through the manipulation worker → service (`watermarkPdf`) → `usePdfEngine` → a new **Watermark** op card + text input in `PdfOpSheet` (validates non-empty). Offline, no new dep. Contract-tested (3: stamps+keeps page count, empty→UNSUPPORTED_FORMAT, invalid→INVALID_PDF); en/hi i18n; agent action + voice. Full gate green (604). Device-verify a real stamp → G1-10. `feature/f62-watermark`
-- [ ] F-63 **Signature / image stamp** onto a PDF 🟡Should — `pdf-lib` `drawImage` (place a signature/photo on a chosen page). Huge for India forms. Needs an image + placement UI. `feature/f63-image-stamp`
-- [ ] F-64 **Edit PDF metadata** (title/author/subject/keywords) 🔵Could — `pdf-lib` `setTitle`/`setAuthor`/… ; a small form. Cleanup before sharing. `feature/f64-pdf-metadata`
-- [ ] F-65 **Export PDF → text / Markdown** 🔵Could — reuse UX-13 `extractPdfTextImpl` (pdfjs text layer) → save a `.txt`/`.md` into the vault. Near-free given UX-13. `feature/f65-pdf-to-text`
+- [ ] F-35 **Organize pages** — reorder / rotate / delete individual pages 🟡Should — `pdf-lib` `copyPages`/`removePage`/`setRotation`; a page-thumbnail grid UI (reuse `pdfToImagesImpl` for previews) with drag-reorder + per-page rotate/delete. Highest-value; complements the UX-6 viewer. `feature/f35-organize-pages`
+- [ ] F-36 **Add page numbers** 🔵Could — `pdf-lib` `drawText` loop (position/format options). Single-shot op, fits `PdfOpSheet`. `feature/f36-page-numbers`
+- [x] F-37 **Watermark / stamp** ✅ (2026-07-13) — `watermarkPdfImpl` (pdf-lib: semi-transparent grey HelveticaBold, rotated 45°, auto-sized to the page, on **every** page) wired through the manipulation worker → service (`watermarkPdf`) → `usePdfEngine` → a new **Watermark** op card + text input in `PdfOpSheet` (validates non-empty). Offline, no new dep. Contract-tested (3: stamps+keeps page count, empty→UNSUPPORTED_FORMAT, invalid→INVALID_PDF); en/hi i18n; agent action + voice. Full gate green (604). _(Committed as "F-62" before the ID-collision fix — renumbered to F-37.)_ Device-verify a real stamp → G1-10. `feature/f37-watermark`
+- [ ] F-38 **Signature / image stamp** onto a PDF 🟡Should — `pdf-lib` `drawImage` (place a signature/photo on a chosen page). Huge for India forms. Needs an image + placement UI. `feature/f38-image-stamp`
+- [ ] F-39 **Edit PDF metadata** (title/author/subject/keywords) 🔵Could — `pdf-lib` `setTitle`/`setAuthor`/… ; a small form. Cleanup before sharing. `feature/f39-pdf-metadata`
+- [ ] F-40 **Export PDF → text / Markdown** 🔵Could — reuse UX-13 `extractPdfTextImpl` (pdfjs text layer) → save a `.txt`/`.md` into the vault. Near-free given UX-13. `feature/f40-pdf-to-text`
 
 > **Tier 2 — new pure-JS permissive libs** ([ADR-020](docs/architecture/08-tech-stack-decisions.md): `docx` MIT, SheetJS `xlsx` Apache-2.0, `mammoth` BSD-2), **lazy-loaded per tool**. Conversions are **text/table-first, not layout-faithful** (explicit in-UI disclaimer); faithful conversion is out of V1 scope (needs LibreOffice-WASM → V2 server).
 
-- [ ] F-66 **PDF → Word (.docx)** 🟡Should — pdfjs text layer (`extractPdfTextImpl`) → generate an **editable** `.docx` via `docx`. Ships with a "text extracted, layout may differ" note. `[SEC]` output = vault document. `feature/f66-pdf-to-word`
-- [ ] F-67 **PDF → Excel / CSV** 🔵Could — extract PDF form-field values / detected rows → `.xlsx`/`.csv` via SheetJS; also enables spreadsheet **import** → PDF later. `feature/f67-pdf-to-excel`
-- [ ] F-68 **Open / view Word (.docx)** in the vault 🔵Could — `mammoth` `.docx`→clean HTML rendered in the viewer (UX-6); print-to-PDF path. Lets `.docx` files be first-class vault items. `feature/f68-open-word`
+- [ ] F-41 **PDF → Word (.docx)** 🟡Should — pdfjs text layer (`extractPdfTextImpl`) → generate an **editable** `.docx` via `docx`. Ships with a "text extracted, layout may differ" note. `[SEC]` output = vault document. `feature/f41-pdf-to-word`
+- [ ] F-42 **PDF → Excel / CSV** 🔵Could — extract PDF form-field values / detected rows → `.xlsx`/`.csv` via SheetJS; also enables spreadsheet **import** → PDF later. `feature/f42-pdf-to-excel`
+- [ ] F-43 **Open / view Word (.docx)** in the vault 🔵Could — `mammoth` `.docx`→clean HTML rendered in the viewer (UX-6); print-to-PDF path. Lets `.docx` files be first-class vault items. `feature/f43-open-word`
 
 ### Image Engine module — [docs/architecture/04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
 
