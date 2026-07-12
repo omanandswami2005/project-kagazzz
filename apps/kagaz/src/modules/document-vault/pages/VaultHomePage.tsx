@@ -62,7 +62,7 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
-  const { toggleFavorite, markAccessed } = useVaultMutations();
+  const { toggleFavorite, markAccessed, softDelete, restore } = useVaultMutations();
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
   const recent = useRecentDocuments();
@@ -100,6 +100,8 @@ export function VaultHomePage(): ReactNode {
   const [moveDocId, setMoveDocId] = useState<string | null>(null);
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
+  // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
+  const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
 
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
@@ -447,6 +449,19 @@ export function VaultHomePage(): ReactNode {
                   },
                 ]
               : []),
+            // UX-1: individual delete → soft-delete to Trash (recoverable via Undo).
+            {
+              text: t('actions.delete'),
+              role: 'destructive',
+              data: { action: 'delete' },
+              handler: (): void => {
+                if (moreDoc) {
+                  const doc = moreDoc;
+                  void softDelete(doc);
+                  setDeletedDoc(doc);
+                }
+              },
+            },
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
         />
@@ -497,6 +512,23 @@ export function VaultHomePage(): ReactNode {
           message={ocrMsg ?? ''}
           onDidDismiss={() => setOcrMsg(null)}
           data-agent-id="vault.home.ocr-toast"
+        />
+        <IonToast
+          isOpen={deletedDoc !== null}
+          duration={4000}
+          message={t('trash.moved_to_trash')}
+          buttons={[
+            {
+              text: t('trash.undo'),
+              handler: (): void => {
+                if (deletedDoc) {
+                  void restore(deletedDoc);
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setDeletedDoc(null)}
+          data-agent-id="vault.home.delete-toast"
         />
         <IonToast
           isOpen={showLockedToast}

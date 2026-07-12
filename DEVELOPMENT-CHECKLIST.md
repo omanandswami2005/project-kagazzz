@@ -143,7 +143,7 @@
 
 > One branch + Conventional Commit per item (per `CONTRIBUTING.md`/`AGENT.md`). Design decisions live in the plan doc; check off here as each ships (device-verified where it has runtime surface).
 
-- [ ] UX-1 Individual **Delete** in the ⋮ item menu → soft-delete to Trash (F-57) + Undo toast `feature/ux1-item-delete`
+- [x] UX-1 Individual **Delete** in the ⋮ item menu → soft-delete to Trash (F-57) + Undo toast ✅ (2026-07-12) — `useVaultMutations.softDelete`/`restore` (optimistic list removal + rollback), destructive Delete action in the ⋮ sheet (`vault.home.delete-toast` with Undo → restore). Unit-tested (3) + full gate green (578). Device-verify with a real doc → G1-10 (AVD can't create one). `feature/ux1-item-delete`
 - [ ] UX-2 **Tag chips** blow up row height — cap to one line, 2 chips + "+N" `bugfix/ux2-tag-chip-height`
 - [ ] UX-3 **Mic inline** in the search bar (end-slot), not a sibling row `bugfix/ux3-mic-inline`
 - [ ] UX-4 **Upload sheet** clips "Browse files" on short screens — fit-content breakpoints + safe-area `bugfix/ux4-upload-sheet`

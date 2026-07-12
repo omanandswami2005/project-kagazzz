@@ -16,6 +16,7 @@
     "lock": "Lock document",
     "unlock": "Unlock document",
     "extract_text": "Extract text",
+    "delete": "Delete",
     "more": "More actions",
     "cancel": "Cancel"
   },
