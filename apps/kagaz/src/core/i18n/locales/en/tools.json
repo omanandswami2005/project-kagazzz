@@ -9,7 +9,8 @@
     "imagesToPdf": "Images → PDF",
     "encrypt": "Password protect",
     "decrypt": "Remove password",
-    "fillForm": "Fill form"
+    "fillForm": "Fill form",
+    "watermark": "Watermark"
   },
   "desc": {
     "merge": "Combine several PDFs into one",
@@ -19,7 +20,8 @@
     "imagesToPdf": "Combine images into one PDF",
     "encrypt": "Lock a PDF with a password",
     "decrypt": "Unlock a password-protected PDF",
-    "fillForm": "Fill in a PDF form"
+    "fillForm": "Fill in a PDF form",
+    "watermark": "Stamp text like \"COPY\" across every page"
   },
   "pick": {
     "pdf_single": "Choose a PDF",
@@ -40,7 +42,10 @@
     "password": "Password",
     "password_hint": "You'll need this to open the file later — Kagaz cannot recover it.",
     "fields_none": "This PDF has no fillable fields.",
-    "fields_loading": "Reading form fields…"
+    "fields_loading": "Reading form fields…",
+    "watermark_text": "Watermark text",
+    "watermark_placeholder": "COPY",
+    "watermark_hint": "Stamped diagonally on every page."
   },
   "run": "Run",
   "running": "Working…",
@@ -54,6 +59,7 @@
     "need_two": "Select at least 2 files.",
     "need_one": "Select a file.",
     "bad_ranges": "Enter valid page ranges, e.g. 1-3, 5.",
-    "need_password": "Enter a password."
+    "need_password": "Enter a password.",
+    "need_watermark": "Enter the watermark text."
   }
 }

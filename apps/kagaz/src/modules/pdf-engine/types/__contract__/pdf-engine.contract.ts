@@ -239,6 +239,31 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-62: Watermark', () => {
+      it('should stamp every page and keep the page count', async () => {
+        const original = await createTestPdf(3);
+        const result = await engine.watermarkPdf(original, 'COPY');
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(3);
+        // The stamp adds content, so the output is larger than the source.
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should reject an empty watermark (UNSUPPORTED_FORMAT)', async () => {
+        await expect(
+          engine.watermarkPdf(await createTestPdf(1), '   ')
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.watermarkPdf(invalidPdf, 'COPY')).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
     describe('F-21 / F-22: Encrypt + Decrypt', () => {
       it('should encrypt a PDF and round-trip it back with decrypt', async () => {
         const original = await createTestPdf(2, 'Secret');

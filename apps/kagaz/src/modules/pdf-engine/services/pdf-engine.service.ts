@@ -284,6 +284,22 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     );
   }
 
+  async watermarkPdf(
+    pdf: Uint8Array,
+    text: string,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'watermarkPdf',
+      { pdf: clonedPdf, text },
+      [clonedPdf.buffer],
+      onProgress
+    );
+  }
+
   async pdfToImages(
     pdf: Uint8Array,
     options: RenderOptions,

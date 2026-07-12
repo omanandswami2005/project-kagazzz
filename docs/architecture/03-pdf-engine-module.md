@@ -161,6 +161,8 @@ interface PdfEngineService {
   mergePdfs(pdfs: Uint8Array[]): Promise<Uint8Array>;
   /** Split a PDF into multiple documents by page ranges */
   splitPdf(pdf: Uint8Array, ranges: PageRange[]): Promise<Uint8Array[]>;
+  /** Stamp a diagonal text watermark across every page (F-62) */
+  watermarkPdf(pdf: Uint8Array, text: string): Promise<Uint8Array>;
   /** Rotate a specific page */
   rotatePage(pdf: Uint8Array, pageIndex: number, degrees: RotationDegrees): Promise<Uint8Array>;
   /** Delete a specific page */

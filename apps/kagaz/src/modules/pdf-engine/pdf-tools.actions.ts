@@ -21,6 +21,7 @@ const opSchema = z.enum([
   'compress',
   'pdfToImages',
   'imagesToPdf',
+  'watermark',
   'encrypt',
   'decrypt',
   'fillForm',
@@ -31,13 +32,14 @@ export const toolsActions = {
   openPdfTools: defineAction({
     id: 'tools.openPdfTools',
     summary:
-      'Open the PDF Tools hub to merge, split, compress, convert PDFs and images, password-protect/unlock a PDF, or fill a PDF form.',
+      'Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.',
     voice: [
       'open pdf tools',
       'merge pdfs',
       'split a pdf',
       'compress a pdf',
       'convert pdf to images',
+      'watermark a pdf',
       'password protect a pdf',
       'unlock a pdf',
       'fill a pdf form',

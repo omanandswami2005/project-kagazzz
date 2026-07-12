@@ -9,7 +9,8 @@
     "imagesToPdf": "चित्र → PDF",
     "encrypt": "पासवर्ड सुरक्षा",
     "decrypt": "पासवर्ड हटाएँ",
-    "fillForm": "फ़ॉर्म भरें"
+    "fillForm": "फ़ॉर्म भरें",
+    "watermark": "वॉटरमार्क"
   },
   "desc": {
     "merge": "कई PDF को एक में मिलाएँ",
@@ -19,7 +20,8 @@
     "imagesToPdf": "चित्रों को एक PDF में मिलाएँ",
     "encrypt": "PDF को पासवर्ड से लॉक करें",
     "decrypt": "पासवर्ड-सुरक्षित PDF अनलॉक करें",
-    "fillForm": "PDF फ़ॉर्म भरें"
+    "fillForm": "PDF फ़ॉर्म भरें",
+    "watermark": "हर पृष्ठ पर \"COPY\" जैसा पाठ मुद्रित करें"
   },
   "pick": {
     "pdf_single": "एक PDF चुनें",
@@ -40,7 +42,10 @@
     "password": "पासवर्ड",
     "password_hint": "फ़ाइल बाद में खोलने के लिए यह ज़रूरी है — Kagaz इसे वापस नहीं ला सकता।",
     "fields_none": "इस PDF में कोई भरने योग्य फ़ील्ड नहीं है।",
-    "fields_loading": "फ़ॉर्म फ़ील्ड पढ़े जा रहे हैं…"
+    "fields_loading": "फ़ॉर्म फ़ील्ड पढ़े जा रहे हैं…",
+    "watermark_text": "वॉटरमार्क पाठ",
+    "watermark_placeholder": "COPY",
+    "watermark_hint": "हर पृष्ठ पर तिरछा मुद्रित।"
   },
   "run": "चलाएँ",
   "running": "काम चल रहा है…",
@@ -54,6 +59,7 @@
     "need_two": "कम से कम 2 फ़ाइलें चुनें।",
     "need_one": "एक फ़ाइल चुनें।",
     "bad_ranges": "मान्य पेज सीमाएँ दर्ज करें, जैसे 1-3, 5।",
-    "need_password": "पासवर्ड दर्ज करें।"
+    "need_password": "पासवर्ड दर्ज करें।",
+    "need_watermark": "वॉटरमार्क पाठ दर्ज करें।"
   }
 }
