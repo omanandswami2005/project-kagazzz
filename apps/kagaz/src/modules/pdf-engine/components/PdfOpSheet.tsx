@@ -62,6 +62,7 @@ export function PdfOpSheet({
   const [quality, setQuality] = useState<CompressionLevel>('medium');
   const [format, setFormat] = useState<'png' | 'jpeg'>('png');
   const [password, setPassword] = useState('');
+  const [watermarkText, setWatermarkText] = useState('');
   const [fields, setFields] = useState<FormField[] | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [localError, setLocalError] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export function PdfOpSheet({
     setQuality('medium');
     setFormat('png');
     setPassword('');
+    setWatermarkText('');
     setFields(null);
     setFieldValues({});
     setLocalError(null);
@@ -162,6 +164,13 @@ export function PdfOpSheet({
         }
         if (op === 'compress') {
           return engine.compressPdf(doc, quality);
+        }
+        if (op === 'watermark') {
+          if (!watermarkText.trim()) {
+            setLocalError(t('errors.need_watermark'));
+            return 0;
+          }
+          return engine.watermarkPdf(doc, watermarkText);
         }
         if (op === 'pdfToImages') {
           return engine.pdfToImages(doc, { format });
@@ -320,6 +329,18 @@ export function PdfOpSheet({
             </Button>
           ))}
         </div>
+      );
+    }
+    if (op === 'watermark') {
+      return (
+        <Input
+          label={t('params.watermark_text')}
+          placeholder={t('params.watermark_placeholder')}
+          helperText={t('params.watermark_hint')}
+          value={watermarkText}
+          onChange={setWatermarkText}
+          agentId="pdf-tools.op-sheet.watermark-text"
+        />
       );
     }
     if (op === 'encrypt' || op === 'decrypt') {

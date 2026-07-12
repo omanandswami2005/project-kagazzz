@@ -65,6 +65,7 @@ export interface UsePdfEngineResult {
   reset: () => void;
   mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
   splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
+  watermarkPdf: (doc: DocumentEntity, text: string) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
@@ -184,6 +185,21 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const watermarkPdf = useCallback(
+    (doc: DocumentEntity, text: string): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const out = await engine.watermarkPdf(await readBytes(doc), text, onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_watermarked.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const compressPdf = useCallback(
     (doc: DocumentEntity, quality: CompressionLevel): Promise<number> =>
       run(async (engine, onProgress) => {
@@ -290,6 +306,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     reset,
     mergePdfs,
     splitPdf,
+    watermarkPdf,
     compressPdf,
     imagesToPdf,
     pdfToImages,

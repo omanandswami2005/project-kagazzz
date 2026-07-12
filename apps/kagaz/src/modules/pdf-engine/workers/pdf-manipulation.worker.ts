@@ -1,5 +1,10 @@
 import { createWorkerLogger } from '@/core/logging/worker-relay';
-import { imagesToPdfImpl, mergePdfsImpl, splitPdfImpl } from '../services/pdf-ops';
+import {
+  imagesToPdfImpl,
+  mergePdfsImpl,
+  splitPdfImpl,
+  watermarkPdfImpl,
+} from '../services/pdf-ops';
 import { decryptPdfImpl, encryptPdfImpl } from '../services/pdf-security-ops';
 import { fillFormImpl, getFormFieldsImpl } from '../services/pdf-forms-ops';
 import {
@@ -103,6 +108,11 @@ async function run(
     case 'imagesToPdf': {
       const { images } = payload as { images: ImageInput[] };
       const result = await imagesToPdfImpl(images, emit);
+      return { data: result, transfer: [result.buffer] };
+    }
+    case 'watermarkPdf': {
+      const { pdf, text } = payload as { pdf: Uint8Array; text: string };
+      const result = await watermarkPdfImpl(pdf, text, emit);
       return { data: result, transfer: [result.buffer] };
     }
     case 'encryptPdf': {

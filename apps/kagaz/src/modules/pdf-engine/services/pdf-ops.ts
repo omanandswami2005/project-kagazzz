@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import {
   type ImageInput,
   type PageRange,
@@ -207,6 +207,51 @@ export async function imagesToPdfImpl(
       operation: op,
       percent: Math.round(((i + 1) / images.length) * 100),
       message: `Added image ${i + 1} of ${images.length}`,
+    });
+  }
+
+  return doc.save();
+}
+
+/**
+ * Stamps a diagonal text watermark (e.g. "COPY", "CONFIDENTIAL") across the
+ * centre of every page (F-62). Semi-transparent grey so the underlying content
+ * stays readable. pdf-lib only, offline.
+ */
+export async function watermarkPdfImpl(
+  pdf: Uint8Array,
+  text: string,
+  onProgress?: ProgressCallback
+): Promise<Uint8Array> {
+  const op = 'watermarkPdf';
+  const label = text.trim();
+  if (!label) {
+    throw new PdfEngineException('Watermark text is empty', 'UNSUPPORTED_FORMAT', op);
+  }
+  const doc = await loadAndValidatePdf(pdf, op);
+  const font = await doc.embedFont(StandardFonts.HelveticaBold);
+  const pages = doc.getPages();
+
+  for (let i = 0; i < pages.length; i++) {
+    const page = pages[i];
+    const { width, height } = page.getSize();
+    // Size the mark to the page so it spans the diagonal without overflowing.
+    const size = Math.max(24, Math.min(width, height) / (label.length * 0.6 + 2));
+    const textWidth = font.widthOfTextAtSize(label, size);
+    page.drawText(label, {
+      x: width / 2 - (textWidth / 2) * Math.SQRT1_2,
+      y: height / 2 - (textWidth / 2) * Math.SQRT1_2,
+      size,
+      font,
+      color: rgb(0.5, 0.5, 0.5),
+      rotate: degrees(45),
+      opacity: 0.25,
+    });
+    onProgress?.({
+      operationId: 'watermark',
+      operation: op,
+      percent: Math.round(((i + 1) / pages.length) * 100),
+      message: `Stamped page ${i + 1} of ${pages.length}`,
     });
   }
 
