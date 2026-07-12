@@ -20,6 +20,10 @@ export interface UseVaultMutationsResult {
   setLocked: (document: DocumentEntity, locked: boolean) => Promise<void>;
   /** Records that a document was opened, for the Recent list (F-32). */
   markAccessed: (document: DocumentEntity) => Promise<void>;
+  /** Soft-deletes one document to Trash (UX-1); removed from the list. */
+  softDelete: (document: DocumentEntity) => Promise<void>;
+  /** Restores a soft-deleted document (UX-1 Undo); re-added to the list. */
+  restore: (document: DocumentEntity) => Promise<void>;
 }
 
 /** Wires per-document mutations to the DAO + store. */
@@ -102,5 +106,48 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite, setLocked, markAccessed };
+  const softDelete = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      // Optimistic: drop from the list now (Trash is the safety net + Undo).
+      useVaultStore.getState().removeDocument(document.id);
+      try {
+        await dao.softDelete(document.id);
+        logger.info({ event: 'vault.delete', documentId: document.id });
+      } catch (error) {
+        useVaultStore.getState().prependDocuments([document]);
+        logger.error({
+          event: 'vault.delete.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  const restore = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      useVaultStore.getState().prependDocuments([document]);
+      try {
+        await dao.restore(document.id);
+        logger.info({ event: 'vault.restore', documentId: document.id });
+      } catch (error) {
+        useVaultStore.getState().removeDocument(document.id);
+        logger.error({
+          event: 'vault.restore.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  return { toggleFavorite, setLocked, markAccessed, softDelete, restore };
 }
