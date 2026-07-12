@@ -110,6 +110,23 @@
 - [x] F-22 PDF Decryption 🟡Should `[SEC]` (never log/store passwords) ✅ (develop) (2026-07-09) — `decryptPdf` (@pdfsmaller/pdf-decrypt); wrong password → WRONG_PASSWORD, non-encrypted → INVALID_PDF; contract-tested. **Device-verified** on Medium_Phone (API 37) 2026-07-09, **text-first** via [scripts/device-e2e/cdp.mjs](scripts/device-e2e/cdp.mjs): correct password → kagaz-A_locked (2.8 KB) → **kagaz-A_locked_unlocked (2.7 KB)** via `decryptPdf`→`worker.request.success`; **wrong password correctly rejected** (worker logs "Incorrect password", no output). **UX finding — found & fixed this pass (b4f283d):** wrong password had shown a generic *"Something went wrong."* toast; the engine detected it but `usePdfEngine` dropped the `WRONG_PASSWORD` code. Now threaded through (`errorCode` + `pdfErrorMessageKey`) → re-verified on-device: wrong password shows **"Incorrect password. Check it and try again."** Hindi deferred to F-17.
 - [x] F-28 PDF Form Filling 🔵Could ✅ (agent:claude · develop · 2026-07-09) — `getFormFields`/`fillForm` (pdf-lib forms; text/checkbox/dropdown/radio; flattens on fill); PDF Tools renders a field per input. Contract-tested. **Device-verified** (Medium_Phone API 37, text-first via cdp.mjs): selecting a non-form PDF → `getFormFields`→`worker.request.success` → correct empty-state *"This PDF has no fillable fields."* ⚠️ The fill+flatten **happy path** needs an AcroForm PDF in the vault (native file picker, unreliable on this AVD) — deferred to **G1-10** (real hardware); the logic is contract-tested.
 
+### PDF Power Tools (V1) — the most-requested extras · design research in this session; libs governed by [ADR-020](docs/architecture/08-tech-stack-decisions.md)
+
+> **Tier 1 — `pdf-lib` only (no new dependency)**, fit the existing PDF Tools op pattern (card → op sheet → run → save):
+
+- [ ] F-60 **Organize pages** — reorder / rotate / delete individual pages 🟡Should — `pdf-lib` `copyPages`/`removePage`/`setRotation`; a page-thumbnail grid UI (reuse `pdfToImagesImpl` for previews) with drag-reorder + per-page rotate/delete. Highest-value; complements the UX-6 viewer. `feature/f60-organize-pages`
+- [ ] F-61 **Add page numbers** 🔵Could — `pdf-lib` `drawText` loop (position/format options). Single-shot op, fits `PdfOpSheet`. `feature/f61-page-numbers`
+- [ ] F-62 **Watermark / stamp** (text, e.g. "COPY"/"CONFIDENTIAL") 🔵Could — `pdf-lib` rotated `drawText` on every page; text input via `PdfOpSheet`. Gov-doc use case. `feature/f62-watermark`
+- [ ] F-63 **Signature / image stamp** onto a PDF 🟡Should — `pdf-lib` `drawImage` (place a signature/photo on a chosen page). Huge for India forms. Needs an image + placement UI. `feature/f63-image-stamp`
+- [ ] F-64 **Edit PDF metadata** (title/author/subject/keywords) 🔵Could — `pdf-lib` `setTitle`/`setAuthor`/… ; a small form. Cleanup before sharing. `feature/f64-pdf-metadata`
+- [ ] F-65 **Export PDF → text / Markdown** 🔵Could — reuse UX-13 `extractPdfTextImpl` (pdfjs text layer) → save a `.txt`/`.md` into the vault. Near-free given UX-13. `feature/f65-pdf-to-text`
+
+> **Tier 2 — new pure-JS permissive libs** ([ADR-020](docs/architecture/08-tech-stack-decisions.md): `docx` MIT, SheetJS `xlsx` Apache-2.0, `mammoth` BSD-2), **lazy-loaded per tool**. Conversions are **text/table-first, not layout-faithful** (explicit in-UI disclaimer); faithful conversion is out of V1 scope (needs LibreOffice-WASM → V2 server).
+
+- [ ] F-66 **PDF → Word (.docx)** 🟡Should — pdfjs text layer (`extractPdfTextImpl`) → generate an **editable** `.docx` via `docx`. Ships with a "text extracted, layout may differ" note. `[SEC]` output = vault document. `feature/f66-pdf-to-word`
+- [ ] F-67 **PDF → Excel / CSV** 🔵Could — extract PDF form-field values / detected rows → `.xlsx`/`.csv` via SheetJS; also enables spreadsheet **import** → PDF later. `feature/f67-pdf-to-excel`
+- [ ] F-68 **Open / view Word (.docx)** in the vault 🔵Could — `mammoth` `.docx`→clean HTML rendered in the viewer (UX-6); print-to-PDF path. Lets `.docx` files be first-class vault items. `feature/f68-open-word`
+
 ### Image Engine module — [docs/architecture/04-image-engine-module.md](docs/architecture/04-image-engine-module.md)
 
 - [x] F-8 Image Format Conversion (JPG/PNG/WEBP, HEIC in) 🔴Must ✅ 0ab5fb2 (2026-06-12) — native Canvas conversion (JPEG/PNG/WebP) + magic-byte format detector + getImageInfo, zero runtime deps. HEIC decode NOT bundled: every JS decoder is LGPL-3.0 (forbidden) → OS decodes HEIC natively at camera capture; imported .heic stored as-is until a native decoder lands (ADR-016). Worker offload + advanced ops (resize/filters) land with F-29
