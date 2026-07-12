@@ -239,7 +239,7 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
-    describe('F-62: Watermark', () => {
+    describe('F-37: Watermark', () => {
       it('should stamp every page and keep the page count', async () => {
         const original = await createTestPdf(3);
         const result = await engine.watermarkPdf(original, 'COPY');
