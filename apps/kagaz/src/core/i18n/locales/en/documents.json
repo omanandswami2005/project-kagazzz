@@ -91,6 +91,12 @@
     "ascending": "Sort ascending",
     "descending": "Sort descending"
   },
+  "view": {
+    "label": "View",
+    "list": "List view",
+    "grid": "Grid view",
+    "compact": "Compact view"
+  },
   "recent": {
     "title": "Recent"
   },

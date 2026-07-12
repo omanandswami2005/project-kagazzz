@@ -421,6 +421,103 @@
   gap: var(--space-2);
 }
 
+/* ── UX-7: view modes ─────────────────────────────────────────────────────
+   The layout is chosen by a container-class modifier on the <ul>, so the row
+   markup (DocumentListItem) is identical in every mode — only CSS changes. */
+
+/* The List/Grid/Compact segment in the controls bar. */
+.kg-vault__view-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  flex: 0 0 auto;
+}
+
+.kg-vault__view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.kg-vault__view-btn--active {
+  background: var(--surface-1);
+  box-shadow: var(--shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
+}
+
+/* Grid: cards in an auto-filling grid; the thumbnail fills the card width and
+   the star/overflow actions move to the top-right corner. */
+.kg-vault__list--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-3);
+}
+
+.kg-vault__list--grid .kg-doc-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  height: 100%;
+  /* Reset the row's reserved right gutter — actions overlay the corner now. */
+  padding: var(--space-2);
+}
+
+.kg-vault__list--grid .kg-doc-item__icon,
+.kg-vault__list--grid .kg-doc-item__thumb,
+.kg-vault__list--grid .kg-doc-item__locked {
+  width: 100%;
+  height: 96px;
+}
+
+.kg-vault__list--grid .kg-doc-item__icon {
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.kg-vault__list--grid .kg-doc-item__actions {
+  top: var(--space-1);
+  right: var(--space-1);
+  transform: none;
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+  border-radius: var(--radius-pill, 999px);
+}
+
+/* Grid cards stay clean — tags collapse away, meta stays as a single line. */
+.kg-vault__list--grid .kg-doc-item__tags {
+  display: none;
+}
+
+/* Compact: a dense name list — smaller thumbnail, no meta/tags, tight rows. */
+.kg-vault__list--compact {
+  gap: var(--space-1);
+}
+
+.kg-vault__list--compact .kg-doc-item {
+  padding-block: var(--space-2);
+}
+
+.kg-vault__list--compact .kg-doc-item__icon,
+.kg-vault__list--compact .kg-doc-item__thumb,
+.kg-vault__list--compact .kg-doc-item__locked {
+  width: 28px;
+  height: 28px;
+}
+
+.kg-vault__list--compact .kg-doc-item__meta,
+.kg-vault__list--compact .kg-doc-item__tags {
+  display: none;
+}
+
 .kg-doc-item {
   display: flex;
   align-items: center;
