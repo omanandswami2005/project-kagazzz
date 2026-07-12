@@ -119,9 +119,6 @@ export function VaultHomePage(): ReactNode {
   const openSheet = useVaultStore((state) => state.openUploadSheet);
   const closeSheet = useVaultStore((state) => state.closeUploadSheet);
   const [uploadedCount, setUploadedCount] = useState(0);
-  // Stopgap until F-24 ships document preview/detail: tapping a row tells
-  // the user the feature is coming rather than appearing dead.
-  const [showPreviewToast, setShowPreviewToast] = useState(false);
   // Shown when opening a locked document is declined at the biometric prompt.
   const [showLockedToast, setShowLockedToast] = useState(false);
 
@@ -162,17 +159,17 @@ export function VaultHomePage(): ReactNode {
     return (): void => document.removeEventListener('ionBackButton', onBack);
   }, []);
 
-  // Opening a document records recency (F-32) and, until F-24 ships the
-  // detail view, surfaces the "preview coming soon" stopgap.
+  // Opening a document records recency (F-32) and navigates to the viewer
+  // (UX-6). [SEC] §3.1: authorize a locked document here — the entry point —
+  // before navigating; the viewer trusts that gate.
   const handleOpen = (document: DocumentEntity): void => {
-    // [SEC] §3.1: a locked document needs a biometric prompt before it opens.
     void authorizeView(document).then((allowed) => {
       if (!allowed) {
         setShowLockedToast(true);
         return;
       }
       void markAccessed(document);
-      setShowPreviewToast(true);
+      router.push(`/doc/${document.id}`);
     });
   };
 
@@ -498,13 +495,6 @@ export function VaultHomePage(): ReactNode {
           message={lastUploadErrors.map((key) => t(key)).join('\n')}
           onDidDismiss={() => useVaultStore.getState().finishUpload([])}
           data-agent-id="vault.home.upload-error-toast"
-        />
-        <IonToast
-          isOpen={showPreviewToast}
-          duration={2000}
-          message={t('preview.coming_soon')}
-          onDidDismiss={() => setShowPreviewToast(false)}
-          data-agent-id="vault.home.preview-toast"
         />
         <IonToast
           isOpen={ocrMsg !== null}

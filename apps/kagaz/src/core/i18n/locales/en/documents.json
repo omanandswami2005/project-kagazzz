@@ -65,8 +65,13 @@
   "banner": {
     "db_unavailable": "Secure storage could not start. Restart the app — if this keeps happening, reinstall."
   },
-  "preview": {
-    "coming_soon": "Document preview is coming soon"
+  "viewer": {
+    "error": "Couldn't open this document",
+    "page": "Page {{n}}",
+    "extracted_text": "Extracted text",
+    "copy": "Copy text",
+    "copied": "Text copied",
+    "no_text": "No text extracted. Extraction works on images and scans."
   },
   "detail": {
     "size": "Size",
