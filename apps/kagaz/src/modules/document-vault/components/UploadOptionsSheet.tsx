@@ -45,8 +45,8 @@ export function UploadOptionsSheet({
     <IonModal
       isOpen={isOpen}
       onDidDismiss={onDismiss}
-      initialBreakpoint={0.35}
-      breakpoints={[0, 0.35]}
+      initialBreakpoint={0.6}
+      breakpoints={[0, 0.6, 0.9]}
       data-agent-id="vault.home.upload-sheet"
       data-agent-state={isOpen ? 'expanded' : 'collapsed'}
       aria-label={t('upload.sheet_title')}

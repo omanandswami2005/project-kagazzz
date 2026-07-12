@@ -111,9 +111,13 @@ export function DocumentListItem({
         </span>
         {tags.length > 0 && (
           <span className="kg-doc-item__tags">
-            {tags.map((tag) => (
+            {/* UX-2: at most 2 chips on one line; the rest collapse to "+N". */}
+            {tags.slice(0, 2).map((tag) => (
               <Tag key={tag.id} label={tag.name} color={tag.color ?? undefined} />
             ))}
+            {tags.length > 2 && (
+              <span className="kg-doc-item__tag-more">+{tags.length - 2}</span>
+            )}
           </span>
         )}
       </span>
