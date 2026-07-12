@@ -23,24 +23,41 @@
 }
 
 .kg-vault__search {
-  --background: var(--surface-2);
   --color: var(--text-primary);
   --placeholder-color: var(--text-muted);
   padding-inline: 0;
-  margin-block: var(--space-2);
+  margin-block: 0;
 }
 
-/* F-15: searchbar + hold-to-speak mic on one row; the permission hint wraps
-   onto its own line beneath (flex-wrap). */
+/* UX-3: the searchbar + hold-to-speak mic read as ONE field — a shared rounded
+   container holds the (transparent) searchbar with the mic inline at the end.
+   The permission hint wraps onto its own line beneath (flex-wrap). */
 .kg-vault__search-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  margin-block: var(--space-2);
+  padding-inline-end: var(--space-2);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
 }
 
 .kg-vault__search-row .kg-vault__search {
   flex: 1 1 auto;
+  --background: transparent;
+  --box-shadow: none;
+  min-width: 0;
+}
+
+/* The mic sits inline at the trailing end of the field. */
+.kg-vault__search-row .kg-mic {
+  flex: 0 0 auto;
+}
+
+/* Full-width so the wrapped permission hint spans the row under the field. */
+.kg-vault__search-row .kg-mic__hint {
+  flex: 1 1 100%;
 }
 
 .kg-vault__no-results {
