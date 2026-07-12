@@ -139,6 +139,24 @@
 - [x] F-27 Onboarding Tutorial 🟡Should `[A11Y]` (8th-grade reading level) ✅ 07ea2cb (2026-07-10) — dependency-free 4-slide first-launch walkthrough (`app/onboarding/OnboardingGate` + `useOnboarding`): Welcome → privacy/offline → scan/organize → lock/backup, 8th-grade copy, en/hi; Skip/Back/Next/Get-Started; `role=dialog` + aria-modal + progress dots `[A11Y]`; persisted to `kagaz:onboarding-seen` (outside the DB, like theme/lock). Mounted in App.tsx. Unit-tested (9) + **device-verified** on Medium_Phone (API 37): shows on first launch (slide-1 "Welcome to Kagaz"), advances slide-1→4, Get-Started dismisses → vault shown, and **persists across restart** (not shown again).
 - [x] F-19 Offline-First Architecture (verify: airplane-mode test of every feature) 🔴Must `[SEC]` §3.5 ✅ (develop) (2026-07-09) — **audited all 7 §3.5 measures + airplane-mode device test.** Audit clean: no HTTP/analytics/crash/push deps (grep of package.json); the only `fetch()` in `src` is `upload-sources.ts` reading a local `blob:`/`capacitor:` URL (no network); zero external `http(s)` URLs in src; **CSP `connect-src 'self'`** (index.html) blocks all outbound; no CDN refs in the built bundle. ⚠️ **Corrected 2026-07-11:** the original "release manifest requests no INTERNET" claim was **wrong** — building the release APK (`aapt dump permissions`) shows `INTERNET`+`ACCESS_NETWORK_STATE`, merged transitively by the Play-Services ML Kit scanner (ADR-018). **Accepted + documented** ([10-security §3.5](docs/architecture/10-security-architecture.md)): the app makes no network calls of its own; the permission serves only the Play-Services scanner model download. The airplane-mode audit holds for everything except the first-run scanner. **Device-verified** on Medium_Phone (API 37) in **airplane mode**, text-first via [scripts/device-e2e/cdp.mjs](scripts/device-e2e/cdp.mjs): app cold-starts, vault + thumbnails load, PDF Tools opens with the merge picker listing docs, theme switches — all identical to online, no network errors in logcat. Verification only — no code change needed (the offline guarantee is already architecturally enforced since P0-3/P0-10).
 
+### V1 UX Polish & Redesign (real-device feedback 2026-07-12) — plan: [v1-ux-polish-plan.md](docs/design-system/v1-ux-polish-plan.md)
+
+> One branch + Conventional Commit per item (per `CONTRIBUTING.md`/`AGENT.md`). Design decisions live in the plan doc; check off here as each ships (device-verified where it has runtime surface).
+
+- [ ] UX-1 Individual **Delete** in the ⋮ item menu → soft-delete to Trash (F-57) + Undo toast `feature/ux1-item-delete`
+- [ ] UX-2 **Tag chips** blow up row height — cap to one line, 2 chips + "+N" `bugfix/ux2-tag-chip-height`
+- [ ] UX-3 **Mic inline** in the search bar (end-slot), not a sibling row `bugfix/ux3-mic-inline`
+- [ ] UX-4 **Upload sheet** clips "Browse files" on short screens — fit-content breakpoints + safe-area `bugfix/ux4-upload-sheet`
+- [ ] UX-5 **List row** decluttered/redesigned (two-line hierarchy, muted metadata) `feature/ux5-list-row-redesign`
+- [ ] UX-6 **Document viewer** `/doc/:id` (image + PDF) — the missing preview; includes the OCR/extracted-text panel `[SEC]` (respects per-doc lock) `feature/ux6-document-viewer`
+- [ ] UX-7 **View modes** (list / grid / compact), user-selectable + persisted `feature/ux7-view-modes`
+- [ ] UX-8 **Rename prompt** after scan/add (pre-filled default) + Settings toggle to disable `feature/ux8-rename-on-add`
+- [ ] UX-9 **OCR result visibility** (folded into UX-6) + image-only clarity
+- [ ] UX-10 **PDF merge** slow after 100% — profile (thumbnail regen / buffer transfer / save) + fix `bugfix/ux10-merge-perf` `[PERF]`
+- [ ] UX-11 **PDF compress** slow for 1-page — profile (warm pdfjs worker / render DPI) + fix `bugfix/ux11-compress-perf` `[PERF]`
+- [ ] UX-12 **Design-system pass** (density, hierarchy, tokens) threaded through UX-5/6/7 `feature/ux12-design-pass`
+- [ ] UX-13 **Text extraction for all docs** — PDFs with a text layer via pdfjs `getTextContent` (fast, no OCR), image/scanned via ML Kit OCR (UX-9); store in `documents.ocr_text` → **feeds FTS search now, WebLLM/AI later** `[SEC]` (encrypted DB only) `feature/ux13-doc-text-extraction`
+
 ### V1 Release Gate (all must pass before store submission)
 
 - [ ] G1-1 All 🔴 Must features (F-1…F-19, **except F-13 + F-14 which moved to [V1.5](#v15--on-device-ai-webllm--needs-a-one-time-model-download)**) checked above
