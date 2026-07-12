@@ -35,6 +35,14 @@ export interface PdfRunState {
   /** 0–100. */
   percent: number;
   message: string;
+  /**
+   * True while saving the finished output back into the vault (UX-10/11): the
+   * worker has hit 100% but the result is still being thumbnailed + written +
+   * indexed. The merged/compressed PDF's thumbnail is the first pdfjs use, so
+   * this "finalizing" step can take a moment — surfacing it stops the progress
+   * bar from sitting at a silent 100%.
+   */
+  saving: boolean;
   /** Raw error message (diagnostics), or null. */
   error: string | null;
   /** Machine-readable code so the UI can show a specific message, or null. */
@@ -45,6 +53,7 @@ const IDLE: PdfRunState = {
   busy: false,
   percent: 0,
   message: '',
+  saving: false,
   error: null,
   errorCode: null,
 };
@@ -104,6 +113,9 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const save = useCallback(
     async (files: IncomingFile[]): Promise<number> => {
+      // UX-10/11: the worker is done (100%); the save/thumbnail/index step now
+      // runs. Flag it so the UI shows "Finalizing…" instead of a frozen 100%.
+      setState((s) => ({ ...s, percent: 100, saving: true }));
       const { uploaded } = await ingestFiles(files);
       return uploaded;
     },
@@ -126,13 +138,19 @@ export function usePdfEngine(): UsePdfEngineResult {
         const count = await op(engine, (e) =>
           setState((s) => ({ ...s, percent: e.percent, message: e.message }))
         );
-        setState((s) => ({ ...s, busy: false, percent: 100 }));
+        setState((s) => ({ ...s, busy: false, saving: false, percent: 100 }));
         return count;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         const { code } = pdfErrorInfoOf(err);
         logger.error({ event: 'pdf.tool.failed', code, err: { message } });
-        setState((s) => ({ ...s, busy: false, error: message, errorCode: code }));
+        setState((s) => ({
+          ...s,
+          busy: false,
+          saving: false,
+          error: message,
+          errorCode: code,
+        }));
         return 0;
       }
     },

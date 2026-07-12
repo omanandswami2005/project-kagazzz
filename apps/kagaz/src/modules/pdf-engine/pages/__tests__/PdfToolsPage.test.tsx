@@ -10,7 +10,7 @@ vi.mock('@/modules/document-vault/hooks/useDocuments', () => ({
 
 vi.mock('../../hooks/usePdfEngine', () => ({
   usePdfEngine: () => ({
-    state: { busy: false, percent: 0, message: '', error: null, errorCode: null },
+    state: { busy: false, percent: 0, message: '', saving: false, error: null, errorCode: null },
     reset: vi.fn(),
     mergePdfs: vi.fn(),
     splitPdf: vi.fn(),

@@ -44,6 +44,7 @@
   },
   "run": "Run",
   "running": "Working…",
+  "finalizing": "Finalizing — saving to your vault…",
   "saved_one": "Saved 1 file to your vault",
   "saved_other": "Saved {{count}} files to your vault",
   "errors": {
