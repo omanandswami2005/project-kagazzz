@@ -2,9 +2,10 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
-const { softDeleteDao, restoreDao } = vi.hoisted(() => ({
+const { softDeleteDao, restoreDao, updateDao } = vi.hoisted(() => ({
   softDeleteDao: vi.fn(),
   restoreDao: vi.fn(),
+  updateDao: vi.fn(),
 }));
 
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: () => ({ db: {} }) }));
@@ -12,7 +13,7 @@ vi.mock('@/infrastructure/database/dao', () => ({
   DocumentDao: class {
     softDelete = softDeleteDao;
     restore = restoreDao;
-    update = vi.fn();
+    update = updateDao;
     touchLastAccessed = vi.fn();
   },
 }));
@@ -27,7 +28,30 @@ beforeEach(() => {
   vi.clearAllMocks();
   softDeleteDao.mockResolvedValue(1);
   restoreDao.mockResolvedValue(1);
+  updateDao.mockResolvedValue(1);
   useVaultStore.getState().setDocuments([doc('a'), doc('b')]);
+});
+
+describe('useVaultMutations rename (UX-8)', () => {
+  it('persists the new name and reflects it in the list', async () => {
+    const { result } = renderHook(() => useVaultMutations());
+    await act(async () => {
+      await result.current.rename(doc('a'), '  Aadhaar Card ');
+    });
+    expect(updateDao).toHaveBeenCalledWith('a', { name: 'Aadhaar Card' });
+    expect(
+      useVaultStore.getState().documents.find((d) => d.id === 'a')?.name
+    ).toBe('Aadhaar Card');
+  });
+
+  it('ignores an empty or unchanged name', async () => {
+    const { result } = renderHook(() => useVaultMutations());
+    await act(async () => {
+      await result.current.rename(doc('a'), '   ');
+      await result.current.rename(doc('a'), 'a');
+    });
+    expect(updateDao).not.toHaveBeenCalled();
+  });
 });
 
 describe('useVaultMutations softDelete/restore (UX-1)', () => {

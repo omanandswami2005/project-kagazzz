@@ -16,6 +16,11 @@
     "density_comfortable": "Comfortable",
     "density_compact": "Compact"
   },
+  "documents": {
+    "title": "Documents",
+    "rename_on_add": "Ask to rename after adding",
+    "rename_on_add_hint": "Show a name prompt right after you scan or add a document. Turn off to keep the default name."
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",

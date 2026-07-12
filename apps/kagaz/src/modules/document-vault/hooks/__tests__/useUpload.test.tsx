@@ -48,7 +48,7 @@ describe('useUpload', () => {
     useDatabaseMock.mockReturnValue({ status: 'error', db: null });
     const { result } = renderHook(() => useUpload());
     expect(result.current.isReady).toBe(false);
-    await expect(result.current.uploadFrom('files')).resolves.toEqual({
+    await expect(result.current.uploadFrom('files')).resolves.toMatchObject({
       uploaded: 0,
     });
   });
@@ -65,7 +65,7 @@ describe('useUpload', () => {
     expect(result.current.isReady).toBe(true);
 
     await act(async () => {
-      await expect(result.current.uploadFrom('files')).resolves.toEqual({
+      await expect(result.current.uploadFrom('files')).resolves.toMatchObject({
         uploaded: 1,
       });
     });
@@ -113,7 +113,7 @@ describe('useUpload', () => {
 
     const { result } = renderHook(() => useUpload());
     await act(async () => {
-      await expect(result.current.uploadFrom('files')).resolves.toEqual({
+      await expect(result.current.uploadFrom('files')).resolves.toMatchObject({
         uploaded: 0,
       });
     });
@@ -130,7 +130,7 @@ describe('useUpload', () => {
 
     const { result } = renderHook(() => useUpload());
     await act(async () => {
-      await expect(result.current.uploadFrom('camera')).resolves.toEqual({
+      await expect(result.current.uploadFrom('camera')).resolves.toMatchObject({
         uploaded: 0,
       });
     });
