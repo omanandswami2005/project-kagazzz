@@ -451,7 +451,7 @@
 
 .kg-vault__view-btn--active {
   background: var(--surface-1);
-  box-shadow: var(--shadow-xs, 0 1px 2px rgb(0 0 0 / 0.08));
+  box-shadow: var(--shadow-xs);
 }
 
 /* Grid: cards in an auto-filling grid; the thumbnail fills the card width and
@@ -489,7 +489,7 @@
   right: var(--space-1);
   transform: none;
   background: color-mix(in srgb, var(--surface-1) 78%, transparent);
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-full);
 }
 
 /* Grid cards stay clean — tags collapse away, meta stays as a single line. */
