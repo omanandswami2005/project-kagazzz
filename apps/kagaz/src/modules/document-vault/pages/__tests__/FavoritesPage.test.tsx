@@ -50,6 +50,7 @@ beforeEach(() => {
     toggleFavorite: vi.fn().mockResolvedValue(undefined),
     setLocked: vi.fn().mockResolvedValue(undefined),
     markAccessed: vi.fn().mockResolvedValue(undefined),
+    rename: vi.fn().mockResolvedValue(undefined),
     softDelete: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
   });

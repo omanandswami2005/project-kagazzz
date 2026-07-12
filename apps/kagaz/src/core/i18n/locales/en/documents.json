@@ -97,6 +97,12 @@
     "grid": "Grid view",
     "compact": "Compact view"
   },
+  "rename": {
+    "title": "Name this document",
+    "label": "Document name",
+    "save": "Save",
+    "skip": "Keep default"
+  },
   "recent": {
     "title": "Recent"
   },

@@ -6,6 +6,7 @@
  */
 import {
   IonActionSheet,
+  IonAlert,
   IonButtons,
   IonContent,
   IonHeader,
@@ -54,6 +55,7 @@ import {
 } from '../services/filter.service';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
+import { usePreferencesStore } from '@/core/preferences';
 import type { UploadSource } from '../services/upload-sources';
 import './vault.css';
 
@@ -64,7 +66,10 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
-  const { toggleFavorite, markAccessed, softDelete, restore } = useVaultMutations();
+  const { toggleFavorite, markAccessed, rename, softDelete, restore } =
+    useVaultMutations();
+  // UX-8: prompt to rename each just-added document (unless disabled in Settings).
+  const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
@@ -124,10 +129,17 @@ export function VaultHomePage(): ReactNode {
   const [uploadedCount, setUploadedCount] = useState(0);
   // Shown when opening a locked document is declined at the biometric prompt.
   const [showLockedToast, setShowLockedToast] = useState(false);
+  // UX-8: documents awaiting a rename prompt, oldest first (one alert at a time).
+  const [renameQueue, setRenameQueue] = useState<DocumentEntity[]>([]);
+  const renameTarget = renameQueue[0] ?? null;
 
   const handleSelectSource = (source: UploadSource): void => {
-    void uploadFrom(source).then(({ uploaded }) => {
+    void uploadFrom(source).then(({ uploaded, documents }) => {
       setUploadedCount(uploaded);
+      // UX-8: queue the new docs for a name prompt, pre-filled with the default.
+      if (renameOnAdd && documents.length > 0) {
+        setRenameQueue(documents);
+      }
     });
   };
 
@@ -531,6 +543,35 @@ export function VaultHomePage(): ReactNode {
           message={t('lock.blocked')}
           onDidDismiss={() => setShowLockedToast(false)}
           data-agent-id="vault.home.locked-toast"
+        />
+        {/* UX-8: rename-on-add prompt, pre-filled with the default name. Keeping
+           the default (Skip) stores it as-is. Keyed per document so each
+           queued doc re-seeds the input. */}
+        <IonAlert
+          key={renameTarget?.id ?? 'rename-none'}
+          isOpen={renameTarget !== null}
+          header={t('rename.title')}
+          data-agent-id="vault.home.rename-prompt"
+          inputs={[
+            {
+              name: 'name',
+              type: 'text',
+              value: renameTarget?.name ?? '',
+              attributes: { 'aria-label': t('rename.label') },
+            },
+          ]}
+          buttons={[
+            { text: t('rename.skip'), role: 'cancel' },
+            {
+              text: t('rename.save'),
+              handler: (data: { name?: string }): void => {
+                if (renameTarget && data.name) {
+                  void rename(renameTarget, data.name);
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setRenameQueue((q) => q.slice(1))}
         />
       </IonContent>
     </IonPage>

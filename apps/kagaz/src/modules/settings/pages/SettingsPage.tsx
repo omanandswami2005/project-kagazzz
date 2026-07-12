@@ -27,6 +27,7 @@ import {
 import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
 import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
+import { usePreferencesStore } from '@/core/preferences';
 import './settings.css';
 
 const THEME_OPTIONS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
@@ -45,6 +46,8 @@ export function SettingsPage(): ReactNode {
   const backup = useBackupExport();
   const router = useIonRouter();
   const [eraseOpen, setEraseOpen] = useState(false);
+  const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
+  const setRenameOnAdd = usePreferencesStore((s) => s.setRenameOnAdd);
 
   return (
     <IonPage data-agent-id="settings">
@@ -113,6 +116,23 @@ export function SettingsPage(): ReactNode {
                   </Button>
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-documents">
+              {t('documents.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={renameOnAdd}
+                label={t('documents.rename_on_add')}
+                onChange={setRenameOnAdd}
+                agentId="settings.rename-on-add"
+              />
+              <p className="kg-settings__hint">
+                {t('documents.rename_on_add_hint')}
+              </p>
             </div>
           </section>
 

@@ -20,6 +20,8 @@ export interface UseVaultMutationsResult {
   setLocked: (document: DocumentEntity, locked: boolean) => Promise<void>;
   /** Records that a document was opened, for the Recent list (F-32). */
   markAccessed: (document: DocumentEntity) => Promise<void>;
+  /** Renames one document (UX-8); persisted + reflected in the list + FTS. */
+  rename: (document: DocumentEntity, name: string) => Promise<void>;
   /** Soft-deletes one document to Trash (UX-1); removed from the list. */
   softDelete: (document: DocumentEntity) => Promise<void>;
   /** Restores a soft-deleted document (UX-1 Undo); re-added to the list. */
@@ -106,6 +108,31 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
+  const rename = useCallback(
+    async (document: DocumentEntity, name: string): Promise<void> => {
+      const next = name.trim();
+      if (!dao || next.length === 0 || next === document.name) {
+        return;
+      }
+      // Optimistic: show the new name now, roll back on failure.
+      useVaultStore.getState().patchDocument(document.id, { name: next });
+      try {
+        await dao.update(document.id, { name: next });
+        logger.info({ event: 'vault.rename', documentId: document.id });
+      } catch (error) {
+        useVaultStore
+          .getState()
+          .patchDocument(document.id, { name: document.name });
+        logger.error({
+          event: 'vault.rename.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
   const softDelete = useCallback(
     async (document: DocumentEntity): Promise<void> => {
       if (!dao) {
@@ -149,5 +176,5 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite, setLocked, markAccessed, softDelete, restore };
+  return { toggleFavorite, setLocked, markAccessed, rename, softDelete, restore };
 }
