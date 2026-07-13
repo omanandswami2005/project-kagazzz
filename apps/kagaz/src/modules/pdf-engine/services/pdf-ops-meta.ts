@@ -6,6 +6,7 @@ export type PdfOpId =
   | 'split'
   | 'compress'
   | 'pdfToImages'
+  | 'pdfToText'
   | 'imagesToPdf'
   | 'watermark'
   | 'pageNumbers'
@@ -30,6 +31,7 @@ export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'split', icon: 'Split', input: 'pdf-single' },
   { id: 'compress', icon: 'Shrink', input: 'pdf-single' },
   { id: 'pdfToImages', icon: 'FileImage', input: 'pdf-single' },
+  { id: 'pdfToText', icon: 'FileText', input: 'pdf-single' },
   { id: 'imagesToPdf', icon: 'Images', input: 'images' },
   { id: 'watermark', icon: 'Pencil', input: 'pdf-single' },
   { id: 'pageNumbers', icon: 'Hash', input: 'pdf-single' },

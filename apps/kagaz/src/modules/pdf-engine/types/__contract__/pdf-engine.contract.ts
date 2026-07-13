@@ -381,6 +381,21 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-40: Extract text', () => {
+      // pdfjs text extraction needs browser globals (DOMMatrix, …) — device.
+      it.skipIf(!HAS_CANVAS)('should extract the embedded text layer', async () => {
+        const text = await engine.extractText(await createTestPdf(2, 'Ledger'));
+        expect(typeof text).toBe('string');
+        expect(text).toContain('Ledger');
+      });
+
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(engine.extractText(invalidPdf)).rejects.toMatchObject({
+          code: 'INVALID_PDF',
+        });
+      });
+    });
+
     describe('F-6: PDF → Images', () => {
       // Rasterising needs a canvas (jsdom has none) — device-verified.
       it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {

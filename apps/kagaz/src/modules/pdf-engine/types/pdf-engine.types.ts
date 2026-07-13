@@ -127,6 +127,7 @@ export type PdfErrorCode =
   | 'WASM_LOAD_FAILED'
   | 'OCR_LANGUAGE_NOT_AVAILABLE'
   | 'COMPRESSION_FAILED'
+  | 'NO_TEXT_LAYER'
   | 'ENCRYPTION_FAILED'
   | 'OUT_OF_MEMORY'
   | 'OPERATION_CANCELLED'
@@ -231,6 +232,9 @@ export interface PdfEngineService {
     options: PageNumberOptions,
     onProgress?: ProgressCallback
   ): Promise<Uint8Array>;
+
+  /** Extract the embedded text layer of a PDF as plain text (F-40) */
+  extractText(pdf: Uint8Array): Promise<string>;
 
   /** Render PDF pages to image blobs (F-6) */
   pdfToImages(

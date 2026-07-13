@@ -21,6 +21,11 @@ export const PdfToolsPageAgent = definePage({
     { utterance: 'split a pdf', action: 'tools.openPdfTools', args: { op: 'split' } },
     { utterance: 'compress a pdf', action: 'tools.openPdfTools', args: { op: 'compress' } },
     {
+      utterance: 'extract text from a pdf',
+      action: 'tools.openPdfTools',
+      args: { op: 'pdfToText' },
+    },
+    {
       utterance: 'watermark a pdf',
       action: 'tools.openPdfTools',
       args: { op: 'watermark' },

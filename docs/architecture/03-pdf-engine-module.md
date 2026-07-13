@@ -187,7 +187,7 @@ interface PdfEngineService {
   compressPdf(pdf: Uint8Array, quality: CompressionLevel): Promise<Uint8Array>;
 
   // ── Text & OCR ────────────────────────────────────────
-  /** Extract selectable text from a PDF */
+  /** Extract selectable text from a PDF (F-40 exports it to .txt/.md) */
   extractText(pdf: Uint8Array): Promise<string>;
   /** Run OCR on a scanned PDF to extract text */
   ocrPdf(pdf: Uint8Array, language: string): Promise<string>;
