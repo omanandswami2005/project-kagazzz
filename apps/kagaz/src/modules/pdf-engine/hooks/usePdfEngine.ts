@@ -18,6 +18,7 @@ import {
   type CompressionLevel,
   type FormField,
   type PageNumberOptions,
+  type PageOp,
   type PageRange,
   type PdfMetadata,
   type PdfErrorCode,
@@ -80,6 +81,9 @@ export interface UsePdfEngineResult {
   reset: () => void;
   mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
   splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
+  /** Renders every page to a preview image blob (F-35 organizer; no save). */
+  loadPagePreviews: (doc: DocumentEntity) => Promise<Blob[]>;
+  organizePages: (doc: DocumentEntity, ops: PageOp[]) => Promise<number>;
   watermarkPdf: (doc: DocumentEntity, text: string) => Promise<number>;
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
@@ -206,6 +210,30 @@ export function usePdfEngine(): UsePdfEngineResult {
             source: 'ai_generated' as const,
           }))
         );
+      }),
+    [run, readBytes, save]
+  );
+
+  const loadPagePreviews = useCallback(
+    async (doc: DocumentEntity): Promise<Blob[]> => {
+      const engine = await getEngine();
+      // Low scale — thumbnails only, keeps the render fast and memory small.
+      return engine.pdfToImages(await readBytes(doc), { format: 'jpeg', scale: 0.5 });
+    },
+    [getEngine, readBytes]
+  );
+
+  const organizePages = useCallback(
+    (doc: DocumentEntity, ops: PageOp[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const out = await engine.organizePages(await readBytes(doc), ops, onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_organized.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
       }),
     [run, readBytes, save]
   );
@@ -425,6 +453,8 @@ export function usePdfEngine(): UsePdfEngineResult {
     reset,
     mergePdfs,
     splitPdf,
+    loadPagePreviews,
+    organizePages,
     watermarkPdf,
     addPageNumbers,
     compressPdf,

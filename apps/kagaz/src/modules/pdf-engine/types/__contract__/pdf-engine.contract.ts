@@ -264,6 +264,46 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-35: Organize pages', () => {
+      it('should reorder and drop pages per the ops list', async () => {
+        // 3-page source; keep page 3 then page 1 (page 2 deleted) → 2 pages.
+        const result = await engine.organizePages(await createTestPdf(3), [
+          { sourceIndex: 2, rotation: 0 },
+          { sourceIndex: 0, rotation: 0 },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should apply rotation and keep pages', async () => {
+        const result = await engine.organizePages(await createTestPdf(2), [
+          { sourceIndex: 0, rotation: 90 },
+          { sourceIndex: 1, rotation: 180 },
+        ]);
+        const doc = await PDFDocument.load(result);
+        expect(doc.getPageCount()).toBe(2);
+        expect(doc.getPage(0).getRotation().angle).toBe(90);
+      });
+
+      it('should reject an empty ops list (UNSUPPORTED_FORMAT)', async () => {
+        await expect(engine.organizePages(await createTestPdf(1), [])).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should reject an out-of-range page (PAGE_OUT_OF_RANGE)', async () => {
+        await expect(
+          engine.organizePages(await createTestPdf(1), [{ sourceIndex: 5, rotation: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.organizePages(invalidPdf, [{ sourceIndex: 0, rotation: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
     describe('F-38: Image stamp', () => {
       it('should stamp an image onto a page and keep the page count', async () => {
         const original = await createTestPdf(2);

@@ -10,10 +10,12 @@ import {
 import { decryptPdfImpl, encryptPdfImpl } from '../services/pdf-security-ops';
 import { fillFormImpl, getFormFieldsImpl } from '../services/pdf-forms-ops';
 import { getPdfMetadataImpl, setPdfMetadataImpl } from '../services/pdf-metadata-ops';
+import { organizePagesImpl } from '../services/pdf-organize-ops';
 import {
   type EncryptOptions,
   type ImageInput,
   type PageNumberOptions,
+  type PageOp,
   type PageRange,
   type PdfMetadata,
   type ProgressEvent,
@@ -110,6 +112,11 @@ async function run(
       const { pdf, ranges } = payload as { pdf: Uint8Array; ranges: PageRange[] };
       const results = await splitPdfImpl(pdf, ranges, emit);
       return { data: results, transfer: results.map((r) => r.buffer) };
+    }
+    case 'organizePages': {
+      const { pdf, ops } = payload as { pdf: Uint8Array; ops: PageOp[] };
+      const result = await organizePagesImpl(pdf, ops, emit);
+      return { data: result, transfer: [result.buffer] };
     }
     case 'imagesToPdf': {
       const { images } = payload as { images: ImageInput[] };

@@ -19,6 +19,7 @@ import { Icon } from '@kagaz/ui';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
 import { PdfOpSheet } from '../components/PdfOpSheet';
+import { PdfOrganizeSheet } from '../components/PdfOrganizeSheet';
 import { PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
 import '../components/pdf-tools.css';
 
@@ -61,8 +62,21 @@ export function PdfToolsPage(): ReactNode {
           </ul>
         </main>
 
+        {/* F-35's organiser is its own thumbnail-grid modal; every other op
+            runs through the adaptive PdfOpSheet. */}
         <PdfOpSheet
-          op={activeOp}
+          op={activeOp === 'organize' ? null : activeOp}
+          documents={documents}
+          engine={engine}
+          onClose={() => setActiveOp(null)}
+          onDone={(count) => {
+            setActiveOp(null);
+            setSavedCount(count);
+          }}
+        />
+
+        <PdfOrganizeSheet
+          open={activeOp === 'organize'}
           documents={documents}
           engine={engine}
           onClose={() => setActiveOp(null)}

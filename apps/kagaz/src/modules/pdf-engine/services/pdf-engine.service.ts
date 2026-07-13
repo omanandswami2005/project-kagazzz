@@ -8,6 +8,7 @@ import {
   type FormField,
   type ImageInput,
   type PageNumberOptions,
+  type PageOp,
   type PdfMetadata,
   type ProgressCallback,
   type StampOptions,
@@ -320,6 +321,22 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       'stampImage',
       { pdf: clonedPdf, image: clonedImage, options },
       [clonedPdf.buffer, clonedImage.data.buffer],
+      onProgress
+    );
+  }
+
+  async organizePages(
+    pdf: Uint8Array,
+    ops: PageOp[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'organizePages',
+      { pdf: clonedPdf, ops },
+      [clonedPdf.buffer],
       onProgress
     );
   }

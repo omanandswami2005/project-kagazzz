@@ -53,6 +53,22 @@ export interface ImageInput {
   mimeType: string;
 }
 
+/** Clockwise rotation applied to a page, in degrees (F-35). */
+export type PageRotation = 0 | 90 | 180 | 270;
+
+/**
+ * One page of the reorganised output (F-35): which original page it comes from
+ * (0-indexed) and the extra clockwise rotation to apply. The output document is
+ * the ordered list of these — omitting a source index deletes that page,
+ * repeating one duplicates it, and the array order is the new page order.
+ */
+export interface PageOp {
+  /** 0-indexed page in the source PDF. */
+  sourceIndex: number;
+  /** Extra clockwise rotation added to the page's existing rotation. */
+  rotation: PageRotation;
+}
+
 /** Where a stamped image sits on the page (F-38). */
 export type StampPosition =
   | 'bottom-right'
@@ -228,6 +244,13 @@ export interface PdfEngineService {
     ranges: PageRange[],
     onProgress?: ProgressCallback
   ): Promise<Uint8Array[]>;
+
+  /** Reorder / rotate / delete pages, producing a new document (F-35) */
+  organizePages(
+    pdf: Uint8Array,
+    ops: PageOp[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array>;
 
   /** Compress a PDF to reduce file size */
   compressPdf(

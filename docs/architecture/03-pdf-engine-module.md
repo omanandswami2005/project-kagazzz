@@ -165,12 +165,13 @@ interface PdfEngineService {
   watermarkPdf(pdf: Uint8Array, text: string): Promise<Uint8Array>;
   /** Stamp sequential page numbers onto every page (F-36) */
   addPageNumbers(pdf: Uint8Array, options: PageNumberOptions): Promise<Uint8Array>;
-  /** Rotate a specific page */
-  rotatePage(pdf: Uint8Array, pageIndex: number, degrees: RotationDegrees): Promise<Uint8Array>;
-  /** Delete a specific page */
-  deletePage(pdf: Uint8Array, pageIndex: number): Promise<Uint8Array>;
-  /** Reorder pages according to the given order */
-  reorderPages(pdf: Uint8Array, newOrder: number[]): Promise<Uint8Array>;
+  /**
+   * Reorder / rotate / delete pages in one pass (F-35). `ops` is the final page
+   * list: each entry names a source page + its extra rotation; omit to delete,
+   * repeat to duplicate, and order = the new page order. Supersedes the earlier
+   * separate rotatePage / deletePage / reorderPages design sketch.
+   */
+  organizePages(pdf: Uint8Array, ops: PageOp[]): Promise<Uint8Array>;
 
   // ── Conversion ────────────────────────────────────────
   /** Render PDF pages to images */
