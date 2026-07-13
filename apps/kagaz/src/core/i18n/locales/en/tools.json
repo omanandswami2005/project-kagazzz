@@ -4,6 +4,7 @@
   "ops": {
     "merge": "Merge PDFs",
     "split": "Split PDF",
+    "organize": "Organize pages",
     "compress": "Compress PDF",
     "pdfToImages": "PDF → Images",
     "pdfToText": "PDF → Text",
@@ -19,6 +20,7 @@
   "desc": {
     "merge": "Combine several PDFs into one",
     "split": "Split a PDF by page ranges",
+    "organize": "Reorder, rotate or delete pages",
     "compress": "Make a PDF smaller",
     "pdfToImages": "Save each page as an image",
     "pdfToText": "Extract selectable text as .txt or .md",
@@ -83,6 +85,15 @@
     "metadata_subject": "Subject",
     "metadata_keywords": "Keywords",
     "metadata_keywords_hint": "Separate keywords with commas."
+  },
+  "organize": {
+    "loading": "Loading pages…",
+    "save": "Save arranged PDF",
+    "page_alt": "Page {{n}}",
+    "move_left": "Move earlier",
+    "move_right": "Move later",
+    "rotate": "Rotate 90°",
+    "delete": "Delete page"
   },
   "run": "Run",
   "running": "Working…",

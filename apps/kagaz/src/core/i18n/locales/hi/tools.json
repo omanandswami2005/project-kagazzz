@@ -4,6 +4,7 @@
   "ops": {
     "merge": "PDF मिलाएँ",
     "split": "PDF विभाजित करें",
+    "organize": "पेज व्यवस्थित करें",
     "compress": "PDF संपीड़ित करें",
     "pdfToImages": "PDF → चित्र",
     "pdfToText": "PDF → पाठ",
@@ -19,6 +20,7 @@
   "desc": {
     "merge": "कई PDF को एक में मिलाएँ",
     "split": "PDF को पेज सीमा से विभाजित करें",
+    "organize": "पेज पुनः क्रमित करें, घुमाएँ या हटाएँ",
     "compress": "PDF का आकार छोटा करें",
     "pdfToImages": "हर पेज को चित्र के रूप में सहेजें",
     "pdfToText": "चयन-योग्य पाठ को .txt या .md के रूप में निकालें",
@@ -83,6 +85,15 @@
     "metadata_subject": "विषय",
     "metadata_keywords": "कीवर्ड",
     "metadata_keywords_hint": "कीवर्ड अल्पविराम से अलग करें।"
+  },
+  "organize": {
+    "loading": "पेज लोड हो रहे हैं…",
+    "save": "व्यवस्थित PDF सहेजें",
+    "page_alt": "पेज {{n}}",
+    "move_left": "पहले ले जाएँ",
+    "move_right": "बाद में ले जाएँ",
+    "rotate": "90° घुमाएँ",
+    "delete": "पेज हटाएँ"
   },
   "run": "चलाएँ",
   "running": "काम चल रहा है…",

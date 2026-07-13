@@ -19,6 +19,11 @@ export const PdfToolsPageAgent = definePage({
   voiceExamples: [
     { utterance: 'merge pdfs', action: 'tools.openPdfTools', args: { op: 'merge' } },
     { utterance: 'split a pdf', action: 'tools.openPdfTools', args: { op: 'split' } },
+    {
+      utterance: 'organize pdf pages',
+      action: 'tools.openPdfTools',
+      args: { op: 'organize' },
+    },
     { utterance: 'compress a pdf', action: 'tools.openPdfTools', args: { op: 'compress' } },
     {
       utterance: 'extract text from a pdf',
