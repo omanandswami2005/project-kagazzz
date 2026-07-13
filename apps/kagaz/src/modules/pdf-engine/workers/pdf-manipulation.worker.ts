@@ -8,11 +8,13 @@ import {
 } from '../services/pdf-ops';
 import { decryptPdfImpl, encryptPdfImpl } from '../services/pdf-security-ops';
 import { fillFormImpl, getFormFieldsImpl } from '../services/pdf-forms-ops';
+import { getPdfMetadataImpl, setPdfMetadataImpl } from '../services/pdf-metadata-ops';
 import {
   type EncryptOptions,
   type ImageInput,
   type PageNumberOptions,
   type PageRange,
+  type PdfMetadata,
   type ProgressEvent,
   PdfEngineException,
   pdfErrorInfoOf,
@@ -137,6 +139,18 @@ async function run(
     case 'decryptPdf': {
       const { pdf, password } = payload as { pdf: Uint8Array; password: string };
       const result = await decryptPdfImpl(pdf, password, emit);
+      return { data: result, transfer: [result.buffer] };
+    }
+    case 'getMetadata': {
+      const { pdf } = payload as { pdf: Uint8Array };
+      return { data: await getPdfMetadataImpl(pdf), transfer: [] };
+    }
+    case 'setMetadata': {
+      const { pdf, metadata } = payload as {
+        pdf: Uint8Array;
+        metadata: PdfMetadata;
+      };
+      const result = await setPdfMetadataImpl(pdf, metadata);
       return { data: result, transfer: [result.buffer] };
     }
     case 'getFormFields': {

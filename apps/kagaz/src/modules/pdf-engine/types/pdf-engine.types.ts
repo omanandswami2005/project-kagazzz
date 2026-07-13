@@ -73,6 +73,18 @@ export interface EncryptOptions {
   algorithm?: 'AES-256' | 'RC4';
 }
 
+/**
+ * Editable document metadata (F-39). All fields are plain strings for the
+ * form; `keywords` is a comma-separated list (split into pdf-lib's string[]
+ * at the write boundary). Empty string means "not set".
+ */
+export interface PdfMetadata {
+  title: string;
+  author: string;
+  subject: string;
+  keywords: string;
+}
+
 /** A fillable form field discovered in a PDF (F-28). */
 export interface FormField {
   /** Internal field name (the key used to fill it). */
@@ -236,6 +248,12 @@ export interface PdfEngineService {
 
   /** Decrypt a password-protected PDF (F-22) */
   decryptPdf(pdf: Uint8Array, password: string): Promise<Uint8Array>;
+
+  /** Read the document's metadata (F-39) */
+  getMetadata(pdf: Uint8Array): Promise<PdfMetadata>;
+
+  /** Overwrite the document's metadata (F-39) */
+  setMetadata(pdf: Uint8Array, metadata: PdfMetadata): Promise<Uint8Array>;
 
   /** List the fillable form fields in a PDF (F-28) */
   getFormFields(pdf: Uint8Array): Promise<FormField[]>;

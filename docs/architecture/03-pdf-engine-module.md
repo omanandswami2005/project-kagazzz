@@ -199,10 +199,10 @@ interface PdfEngineService {
   fillForm(pdf: Uint8Array, values: Record<string, string>): Promise<Uint8Array>;
 
   // ── Metadata ──────────────────────────────────────────
-  /** Read PDF metadata (title, author, dates, etc.) */
+  /** Read PDF metadata (title, author, subject, keywords) (F-39) */
   getMetadata(pdf: Uint8Array): Promise<PdfMetadata>;
-  /** Update PDF metadata */
-  setMetadata(pdf: Uint8Array, metadata: Partial<PdfMetadata>): Promise<Uint8Array>;
+  /** Update PDF metadata (F-39) */
+  setMetadata(pdf: Uint8Array, metadata: PdfMetadata): Promise<Uint8Array>;
 
   // ── Annotation ────────────────────────────────────────
   /** Add a text watermark to all pages */

@@ -351,6 +351,36 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-39: Metadata', () => {
+      it('should write metadata and read it back', async () => {
+        const updated = await engine.setMetadata(await createTestPdf(1), {
+          title: 'Aadhaar Card',
+          author: 'Asha Rao',
+          subject: 'ID proof',
+          keywords: 'id, government, kyc',
+        });
+        expect(updated).toBeInstanceOf(Uint8Array);
+        const meta = await engine.getMetadata(updated);
+        expect(meta.title).toBe('Aadhaar Card');
+        expect(meta.author).toBe('Asha Rao');
+        expect(meta.subject).toBe('ID proof');
+        expect(meta.keywords).toContain('id');
+        expect(meta.keywords).toContain('kyc');
+      });
+
+      it('should return empty strings for a PDF with no metadata', async () => {
+        const meta = await engine.getMetadata(await createTestPdf(1));
+        expect(meta.title).toBe('');
+        expect(meta.author).toBe('');
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.getMetadata(invalidPdf)).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
     describe('F-6: PDF → Images', () => {
       // Rasterising needs a canvas (jsdom has none) — device-verified.
       it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {
