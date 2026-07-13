@@ -6,14 +6,20 @@ const {
   isOcrSupported,
   recognizeDocumentText,
   extractPdfText,
+  pdfToImages,
   readFile,
+  writeFile,
+  deleteFile,
   update,
   useDatabase,
 } = vi.hoisted(() => ({
   isOcrSupported: vi.fn(() => true),
   recognizeDocumentText: vi.fn(),
   extractPdfText: vi.fn(),
+  pdfToImages: vi.fn(),
   readFile: vi.fn(),
+  writeFile: vi.fn(),
+  deleteFile: vi.fn(),
   update: vi.fn(),
   useDatabase: vi.fn(),
 }));
@@ -25,9 +31,11 @@ vi.mock('@/modules/image-engine/services/ocr.service', () => ({
 }));
 vi.mock('@/modules/pdf-engine/services/pdf-render-ops', () => ({
   extractPdfTextImpl: extractPdfText,
+  pdfToImagesImpl: pdfToImages,
 }));
 vi.mock('@/infrastructure/filesystem', () => ({
-  createFileStorage: () => ({ read: readFile }),
+  createFileStorage: () => ({ read: readFile, write: writeFile, delete: deleteFile }),
+  STORAGE_DIRS: { documents: 'documents', thumbnails: 'thumbnails', temp: 'temp' },
 }));
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase }));
 vi.mock('@/core/i18n', () => ({ useLocale: () => ({ locale: locale.value }) }));
@@ -56,7 +64,10 @@ beforeEach(() => {
   useDatabase.mockReturnValue({ db: {}, status: 'ready' });
   recognizeDocumentText.mockResolvedValue('AADHAAR 1234 5678');
   extractPdfText.mockResolvedValue('INVOICE #42 total 999');
+  pdfToImages.mockResolvedValue([new Blob([new Uint8Array([1])])]);
   readFile.mockResolvedValue(new Uint8Array([1, 2, 3]));
+  writeFile.mockResolvedValue(undefined);
+  deleteFile.mockResolvedValue(undefined);
   update.mockResolvedValue(1);
 });
 
@@ -136,6 +147,31 @@ describe('useDocumentOcr (F-20)', () => {
     expect(extractPdfText).toHaveBeenCalled();
     expect(recognizeDocumentText).not.toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith('d1', { ocrText: 'INVOICE #42 total 999' });
+  });
+
+  it('falls back to page OCR when a PDF has no text layer (scanned)', async () => {
+    extractPdfText.mockResolvedValue(''); // scanned PDF → empty text layer
+    recognizeDocumentText.mockResolvedValue('SCANNED PAGE TEXT');
+    const { result } = renderHook(() => useDocumentOcr());
+    let text: string | null = null;
+    await act(async () => {
+      text = await result.current.extractText(
+        doc({ filePath: 'documents/scan.pdf', fileType: 'pdf' })
+      );
+    });
+    expect(text).toBe('SCANNED PAGE TEXT');
+    expect(pdfToImages).toHaveBeenCalled(); // pages were rendered
+    expect(recognizeDocumentText).toHaveBeenCalled(); // then OCR'd
+    expect(update).toHaveBeenCalledWith('d1', { ocrText: 'SCANNED PAGE TEXT' });
+  });
+
+  it('does NOT OCR-fall-back when the PDF text layer has content', async () => {
+    const { result } = renderHook(() => useDocumentOcr());
+    await act(async () => {
+      await result.current.extractText(doc({ filePath: 'documents/d1.pdf', fileType: 'pdf' }));
+    });
+    expect(pdfToImages).not.toHaveBeenCalled();
+    expect(recognizeDocumentText).not.toHaveBeenCalled();
   });
 
   it('is a no-op on a document whose text cannot be extracted', async () => {
