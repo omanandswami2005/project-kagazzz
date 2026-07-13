@@ -1,5 +1,6 @@
 import { createWorkerLogger } from '@/core/logging/worker-relay';
 import {
+  addPageNumbersImpl,
   imagesToPdfImpl,
   mergePdfsImpl,
   splitPdfImpl,
@@ -10,6 +11,7 @@ import { fillFormImpl, getFormFieldsImpl } from '../services/pdf-forms-ops';
 import {
   type EncryptOptions,
   type ImageInput,
+  type PageNumberOptions,
   type PageRange,
   type ProgressEvent,
   PdfEngineException,
@@ -113,6 +115,14 @@ async function run(
     case 'watermarkPdf': {
       const { pdf, text } = payload as { pdf: Uint8Array; text: string };
       const result = await watermarkPdfImpl(pdf, text, emit);
+      return { data: result, transfer: [result.buffer] };
+    }
+    case 'addPageNumbers': {
+      const { pdf, options } = payload as {
+        pdf: Uint8Array;
+        options: PageNumberOptions;
+      };
+      const result = await addPageNumbersImpl(pdf, options, emit);
       return { data: result, transfer: [result.buffer] };
     }
     case 'encryptPdf': {

@@ -16,7 +16,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Checkbox, Icon, Input, ProgressBar } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
-import type { CompressionLevel, FormField } from '../types/pdf-engine.types';
+import type {
+  CompressionLevel,
+  FormField,
+  PageNumberFormat,
+  PageNumberPosition,
+} from '../types/pdf-engine.types';
 import type { UsePdfEngineResult } from '../hooks/usePdfEngine';
 import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
 import { parsePageRanges } from '../services/parse-ranges';
@@ -35,6 +40,15 @@ export interface PdfOpSheetProps {
 }
 
 const QUALITIES: CompressionLevel[] = ['low', 'medium', 'high'];
+const PAGE_NUMBER_POSITIONS: PageNumberPosition[] = [
+  'bottom-center',
+  'bottom-right',
+  'bottom-left',
+  'top-center',
+  'top-right',
+  'top-left',
+];
+const PAGE_NUMBER_FORMATS: PageNumberFormat[] = ['plain', 'page-n', 'n-of-total'];
 
 /** Adaptive operation modal. */
 export function PdfOpSheet({
@@ -63,6 +77,9 @@ export function PdfOpSheet({
   const [format, setFormat] = useState<'png' | 'jpeg'>('png');
   const [password, setPassword] = useState('');
   const [watermarkText, setWatermarkText] = useState('');
+  const [pageNumberPosition, setPageNumberPosition] =
+    useState<PageNumberPosition>('bottom-center');
+  const [pageNumberFormat, setPageNumberFormat] = useState<PageNumberFormat>('plain');
   const [fields, setFields] = useState<FormField[] | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [localError, setLocalError] = useState<string | null>(null);
@@ -77,6 +94,8 @@ export function PdfOpSheet({
     setFormat('png');
     setPassword('');
     setWatermarkText('');
+    setPageNumberPosition('bottom-center');
+    setPageNumberFormat('plain');
     setFields(null);
     setFieldValues({});
     setLocalError(null);
@@ -171,6 +190,12 @@ export function PdfOpSheet({
             return 0;
           }
           return engine.watermarkPdf(doc, watermarkText);
+        }
+        if (op === 'pageNumbers') {
+          return engine.addPageNumbers(doc, {
+            position: pageNumberPosition,
+            format: pageNumberFormat,
+          });
         }
         if (op === 'pdfToImages') {
           return engine.pdfToImages(doc, { format });
@@ -341,6 +366,48 @@ export function PdfOpSheet({
           onChange={setWatermarkText}
           agentId="pdf-tools.op-sheet.watermark-text"
         />
+      );
+    }
+    if (op === 'pageNumbers') {
+      return (
+        <>
+          <div
+            className="kg-pdf-op__choices"
+            role="group"
+            aria-label={t('params.number_position')}
+          >
+            <p className="kg-pdf-op__label">{t('params.number_position')}</p>
+            {PAGE_NUMBER_POSITIONS.map((p) => (
+              <Button
+                key={p}
+                variant={pageNumberPosition === p ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setPageNumberPosition(p)}
+                agentId={`pdf-tools.op-sheet.number-position-${p}`}
+              >
+                {t(`params.position_${p}`)}
+              </Button>
+            ))}
+          </div>
+          <div
+            className="kg-pdf-op__choices"
+            role="group"
+            aria-label={t('params.number_format')}
+          >
+            <p className="kg-pdf-op__label">{t('params.number_format')}</p>
+            {PAGE_NUMBER_FORMATS.map((f) => (
+              <Button
+                key={f}
+                variant={pageNumberFormat === f ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setPageNumberFormat(f)}
+                agentId={`pdf-tools.op-sheet.number-format-${f}`}
+              >
+                {t(`params.number_format_${f}`)}
+              </Button>
+            ))}
+          </div>
+        </>
       );
     }
     if (op === 'encrypt' || op === 'decrypt') {

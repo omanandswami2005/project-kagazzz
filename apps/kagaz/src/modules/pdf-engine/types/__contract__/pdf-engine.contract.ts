@@ -264,6 +264,35 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-36: Page numbers', () => {
+      it('should number every page and keep the page count', async () => {
+        const original = await createTestPdf(4);
+        const result = await engine.addPageNumbers(original, {
+          position: 'bottom-center',
+          format: 'plain',
+        });
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(4);
+        // The drawn numbers add content, so the output grows.
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should accept the n-of-total format and a custom start', async () => {
+        const result = await engine.addPageNumbers(await createTestPdf(2), {
+          position: 'top-right',
+          format: 'n-of-total',
+          startAt: 5,
+        });
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.addPageNumbers(invalidPdf, { position: 'bottom-center' })
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
     describe('F-21 / F-22: Encrypt + Decrypt', () => {
       it('should encrypt a PDF and round-trip it back with decrypt', async () => {
         const original = await createTestPdf(2, 'Secret');

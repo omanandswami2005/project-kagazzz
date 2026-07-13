@@ -7,6 +7,7 @@ import {
   type EncryptOptions,
   type FormField,
   type ImageInput,
+  type PageNumberOptions,
   type ProgressCallback,
   type PdfErrorCode,
   type ProgressEvent,
@@ -295,6 +296,22 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       this.manipulationWorker!,
       'watermarkPdf',
       { pdf: clonedPdf, text },
+      [clonedPdf.buffer],
+      onProgress
+    );
+  }
+
+  async addPageNumbers(
+    pdf: Uint8Array,
+    options: PageNumberOptions,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'addPageNumbers',
+      { pdf: clonedPdf, options },
       [clonedPdf.buffer],
       onProgress
     );
