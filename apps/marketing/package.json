@@ -1,0 +1,7 @@
+{
+  "name": "@kagaz/marketing",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Kagaz marketing / landing page (G1-8) — static, deployable to Vercel.",
+  "type": "module"
+}

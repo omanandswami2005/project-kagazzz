@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kagaz — Sab kagaj. Ek Jagah. | All your papers, in one place.</title>
+    <meta
+      name="description"
+      content="Kagaz keeps all your government papers in one place — scanned, searchable, encrypted on your phone. On-device AI, offline-first, no account needed."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main" data-en="Skip to content" data-hi="मुख्य सामग्री पर जाएँ"
+      >Skip to content</a
+    >
+
+    <!-- ── Header ─────────────────────────────────────────────── -->
+    <header class="site-header" data-agent-id="landing.header">
+      <span class="brand">Kagaz</span>
+      <nav class="site-nav" aria-label="Site">
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="en" data-agent-id="landing.lang.en" aria-pressed="true">
+            English
+          </button>
+          <span aria-hidden="true">/</span>
+          <button type="button" data-lang="hi" data-agent-id="landing.lang.hi" aria-pressed="false" lang="hi">
+            हिन्दी
+          </button>
+        </div>
+        <a class="btn btn--ghost" href="#cta" data-en="Get the app" data-hi="ऐप पाएँ">Get the app</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <!-- ── Section 1 — Hero ─────────────────────────────────── -->
+      <section class="hero" data-agent-id="landing.hero">
+        <div class="hero__copy">
+          <h1 class="hero__headline" data-agent-id="landing.hero.headline">
+            <span class="hero__line" data-en="Sab kagaj." data-hi="सब कागज़।">Sab kagaj.</span>
+            <span class="hero__line hero__line--accent" data-en="Ek Jagah." data-hi="एक जगह।"
+              >Ek Jagah.</span
+            >
+          </h1>
+          <p
+            class="hero__subhead"
+            data-en="All your papers, in one place."
+            data-hi="आपके सारे दस्तावेज़, एक ही जगह।"
+          >
+            All your papers, in one place.
+          </p>
+
+          <!-- S-words marquee (decorative; static list below for SR) -->
+          <div
+            class="marquee"
+            id="s-words"
+            role="marquee"
+            aria-label="Eight things Kagaz does: Scan, Store, Search, Sign, Secure, Share, Speak, Simplify"
+            data-agent-id="landing.hero.s-words"
+            data-agent-state="idle"
+            tabindex="0"
+          >
+            <ul class="marquee__track" aria-hidden="true"></ul>
+          </div>
+          <ul class="visually-hidden">
+            <li>Scan</li><li>Store</li><li>Search</li><li>Sign</li>
+            <li>Secure</li><li>Share</li><li>Speak</li><li>Simplify</li>
+          </ul>
+
+          <div class="hero__ctas">
+            <a
+              class="btn btn--primary"
+              id="install-cta"
+              href="https://play.google.com/store/apps/details?id=in.kagaz.app"
+              data-agent-id="landing.hero.primary-cta"
+              data-agent-action="landing.installApp"
+              data-agent-role="primary-action"
+              data-agent-state="idle"
+              data-en="Get Kagaz — it's free"
+              data-hi="Kagaz पाएँ — मुफ़्त है"
+              >Get Kagaz — it's free</a
+            >
+            <a
+              class="btn btn--link"
+              href="#how"
+              data-agent-id="landing.hero.secondary-cta"
+              data-agent-action="landing.scrollTo"
+              data-agent-state="idle"
+              data-en="See how it works ▸"
+              data-hi="कैसे काम करता है ▸"
+              >See how it works ▸</a
+            >
+          </div>
+
+          <p
+            class="hero__trust"
+            data-en="★★★★★  Built for India · On-device AI · Works offline · No account needed"
+            data-hi="★★★★★  भारत के लिए · डिवाइस पर AI · ऑफलाइन · बिना अकाउंट"
+          >
+            ★★★★★ Built for India · On-device AI · Works offline · No account needed
+          </p>
+        </div>
+
+        <!-- Phone mockup (inline SVG placeholder; swap for a real AVIF/WebP screenshot) -->
+        <div class="hero__mockup" aria-hidden="true">
+          <svg viewBox="0 0 260 520" class="phone" role="img" aria-label="Kagaz app preview">
+            <rect x="6" y="6" width="248" height="508" rx="34" class="phone__body" />
+            <rect x="18" y="26" width="224" height="468" rx="20" class="phone__screen" />
+            <rect x="34" y="52" width="120" height="14" rx="7" class="phone__bar phone__bar--title" />
+            <rect x="34" y="86" width="192" height="60" rx="12" class="phone__card" />
+            <rect x="34" y="158" width="192" height="60" rx="12" class="phone__card" />
+            <rect x="34" y="230" width="192" height="60" rx="12" class="phone__card" />
+            <rect x="34" y="410" width="192" height="56" rx="28" class="phone__chat" />
+            <circle cx="62" cy="438" r="10" class="phone__mic" />
+          </svg>
+        </div>
+      </section>
+
+      <!-- ── Section 3 — Trust strip ──────────────────────────── -->
+      <section class="trust" aria-label="Why Kagaz">
+        <ul class="trust__pills">
+          <li class="pill"><span aria-hidden="true">🔒</span><span data-en="On-device AI" data-hi="डिवाइस पर AI">On-device AI</span></li>
+          <li class="pill"><span aria-hidden="true">📴</span><span data-en="Works offline" data-hi="ऑफलाइन चलता है">Works offline</span></li>
+          <li class="pill"><span aria-hidden="true">🇮🇳</span><span data-en="Built for India" data-hi="भारत के लिए बना">Built for India</span></li>
+          <li class="pill"><span aria-hidden="true">✅</span><span data-en="No account needed" data-hi="अकाउंट की ज़रूरत नहीं">No account needed</span></li>
+        </ul>
+      </section>
+
+      <!-- ── Section 4 — How it works ─────────────────────────── -->
+      <section class="how" id="how" aria-labelledby="how-title">
+        <h2 id="how-title" data-en="How it works" data-hi="यह कैसे काम करता है">How it works</h2>
+        <ol class="how__steps">
+          <li class="step">
+            <span class="step__num">1</span>
+            <h3 data-en="Scan or upload" data-hi="स्कैन या अपलोड">Scan or upload</h3>
+            <p data-en="Point your camera. Kagaz crops, deskews, and saves to your vault." data-hi="कैमरा तानिए। Kagaz क्रॉप करता है, सीधा करता है, और आपके वॉल्ट में सहेजता है।">Point your camera. Kagaz crops, deskews, and saves to your vault.</p>
+          </li>
+          <li class="step">
+            <span class="step__num">2</span>
+            <h3 data-en="Speak to Mitra" data-hi="Mitra से बोलिए">Speak to Mitra</h3>
+            <p data-en="Ask in Hindi or English: “मेरा PAN दिखाओ”, “merge these”, “fill this form from my Aadhaar.”" data-hi="हिंदी या अंग्रेज़ी में पूछिए: “मेरा PAN दिखाओ”, “इन्हें merge करो”, “मेरे आधार से यह फ़ॉर्म भरो।”">Ask in Hindi or English: “मेरा PAN दिखाओ”, “merge these”, “fill this form from my Aadhaar.”</p>
+          </li>
+          <li class="step">
+            <span class="step__num step__num--done">✓</span>
+            <h3 data-en="Done." data-hi="बस।">Done.</h3>
+            <p data-en="Merged. Compressed. Signed. Submitted. Your work is done." data-hi="मर्ज। कंप्रेस। साइन। सबमिट। आपका काम हो गया।">Merged. Compressed. Signed. Submitted. Your work is done.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ── Section 5 — Feature pillars ──────────────────────── -->
+      <section class="pillars" id="pillars" aria-labelledby="pillars-title">
+        <h2 id="pillars-title" class="visually-hidden">Features</h2>
+        <div class="pillars__grid">
+          <article class="pillar">
+            <span class="pillar__icon" aria-hidden="true">🗄️</span>
+            <h3 data-en="Your papers, encrypted on your phone." data-hi="आपके दस्तावेज़, आपके फ़ोन पर एन्क्रिप्टेड।">Your papers, encrypted on your phone.</h3>
+            <p data-en="Aadhaar, PAN, marksheet, passport — sorted, searchable, never leaves your device." data-hi="आधार, PAN, मार्कशीट, पासपोर्ट — व्यवस्थित, खोजने-योग्य, कभी डिवाइस से बाहर नहीं।">Aadhaar, PAN, marksheet, passport — sorted, searchable, never leaves your device.</p>
+          </article>
+          <article class="pillar">
+            <span class="pillar__icon" aria-hidden="true">🤖</span>
+            <h3 data-en="An assistant that speaks your language." data-hi="एक सहायक जो आपकी भाषा बोलता है।">An assistant that speaks your language.</h3>
+            <p data-en="Voice or text, Hindi or English. Merges, signs, fills forms — all on-device. No cloud, no listening." data-hi="आवाज़ या टेक्स्ट, हिंदी या अंग्रेज़ी। मर्ज, साइन, फ़ॉर्म भरना — सब डिवाइस पर। कोई क्लाउड नहीं, कोई सुनवाई नहीं।">Voice or text, Hindi or English. Merges, signs, fills forms — all on-device. No cloud, no listening.</p>
+          </article>
+          <article class="pillar">
+            <span class="pillar__icon" aria-hidden="true">🔗</span>
+            <h3 data-en="Share with a 5-digit code." data-hi="5-अंकों के कोड से साझा करें।">Share with a 5-digit code. <span class="tag">V2</span></h3>
+            <p data-en="Send your marksheet to your university. The link dies in 24 hours. You stay in control." data-hi="अपनी मार्कशीट विश्वविद्यालय को भेजें। लिंक 24 घंटे में खत्म। नियंत्रण आपके पास।">Send your marksheet to your university. The link dies in 24 hours. You stay in control.</p>
+          </article>
+          <article class="pillar">
+            <span class="pillar__icon" aria-hidden="true">🏛️</span>
+            <h3 data-en="Government services without the queue." data-hi="बिना कतार सरकारी सेवाएँ।">Government services without the queue. <span class="tag">V3</span></h3>
+            <p data-en="Apply for PAN, update Aadhaar, book an Ayushman card — from your couch, with Mitra guiding you." data-hi="PAN के लिए आवेदन, आधार अपडेट, आयुष्मान कार्ड — घर बैठे, Mitra के साथ।">Apply for PAN, update Aadhaar, book an Ayushman card — from your couch, with Mitra guiding you.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- ── Section 6 — Privacy ──────────────────────────────── -->
+      <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+        <h2 id="privacy-title" data-en="Your papers stay on your phone. Always." data-hi="आपके दस्तावेज़ आपके फ़ोन में रहते हैं। हमेशा।">Your papers stay on your phone. Always.</h2>
+        <p data-en="We don’t have your Aadhaar. We can’t have it. Kagaz runs entirely on your device — the AI, the search, the encryption. There is no Kagaz server that holds your documents." data-hi="हमारे पास आपका आधार नहीं है। हो ही नहीं सकता। Kagaz पूरी तरह आपके डिवाइस पर चलता है — AI, खोज, एन्क्रिप्शन। ऐसा कोई Kagaz सर्वर नहीं जो आपके दस्तावेज़ रखे।">We don’t have your Aadhaar. We can’t have it. Kagaz runs entirely on your device — the AI, the search, the encryption. There is no Kagaz server that holds your documents.</p>
+        <p data-en="When you share (V2), only you decide who, how long, and what they can do." data-hi="जब आप साझा करते हैं (V2), केवल आप तय करते हैं कौन, कितनी देर, और क्या कर सकते हैं।">When you share (V2), only you decide who, how long, and what they can do.</p>
+        <a class="btn btn--link" href="/privacy" data-agent-id="landing.privacy-cta" data-agent-action="landing.openPrivacy" data-en="Read the privacy promise ▸" data-hi="गोपनीयता का वादा पढ़ें ▸">Read the privacy promise ▸</a>
+      </section>
+
+      <!-- ── Section 7 — Language strip ───────────────────────── -->
+      <section class="langs" aria-label="Languages">
+        <p class="langs__list"><span>English</span> · <span lang="hi">हिन्दी</span> · <span lang="ta">தமிழ்</span> · <span lang="te">తెలుగు</span> · <span lang="bn">বাংলা</span> · <span lang="mr">मराठी</span></p>
+        <p class="langs__tag" data-en="Switch anytime. Mitra speaks your language too." data-hi="कभी भी बदलें। Mitra भी आपकी भाषा बोलता है।">Switch anytime. Mitra speaks your language too.</p>
+      </section>
+
+      <!-- ── Section 8 — Final CTA ────────────────────────────── -->
+      <section class="finalcta" id="cta">
+        <p class="finalcta__slogan" data-en="Sab kagaj. Ek Jagah." data-hi="सब कागज़। एक जगह।">Sab kagaj. Ek Jagah.</p>
+        <p class="finalcta__words">Scan · Store · Search · Sign · Secure · Share · Speak · Simplify</p>
+        <a class="btn btn--primary btn--lg" href="https://play.google.com/store/apps/details?id=in.kagaz.app" data-agent-id="landing.footer.primary-cta" data-agent-action="landing.installApp" data-en="Get Kagaz — it's free" data-hi="Kagaz पाएँ — मुफ़्त है">Get Kagaz — it's free</a>
+        <p class="finalcta__avail" data-en="Available on Android · iOS coming soon" data-hi="Android पर उपलब्ध · iOS जल्द ही">Available on Android · iOS coming soon</p>
+      </section>
+    </main>
+
+    <!-- ── Section 9 — Footer ─────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="site-footer__cols">
+        <div>
+          <h4>Kagaz</h4>
+          <ul>
+            <li><a href="#how" data-en="How it works" data-hi="यह कैसे काम करता है">How it works</a></li>
+            <li><a href="/privacy" data-en="Privacy" data-hi="गोपनीयता">Privacy</a></li>
+            <li><a href="/terms" data-en="Terms" data-hi="शर्तें">Terms</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 data-en="For users" data-hi="उपयोगकर्ताओं के लिए">For users</h4>
+          <ul>
+            <li><a href="#langs" data-en="Languages" data-hi="भाषाएँ">Languages</a></li>
+            <li><a href="#privacy" data-en="Accessibility" data-hi="सुलभता">Accessibility</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Omni Docs</h4>
+          <ul>
+            <li><a href="#" data-en="The company" data-hi="कंपनी">The company</a></li>
+          </ul>
+        </div>
+      </div>
+      <p class="site-footer__legal">© 2026 Omni Docs. Made in India. 🇮🇳</p>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
