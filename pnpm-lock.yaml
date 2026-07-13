@@ -279,6 +279,8 @@ importers:
 
   apps/legal-site: {}
 
+  apps/marketing: {}
+
   packages/agent-kit:
     dependencies:
       zod:

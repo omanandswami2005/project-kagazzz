@@ -24,6 +24,8 @@ export default tseslint.config(
       'apps/docs/',
       // Standalone static legal site (G1-5) — plain Node generator, no tsconfig.
       'apps/legal-site/',
+      // Standalone static marketing/landing site (G1-8) — vanilla HTML/CSS/JS.
+      'apps/marketing/',
     ],
   },
   eslint.configs.recommended,
