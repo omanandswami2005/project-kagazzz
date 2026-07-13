@@ -138,6 +138,20 @@ describe('validateFile', () => {
     ).resolves.toEqual({ valid: false, code: VaultErrorCode.CORRUPTED_FILE });
   });
 
+  it('accepts a .xlsx with the ZIP signature (F-42)', async () => {
+    const zip = new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0])]);
+    await expect(validateFile('budget.xlsx', zip)).resolves.toEqual({
+      valid: true,
+      fileType: FileType.XLSX,
+    });
+  });
+
+  it('accepts a .csv (F-42, text, no signature)', async () => {
+    await expect(
+      validateFile('data.csv', new Blob(['a,b\n1,2']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.CSV });
+  });
+
   it('rejects files over the size ceiling', async () => {
     const big = {
       size: MAX_FILE_SIZE_BYTES + 1,

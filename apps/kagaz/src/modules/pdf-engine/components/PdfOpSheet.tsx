@@ -96,6 +96,7 @@ export function PdfOpSheet({
   const [quality, setQuality] = useState<CompressionLevel>('medium');
   const [format, setFormat] = useState<'png' | 'jpeg'>('png');
   const [textFormat, setTextFormat] = useState<'txt' | 'md'>('txt');
+  const [sheetFormat, setSheetFormat] = useState<'xlsx' | 'csv'>('xlsx');
   const [password, setPassword] = useState('');
   const [watermarkText, setWatermarkText] = useState('');
   const [pageNumberPosition, setPageNumberPosition] =
@@ -121,6 +122,7 @@ export function PdfOpSheet({
     setQuality('medium');
     setFormat('png');
     setTextFormat('txt');
+    setSheetFormat('xlsx');
     setPassword('');
     setWatermarkText('');
     setPageNumberPosition('bottom-center');
@@ -269,6 +271,9 @@ export function PdfOpSheet({
         }
         if (op === 'pdfToWord') {
           return engine.exportPdfToWord(doc);
+        }
+        if (op === 'pdfToExcel') {
+          return engine.exportPdfToSheet(doc, sheetFormat);
         }
         if (op === 'stamp') {
           const image = imageDocs.find((d) => d.id === stampImageId);
@@ -522,6 +527,31 @@ export function PdfOpSheet({
     }
     if (op === 'pdfToWord') {
       return <p className="kg-pdf-op__note">{t('params.word_note')}</p>;
+    }
+    if (op === 'pdfToExcel') {
+      return (
+        <>
+          <div
+            className="kg-pdf-op__choices"
+            role="group"
+            aria-label={t('params.sheet_format')}
+          >
+            <p className="kg-pdf-op__label">{t('params.sheet_format')}</p>
+            {(['xlsx', 'csv'] as const).map((f) => (
+              <Button
+                key={f}
+                variant={sheetFormat === f ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setSheetFormat(f)}
+                agentId={`pdf-tools.op-sheet.sheet-format-${f}`}
+              >
+                {t(`params.sheet_format_${f}`)}
+              </Button>
+            ))}
+          </div>
+          <p className="kg-pdf-op__note">{t('params.excel_note')}</p>
+        </>
+      );
     }
     if (op === 'pdfToText') {
       return (

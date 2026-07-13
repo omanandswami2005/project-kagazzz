@@ -123,9 +123,11 @@ enum FileType {
   TIFF = 'tiff',
   BMP = 'bmp',
   GIF = 'gif',
-  DOCX = 'docx',
+  DOCX = 'docx',   // F-41: PDF → Word export; F-43 view
   TXT = 'txt',
-  MD = 'md',   // F-40: PDF → Markdown export target
+  MD = 'md',       // F-40: PDF → Markdown export target
+  XLSX = 'xlsx',   // F-42: PDF → Excel export
+  CSV = 'csv',     // F-42: PDF → CSV export
 }
 
 enum OcrStatus {
@@ -379,7 +381,7 @@ interface UploadProgress {
 
 | Check | Rule | Error Message |
 |---|---|---|
-| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT, MD" |
+| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT, MD, XLSX, CSV" |
 | **File Size** | Max 100 MB | "File exceeds maximum size of 100 MB" |
 | **File Name** | Non-empty after sanitization | "Invalid file name" |
 | **Corruption** | File header validation (magic bytes) | "File appears to be corrupted" |

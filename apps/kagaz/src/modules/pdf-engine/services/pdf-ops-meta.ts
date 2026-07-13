@@ -9,6 +9,7 @@ export type PdfOpId =
   | 'pdfToImages'
   | 'pdfToText'
   | 'pdfToWord'
+  | 'pdfToExcel'
   | 'imagesToPdf'
   | 'watermark'
   | 'stamp'
@@ -37,6 +38,7 @@ export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'pdfToImages', icon: 'FileImage', input: 'pdf-single' },
   { id: 'pdfToText', icon: 'FileText', input: 'pdf-single' },
   { id: 'pdfToWord', icon: 'FileType', input: 'pdf-single' },
+  { id: 'pdfToExcel', icon: 'FileSpreadsheet', input: 'pdf-single' },
   { id: 'imagesToPdf', icon: 'Images', input: 'images' },
   { id: 'watermark', icon: 'Pencil', input: 'pdf-single' },
   { id: 'stamp', icon: 'Stamp', input: 'pdf-single' },

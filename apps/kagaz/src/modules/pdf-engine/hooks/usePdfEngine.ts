@@ -96,6 +96,7 @@ export interface UsePdfEngineResult {
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
   exportPdfText: (doc: DocumentEntity, format: TextExportFormat) => Promise<number>;
   exportPdfToWord: (doc: DocumentEntity) => Promise<number>;
+  exportPdfToSheet: (doc: DocumentEntity, format: 'xlsx' | 'csv') => Promise<number>;
   encryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   decryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   /** Reads a form PDF's fields (no save). */
@@ -384,6 +385,17 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const exportPdfToSheet = useCallback(
+    (doc: DocumentEntity, format: 'xlsx' | 'csv'): Promise<number> =>
+      run(async (engine) => {
+        const blob = await engine.pdfToSheet(await readBytes(doc), format);
+        return save([
+          { name: `${baseName(doc.name)}.${format}`, blob, source: 'ai_generated' },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const encryptPdf = useCallback(
     (doc: DocumentEntity, password: string): Promise<number> =>
       run(async (engine) => {
@@ -475,6 +487,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     pdfToImages,
     exportPdfText,
     exportPdfToWord,
+    exportPdfToSheet,
     encryptPdf,
     decryptPdf,
     loadFormFields,
