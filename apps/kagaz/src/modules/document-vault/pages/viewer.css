@@ -30,6 +30,34 @@
   display: block;
 }
 
+/* F-43: rendered Word document. Constrain width and give it document-like
+   spacing so headings/paragraphs/tables read cleanly. */
+.kg-viewer__docx {
+  padding: var(--space-4);
+  max-width: 46rem;
+  margin: 0 auto;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.kg-viewer__docx img {
+  max-width: 100%;
+  height: auto;
+}
+
+.kg-viewer__docx table {
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.kg-viewer__docx td,
+.kg-viewer__docx th {
+  border: 1px solid var(--surface-3, var(--surface-2));
+  padding: var(--space-1) var(--space-2);
+}
+
 .kg-viewer__text {
   padding: var(--space-4);
   display: flex;

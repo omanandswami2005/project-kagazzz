@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocumentFile } from '../hooks/useDocumentFile';
+import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
@@ -37,6 +38,8 @@ export function DocumentViewerPage(): ReactNode {
   const router = useIonRouter();
   const { document, loading } = useDocument(id);
   const { pages, loading: fileLoading, error } = useDocumentFile(document);
+  const { html: docxHtml, loading: docxLoading, error: docxError } = useDocxHtml(document);
+  const isDocxDoc = document?.fileType.toLowerCase() === 'docx';
   const { extractText, runningId } = useDocumentOcr();
   const { softDelete } = useVaultMutations();
 
@@ -103,15 +106,23 @@ export function DocumentViewerPage(): ReactNode {
 
       <IonContent>
         <main className="kg-viewer" data-agent-id="vault.viewer.content">
-          {loading || fileLoading ? (
+          {loading || fileLoading || (isDocxDoc && docxLoading) ? (
             <div className="kg-viewer__center" data-agent-state="loading">
               <IonSpinner name="crescent" />
             </div>
-          ) : error || !document ? (
+          ) : error || !document || (isDocxDoc && docxError) ? (
             <div className="kg-viewer__center" data-agent-id="vault.viewer.error">
               <Icon name="AlertCircle" size={32} aria-hidden />
               <p>{t('viewer.error')}</p>
             </div>
+          ) : isDocxDoc ? (
+            // F-43: rendered + sanitised Word document (see docx-viewer.ts).
+            <section
+              className="kg-viewer__docx"
+              data-agent-id="vault.viewer.docx"
+              // HTML is allow-list sanitised in convertDocxToHtml (docx-viewer.ts).
+              dangerouslySetInnerHTML={{ __html: docxHtml ?? '' }}
+            />
           ) : (
             <>
               <div className="kg-viewer__pages" data-agent-id="vault.viewer.pages">

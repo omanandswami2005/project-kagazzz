@@ -1149,6 +1149,12 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
     URIs** (docs.oasis-open.org, purl.org, schemas.microsoft.com). Lazy-loaded via
     `pdf-to-sheet-ops.ts`. (npm publishes 0.18.5; newer builds are CDN-only — we
     pin the permissive npm release.)
+  - **`mammoth` @ 1.12.0 (BSD-2-Clause) audited & added 2026-07-13 (F-43):** the
+    browser build carries **no `.wasm`, no CDN, no `fetch`/XHR/`importScripts`**;
+    its `browser` field swaps the Node `fs`/unzip for a pure-JS unzipper, so the
+    Vite bundle pulls **no `fs`** (verified — no externalization warning). Lazy-
+    loaded via `docx-viewer.ts`; mammoth's HTML is **allow-list sanitised**
+    (`sanitizeDocxHtml`) before it reaches the viewer.
 - **[SEC]** conversion outputs are document content (PII) → treated exactly like
   documents: written only through `FileStorage` into the encrypted vault, never
   logged; the source never leaves the device.
