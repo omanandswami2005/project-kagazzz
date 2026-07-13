@@ -52,13 +52,27 @@ export default defineConfig(({ mode }) => {
           assetFileNames: 'assets/[ext]/[name].[hash][extname]',
           // Framework code ships in one stable vendor chunk; feature modules
           // (vault, scanner, ai, pdf-engine, csc) split automatically via
-          // React.lazy() route-level dynamic imports.
-          manualChunks: (id: string): string | undefined =>
-            /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/.test(
-              id
-            )
-              ? 'vendor'
-              : undefined,
+          // React.lazy() route-level dynamic imports. The heavy media/office
+          // libraries get their own deterministically-named lazy chunks so the
+          // bundle-size gate can account for them explicitly (G1-4): they are
+          // off the initial route and ship inside the APK, so they never hit
+          // cold-start FCP.
+          manualChunks: (id: string): string | undefined => {
+            if (
+              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/.test(
+                id
+              )
+            ) {
+              return 'vendor';
+            }
+            if (/[\\/]node_modules[\\/]pdfjs-dist[\\/]/.test(id)) return 'lib-pdfjs';
+            if (/[\\/]node_modules[\\/]pdf-lib[\\/]/.test(id)) return 'lib-pdflib';
+            if (/[\\/]node_modules[\\/]xlsx[\\/]/.test(id)) return 'lib-xlsx';
+            if (/[\\/]node_modules[\\/]docx[\\/]/.test(id)) return 'lib-docx';
+            if (/[\\/]node_modules[\\/]mammoth[\\/]/.test(id)) return 'lib-mammoth';
+            if (/[\\/]node_modules[\\/]jszip[\\/]/.test(id)) return 'lib-jszip';
+            return undefined;
+          },
         },
       },
     },

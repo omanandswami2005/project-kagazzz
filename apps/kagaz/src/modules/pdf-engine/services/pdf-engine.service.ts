@@ -22,7 +22,6 @@ import { extractPdfTextImpl, pdfToImagesImpl } from './pdf-render-ops';
 import { compressPdfImpl } from './pdf-compress-ops';
 import { buildWordFromText } from './pdf-to-word-ops';
 import { buildSheet, splitRow, type SheetFormat } from './pdf-to-sheet-ops';
-import { getFormFieldsImpl } from './pdf-forms-ops';
 
 // Vite worker loader (pdf-lib / pdfsmaller ops — no DOM needed).
 import PdfManipulationWorker from '../workers/pdf-manipulation.worker?worker';
@@ -416,8 +415,10 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     const id = crypto.randomUUID();
     this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: 'pdfToSheet' });
     try {
-      // Prefer structured form fields; fall back to splitting text lines.
-      const fields = await getFormFieldsImpl(clone(pdf));
+      // Prefer structured form fields; fall back to splitting text lines. The
+      // field read runs in the worker (via getFormFields) so pdf-lib stays off
+      // the main-thread PdfToolsPage chunk (G1-4 bundle budget).
+      const fields = await this.getFormFields(pdf);
       let rows: string[][];
       if (fields.length > 0) {
         rows = [['Field', 'Value'], ...fields.map((f) => [f.name, f.value])];

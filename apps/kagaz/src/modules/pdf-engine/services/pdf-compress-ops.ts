@@ -1,4 +1,3 @@
-import { loadAndValidatePdf, imagesToPdfImpl } from './pdf-ops';
 import { pdfToImagesImpl } from './pdf-render-ops';
 import {
   type CompressionLevel,
@@ -36,6 +35,9 @@ export async function compressPdfImpl(
   onProgress?: ProgressCallback
 ): Promise<Uint8Array> {
   const op = 'compressPdf';
+  // Lazy-load the pdf-lib ops so pdf-lib stays out of the main PdfToolsPage
+  // chunk (G1-4): it only loads the first time a compress actually runs.
+  const { loadAndValidatePdf, imagesToPdfImpl } = await import('./pdf-ops');
   await loadAndValidatePdf(pdf, op); // reject non-PDFs up front
 
   const { scale, quality: jpegQuality } = SETTINGS[quality];
