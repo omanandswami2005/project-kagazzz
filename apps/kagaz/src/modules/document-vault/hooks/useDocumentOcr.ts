@@ -25,12 +25,22 @@ import { isPdf } from './useDocumentFile';
 
 const logger = log('document-vault');
 
-/** Image MIME types OCR can read (ML Kit takes a bitmap). */
-const OCR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+/**
+ * Image types OCR can read (ML Kit takes a bitmap). Matched against the stored
+ * `documents.fileType`, which is the lowercased **extension** (e.g. `jpg`), not
+ * a MIME type — comparing it to MIME strings was the F-20 bug that stopped image
+ * OCR from ever running.
+ */
+const OCR_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
+
+/** Whether a stored fileType is an OCR-able image (pure; platform-independent). */
+export function isOcrableType(fileType: string): boolean {
+  return OCR_EXTENSIONS.has(fileType.toLowerCase());
+}
 
 /** Whether ML Kit OCR can run on this document (native platform + image type). */
 export function canOcr(document: DocumentEntity): boolean {
-  return isOcrSupported() && OCR_TYPES.includes(document.fileType);
+  return isOcrSupported() && isOcrableType(document.fileType);
 }
 
 /**

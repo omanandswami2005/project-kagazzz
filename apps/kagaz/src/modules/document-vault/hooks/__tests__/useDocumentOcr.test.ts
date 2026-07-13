@@ -37,10 +37,17 @@ vi.mock('@/infrastructure/database/dao', () => ({
   },
 }));
 
-import { canExtractText, canOcr, useDocumentOcr } from '../useDocumentOcr';
+import {
+  canExtractText,
+  canOcr,
+  isOcrableType,
+  useDocumentOcr,
+} from '../useDocumentOcr';
 
+// `fileType` is the stored lowercased EXTENSION (e.g. 'jpg'), not a MIME type —
+// the fixtures mirror what the upload pipeline actually persists.
 const doc = (over: Partial<DocumentEntity> = {}): DocumentEntity =>
-  ({ id: 'd1', filePath: 'documents/d1.jpg', fileType: 'image/jpeg', ...over }) as DocumentEntity;
+  ({ id: 'd1', filePath: 'documents/d1.jpg', fileType: 'jpg', ...over }) as DocumentEntity;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,12 +60,28 @@ beforeEach(() => {
   update.mockResolvedValue(1);
 });
 
+describe('isOcrableType (regression: extension, not MIME)', () => {
+  it('accepts stored image extensions', () => {
+    for (const ext of ['jpg', 'jpeg', 'png', 'webp', 'PNG']) {
+      expect(isOcrableType(ext)).toBe(true);
+    }
+  });
+  it('rejects non-image extensions', () => {
+    for (const ext of ['pdf', 'txt', 'docx', 'heic']) {
+      expect(isOcrableType(ext)).toBe(false);
+    }
+  });
+  it('does NOT accept MIME strings (the shape that caused the bug)', () => {
+    expect(isOcrableType('image/jpeg')).toBe(false);
+  });
+});
+
 describe('canOcr', () => {
   it('is true for images on a native platform', () => {
     expect(canOcr(doc())).toBe(true);
   });
   it('is false for non-image documents', () => {
-    expect(canOcr(doc({ fileType: 'application/pdf' }))).toBe(false);
+    expect(canOcr(doc({ fileType: 'pdf' }))).toBe(false);
   });
   it('is false when OCR is unsupported (web)', () => {
     isOcrSupported.mockReturnValue(false);
@@ -72,10 +95,10 @@ describe('canExtractText (UX-13)', () => {
   });
   it('is true for PDFs (text layer) even when OCR is unsupported', () => {
     isOcrSupported.mockReturnValue(false);
-    expect(canExtractText(doc({ fileType: 'application/pdf' }))).toBe(true);
+    expect(canExtractText(doc({ fileType: 'pdf' }))).toBe(true);
   });
   it('is false for other types', () => {
-    expect(canExtractText(doc({ fileType: 'text/plain' }))).toBe(false);
+    expect(canExtractText(doc({ fileType: 'txt' }))).toBe(false);
   });
 });
 
@@ -105,7 +128,7 @@ describe('useDocumentOcr (F-20)', () => {
     let text: string | null = null;
     await act(async () => {
       text = await result.current.extractText(
-        doc({ filePath: 'documents/d1.pdf', fileType: 'application/pdf' })
+        doc({ filePath: 'documents/d1.pdf', fileType: 'pdf' })
       );
     });
     expect(text).toBe('INVOICE #42 total 999');
@@ -119,7 +142,7 @@ describe('useDocumentOcr (F-20)', () => {
     const { result } = renderHook(() => useDocumentOcr());
     let out: string | null = 'x';
     await act(async () => {
-      out = await result.current.extractText(doc({ fileType: 'text/plain' }));
+      out = await result.current.extractText(doc({ fileType: 'txt' }));
     });
     expect(out).toBeNull();
     expect(recognizeDocumentText).not.toHaveBeenCalled();
