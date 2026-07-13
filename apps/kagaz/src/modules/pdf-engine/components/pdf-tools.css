@@ -84,6 +84,13 @@
   gap: var(--space-3);
 }
 
+/* F-38 image stamp: image sub-picker + placement controls, stacked. */
+.kg-pdf-op__stamp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
 .kg-pdf-op__status {
   color: var(--text-secondary);
   font-size: var(--text-sm);

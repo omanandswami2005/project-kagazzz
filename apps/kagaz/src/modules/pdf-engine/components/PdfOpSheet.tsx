@@ -22,6 +22,7 @@ import type {
   PageNumberFormat,
   PageNumberPosition,
   PdfMetadata,
+  StampPosition,
 } from '../types/pdf-engine.types';
 import type { UsePdfEngineResult } from '../hooks/usePdfEngine';
 import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
@@ -50,6 +51,18 @@ const PAGE_NUMBER_POSITIONS: PageNumberPosition[] = [
   'top-left',
 ];
 const PAGE_NUMBER_FORMATS: PageNumberFormat[] = ['plain', 'page-n', 'n-of-total'];
+const STAMP_POSITIONS: StampPosition[] = [
+  'bottom-right',
+  'bottom-left',
+  'bottom-center',
+  'top-right',
+  'top-left',
+  'top-center',
+  'center',
+];
+/** Image width as a percentage of the page width, per size choice (F-38). */
+const STAMP_SIZES = { small: 15, medium: 25, large: 40 } as const;
+type StampSize = keyof typeof STAMP_SIZES;
 
 /** Adaptive operation modal. */
 export function PdfOpSheet({
@@ -72,6 +85,12 @@ export function PdfOpSheet({
     return documents.filter((d) => d.fileType.toLowerCase() === 'pdf');
   }, [meta, documents]);
 
+  // Vault images available to stamp onto a PDF (F-38); embeddable types only.
+  const imageDocs = useMemo(
+    () => documents.filter((d) => IMAGE_TYPES.has(d.fileType.toLowerCase())),
+    [documents]
+  );
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [ranges, setRanges] = useState('');
   const [quality, setQuality] = useState<CompressionLevel>('medium');
@@ -82,6 +101,11 @@ export function PdfOpSheet({
   const [pageNumberPosition, setPageNumberPosition] =
     useState<PageNumberPosition>('bottom-center');
   const [pageNumberFormat, setPageNumberFormat] = useState<PageNumberFormat>('plain');
+  // F-38 image stamp: which vault image, and where/how big on which page.
+  const [stampImageId, setStampImageId] = useState<string | null>(null);
+  const [stampPage, setStampPage] = useState('1');
+  const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
+  const [stampSize, setStampSize] = useState<StampSize>('medium');
   const [fields, setFields] = useState<FormField[] | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   // F-39: null while the selected PDF's metadata loads, then the editable draft.
@@ -101,6 +125,10 @@ export function PdfOpSheet({
     setWatermarkText('');
     setPageNumberPosition('bottom-center');
     setPageNumberFormat('plain');
+    setStampImageId(null);
+    setStampPage('1');
+    setStampPosition('bottom-right');
+    setStampSize('medium');
     setFields(null);
     setFieldValues({});
     setMetaDraft(null);
@@ -238,6 +266,23 @@ export function PdfOpSheet({
         }
         if (op === 'pdfToText') {
           return engine.exportPdfText(doc, textFormat);
+        }
+        if (op === 'stamp') {
+          const image = imageDocs.find((d) => d.id === stampImageId);
+          if (!image) {
+            setLocalError(t('errors.need_image'));
+            return 0;
+          }
+          const page = Number.parseInt(stampPage, 10);
+          if (!Number.isInteger(page) || page < 1) {
+            setLocalError(t('errors.bad_page'));
+            return 0;
+          }
+          return engine.stampImage(doc, image, {
+            page: page - 1,
+            position: stampPosition,
+            widthPercent: STAMP_SIZES[stampSize],
+          });
         }
         if (op === 'encrypt' || op === 'decrypt') {
           if (!password) {
@@ -411,6 +456,65 @@ export function PdfOpSheet({
           onChange={setWatermarkText}
           agentId="pdf-tools.op-sheet.watermark-text"
         />
+      );
+    }
+    if (op === 'stamp') {
+      return (
+        <div className="kg-pdf-op__stamp">
+          <p className="kg-pdf-op__label">{t('params.stamp_image')}</p>
+          <PdfDocPicker
+            documents={imageDocs}
+            multi={false}
+            selectedIds={stampImageId ? [stampImageId] : []}
+            onChange={(ids) => setStampImageId(ids[0] ?? null)}
+            emptyText={t('pick.empty_images')}
+            idPrefix="pdf-tools.stamp-picker"
+          />
+          <Input
+            type="number"
+            label={t('params.stamp_page')}
+            helperText={t('params.stamp_page_hint')}
+            value={stampPage}
+            onChange={setStampPage}
+            agentId="pdf-tools.op-sheet.stamp-page"
+          />
+          <div
+            className="kg-pdf-op__choices"
+            role="group"
+            aria-label={t('params.stamp_position')}
+          >
+            <p className="kg-pdf-op__label">{t('params.stamp_position')}</p>
+            {STAMP_POSITIONS.map((p) => (
+              <Button
+                key={p}
+                variant={stampPosition === p ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setStampPosition(p)}
+                agentId={`pdf-tools.op-sheet.stamp-position-${p}`}
+              >
+                {t(`params.position_${p}`)}
+              </Button>
+            ))}
+          </div>
+          <div
+            className="kg-pdf-op__choices"
+            role="group"
+            aria-label={t('params.stamp_size')}
+          >
+            <p className="kg-pdf-op__label">{t('params.stamp_size')}</p>
+            {(Object.keys(STAMP_SIZES) as StampSize[]).map((s) => (
+              <Button
+                key={s}
+                variant={stampSize === s ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setStampSize(s)}
+                agentId={`pdf-tools.op-sheet.stamp-size-${s}`}
+              >
+                {t(`params.stamp_size_${s}`)}
+              </Button>
+            ))}
+          </div>
+        </div>
       );
     }
     if (op === 'pdfToText') {

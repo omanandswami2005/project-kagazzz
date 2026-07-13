@@ -207,8 +207,8 @@ interface PdfEngineService {
   // ── Annotation ────────────────────────────────────────
   /** Add a text watermark to all pages */
   addWatermark(pdf: Uint8Array, text: string, options: WatermarkOptions): Promise<Uint8Array>;
-  /** Stamp an image onto specific pages */
-  addStamp(pdf: Uint8Array, image: Uint8Array, position: StampPosition): Promise<Uint8Array>;
+  /** Stamp an image (signature/photo) onto a chosen page (F-38) */
+  stampImage(pdf: Uint8Array, image: ImageInput, options: StampOptions): Promise<Uint8Array>;
 
   // ── Lifecycle ─────────────────────────────────────────
   /** Initialize the engine (preload WASM, spawn workers) */

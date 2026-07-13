@@ -31,6 +31,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'watermark' },
     },
     {
+      utterance: 'add a signature to a pdf',
+      action: 'tools.openPdfTools',
+      args: { op: 'stamp' },
+    },
+    {
       utterance: 'add page numbers',
       action: 'tools.openPdfTools',
       args: { op: 'pageNumbers' },

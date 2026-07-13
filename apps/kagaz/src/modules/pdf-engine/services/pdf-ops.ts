@@ -5,6 +5,8 @@ import {
   type PageNumberPosition,
   type PageRange,
   type ProgressCallback,
+  type StampOptions,
+  type StampPosition,
   PdfEngineException,
 } from '../types/pdf-engine.types';
 
@@ -258,6 +260,123 @@ export async function watermarkPdfImpl(
   }
 
   return doc.save();
+}
+
+/** Margin (pt) from the page edge for a stamped image (F-38). */
+const STAMP_MARGIN = 24;
+
+/**
+ * Computes the bottom-left (x, y) for a stamped image box of the given size,
+ * positioned within the page with a margin (F-38). pdf-lib's origin is the
+ * bottom-left corner.
+ */
+function stampXY(
+  position: StampPosition,
+  pageWidth: number,
+  pageHeight: number,
+  boxWidth: number,
+  boxHeight: number
+): { x: number; y: number } {
+  const [vertical, horizontal] = position.split('-');
+  let x: number;
+  if (horizontal === 'left') {
+    x = STAMP_MARGIN;
+  } else if (horizontal === 'right') {
+    x = pageWidth - STAMP_MARGIN - boxWidth;
+  } else {
+    x = (pageWidth - boxWidth) / 2;
+  }
+  let y: number;
+  // 'center' has no dash → vertical === 'center', horizontal === undefined.
+  if (vertical === 'top') {
+    y = pageHeight - STAMP_MARGIN - boxHeight;
+  } else if (vertical === 'center') {
+    y = (pageHeight - boxHeight) / 2;
+    x = (pageWidth - boxWidth) / 2;
+  } else {
+    y = STAMP_MARGIN;
+  }
+  return { x, y };
+}
+
+/**
+ * Stamps an image (a signature or photo) onto one page of a PDF (F-38). The
+ * image is scaled to `widthPercent` of the page width and placed in the chosen
+ * corner/edge. Only JPEG and PNG embed in pdf-lib. pdf-lib only, offline.
+ */
+export async function stampImageImpl(
+  pdf: Uint8Array,
+  image: ImageInput,
+  options: StampOptions,
+  onProgress?: ProgressCallback
+): Promise<Uint8Array> {
+  const op = 'stampImage';
+  const doc = await loadAndValidatePdf(pdf, op);
+  const pageCount = doc.getPageCount();
+  if (options.page < 0 || options.page >= pageCount) {
+    throw new PdfEngineException(
+      `Page ${options.page + 1} is out of range (1–${pageCount})`,
+      'PAGE_OUT_OF_RANGE',
+      op
+    );
+  }
+
+  const type = image.mimeType.toLowerCase();
+  let embedded;
+  try {
+    if (JPEG_TYPES.has(type)) {
+      embedded = await doc.embedJpg(image.data);
+    } else if (type === 'image/png') {
+      embedded = await doc.embedPng(image.data);
+    } else {
+      throw new PdfEngineException(
+        `Unsupported stamp image "${image.mimeType}" — use JPEG or PNG`,
+        'UNSUPPORTED_FORMAT',
+        op
+      );
+    }
+  } catch (e: unknown) {
+    if (e instanceof PdfEngineException) {
+      throw e;
+    }
+    const error = e instanceof Error ? e : new Error(String(e));
+    throw new PdfEngineException(
+      `Could not read the stamp image: ${error.message}`,
+      'CORRUPTED_FILE',
+      op,
+      error
+    );
+  }
+
+  onProgress?.({
+    operationId: 'stampImage',
+    operation: op,
+    percent: 50,
+    message: 'Placing image…',
+  });
+
+  const page = doc.getPage(options.page);
+  const { width, height } = page.getSize();
+  const widthPercent = Math.min(100, Math.max(1, options.widthPercent ?? 25));
+  const boxWidth = (width * widthPercent) / 100;
+  const boxHeight = (embedded.height / embedded.width) * boxWidth;
+  const { x, y } = stampXY(
+    options.position ?? 'bottom-right',
+    width,
+    height,
+    boxWidth,
+    boxHeight
+  );
+  page.drawImage(embedded, { x, y, width: boxWidth, height: boxHeight });
+
+  const result = await doc.save();
+  onProgress?.({
+    operationId: 'stampImage',
+    operation: op,
+    percent: 100,
+    message: 'Done',
+  });
+  return result;
 }
 
 /** Margin (pt) from the page edge for stamped page numbers (F-36). */

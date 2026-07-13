@@ -23,6 +23,7 @@ import {
   type PdfErrorCode,
   type ProgressEvent,
   type RenderOptions,
+  type StampOptions,
 } from '../types/pdf-engine.types';
 
 const logger = log('pdf-engine');
@@ -83,6 +84,11 @@ export interface UsePdfEngineResult {
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
+  stampImage: (
+    doc: DocumentEntity,
+    image: DocumentEntity,
+    options: StampOptions
+  ) => Promise<number>;
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
   exportPdfText: (doc: DocumentEntity, format: TextExportFormat) => Promise<number>;
   encryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
@@ -266,6 +272,37 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const stampImage = useCallback(
+    (
+      doc: DocumentEntity,
+      image: DocumentEntity,
+      options: StampOptions
+    ): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const [pdfBytes, imageBytes] = await Promise.all([
+          readBytes(doc),
+          readBytes(image),
+        ]);
+        const out = await engine.stampImage(
+          pdfBytes,
+          {
+            data: imageBytes,
+            mimeType: MIME_FOR[image.fileType.toLowerCase()] ?? 'image/jpeg',
+          },
+          options,
+          onProgress
+        );
+        return save([
+          {
+            name: `${baseName(doc.name)}_signed.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const pdfToImages = useCallback(
     (doc: DocumentEntity, options: RenderOptions): Promise<number> =>
       run(async (engine, onProgress) => {
@@ -392,6 +429,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     addPageNumbers,
     compressPdf,
     imagesToPdf,
+    stampImage,
     pdfToImages,
     exportPdfText,
     encryptPdf,

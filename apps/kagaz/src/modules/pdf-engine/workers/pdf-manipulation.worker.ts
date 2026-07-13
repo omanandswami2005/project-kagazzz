@@ -4,6 +4,7 @@ import {
   imagesToPdfImpl,
   mergePdfsImpl,
   splitPdfImpl,
+  stampImageImpl,
   watermarkPdfImpl,
 } from '../services/pdf-ops';
 import { decryptPdfImpl, encryptPdfImpl } from '../services/pdf-security-ops';
@@ -16,6 +17,7 @@ import {
   type PageRange,
   type PdfMetadata,
   type ProgressEvent,
+  type StampOptions,
   PdfEngineException,
   pdfErrorInfoOf,
 } from '../types/pdf-engine.types';
@@ -112,6 +114,15 @@ async function run(
     case 'imagesToPdf': {
       const { images } = payload as { images: ImageInput[] };
       const result = await imagesToPdfImpl(images, emit);
+      return { data: result, transfer: [result.buffer] };
+    }
+    case 'stampImage': {
+      const { pdf, image, options } = payload as {
+        pdf: Uint8Array;
+        image: ImageInput;
+        options: StampOptions;
+      };
+      const result = await stampImageImpl(pdf, image, options, emit);
       return { data: result, transfer: [result.buffer] };
     }
     case 'watermarkPdf': {
