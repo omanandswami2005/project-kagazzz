@@ -20,7 +20,11 @@ import {
   isOcrSupported,
   recognizeDocumentText,
 } from '@/modules/image-engine/services/ocr.service';
-import { extractPdfTextImpl } from '@/modules/pdf-engine/services/pdf-render-ops';
+import {
+  extractPdfTextImpl,
+  pdfToImagesImpl,
+} from '@/modules/pdf-engine/services/pdf-render-ops';
+import { ocrScannedPdf } from '../services/pdf-ocr';
 import { isPdf } from './useDocumentFile';
 
 const logger = log('document-vault');
@@ -73,14 +77,25 @@ export function useDocumentOcr(): UseDocumentOcr {
       }
       setRunningId(document.id);
       try {
-        // UX-13: PDFs read their embedded text layer (fast, no OCR); images go
-        // through native ML Kit OCR.
-        const text = isPdf(document.fileType)
-          ? await extractPdfTextImpl(await createFileStorage().read(document.filePath))
-          : await recognizeDocumentText(
-              document.filePath,
-              locale === 'hi' ? 'hi' : 'en'
-            );
+        const lang = locale === 'hi' ? 'hi' : 'en';
+        let text: string;
+        if (isPdf(document.fileType)) {
+          // UX-13: read the embedded text layer first (fast, no OCR).
+          const bytes = await createFileStorage().read(document.filePath);
+          text = await extractPdfTextImpl(bytes);
+          // Scanned/image-only PDFs have no text layer — fall back to OCR of the
+          // rendered pages (native only; degrades to '' on web).
+          if (!text.trim() && isOcrSupported()) {
+            text = await ocrScannedPdf(bytes, lang, {
+              renderPages: (pdf) => pdfToImagesImpl(pdf, { format: 'png', scale: 2 }),
+              recognize: recognizeDocumentText,
+              storage: createFileStorage(),
+            });
+          }
+        } else {
+          // Images go straight through native ML Kit OCR.
+          text = await recognizeDocumentText(document.filePath, lang);
+        }
         await new DocumentDao(db).update(document.id, { ocrText: text });
         logger.info({
           event: 'vault.text.stored',
