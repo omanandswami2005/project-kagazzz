@@ -20,6 +20,7 @@ import {
 
 import { extractPdfTextImpl, pdfToImagesImpl } from './pdf-render-ops';
 import { compressPdfImpl } from './pdf-compress-ops';
+import { buildWordFromText } from './pdf-to-word-ops';
 
 // Vite worker loader (pdf-lib / pdfsmaller ops — no DOM needed).
 import PdfManipulationWorker from '../workers/pdf-manipulation.worker?worker';
@@ -373,6 +374,35 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         event: 'engine.request.error',
         opId: id,
         operation: 'extractText',
+        err: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
+  }
+
+  async pdfToWord(pdf: Uint8Array, title: string): Promise<Blob> {
+    this.ensureInitialized();
+    // Extract text (main-thread pdfjs) then build the .docx via lazy-loaded
+    // `docx` (ADR-020). [SEC] the text is document content — never logged.
+    const id = crypto.randomUUID();
+    this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: 'pdfToWord' });
+    try {
+      const text = await extractPdfTextImpl(clone(pdf));
+      if (!text.trim()) {
+        throw new PdfEngineException(
+          'This PDF has no selectable text',
+          'NO_TEXT_LAYER',
+          'pdfToWord'
+        );
+      }
+      const blob = await buildWordFromText(title, text);
+      this.serviceLogger.info({ event: 'engine.request.success', opId: id, operation: 'pdfToWord' });
+      return blob;
+    } catch (e: unknown) {
+      this.serviceLogger.error({
+        event: 'engine.request.error',
+        opId: id,
+        operation: 'pdfToWord',
         err: e instanceof Error ? e.message : String(e),
       });
       throw e;

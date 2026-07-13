@@ -31,6 +31,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'pdfToText' },
     },
     {
+      utterance: 'convert pdf to word',
+      action: 'tools.openPdfTools',
+      args: { op: 'pdfToWord' },
+    },
+    {
       utterance: 'watermark a pdf',
       action: 'tools.openPdfTools',
       args: { op: 'watermark' },

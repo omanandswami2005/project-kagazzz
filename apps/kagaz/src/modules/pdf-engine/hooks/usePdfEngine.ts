@@ -95,6 +95,7 @@ export interface UsePdfEngineResult {
   ) => Promise<number>;
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
   exportPdfText: (doc: DocumentEntity, format: TextExportFormat) => Promise<number>;
+  exportPdfToWord: (doc: DocumentEntity) => Promise<number>;
   encryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   decryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   /** Reads a form PDF's fields (no save). */
@@ -372,6 +373,17 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const exportPdfToWord = useCallback(
+    (doc: DocumentEntity): Promise<number> =>
+      run(async (engine) => {
+        const blob = await engine.pdfToWord(await readBytes(doc), baseName(doc.name));
+        return save([
+          { name: `${baseName(doc.name)}.docx`, blob, source: 'ai_generated' },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const encryptPdf = useCallback(
     (doc: DocumentEntity, password: string): Promise<number> =>
       run(async (engine) => {
@@ -462,6 +474,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     stampImage,
     pdfToImages,
     exportPdfText,
+    exportPdfToWord,
     encryptPdf,
     decryptPdf,
     loadFormFields,

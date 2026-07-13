@@ -190,6 +190,8 @@ interface PdfEngineService {
   // ── Text & OCR ────────────────────────────────────────
   /** Extract selectable text from a PDF (F-40 exports it to .txt/.md) */
   extractText(pdf: Uint8Array): Promise<string>;
+  /** Convert a PDF's text into an editable Word .docx (F-41, ADR-020 `docx`) */
+  pdfToWord(pdf: Uint8Array, title: string): Promise<Blob>;
   /** Run OCR on a scanned PDF to extract text */
   ocrPdf(pdf: Uint8Array, language: string): Promise<string>;
 

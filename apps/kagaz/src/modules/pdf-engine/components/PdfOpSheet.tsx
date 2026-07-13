@@ -267,6 +267,9 @@ export function PdfOpSheet({
         if (op === 'pdfToText') {
           return engine.exportPdfText(doc, textFormat);
         }
+        if (op === 'pdfToWord') {
+          return engine.exportPdfToWord(doc);
+        }
         if (op === 'stamp') {
           const image = imageDocs.find((d) => d.id === stampImageId);
           if (!image) {
@@ -516,6 +519,9 @@ export function PdfOpSheet({
           </div>
         </div>
       );
+    }
+    if (op === 'pdfToWord') {
+      return <p className="kg-pdf-op__note">{t('params.word_note')}</p>;
     }
     if (op === 'pdfToText') {
       return (

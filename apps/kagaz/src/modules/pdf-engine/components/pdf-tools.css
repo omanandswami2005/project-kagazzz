@@ -150,6 +150,17 @@
   margin: 0;
 }
 
+/* Conversion disclaimer (F-41/F-42: text-first, layout may differ). */
+.kg-pdf-op__note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-2);
+  border-left: 3px solid var(--color-primary, currentColor);
+  background: var(--surface-sunken, transparent);
+  border-radius: var(--radius-sm);
+}
+
 .kg-pdf-op__error {
   color: var(--color-danger);
   font-size: var(--text-sm);

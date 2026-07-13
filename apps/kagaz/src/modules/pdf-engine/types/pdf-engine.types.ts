@@ -287,6 +287,9 @@ export interface PdfEngineService {
   /** Extract the embedded text layer of a PDF as plain text (F-40) */
   extractText(pdf: Uint8Array): Promise<string>;
 
+  /** Convert a PDF's text into an editable Word (.docx) document (F-41) */
+  pdfToWord(pdf: Uint8Array, title: string): Promise<Blob>;
+
   /** Render PDF pages to image blobs (F-6) */
   pdfToImages(
     pdf: Uint8Array,
