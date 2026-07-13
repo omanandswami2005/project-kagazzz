@@ -36,6 +36,8 @@ export const UPLOADABLE_FILE_TYPES: readonly FileType[] = [
   // Text/Markdown (F-40 PDF→text export saves these; also uploadable).
   FileType.TXT,
   FileType.MD,
+  // Word (F-41 PDF→Word export; F-43 opens/views these).
+  FileType.DOCX,
 ];
 
 /** Spec §Validation Rules: max document size. */

@@ -1139,6 +1139,10 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
 - **Before adding each**: verify it's on npm and grep its `dist` for
   `workerSrc|jsdelivr|wasm|fetch(` — same media-lib gate that caught the bad PDF
   compressors — to confirm no runtime network/WASM dependency.
+  - **`docx` @ 9.7.1 (MIT) audited & added 2026-07-13 (F-41):** dist carries **no
+    `.wasm`, no CDN/jsdelivr/unpkg, no `fetch`/XHR/`importScripts`** worker load;
+    the only `http(s)` strings are doc-comment reference links (officeopenxml.com)
+    and a `fromCodePoint` polyfill note. Lazy-loaded via `pdf-to-word-ops.ts`.
 - **[SEC]** conversion outputs are document content (PII) → treated exactly like
   documents: written only through `FileStorage` into the encrypted vault, never
   logged; the source never leaves the device.

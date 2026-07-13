@@ -476,6 +476,21 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-41: PDF → Word', () => {
+      // Text extraction needs pdfjs browser globals — device/browser only.
+      it.skipIf(!HAS_CANVAS)('should produce a .docx Blob from a text PDF', async () => {
+        const blob = await engine.pdfToWord(await createTestPdf(1, 'Report'), 'Report');
+        expect(blob).toBeInstanceOf(Blob);
+        expect(blob.size).toBeGreaterThan(0);
+      });
+
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(engine.pdfToWord(invalidPdf, 'x')).rejects.toMatchObject({
+          code: 'INVALID_PDF',
+        });
+      });
+    });
+
     describe('F-6: PDF → Images', () => {
       // Rasterising needs a canvas (jsdom has none) — device-verified.
       it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {

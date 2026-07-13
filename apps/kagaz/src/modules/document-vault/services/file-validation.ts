@@ -25,11 +25,12 @@ const EXTENSION_TO_TYPE: Record<string, FileType> = {
   txt: FileType.TXT,
   md: FileType.MD,
   markdown: FileType.MD,
+  docx: FileType.DOCX,
 };
 
 /** `accept` attribute value for the file-picker input. */
 export const UPLOAD_ACCEPT_ATTR =
-  '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.txt,.md';
+  '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.txt,.md,.docx';
 
 /** MIME type stored for each uploadable FileType. */
 export const TYPE_TO_MIME: Record<string, string> = {
@@ -41,6 +42,8 @@ export const TYPE_TO_MIME: Record<string, string> = {
   [FileType.WEBP]: 'image/webp',
   [FileType.TXT]: 'text/plain',
   [FileType.MD]: 'text/markdown',
+  [FileType.DOCX]:
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 };
 
 /** Text file types have no binary signature — the magic-byte check is skipped. */
@@ -117,6 +120,14 @@ export function matchesMagicBytes(type: FileType, header: Uint8Array): boolean {
       return (
         ascii(header, 4, 8) === 'ftyp' &&
         HEIC_BRANDS.includes(ascii(header, 8, 12))
+      );
+    case FileType.DOCX:
+      // DOCX is an Office Open XML ZIP — the "PK\x03\x04" local-file header.
+      return (
+        header[0] === 0x50 &&
+        header[1] === 0x4b &&
+        header[2] === 0x03 &&
+        header[3] === 0x04
       );
     default:
       return false;

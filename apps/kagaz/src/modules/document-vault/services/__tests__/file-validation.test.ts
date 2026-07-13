@@ -124,6 +124,20 @@ describe('validateFile', () => {
     ).resolves.toEqual({ valid: true, fileType: FileType.MD });
   });
 
+  it('accepts a .docx with the ZIP signature (F-41)', async () => {
+    const zip = new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0])]);
+    await expect(validateFile('resume.docx', zip)).resolves.toEqual({
+      valid: true,
+      fileType: FileType.DOCX,
+    });
+  });
+
+  it('rejects a .docx whose header is not a ZIP (F-41)', async () => {
+    await expect(
+      validateFile('fake.docx', blobOf(pdfBytes()))
+    ).resolves.toEqual({ valid: false, code: VaultErrorCode.CORRUPTED_FILE });
+  });
+
   it('rejects files over the size ceiling', async () => {
     const big = {
       size: MAX_FILE_SIZE_BYTES + 1,
