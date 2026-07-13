@@ -32,3 +32,7 @@ export const LazyPdfToolsPage = lazy(
 export const LazySettingsPage = lazy(
   () => import('@/modules/settings/pages/SettingsPage')
 );
+
+export const LazyLegalPage = lazy(
+  () => import('@/modules/settings/pages/LegalPage')
+);

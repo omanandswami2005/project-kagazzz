@@ -1,0 +1,80 @@
+/* G1-5 legal & attribution screens. */
+.kg-legal {
+  padding: var(--space-4);
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+/* Markdown (privacy / terms). */
+.kg-md {
+  line-height: 1.6;
+  color: var(--text-primary, currentColor);
+  overflow-wrap: break-word;
+}
+
+.kg-md__h1,
+.kg-md__h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.kg-md__h3 {
+  font-size: var(--text-md);
+  font-weight: 600;
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.kg-md__p {
+  margin: 0 0 var(--space-3);
+}
+
+.kg-md__list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-4);
+}
+
+.kg-md__list li {
+  margin-bottom: var(--space-1);
+}
+
+.kg-md__hr {
+  border: none;
+  border-top: 1px solid var(--surface-3, var(--surface-2));
+  margin: var(--space-4) 0;
+}
+
+.kg-md a {
+  color: var(--color-primary, currentColor);
+}
+
+/* Open-source licenses list. */
+.kg-legal__intro {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4);
+}
+
+.kg-legal__licenses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kg-legal__license {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--surface-3, var(--surface-2));
+}
+
+.kg-legal__lib {
+  overflow-wrap: anywhere;
+}
+
+.kg-legal__spdx {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
