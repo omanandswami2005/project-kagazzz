@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-06-12
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-13
 
 ---
 
@@ -125,6 +125,7 @@ enum FileType {
   GIF = 'gif',
   DOCX = 'docx',
   TXT = 'txt',
+  MD = 'md',   // F-40: PDF → Markdown export target
 }
 
 enum OcrStatus {
@@ -378,7 +379,7 @@ interface UploadProgress {
 
 | Check | Rule | Error Message |
 |---|---|---|
-| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT" |
+| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT, MD" |
 | **File Size** | Max 100 MB | "File exceeds maximum size of 100 MB" |
 | **File Name** | Non-empty after sanitization | "Invalid file name" |
 | **Corruption** | File header validation (magic bytes) | "File appears to be corrupted" |

@@ -10,6 +10,7 @@ import type { PdfErrorCode } from '../types/pdf-engine.types';
 export type PdfErrorMessageKey =
   | 'errors.wrong_password'
   | 'errors.invalid_pdf'
+  | 'errors.no_text_layer'
   | 'errors.failed';
 
 /**
@@ -29,6 +30,8 @@ export function pdfErrorMessageKey(
     case 'CORRUPTED_FILE':
     case 'UNSUPPORTED_FORMAT':
       return 'errors.invalid_pdf';
+    case 'NO_TEXT_LAYER':
+      return 'errors.no_text_layer';
     default:
       return 'errors.failed';
   }

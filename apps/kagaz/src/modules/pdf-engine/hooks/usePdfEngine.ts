@@ -14,6 +14,7 @@ import type { IncomingFile } from '@/modules/document-vault/types/document.types
 import { PdfEngineServiceImpl } from '../services/pdf-engine.service';
 import {
   pdfErrorInfoOf,
+  PdfEngineException,
   type CompressionLevel,
   type FormField,
   type PageNumberOptions,
@@ -29,6 +30,17 @@ const logger = log('pdf-engine');
 /** Strips a file extension for building derived output names. */
 function baseName(name: string): string {
   return name.replace(/\.[^/.]+$/, '');
+}
+
+/** The text export formats offered by F-40 (PDF → text / Markdown). */
+export type TextExportFormat = 'txt' | 'md';
+
+/**
+ * Wraps extracted PDF text as a small Markdown document (F-40): a title heading
+ * from the source name, then the text with page breaks kept as blank lines.
+ */
+function toMarkdown(sourceName: string, text: string): string {
+  return `# ${baseName(sourceName)}\n\n${text}\n`;
 }
 
 /** Live status of the current operation. */
@@ -72,6 +84,7 @@ export interface UsePdfEngineResult {
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
+  exportPdfText: (doc: DocumentEntity, format: TextExportFormat) => Promise<number>;
   encryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   decryptPdf: (doc: DocumentEntity, password: string) => Promise<number>;
   /** Reads a form PDF's fields (no save). */
@@ -269,6 +282,31 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const exportPdfText = useCallback(
+    (doc: DocumentEntity, format: TextExportFormat): Promise<number> =>
+      run(async (engine) => {
+        const text = await engine.extractText(await readBytes(doc));
+        if (!text.trim()) {
+          // Scanned/image-only PDFs have no text layer — tell the user to OCR.
+          throw new PdfEngineException(
+            'This PDF has no selectable text',
+            'NO_TEXT_LAYER',
+            'extractText'
+          );
+        }
+        const body = format === 'md' ? toMarkdown(doc.name, text) : `${text}\n`;
+        const mime = format === 'md' ? 'text/markdown' : 'text/plain';
+        return save([
+          {
+            name: `${baseName(doc.name)}.${format}`,
+            blob: new Blob([body], { type: mime }),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const encryptPdf = useCallback(
     (doc: DocumentEntity, password: string): Promise<number> =>
       run(async (engine) => {
@@ -355,6 +393,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     compressPdf,
     imagesToPdf,
     pdfToImages,
+    exportPdfText,
     encryptPdf,
     decryptPdf,
     loadFormFields,

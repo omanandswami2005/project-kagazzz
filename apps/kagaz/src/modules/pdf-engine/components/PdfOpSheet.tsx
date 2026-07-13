@@ -76,6 +76,7 @@ export function PdfOpSheet({
   const [ranges, setRanges] = useState('');
   const [quality, setQuality] = useState<CompressionLevel>('medium');
   const [format, setFormat] = useState<'png' | 'jpeg'>('png');
+  const [textFormat, setTextFormat] = useState<'txt' | 'md'>('txt');
   const [password, setPassword] = useState('');
   const [watermarkText, setWatermarkText] = useState('');
   const [pageNumberPosition, setPageNumberPosition] =
@@ -95,6 +96,7 @@ export function PdfOpSheet({
     setRanges('');
     setQuality('medium');
     setFormat('png');
+    setTextFormat('txt');
     setPassword('');
     setWatermarkText('');
     setPageNumberPosition('bottom-center');
@@ -233,6 +235,9 @@ export function PdfOpSheet({
         }
         if (op === 'pdfToImages') {
           return engine.pdfToImages(doc, { format });
+        }
+        if (op === 'pdfToText') {
+          return engine.exportPdfText(doc, textFormat);
         }
         if (op === 'encrypt' || op === 'decrypt') {
           if (!password) {
@@ -406,6 +411,24 @@ export function PdfOpSheet({
           onChange={setWatermarkText}
           agentId="pdf-tools.op-sheet.watermark-text"
         />
+      );
+    }
+    if (op === 'pdfToText') {
+      return (
+        <div className="kg-pdf-op__choices" role="group" aria-label={t('params.text_format')}>
+          <p className="kg-pdf-op__label">{t('params.text_format')}</p>
+          {(['txt', 'md'] as const).map((f) => (
+            <Button
+              key={f}
+              variant={textFormat === f ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setTextFormat(f)}
+              agentId={`pdf-tools.op-sheet.text-format-${f}`}
+            >
+              {t(`params.text_format_${f}`)}
+            </Button>
+          ))}
+        </div>
       );
     }
     if (op === 'pageNumbers') {

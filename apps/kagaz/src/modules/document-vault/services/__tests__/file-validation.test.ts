@@ -112,6 +112,18 @@ describe('validateFile', () => {
     });
   });
 
+  it('accepts a text file (F-40, no magic bytes)', async () => {
+    await expect(
+      validateFile('notes.txt', new Blob(['hello world']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.TXT });
+  });
+
+  it('accepts a Markdown file (F-40)', async () => {
+    await expect(
+      validateFile('readme.md', new Blob(['# Title']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.MD });
+  });
+
   it('rejects files over the size ceiling', async () => {
     const big = {
       size: MAX_FILE_SIZE_BYTES + 1,

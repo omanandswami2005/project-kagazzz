@@ -22,10 +22,14 @@ const EXTENSION_TO_TYPE: Record<string, FileType> = {
   heic: FileType.HEIC,
   heif: FileType.HEIC,
   webp: FileType.WEBP,
+  txt: FileType.TXT,
+  md: FileType.MD,
+  markdown: FileType.MD,
 };
 
 /** `accept` attribute value for the file-picker input. */
-export const UPLOAD_ACCEPT_ATTR = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp';
+export const UPLOAD_ACCEPT_ATTR =
+  '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.txt,.md';
 
 /** MIME type stored for each uploadable FileType. */
 export const TYPE_TO_MIME: Record<string, string> = {
@@ -35,7 +39,12 @@ export const TYPE_TO_MIME: Record<string, string> = {
   [FileType.PNG]: 'image/png',
   [FileType.HEIC]: 'image/heic',
   [FileType.WEBP]: 'image/webp',
+  [FileType.TXT]: 'text/plain',
+  [FileType.MD]: 'text/markdown',
 };
+
+/** Text file types have no binary signature — the magic-byte check is skipped. */
+const TEXT_TYPES = new Set<FileType>([FileType.TXT, FileType.MD]);
 
 /**
  * Strips path separators and control characters, trims, and caps length
@@ -85,6 +94,10 @@ const HEIC_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heif', 'mif1', 'msf1'];
  * check). Returns true when the header matches the claimed type.
  */
 export function matchesMagicBytes(type: FileType, header: Uint8Array): boolean {
+  // Plain-text formats carry no signature; accept on extension + size checks.
+  if (TEXT_TYPES.has(type)) {
+    return true;
+  }
   switch (type) {
     case FileType.PDF:
       return ascii(header, 0, 4) === '%PDF';

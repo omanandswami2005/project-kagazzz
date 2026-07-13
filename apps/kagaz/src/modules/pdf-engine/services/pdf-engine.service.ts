@@ -16,7 +16,7 @@ import {
   PdfEngineException,
 } from '../types/pdf-engine.types';
 
-import { pdfToImagesImpl } from './pdf-render-ops';
+import { extractPdfTextImpl, pdfToImagesImpl } from './pdf-render-ops';
 import { compressPdfImpl } from './pdf-compress-ops';
 
 // Vite worker loader (pdf-lib / pdfsmaller ops — no DOM needed).
@@ -316,6 +316,28 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       [clonedPdf.buffer],
       onProgress
     );
+  }
+
+  async extractText(pdf: Uint8Array): Promise<string> {
+    this.ensureInitialized();
+    // pdfjs text extraction needs browser globals, so — like pdfToImages — it
+    // runs on the main thread rather than in a Vite module worker.
+    const id = crypto.randomUUID();
+    this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: 'extractText' });
+    try {
+      // [SEC] the extracted text is document content — never logged here.
+      const text = await extractPdfTextImpl(clone(pdf));
+      this.serviceLogger.info({ event: 'engine.request.success', opId: id, operation: 'extractText' });
+      return text;
+    } catch (e: unknown) {
+      this.serviceLogger.error({
+        event: 'engine.request.error',
+        opId: id,
+        operation: 'extractText',
+        err: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
   }
 
   async pdfToImages(
