@@ -26,6 +26,16 @@ export function isPdf(fileType: string): boolean {
   return /pdf/i.test(fileType);
 }
 
+/** Raster image types the viewer can show directly. */
+const IMAGE_TYPES = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic']);
+
+/** True when the document is a raster image the viewer can display. */
+export function isViewableImage(fileType: string): boolean {
+  return fileType.includes('/')
+    ? fileType.startsWith('image/')
+    : IMAGE_TYPES.has(fileType.toLowerCase());
+}
+
 function mimeFor(fileType: string): string {
   return fileType.includes('/') ? fileType : (EXT_MIME[fileType.toLowerCase()] ?? 'application/octet-stream');
 }
@@ -60,11 +70,13 @@ export function useDocumentFile(document: DocumentEntity | null): UseDocumentFil
           for (const blob of blobs) {
             urls.push(URL.createObjectURL(blob));
           }
-        } else {
+        } else if (isViewableImage(document.fileType)) {
           // Copy into this realm so the Blob is well-formed everywhere.
           const copy = new Uint8Array(bytes);
           urls.push(URL.createObjectURL(new Blob([copy], { type: mimeFor(document.fileType) })));
         }
+        // Other types (.docx via mammoth, text) render through their own path;
+        // leaving pages empty avoids a broken <img>.
         if (!cancelled) {
           setPages(urls);
           setLoading(false);
