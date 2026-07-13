@@ -12,6 +12,7 @@
     "decrypt": "पासवर्ड हटाएँ",
     "fillForm": "फ़ॉर्म भरें",
     "watermark": "वॉटरमार्क",
+    "stamp": "हस्ताक्षर / मुहर",
     "pageNumbers": "पेज नंबर",
     "metadata": "विवरण संपादित करें"
   },
@@ -26,6 +27,7 @@
     "decrypt": "पासवर्ड-सुरक्षित PDF अनलॉक करें",
     "fillForm": "PDF फ़ॉर्म भरें",
     "watermark": "हर पृष्ठ पर \"COPY\" जैसा पाठ मुद्रित करें",
+    "stamp": "किसी पृष्ठ पर हस्ताक्षर या फ़ोटो लगाएँ",
     "pageNumbers": "हर पृष्ठ पर नंबर डालें",
     "metadata": "शीर्षक, लेखक, विषय और कीवर्ड सेट करें"
   },
@@ -62,6 +64,15 @@
     "position_top-center": "ऊपर बीच",
     "position_top-right": "ऊपर दाएँ",
     "position_top-left": "ऊपर बाएँ",
+    "position_center": "बीच में",
+    "stamp_image": "लगाने के लिए चित्र",
+    "stamp_page": "पेज नंबर",
+    "stamp_page_hint": "किस पृष्ठ पर मुहर लगानी है (1 से शुरू)।",
+    "stamp_position": "स्थान",
+    "stamp_size": "आकार",
+    "stamp_size_small": "छोटा",
+    "stamp_size_medium": "मध्यम",
+    "stamp_size_large": "बड़ा",
     "number_format": "शैली",
     "number_format_plain": "1",
     "number_format_page-n": "पेज 1",
@@ -87,6 +98,8 @@
     "need_one": "एक फ़ाइल चुनें।",
     "bad_ranges": "मान्य पेज सीमाएँ दर्ज करें, जैसे 1-3, 5।",
     "need_password": "पासवर्ड दर्ज करें।",
-    "need_watermark": "वॉटरमार्क पाठ दर्ज करें।"
+    "need_watermark": "वॉटरमार्क पाठ दर्ज करें।",
+    "need_image": "लगाने के लिए एक चित्र चुनें।",
+    "bad_page": "मान्य पेज नंबर दर्ज करें।"
   }
 }

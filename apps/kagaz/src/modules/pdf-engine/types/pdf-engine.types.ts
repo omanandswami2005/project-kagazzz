@@ -53,6 +53,26 @@ export interface ImageInput {
   mimeType: string;
 }
 
+/** Where a stamped image sits on the page (F-38). */
+export type StampPosition =
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'top-right'
+  | 'top-left'
+  | 'top-center'
+  | 'center';
+
+/** Options for stamping an image (signature/photo) onto a PDF (F-38). */
+export interface StampOptions {
+  /** 0-indexed target page. */
+  page: number;
+  /** Corner/edge the image sits in. Default 'bottom-right'. */
+  position?: StampPosition;
+  /** Image width as a percentage of the page width (1–100). Default 25. */
+  widthPercent?: number;
+}
+
 /** Options for rendering PDF pages to images (F-6, PDF → image). */
 export interface RenderOptions {
   /** Output raster format. */
@@ -218,6 +238,14 @@ export interface PdfEngineService {
 
   /** Combine one or more images into a single PDF (F-7) */
   imagesToPdf(images: ImageInput[], onProgress?: ProgressCallback): Promise<Uint8Array>;
+
+  /** Stamp an image (signature/photo) onto a chosen page (F-38) */
+  stampImage(
+    pdf: Uint8Array,
+    image: ImageInput,
+    options: StampOptions,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array>;
 
   /** Stamp a diagonal text watermark across every page (F-37) */
   watermarkPdf(

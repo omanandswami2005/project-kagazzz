@@ -12,6 +12,7 @@
     "decrypt": "Remove password",
     "fillForm": "Fill form",
     "watermark": "Watermark",
+    "stamp": "Sign / stamp",
     "pageNumbers": "Page numbers",
     "metadata": "Edit details"
   },
@@ -26,6 +27,7 @@
     "decrypt": "Unlock a password-protected PDF",
     "fillForm": "Fill in a PDF form",
     "watermark": "Stamp text like \"COPY\" across every page",
+    "stamp": "Place a signature or photo onto a page",
     "pageNumbers": "Number every page",
     "metadata": "Set the title, author, subject and keywords"
   },
@@ -62,6 +64,15 @@
     "position_top-center": "Top center",
     "position_top-right": "Top right",
     "position_top-left": "Top left",
+    "position_center": "Center",
+    "stamp_image": "Image to place",
+    "stamp_page": "Page number",
+    "stamp_page_hint": "Which page to stamp (starts at 1).",
+    "stamp_position": "Position",
+    "stamp_size": "Size",
+    "stamp_size_small": "Small",
+    "stamp_size_medium": "Medium",
+    "stamp_size_large": "Large",
     "number_format": "Style",
     "number_format_plain": "1",
     "number_format_page-n": "Page 1",
@@ -87,6 +98,8 @@
     "need_one": "Select a file.",
     "bad_ranges": "Enter valid page ranges, e.g. 1-3, 5.",
     "need_password": "Enter a password.",
-    "need_watermark": "Enter the watermark text."
+    "need_watermark": "Enter the watermark text.",
+    "need_image": "Choose an image to place.",
+    "bad_page": "Enter a valid page number."
   }
 }

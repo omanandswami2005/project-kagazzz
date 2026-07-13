@@ -16,6 +16,12 @@ export interface PdfDocPickerProps {
   onChange: (ids: string[]) => void;
   /** Shown when no documents match the operation's input type. */
   emptyText: string;
+  /**
+   * Agent-id prefix for this picker's elements. Defaults to the main picker;
+   * a second picker on the same sheet (e.g. F-38 stamp's image list) passes a
+   * distinct prefix so agent ids stay unique.
+   */
+  idPrefix?: string;
 }
 
 /** A list of documents the user taps to select. */
@@ -25,10 +31,11 @@ export function PdfDocPicker({
   selectedIds,
   onChange,
   emptyText,
+  idPrefix = 'pdf-tools.picker',
 }: PdfDocPickerProps): ReactNode {
   if (documents.length === 0) {
     return (
-      <p className="kg-pdf-picker__empty" data-agent-id="pdf-tools.picker.empty">
+      <p className="kg-pdf-picker__empty" data-agent-id={`${idPrefix}.empty`}>
         {emptyText}
       </p>
     );
@@ -47,7 +54,7 @@ export function PdfDocPicker({
   };
 
   return (
-    <ul className="kg-pdf-picker" data-agent-id="pdf-tools.picker">
+    <ul className="kg-pdf-picker" data-agent-id={idPrefix}>
       {documents.map((doc) => {
         const selected = selectedIds.includes(doc.id);
         return (
@@ -56,7 +63,7 @@ export function PdfDocPicker({
               type="button"
               className="kg-pdf-picker__row"
               onClick={() => toggle(doc.id)}
-              data-agent-id={`pdf-tools.picker.item-${doc.id}`}
+              data-agent-id={`${idPrefix}.item-${doc.id}`}
               data-agent-state={selected ? 'selected' : 'idle'}
               aria-pressed={selected}
             >

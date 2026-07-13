@@ -10,6 +10,7 @@ import {
   type PageNumberOptions,
   type PdfMetadata,
   type ProgressCallback,
+  type StampOptions,
   type PdfErrorCode,
   type ProgressEvent,
   type RenderOptions,
@@ -298,6 +299,27 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       'watermarkPdf',
       { pdf: clonedPdf, text },
       [clonedPdf.buffer],
+      onProgress
+    );
+  }
+
+  async stampImage(
+    pdf: Uint8Array,
+    image: ImageInput,
+    options: StampOptions,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    const clonedImage: ImageInput = {
+      data: clone(image.data),
+      mimeType: image.mimeType,
+    };
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'stampImage',
+      { pdf: clonedPdf, image: clonedImage, options },
+      [clonedPdf.buffer, clonedImage.data.buffer],
       onProgress
     );
   }

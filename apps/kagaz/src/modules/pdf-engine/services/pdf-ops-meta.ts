@@ -9,6 +9,7 @@ export type PdfOpId =
   | 'pdfToText'
   | 'imagesToPdf'
   | 'watermark'
+  | 'stamp'
   | 'pageNumbers'
   | 'encrypt'
   | 'decrypt'
@@ -34,6 +35,7 @@ export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'pdfToText', icon: 'FileText', input: 'pdf-single' },
   { id: 'imagesToPdf', icon: 'Images', input: 'images' },
   { id: 'watermark', icon: 'Pencil', input: 'pdf-single' },
+  { id: 'stamp', icon: 'Stamp', input: 'pdf-single' },
   { id: 'pageNumbers', icon: 'Hash', input: 'pdf-single' },
   { id: 'encrypt', icon: 'Lock', input: 'pdf-single' },
   { id: 'decrypt', icon: 'Unlock', input: 'pdf-single' },

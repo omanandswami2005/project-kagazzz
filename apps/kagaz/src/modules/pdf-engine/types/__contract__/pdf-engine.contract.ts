@@ -264,6 +264,46 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-38: Image stamp', () => {
+      it('should stamp an image onto a page and keep the page count', async () => {
+        const original = await createTestPdf(2);
+        const result = await engine.stampImage(
+          original,
+          { data: tinyPng(), mimeType: 'image/png' },
+          { page: 0, position: 'bottom-right', widthPercent: 25 }
+        );
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(2);
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should throw PAGE_OUT_OF_RANGE for a page past the end', async () => {
+        await expect(
+          engine.stampImage(
+            await createTestPdf(1),
+            { data: tinyPng(), mimeType: 'image/png' },
+            { page: 5 }
+          )
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should reject an unsupported image type (UNSUPPORTED_FORMAT)', async () => {
+        await expect(
+          engine.stampImage(
+            await createTestPdf(1),
+            { data: tinyPng(), mimeType: 'image/gif' },
+            { page: 0 }
+          )
+        ).rejects.toThrowError(expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.stampImage(invalidPdf, { data: tinyPng(), mimeType: 'image/png' }, { page: 0 })
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
     describe('F-36: Page numbers', () => {
       it('should number every page and keep the page count', async () => {
         const original = await createTestPdf(4);
