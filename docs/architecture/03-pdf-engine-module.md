@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
 > **Status**: Partially implemented (F-3/F-4/F-5)
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-07-13
 
 ---
 
@@ -163,6 +163,8 @@ interface PdfEngineService {
   splitPdf(pdf: Uint8Array, ranges: PageRange[]): Promise<Uint8Array[]>;
   /** Stamp a diagonal text watermark across every page (F-37) */
   watermarkPdf(pdf: Uint8Array, text: string): Promise<Uint8Array>;
+  /** Stamp sequential page numbers onto every page (F-36) */
+  addPageNumbers(pdf: Uint8Array, options: PageNumberOptions): Promise<Uint8Array>;
   /** Rotate a specific page */
   rotatePage(pdf: Uint8Array, pageIndex: number, degrees: RotationDegrees): Promise<Uint8Array>;
   /** Delete a specific page */

@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
 import {
   type ImageInput,
+  type PageNumberOptions,
+  type PageNumberPosition,
   type PageRange,
   type ProgressCallback,
   PdfEngineException,
@@ -252,6 +254,96 @@ export async function watermarkPdfImpl(
       operation: op,
       percent: Math.round(((i + 1) / pages.length) * 100),
       message: `Stamped page ${i + 1} of ${pages.length}`,
+    });
+  }
+
+  return doc.save();
+}
+
+/** Margin (pt) from the page edge for stamped page numbers (F-36). */
+const PAGE_NUMBER_MARGIN = 28;
+
+/** Builds the label for one page given the chosen format (F-36). */
+function formatPageNumber(
+  format: NonNullable<PageNumberOptions['format']>,
+  n: number,
+  total: number
+): string {
+  switch (format) {
+    case 'page-n':
+      return `Page ${n}`;
+    case 'n-of-total':
+      return `${n} / ${total}`;
+    default:
+      return String(n);
+  }
+}
+
+/**
+ * Computes the (x, y) baseline for a page number given its position, the page
+ * size, and the rendered label width/height (F-36). pdf-lib's origin is the
+ * bottom-left corner.
+ */
+function pageNumberXY(
+  position: PageNumberPosition,
+  pageWidth: number,
+  pageHeight: number,
+  textWidth: number,
+  fontSize: number
+): { x: number; y: number } {
+  const [vertical, horizontal] = position.split('-');
+  const y =
+    vertical === 'top' ? pageHeight - PAGE_NUMBER_MARGIN - fontSize : PAGE_NUMBER_MARGIN;
+  let x: number;
+  if (horizontal === 'left') {
+    x = PAGE_NUMBER_MARGIN;
+  } else if (horizontal === 'right') {
+    x = pageWidth - PAGE_NUMBER_MARGIN - textWidth;
+  } else {
+    x = pageWidth / 2 - textWidth / 2;
+  }
+  return { x, y };
+}
+
+/**
+ * Stamps sequential page numbers onto every page (F-36). Position, text format,
+ * and starting number are configurable; the number is drawn in a small dark-grey
+ * Helvetica so it reads without dominating the page. pdf-lib only, offline.
+ */
+export async function addPageNumbersImpl(
+  pdf: Uint8Array,
+  options: PageNumberOptions,
+  onProgress?: ProgressCallback
+): Promise<Uint8Array> {
+  const op = 'addPageNumbers';
+  const position = options.position ?? 'bottom-center';
+  const format = options.format ?? 'plain';
+  const startAt = Number.isFinite(options.startAt) ? Math.trunc(options.startAt as number) : 1;
+
+  const doc = await loadAndValidatePdf(pdf, op);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+  const pages = doc.getPages();
+  const total = pages.length;
+  const fontSize = 11;
+
+  for (let i = 0; i < total; i++) {
+    const page = pages[i];
+    const { width, height } = page.getSize();
+    const label = formatPageNumber(format, startAt + i, startAt + total - 1);
+    const textWidth = font.widthOfTextAtSize(label, fontSize);
+    const { x, y } = pageNumberXY(position, width, height, textWidth, fontSize);
+    page.drawText(label, {
+      x,
+      y,
+      size: fontSize,
+      font,
+      color: rgb(0.3, 0.3, 0.3),
+    });
+    onProgress?.({
+      operationId: 'addPageNumbers',
+      operation: op,
+      percent: Math.round(((i + 1) / total) * 100),
+      message: `Numbered page ${i + 1} of ${total}`,
     });
   }
 

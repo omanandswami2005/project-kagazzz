@@ -18,6 +18,33 @@ export interface PageRange {
  */
 export type CompressionLevel = 'low' | 'medium' | 'high';
 
+/** Where page numbers sit on the page (F-36). */
+export type PageNumberPosition =
+  | 'bottom-center'
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-center'
+  | 'top-right'
+  | 'top-left';
+
+/**
+ * How each page number reads (F-36):
+ * - 'plain'      → `1`
+ * - 'page-n'     → `Page 1`
+ * - 'n-of-total' → `1 / 12`
+ */
+export type PageNumberFormat = 'plain' | 'page-n' | 'n-of-total';
+
+/** Options for stamping page numbers (F-36). */
+export interface PageNumberOptions {
+  /** Corner/edge the number sits in. Default 'bottom-center'. */
+  position?: PageNumberPosition;
+  /** Text style of the number. Default 'plain'. */
+  format?: PageNumberFormat;
+  /** Number shown on the first page (1-based). Default 1. */
+  startAt?: number;
+}
+
 /** An image to place onto a PDF page (F-7, images → PDF). */
 export interface ImageInput {
   /** Raw image bytes. */
@@ -183,6 +210,13 @@ export interface PdfEngineService {
   watermarkPdf(
     pdf: Uint8Array,
     text: string,
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array>;
+
+  /** Stamp sequential page numbers onto every page (F-36) */
+  addPageNumbers(
+    pdf: Uint8Array,
+    options: PageNumberOptions,
     onProgress?: ProgressCallback
   ): Promise<Uint8Array>;
 

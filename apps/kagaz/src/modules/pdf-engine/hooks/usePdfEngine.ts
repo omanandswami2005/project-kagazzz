@@ -16,6 +16,7 @@ import {
   pdfErrorInfoOf,
   type CompressionLevel,
   type FormField,
+  type PageNumberOptions,
   type PageRange,
   type PdfErrorCode,
   type ProgressEvent,
@@ -66,6 +67,7 @@ export interface UsePdfEngineResult {
   mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
   splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
   watermarkPdf: (doc: DocumentEntity, text: string) => Promise<number>;
+  addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
   pdfToImages: (doc: DocumentEntity, options: RenderOptions) => Promise<number>;
@@ -200,6 +202,21 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const addPageNumbers = useCallback(
+    (doc: DocumentEntity, options: PageNumberOptions): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const out = await engine.addPageNumbers(await readBytes(doc), options, onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_numbered.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const compressPdf = useCallback(
     (doc: DocumentEntity, quality: CompressionLevel): Promise<number> =>
       run(async (engine, onProgress) => {
@@ -307,6 +324,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     mergePdfs,
     splitPdf,
     watermarkPdf,
+    addPageNumbers,
     compressPdf,
     imagesToPdf,
     pdfToImages,

@@ -10,7 +10,8 @@
     "encrypt": "Password protect",
     "decrypt": "Remove password",
     "fillForm": "Fill form",
-    "watermark": "Watermark"
+    "watermark": "Watermark",
+    "pageNumbers": "Page numbers"
   },
   "desc": {
     "merge": "Combine several PDFs into one",
@@ -21,7 +22,8 @@
     "encrypt": "Lock a PDF with a password",
     "decrypt": "Unlock a password-protected PDF",
     "fillForm": "Fill in a PDF form",
-    "watermark": "Stamp text like \"COPY\" across every page"
+    "watermark": "Stamp text like \"COPY\" across every page",
+    "pageNumbers": "Number every page"
   },
   "pick": {
     "pdf_single": "Choose a PDF",
@@ -45,7 +47,18 @@
     "fields_loading": "Reading form fields…",
     "watermark_text": "Watermark text",
     "watermark_placeholder": "COPY",
-    "watermark_hint": "Stamped diagonally on every page."
+    "watermark_hint": "Stamped diagonally on every page.",
+    "number_position": "Position",
+    "position_bottom-center": "Bottom center",
+    "position_bottom-right": "Bottom right",
+    "position_bottom-left": "Bottom left",
+    "position_top-center": "Top center",
+    "position_top-right": "Top right",
+    "position_top-left": "Top left",
+    "number_format": "Style",
+    "number_format_plain": "1",
+    "number_format_page-n": "Page 1",
+    "number_format_n-of-total": "1 / N"
   },
   "run": "Run",
   "running": "Working…",

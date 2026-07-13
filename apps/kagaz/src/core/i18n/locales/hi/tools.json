@@ -10,7 +10,8 @@
     "encrypt": "पासवर्ड सुरक्षा",
     "decrypt": "पासवर्ड हटाएँ",
     "fillForm": "फ़ॉर्म भरें",
-    "watermark": "वॉटरमार्क"
+    "watermark": "वॉटरमार्क",
+    "pageNumbers": "पेज नंबर"
   },
   "desc": {
     "merge": "कई PDF को एक में मिलाएँ",
@@ -21,7 +22,8 @@
     "encrypt": "PDF को पासवर्ड से लॉक करें",
     "decrypt": "पासवर्ड-सुरक्षित PDF अनलॉक करें",
     "fillForm": "PDF फ़ॉर्म भरें",
-    "watermark": "हर पृष्ठ पर \"COPY\" जैसा पाठ मुद्रित करें"
+    "watermark": "हर पृष्ठ पर \"COPY\" जैसा पाठ मुद्रित करें",
+    "pageNumbers": "हर पृष्ठ पर नंबर डालें"
   },
   "pick": {
     "pdf_single": "एक PDF चुनें",
@@ -45,7 +47,18 @@
     "fields_loading": "फ़ॉर्म फ़ील्ड पढ़े जा रहे हैं…",
     "watermark_text": "वॉटरमार्क पाठ",
     "watermark_placeholder": "COPY",
-    "watermark_hint": "हर पृष्ठ पर तिरछा मुद्रित।"
+    "watermark_hint": "हर पृष्ठ पर तिरछा मुद्रित।",
+    "number_position": "स्थान",
+    "position_bottom-center": "नीचे बीच",
+    "position_bottom-right": "नीचे दाएँ",
+    "position_bottom-left": "नीचे बाएँ",
+    "position_top-center": "ऊपर बीच",
+    "position_top-right": "ऊपर दाएँ",
+    "position_top-left": "ऊपर बाएँ",
+    "number_format": "शैली",
+    "number_format_plain": "1",
+    "number_format_page-n": "पेज 1",
+    "number_format_n-of-total": "1 / N"
   },
   "run": "चलाएँ",
   "running": "काम चल रहा है…",

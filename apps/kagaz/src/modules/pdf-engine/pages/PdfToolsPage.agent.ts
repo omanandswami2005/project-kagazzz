@@ -26,6 +26,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'watermark' },
     },
     {
+      utterance: 'add page numbers',
+      action: 'tools.openPdfTools',
+      args: { op: 'pageNumbers' },
+    },
+    {
       utterance: 'password protect a pdf',
       action: 'tools.openPdfTools',
       args: { op: 'encrypt' },
