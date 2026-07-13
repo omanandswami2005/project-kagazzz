@@ -491,6 +491,28 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-42: PDF → Excel/CSV', () => {
+      it('should build an .xlsx from a form PDF (no canvas needed)', async () => {
+        const blob = await engine.pdfToSheet(await createTestFormPdf(), 'xlsx');
+        expect(blob).toBeInstanceOf(Blob);
+        expect(blob.size).toBeGreaterThan(0);
+      });
+
+      it('should build a .csv from a form PDF', async () => {
+        const blob = await engine.pdfToSheet(await createTestFormPdf(), 'csv');
+        const text = await blob.text();
+        // The header row plus the two fields from createTestFormPdf.
+        expect(text).toContain('Field');
+        expect(text).toContain('fullName');
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.pdfToSheet(invalidPdf, 'xlsx')).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
     describe('F-6: PDF → Images', () => {
       // Rasterising needs a canvas (jsdom has none) — device-verified.
       it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {

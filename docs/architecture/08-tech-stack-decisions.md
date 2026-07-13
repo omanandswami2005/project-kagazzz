@@ -1143,6 +1143,12 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
     `.wasm`, no CDN/jsdelivr/unpkg, no `fetch`/XHR/`importScripts`** worker load;
     the only `http(s)` strings are doc-comment reference links (officeopenxml.com)
     and a `fromCodePoint` polyfill note. Lazy-loaded via `pdf-to-word-ops.ts`.
+  - **`xlsx` @ 0.18.5 (SheetJS, Apache-2.0) audited & added 2026-07-13 (F-42):**
+    dist carries **no `.wasm`, no CDN (jsdelivr/unpkg/cdn.sheetjs), no
+    `fetch`/XHR/`importScripts`**; the only `http(s)` strings are XML **namespace
+    URIs** (docs.oasis-open.org, purl.org, schemas.microsoft.com). Lazy-loaded via
+    `pdf-to-sheet-ops.ts`. (npm publishes 0.18.5; newer builds are CDN-only — we
+    pin the permissive npm release.)
 - **[SEC]** conversion outputs are document content (PII) → treated exactly like
   documents: written only through `FileStorage` into the encrypted vault, never
   logged; the source never leaves the device.

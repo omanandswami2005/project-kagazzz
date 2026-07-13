@@ -36,6 +36,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'pdfToWord' },
     },
     {
+      utterance: 'convert pdf to excel',
+      action: 'tools.openPdfTools',
+      args: { op: 'pdfToExcel' },
+    },
+    {
       utterance: 'watermark a pdf',
       action: 'tools.openPdfTools',
       args: { op: 'watermark' },

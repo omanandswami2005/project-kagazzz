@@ -21,6 +21,8 @@ import {
 import { extractPdfTextImpl, pdfToImagesImpl } from './pdf-render-ops';
 import { compressPdfImpl } from './pdf-compress-ops';
 import { buildWordFromText } from './pdf-to-word-ops';
+import { buildSheet, splitRow, type SheetFormat } from './pdf-to-sheet-ops';
+import { getFormFieldsImpl } from './pdf-forms-ops';
 
 // Vite worker loader (pdf-lib / pdfsmaller ops — no DOM needed).
 import PdfManipulationWorker from '../workers/pdf-manipulation.worker?worker';
@@ -403,6 +405,42 @@ export class PdfEngineServiceImpl implements PdfEngineService {
         event: 'engine.request.error',
         opId: id,
         operation: 'pdfToWord',
+        err: e instanceof Error ? e.message : String(e),
+      });
+      throw e;
+    }
+  }
+
+  async pdfToSheet(pdf: Uint8Array, format: SheetFormat): Promise<Blob> {
+    this.ensureInitialized();
+    const id = crypto.randomUUID();
+    this.serviceLogger.info({ event: 'engine.request.start', opId: id, operation: 'pdfToSheet' });
+    try {
+      // Prefer structured form fields; fall back to splitting text lines.
+      const fields = await getFormFieldsImpl(clone(pdf));
+      let rows: string[][];
+      if (fields.length > 0) {
+        rows = [['Field', 'Value'], ...fields.map((f) => [f.name, f.value])];
+      } else {
+        const text = await extractPdfTextImpl(clone(pdf));
+        const lines = text.split('\n').filter((l) => l.trim().length > 0);
+        if (lines.length === 0) {
+          throw new PdfEngineException(
+            'This PDF has no fields or selectable text',
+            'NO_TEXT_LAYER',
+            'pdfToSheet'
+          );
+        }
+        rows = lines.map(splitRow);
+      }
+      const blob = await buildSheet(rows, format);
+      this.serviceLogger.info({ event: 'engine.request.success', opId: id, operation: 'pdfToSheet' });
+      return blob;
+    } catch (e: unknown) {
+      this.serviceLogger.error({
+        event: 'engine.request.error',
+        opId: id,
+        operation: 'pdfToSheet',
         err: e instanceof Error ? e.message : String(e),
       });
       throw e;

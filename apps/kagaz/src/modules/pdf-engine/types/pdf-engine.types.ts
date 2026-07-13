@@ -290,6 +290,12 @@ export interface PdfEngineService {
   /** Convert a PDF's text into an editable Word (.docx) document (F-41) */
   pdfToWord(pdf: Uint8Array, title: string): Promise<Blob>;
 
+  /**
+   * Convert a PDF into a spreadsheet (F-42): form fields become Field/Value
+   * rows, otherwise text lines are split into columns. `format` is xlsx or csv.
+   */
+  pdfToSheet(pdf: Uint8Array, format: 'xlsx' | 'csv'): Promise<Blob>;
+
   /** Render PDF pages to image blobs (F-6) */
   pdfToImages(
     pdf: Uint8Array,
