@@ -1,0 +1,10 @@
+{
+  "name": "@kagaz/legal-site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Static public Privacy Policy + Terms site for Kagaz (G1-5), generated from docs/legal.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}
