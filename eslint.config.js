@@ -22,6 +22,8 @@ export default tseslint.config(
       // Astro/Starlight site — own toolchain, no tsconfig in our project
       // service; content migration tracked in DEVELOPMENT-CHECKLIST.md.
       'apps/docs/',
+      // Standalone static legal site (G1-5) — plain Node generator, no tsconfig.
+      'apps/legal-site/',
     ],
   },
   eslint.configs.recommended,
