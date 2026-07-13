@@ -21,6 +21,7 @@ import type {
   FormField,
   PageNumberFormat,
   PageNumberPosition,
+  PdfMetadata,
 } from '../types/pdf-engine.types';
 import type { UsePdfEngineResult } from '../hooks/usePdfEngine';
 import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
@@ -82,6 +83,8 @@ export function PdfOpSheet({
   const [pageNumberFormat, setPageNumberFormat] = useState<PageNumberFormat>('plain');
   const [fields, setFields] = useState<FormField[] | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  // F-39: null while the selected PDF's metadata loads, then the editable draft.
+  const [metaDraft, setMetaDraft] = useState<PdfMetadata | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   // Reset all parameters when the operation changes. (A `key` remount would
@@ -98,6 +101,7 @@ export function PdfOpSheet({
     setPageNumberFormat('plain');
     setFields(null);
     setFieldValues({});
+    setMetaDraft(null);
     setLocalError(null);
     engine.reset();
     // engine identity is stable; resetting on op change only.
@@ -132,6 +136,36 @@ export function PdfOpSheet({
       .catch(() => {
         if (!cancelled) {
           setFields([]);
+        }
+      });
+    return (): void => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [op, selectedIds]);
+
+  // For Edit metadata: read the selected PDF's metadata into an editable draft.
+  useEffect(() => {
+    if (op !== 'metadata' || selectedIds.length !== 1) {
+      return undefined;
+    }
+    const doc = docs.find((d) => d.id === selectedIds[0]);
+    if (!doc) {
+      return undefined;
+    }
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMetaDraft(null);
+    engine
+      .loadMetadata(doc)
+      .then((m) => {
+        if (!cancelled) {
+          setMetaDraft(m);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMetaDraft({ title: '', author: '', subject: '', keywords: '' });
         }
       });
     return (): void => {
@@ -211,6 +245,12 @@ export function PdfOpSheet({
         }
         if (op === 'fillForm') {
           return engine.fillForm(doc, fieldValues);
+        }
+        if (op === 'metadata') {
+          if (!metaDraft) {
+            return 0;
+          }
+          return engine.setMetadata(doc, metaDraft);
         }
         return 0;
       }
@@ -420,6 +460,33 @@ export function PdfOpSheet({
           onChange={setPassword}
           agentId="pdf-tools.op-sheet.password"
         />
+      );
+    }
+    if (op === 'metadata') {
+      if (metaDraft === null) {
+        return <p className="kg-pdf-op__status">{t('params.metadata_loading')}</p>;
+      }
+      const METADATA_FIELDS: { key: keyof PdfMetadata }[] = [
+        { key: 'title' },
+        { key: 'author' },
+        { key: 'subject' },
+        { key: 'keywords' },
+      ];
+      return (
+        <div className="kg-pdf-op__fields">
+          {METADATA_FIELDS.map(({ key }) => (
+            <Input
+              key={key}
+              label={t(`params.metadata_${key}`)}
+              helperText={key === 'keywords' ? t('params.metadata_keywords_hint') : undefined}
+              value={metaDraft[key]}
+              onChange={(value) =>
+                setMetaDraft((m) => (m ? { ...m, [key]: value } : m))
+              }
+              agentId={`pdf-tools.op-sheet.metadata-${key}`}
+            />
+          ))}
+        </div>
       );
     }
     if (op === 'fillForm') {

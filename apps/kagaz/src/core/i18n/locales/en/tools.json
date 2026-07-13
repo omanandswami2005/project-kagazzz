@@ -11,7 +11,8 @@
     "decrypt": "Remove password",
     "fillForm": "Fill form",
     "watermark": "Watermark",
-    "pageNumbers": "Page numbers"
+    "pageNumbers": "Page numbers",
+    "metadata": "Edit details"
   },
   "desc": {
     "merge": "Combine several PDFs into one",
@@ -23,7 +24,8 @@
     "decrypt": "Unlock a password-protected PDF",
     "fillForm": "Fill in a PDF form",
     "watermark": "Stamp text like \"COPY\" across every page",
-    "pageNumbers": "Number every page"
+    "pageNumbers": "Number every page",
+    "metadata": "Set the title, author, subject and keywords"
   },
   "pick": {
     "pdf_single": "Choose a PDF",
@@ -58,7 +60,13 @@
     "number_format": "Style",
     "number_format_plain": "1",
     "number_format_page-n": "Page 1",
-    "number_format_n-of-total": "1 / N"
+    "number_format_n-of-total": "1 / N",
+    "metadata_loading": "Reading details…",
+    "metadata_title": "Title",
+    "metadata_author": "Author",
+    "metadata_subject": "Subject",
+    "metadata_keywords": "Keywords",
+    "metadata_keywords_hint": "Separate keywords with commas."
   },
   "run": "Run",
   "running": "Working…",

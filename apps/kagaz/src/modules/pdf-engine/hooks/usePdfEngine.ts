@@ -18,6 +18,7 @@ import {
   type FormField,
   type PageNumberOptions,
   type PageRange,
+  type PdfMetadata,
   type PdfErrorCode,
   type ProgressEvent,
   type RenderOptions,
@@ -76,6 +77,9 @@ export interface UsePdfEngineResult {
   /** Reads a form PDF's fields (no save). */
   loadFormFields: (doc: DocumentEntity) => Promise<FormField[]>;
   fillForm: (doc: DocumentEntity, values: Record<string, string>) => Promise<number>;
+  /** Reads a PDF's metadata (no save). */
+  loadMetadata: (doc: DocumentEntity) => Promise<PdfMetadata>;
+  setMetadata: (doc: DocumentEntity, metadata: PdfMetadata) => Promise<number>;
 }
 
 const MIME_FOR: Record<string, string> = {
@@ -303,6 +307,29 @@ export function usePdfEngine(): UsePdfEngineResult {
     [getEngine, readBytes]
   );
 
+  const loadMetadata = useCallback(
+    async (doc: DocumentEntity): Promise<PdfMetadata> => {
+      const engine = await getEngine();
+      return engine.getMetadata(await readBytes(doc));
+    },
+    [getEngine, readBytes]
+  );
+
+  const setMetadata = useCallback(
+    (doc: DocumentEntity, metadata: PdfMetadata): Promise<number> =>
+      run(async (engine) => {
+        const out = await engine.setMetadata(await readBytes(doc), metadata);
+        return save([
+          {
+            name: `${baseName(doc.name)}_updated.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const fillForm = useCallback(
     (doc: DocumentEntity, values: Record<string, string>): Promise<number> =>
       run(async (engine) => {
@@ -332,6 +359,8 @@ export function usePdfEngine(): UsePdfEngineResult {
     decryptPdf,
     loadFormFields,
     fillForm,
+    loadMetadata,
+    setMetadata,
   };
 }
 

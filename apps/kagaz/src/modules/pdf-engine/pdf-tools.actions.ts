@@ -26,6 +26,7 @@ const opSchema = z.enum([
   'encrypt',
   'decrypt',
   'fillForm',
+  'metadata',
 ]);
 
 /** All PDF Tools actions, registered by id. */
@@ -43,6 +44,8 @@ export const toolsActions = {
       'watermark a pdf',
       'add page numbers',
       'number the pages',
+      'edit pdf details',
+      'change pdf title',
       'password protect a pdf',
       'unlock a pdf',
       'fill a pdf form',

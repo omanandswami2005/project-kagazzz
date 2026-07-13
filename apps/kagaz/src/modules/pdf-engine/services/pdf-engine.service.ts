@@ -8,6 +8,7 @@ import {
   type FormField,
   type ImageInput,
   type PageNumberOptions,
+  type PdfMetadata,
   type ProgressCallback,
   type PdfErrorCode,
   type ProgressEvent,
@@ -366,6 +367,28 @@ export class PdfEngineServiceImpl implements PdfEngineService {
       this.manipulationWorker!,
       'decryptPdf',
       { pdf: clonedPdf, password },
+      [clonedPdf.buffer]
+    );
+  }
+
+  async getMetadata(pdf: Uint8Array): Promise<PdfMetadata> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<PdfMetadata>(
+      this.manipulationWorker!,
+      'getMetadata',
+      { pdf: clonedPdf },
+      [clonedPdf.buffer]
+    );
+  }
+
+  async setMetadata(pdf: Uint8Array, metadata: PdfMetadata): Promise<Uint8Array> {
+    this.ensureInitialized();
+    const clonedPdf = clone(pdf);
+    return this.dispatch<Uint8Array>(
+      this.manipulationWorker!,
+      'setMetadata',
+      { pdf: clonedPdf, metadata },
       [clonedPdf.buffer]
     );
   }

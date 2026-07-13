@@ -11,7 +11,8 @@ export type PdfOpId =
   | 'pageNumbers'
   | 'encrypt'
   | 'decrypt'
-  | 'fillForm';
+  | 'fillForm'
+  | 'metadata';
 
 /** What kind of vault documents an operation takes as input. */
 export type PdfOpInput = 'pdf-single' | 'pdf-multi' | 'images';
@@ -35,6 +36,7 @@ export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'encrypt', icon: 'Lock', input: 'pdf-single' },
   { id: 'decrypt', icon: 'Unlock', input: 'pdf-single' },
   { id: 'fillForm', icon: 'FileOutput', input: 'pdf-single' },
+  { id: 'metadata', icon: 'Info', input: 'pdf-single' },
 ];
 
 /** Image file types accepted by images → PDF. */

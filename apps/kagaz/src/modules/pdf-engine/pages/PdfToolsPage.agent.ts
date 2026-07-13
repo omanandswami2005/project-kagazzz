@@ -31,6 +31,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'pageNumbers' },
     },
     {
+      utterance: 'edit pdf details',
+      action: 'tools.openPdfTools',
+      args: { op: 'metadata' },
+    },
+    {
       utterance: 'password protect a pdf',
       action: 'tools.openPdfTools',
       args: { op: 'encrypt' },
