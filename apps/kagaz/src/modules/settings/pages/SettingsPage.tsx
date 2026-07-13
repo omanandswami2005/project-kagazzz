@@ -28,6 +28,7 @@ import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
 import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import { usePreferencesStore } from '@/core/preferences';
+import { APP_VERSION } from '@/core/logging';
 import './settings.css';
 
 const THEME_OPTIONS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
@@ -230,6 +231,33 @@ export function SettingsPage(): ReactNode {
               </Button>
               <p className="kg-settings__hint">{t('data.delete_all_hint')}</p>
             </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-about">
+              {t('about.title')}
+            </h2>
+            {(
+              [
+                ['privacy', 'about.privacy_policy'],
+                ['terms', 'about.terms'],
+                ['licenses', 'about.licenses'],
+              ] as const
+            ).map(([doc, labelKey]) => (
+              <div className="kg-settings__row" key={doc}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => router.push(`/legal/${doc}`)}
+                  agentId={`settings.about-${doc}`}
+                >
+                  {t(labelKey)}
+                </Button>
+              </div>
+            ))}
+            <p className="kg-settings__hint" data-agent-id="settings.about-version">
+              {t('about.version', { version: APP_VERSION })}
+            </p>
           </section>
         </main>
 

@@ -54,6 +54,8 @@
     "title": "About",
     "privacy_policy": "Privacy Policy",
     "terms": "Terms & Conditions",
-    "licenses": "Open-source licenses"
+    "licenses": "Open-source licenses",
+    "licenses_intro": "Kagaz is built with these open-source libraries. Thank you to their authors.",
+    "version": "Version {{version}}"
   }
 }

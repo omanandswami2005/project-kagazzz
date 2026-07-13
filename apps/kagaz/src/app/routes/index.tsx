@@ -26,6 +26,7 @@ import { Redirect, Route } from 'react-router-dom';
 import { Icon, Spinner } from '@kagaz/ui';
 import {
   LazyFavoritesPage,
+  LazyLegalPage,
   LazyPdfToolsPage,
   LazyDocumentViewerPage,
   LazySettingsPage,
@@ -108,6 +109,7 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/vault" component={LazyVaultHomePage} />
           <Route exact path="/pdf-tools" component={LazyPdfToolsPage} />
           <Route exact path="/settings" component={LazySettingsPage} />
+          <Route exact path="/legal/:doc" component={LazyLegalPage} />
           <Route exact path="/trash" component={LazyTrashPage} />
           <Route exact path="/doc/:id" component={LazyDocumentViewerPage} />
           <Route exact path="/favorites" component={LazyFavoritesPage} />

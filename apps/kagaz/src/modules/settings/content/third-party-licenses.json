@@ -1,0 +1,217 @@
+[
+  {
+    "name": "@aparajita/capacitor-biometric-auth",
+    "version": "10.0.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor-community/speech-recognition",
+    "version": "7.0.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor-community/sqlite",
+    "version": "8.1.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor-community/text-to-speech",
+    "version": "8.0.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor-mlkit/document-scanner",
+    "version": "8.1.0",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "@capacitor/android",
+    "version": "8.4.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/app",
+    "version": "8.1.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/camera",
+    "version": "8.2.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/core",
+    "version": "8.4.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/filesystem",
+    "version": "8.1.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/haptics",
+    "version": "8.0.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/ios",
+    "version": "8.4.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/preferences",
+    "version": "8.0.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@capacitor/share",
+    "version": "8.0.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@ionic/react",
+    "version": "8.8.9",
+    "license": "MIT"
+  },
+  {
+    "name": "@ionic/react-router",
+    "version": "8.8.9",
+    "license": "MIT"
+  },
+  {
+    "name": "@mlc-ai/web-llm",
+    "version": "0.2.84",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "@pdfsmaller/pdf-decrypt",
+    "version": "1.0.1",
+    "license": "MIT"
+  },
+  {
+    "name": "@pdfsmaller/pdf-encrypt",
+    "version": "1.0.2",
+    "license": "MIT"
+  },
+  {
+    "name": "@tanstack/react-query",
+    "version": "5.101.0",
+    "license": "MIT"
+  },
+  {
+    "name": "browser-image-compression",
+    "version": "2.0.2",
+    "license": "MIT"
+  },
+  {
+    "name": "capacitor-secure-storage-plugin",
+    "version": "0.13.0",
+    "license": "MIT"
+  },
+  {
+    "name": "clsx",
+    "version": "2.1.1",
+    "license": "MIT"
+  },
+  {
+    "name": "comlink",
+    "version": "4.4.2",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "dexie",
+    "version": "4.4.3",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "docx",
+    "version": "9.7.1",
+    "license": "MIT"
+  },
+  {
+    "name": "i18next",
+    "version": "26.3.1",
+    "license": "MIT"
+  },
+  {
+    "name": "i18next-browser-languagedetector",
+    "version": "8.2.1",
+    "license": "MIT"
+  },
+  {
+    "name": "i18next-resources-to-backend",
+    "version": "1.2.1",
+    "license": "MIT"
+  },
+  {
+    "name": "jeep-sqlite",
+    "version": "2.8.0",
+    "license": "MIT"
+  },
+  {
+    "name": "jszip",
+    "version": "3.10.1",
+    "license": "(MIT OR GPL-3.0-or-later)"
+  },
+  {
+    "name": "lucide-react",
+    "version": "1.17.0",
+    "license": "ISC"
+  },
+  {
+    "name": "mammoth",
+    "version": "1.12.0",
+    "license": "BSD-2-Clause"
+  },
+  {
+    "name": "pdf-lib",
+    "version": "1.17.1",
+    "license": "MIT"
+  },
+  {
+    "name": "pdfjs-dist",
+    "version": "6.0.227",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "pino",
+    "version": "10.3.1",
+    "license": "MIT"
+  },
+  {
+    "name": "react",
+    "version": "19.2.7",
+    "license": "MIT"
+  },
+  {
+    "name": "react-dom",
+    "version": "19.2.7",
+    "license": "MIT"
+  },
+  {
+    "name": "react-i18next",
+    "version": "17.0.8",
+    "license": "MIT"
+  },
+  {
+    "name": "react-router-dom",
+    "version": "5.3.4",
+    "license": "MIT"
+  },
+  {
+    "name": "xlsx",
+    "version": "0.18.5",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "zod",
+    "version": "4.4.3",
+    "license": "MIT"
+  },
+  {
+    "name": "zustand",
+    "version": "5.0.14",
+    "license": "MIT"
+  }
+]
