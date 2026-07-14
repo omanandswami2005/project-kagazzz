@@ -58,15 +58,18 @@ export default defineConfig(({ mode }) => {
           // off the initial route and ship inside the APK, so they never hit
           // cold-start FCP.
           manualChunks: (id: string): string | undefined => {
+            // React + Ionic + router ship in ONE vendor chunk: splitting Ionic
+            // into a second initial-route chunk added an extra critical-path
+            // request that shaved ~0.02 off the Lighthouse score (0.86→0.84,
+            // below the temp floor) for zero byte saving. The framework is
+            // Ionic-dominated (~54 KB React vs ~237 KB Ionic) — real reduction
+            // needs a heavy-overlay-component refactor, not a chunk relabel.
             if (
-              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history)[\\/]/.test(
+              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/.test(
                 id
               )
             ) {
               return 'vendor';
-            }
-            if (/[\\/]node_modules[\\/](@ionic|@stencil|ionicons)[\\/]/.test(id)) {
-              return 'ionic';
             }
             if (/[\\/]node_modules[\\/]pdfjs-dist[\\/]/.test(id)) return 'lib-pdfjs';
             if (/[\\/]node_modules[\\/]pdf-lib[\\/]/.test(id)) return 'lib-pdflib';
