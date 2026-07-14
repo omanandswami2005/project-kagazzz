@@ -1,18 +1,157 @@
 {
   "$schema": "docs/design-system/agent-interface.md#the-agentsitemap",
   "pages": {
+    "vault.viewer": {
+      "route": "/doc/:id",
+      "intent": "View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction are user-only actions.",
+      "primary": null,
+      "actions": []
+    },
+    "vault.favorites": {
+      "route": "/favorites",
+      "intent": "List every document the user has starred as a favorite, newest first, so they can reopen or un-star them quickly.",
+      "primary": null,
+      "actions": [
+        "vaultActions.toggleFavorite"
+      ]
+    },
+    "vault.storage": {
+      "route": "/storage",
+      "intent": "Show how much device storage the vault uses, broken down by file type, the largest documents, and any reclaimable duplicates.",
+      "primary": null,
+      "actions": []
+    },
+    "vault.trash": {
+      "route": "/trash",
+      "intent": "Show documents the user has deleted, kept for 30 days before permanent removal, so they can restore them or delete them for good. Restore and permanent deletion are user-only actions.",
+      "primary": null,
+      "actions": []
+    },
     "vault.home": {
       "route": "/vault",
       "intent": "Browse the documents in the vault and add new ones from the camera, gallery, or file picker.",
       "primary": "vaultActions.uploadDocument",
       "actions": [
-        "vaultActions.uploadDocument"
+        "vaultActions.uploadDocument",
+        "toolsActions.openPdfTools",
+        "vaultActions.searchDocuments",
+        "vaultActions.openFilters",
+        "vaultActions.clearFilters",
+        "vaultActions.bulkDelete",
+        "vaultActions.bulkFavorite",
+        "vaultActions.createFolder",
+        "vaultActions.createStarterFolders",
+        "vaultActions.moveDocument",
+        "vaultActions.toggleFavorite",
+        "vaultActions.manageTags",
+        "vaultActions.tagDocument",
+        "vaultActions.setSortBy",
+        "vaultActions.toggleSortDirection"
+      ]
+    },
+    "pdf-tools": {
+      "route": "/pdf-tools",
+      "intent": "Run on-device PDF operations: merge, split, compress, PDF↔image conversion, password protect/unlock, and fill PDF forms — saving the result to the vault.",
+      "primary": "toolsActions.openPdfTools",
+      "actions": [
+        "toolsActions.openPdfTools"
+      ]
+    },
+    "settings.legal": {
+      "route": "/legal/:doc",
+      "intent": "Show one of the legal documents — Privacy Policy, Terms & Conditions, or the Open-source licenses/attributions — as read-only text reached from Settings → About.",
+      "primary": null,
+      "actions": []
+    },
+    "settings": {
+      "route": "/settings",
+      "intent": "Change app settings. V1: the UI language (English / हिन्दी) and the colour theme (system / light / dark). Both persist across restarts.",
+      "primary": "settingsActions.setTheme",
+      "actions": [
+        "settingsActions.openSettings",
+        "settingsActions.setTheme",
+        "settingsActions.setLanguage"
       ]
     }
   },
   "actions": {
     "vault.uploadDocument": {
-      "summary": "Add a document to the vault from the camera, the photo gallery, or the file picker.",
+      "summary": "Add a document to the vault from the camera, the photo gallery, the file picker, or the native document scanner (F-2, Android).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.setSortBy": {
+      "summary": "Change how the document list is sorted.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.toggleFavorite": {
+      "summary": "Search the vault by document name, description, or text.",
+      "voice": [
+        "favorite this",
+        "add to favorites",
+        "remove from favorites",
+        "इसे पसंदीदा बनाओ"
+      ],
+      "requiresConfirmation": false
+    },
+    "vault.bulkDelete": {
+      "summary": "Delete the currently selected documents.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.bulkFavorite": {
+      "summary": "Mark the currently selected documents as favorites.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.openFilters": {
+      "summary": "Open the filter panel to narrow the document list.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.clearFilters": {
+      "summary": "Clear all active document filters.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.createFolder": {
+      "summary": "Create a new folder in the current folder.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.createStarterFolders": {
+      "summary": "Create the default starter folders (Identity, Education, …).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.moveDocument": {
+      "summary": "Move a document into a folder (or to the vault root).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.manageTags": {
+      "summary": "Open the tag editor for a document.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.tagDocument": {
+      "summary": "Tag a document with a label, creating the tag if it is new.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.toggleSortDirection": {
+      "summary": "Flip the document sort between ascending and descending.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "tools.openPdfTools": {
+      "summary": "Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "settings.open": {
+      "summary": "Open the app Settings screen (appearance/theme, and — as they ship — language, security, and about).",
       "voice": [],
       "requiresConfirmation": false
     }
@@ -24,6 +163,20 @@
         "vault.home"
       ],
       "action": "vault.uploadDocument"
+    },
+    {
+      "utterance": "open pdf tools",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "merge pdfs",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "tools.openPdfTools"
     },
     {
       "utterance": "take a photo of my document",
@@ -45,6 +198,237 @@
         "vault.home"
       ],
       "action": "vault.uploadDocument"
+    },
+    {
+      "utterance": "find my aadhaar",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.searchDocuments"
+    },
+    {
+      "utterance": "filter documents",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.openFilters"
+    },
+    {
+      "utterance": "clear filters",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.clearFilters"
+    },
+    {
+      "utterance": "delete selected",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.bulkDelete"
+    },
+    {
+      "utterance": "favorite these",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.bulkFavorite"
+    },
+    {
+      "utterance": "favorite this document",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.toggleFavorite"
+    },
+    {
+      "utterance": "create a folder called Taxes",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.createFolder"
+    },
+    {
+      "utterance": "set up starter folders",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.createStarterFolders"
+    },
+    {
+      "utterance": "edit tags",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.manageTags"
+    },
+    {
+      "utterance": "tag this as important",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.tagDocument"
+    },
+    {
+      "utterance": "sort by name",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.setSortBy"
+    },
+    {
+      "utterance": "sort by size",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.setSortBy"
+    },
+    {
+      "utterance": "reverse the order",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.toggleSortDirection"
+    },
+    {
+      "utterance": "merge pdfs",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "split a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "organize pdf pages",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "compress a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "extract text from a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "convert pdf to word",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "convert pdf to excel",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "watermark a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "add a signature to a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "add page numbers",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "edit pdf details",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "password protect a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "पीडीएफ़ मिलाओ",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "dark mode",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setTheme"
+    },
+    {
+      "utterance": "light mode",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setTheme"
+    },
+    {
+      "utterance": "use the system theme",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setTheme"
+    },
+    {
+      "utterance": "डार्क मोड चालू करो",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setTheme"
+    },
+    {
+      "utterance": "switch to hindi",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setLanguage"
+    },
+    {
+      "utterance": "अंग्रेज़ी में बदलो",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setLanguage"
+    },
+    {
+      "utterance": "open settings",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.open"
     }
   ]
 }
