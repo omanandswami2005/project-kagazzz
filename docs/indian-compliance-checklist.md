@@ -164,6 +164,29 @@ Priority P0 — Do before any public release or DigiLocker/CSC integration:
 - [ ] Start DigiLocker partner onboarding (apply; prepare docs)
 - [ ] Start CSC outreach (state nodal / CSC SPV) if integrating CSCs
 
+### V1-launch applicability review (gate G1-7) — 2026-07-14
+
+The P0 list above spans the whole lifecycle. For the **V1 (offline vault)**
+release, only a subset applies — V1 transmits no data, has no backend, and does
+no DigiLocker/CSC/eSign:
+
+| P0 item | Applies to V1? | V1 status |
+|---|---|---|
+| Publish Privacy Policy & Terms (en + hi) | ✅ Yes | **Partial** — in-app screens done (G1-5); **finalize placeholder text + publish public URL = you** (`apps/legal-site/`). |
+| Explicit consent flows + consent records | ⬜ V2 | No data leaves the device in V1 → no consent events. Lands with cloud/sharing. |
+| Device encryption (AES-256) + Keystore/Keychain | ✅ Yes | **Done** — SQLCipher DB + platform-keystore-only keys (G1-2 audit). |
+| TLS + certificate pinning for backend APIs | ⬜ V2 | No backend in V1. |
+| Security audit / pentest (external) | ➖ Advisory | V1 attack surface is on-device only; a code security review is advisable, full external pentest is a V2 (backend) must (G2-6). |
+| CCA-licensed eSign provider | ⬜ V3 | No eSign in V1. |
+| Incident response plan + grievance officer | ✅ Yes | **Partial** — incident-response plan exists ([10-security §9](architecture/10-security-architecture.md)); **designate + name the grievance officer = you** (also required in the privacy policy). |
+| DigiLocker partner onboarding | ⬜ V3 | Not in V1. |
+| CSC outreach | ⬜ V3 | Not in V1. |
+
+**V1 gate summary:** the two *technical* P0s (encryption/key storage, incident
+plan) are ✅ done; the rest are either V2/V3 or the **legal/content items you
+own** (finalize + publish the policy/T&C, name the grievance officer). No V1
+blocker sits in code.
+
 Priority P1 — Important before scale / growth features (sync, cloud backups):
 
 - [ ] Data residency validation for any cloud backups (India regions)

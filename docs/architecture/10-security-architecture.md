@@ -653,21 +653,23 @@ graph TB
 
 ### V1 — Local Security
 
+> **Status audited 2026-07-14 (G1-2).** All P0 + P1 items verified against the code; only the P2 root/jailbreak warning remains (out of V1 P0 scope). See per-item evidence below.
+
 | # | Item | Status | Priority |
 |---|---|---|---|
-| 1 | App-level biometric authentication | 🔲 | P0 |
-| 2 | SQLCipher database encryption | 🔲 | P0 |
-| 3 | Secure key storage (Keychain/Keystore) | 🔲 | P0 |
-| 4 | Per-document biometric lock | 🔲 | P0 |
-| 5 | Screenshot prevention | 🔲 | P1 |
-| 6 | App switcher content blur | 🔲 | P1 |
-| 7 | Temp file cleanup | 🔲 | P1 |
-| 8 | No network permissions | 🔲 | P0 |
-| 9 | No analytics SDKs | 🔲 | P0 |
-| 10 | Root/jailbreak detection (warning) | 🔲 | P2 |
-| 11 | Encrypted backup export | 🔲 | P1 |
-| 12 | Full data erasure | 🔲 | P1 |
-| 13 | CSP headers blocking outbound | 🔲 | P0 |
+| 1 | App-level biometric authentication | ✅ F-16 (`auth` module: LockGate/LockScreen, `@aparajita/capacitor-biometric-auth`) | P0 |
+| 2 | SQLCipher database encryption | ✅ `db_encryption_key` in platform secure storage; DB opened encrypted (§3.2) | P0 |
+| 3 | Secure key storage (Keychain/Keystore) | ✅ `capacitor-secure-storage-plugin` (iOS Keychain / Android Keystore); keys never logged | P0 |
+| 4 | Per-document biometric lock | ✅ F-16 (§3.1 per-doc lock enforced at viewer entry) | P0 |
+| 5 | Screenshot prevention | ✅ `FLAG_SECURE` in `MainActivity.onCreate` (device-verified) | P1 |
+| 6 | App switcher content blur | ✅ `FLAG_SECURE` blanks the recents preview (device-verified) | P1 |
+| 7 | Temp file cleanup | ✅ `infrastructure/filesystem/temp-cleanup.ts` (clears `temp/` on launch) | P1 |
+| 8 | No network permissions | ⚠️ **No app-initiated network**; release APK carries `INTERNET`+`ACCESS_NETWORK_STATE` transitively from the Play-Services ML Kit scanner (ADR-018) — never used by app code. See §3.5. | P0 |
+| 9 | No analytics SDKs | ✅ Zero analytics/crash/telemetry deps (F-19 audit; `pnpm ls` clean) | P0 |
+| 10 | Root/jailbreak detection (warning) | 🔲 Deferred (P2 — not a V1 P0 gate) | P2 |
+| 11 | Encrypted backup export | ✅ F-31 (AES-256-GCM `KGBK` container, distinct `backup_encryption_key`) | P1 |
+| 12 | Full data erasure | ✅ Settings → Delete all data (`DeleteAllDataDialog` + wipe) | P1 |
+| 13 | CSP headers blocking outbound | ✅ `index.html` strict CSP: `default-src 'self'; connect-src 'self'; object-src 'none'; form-action 'none'` (§3.5) | P0 |
 
 ### V2 — Sharing Security
 

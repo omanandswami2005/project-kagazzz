@@ -32,6 +32,7 @@ Audit evidence manifest (master table)
 | 1 | Privacy Policy (published + historic versions) | DPDP / NeGD / Users | Public policy + version history | `2026-06-08_privacy-policy_v1.0.md` | Legal | Permanent (or until replaced; archive old versions 5 years)
 | 2 | Terms & Conditions (published + historic) | Legal / auditors | Full text + change log | `2026-06-08_terms_v1.0.md` | Legal | Permanent (archive)
 | 3 | DPIA(s) / Privacy Impact Assessments | DPDP / auditors | DPIA document, version history, sign-off | `2026-06-08_dpia_digilocker.md` | DPO | 5 years
+| 3a | Play Data Safety declaration (V1) | Google Play / Users | Console mapping + reviewer notes (V1: no data collected/shared) | `play-data-safety.md` | Legal / Product | Until replaced (V2 re-declare) |
 | 4 | Penetration Test Report(s) | NeGD / DigiLocker / CERT‑In auditors | Full report, executive summary, remediation plan + verification | `2026-06-01_pentest_report.pdf` | Security | 3 years
 | 5 | SAST / Static Analysis Results (CodeQL) | Security auditors | Snapshot of results per release/commit | `2026-06-05_codeql_results.json` | Security | 3 years
 | 6 | DAST / Application Scans (reports) | Security auditors | Scan reports & remediation tickets | `2026-06-01_dast_report.pdf` | Security | 3 years
