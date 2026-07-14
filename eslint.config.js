@@ -94,5 +94,21 @@ export default tseslint.config(
     rules: {
       'import-x/no-named-as-default-member': 'off',
     },
+  },
+  {
+    // A typescript-eslint projectService bug deterministically fails to
+    // associate this one pre-existing test file with any project on a cold
+    // cache — "not found by the project service" — even though
+    // `tsc -p apps/kagaz/tsconfig.app.json --listFiles` includes it and every
+    // sibling test resolves fine (projectService, `project` mode, and a
+    // dedicated flat tsconfig all fail identically; a known upstream path bug).
+    // As the documented escape hatch, run this single file without a TS program
+    // (syntactic + non-type-aware rules only). It keeps CI green on a cold
+    // cache; revert to projectService for it when the upstream bug is fixed.
+    files: ['**/document-vault/hooks/__tests__/useVaultMutations.test.tsx'],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      parserOptions: { project: false, projectService: false },
+    },
   }
 );
