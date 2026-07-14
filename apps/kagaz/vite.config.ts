@@ -59,11 +59,14 @@ export default defineConfig(({ mode }) => {
           // cold-start FCP.
           manualChunks: (id: string): string | undefined => {
             if (
-              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/.test(
+              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history)[\\/]/.test(
                 id
               )
             ) {
               return 'vendor';
+            }
+            if (/[\\/]node_modules[\\/](@ionic|@stencil|ionicons)[\\/]/.test(id)) {
+              return 'ionic';
             }
             if (/[\\/]node_modules[\\/]pdfjs-dist[\\/]/.test(id)) return 'lib-pdfjs';
             if (/[\\/]node_modules[\\/]pdf-lib[\\/]/.test(id)) return 'lib-pdflib';
