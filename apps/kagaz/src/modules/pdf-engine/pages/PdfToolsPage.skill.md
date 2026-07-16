@@ -21,7 +21,7 @@ PDF ever leaves the device.
 
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
-| Open a specific tool | `tools.openPdfTools` | `op` = `'merge'` \| `'split'` \| `'compress'` \| `'pdfToImages'` \| `'imagesToPdf'` \| `'encrypt'` \| `'decrypt'` \| `'fillForm'`. Omit `op` to open the hub. |
+| Open a specific tool | `tools.openPdfTools` | `op` = `'merge'` \| `'split'` \| `'extractPages'` \| `'compress'` \| `'pdfToImages'` \| `'imagesToPdf'` \| `'encrypt'` \| `'decrypt'` \| `'fillForm'`. Omit `op` to open the hub. |
 
 Picking the documents, typing page ranges / passwords / field values, and
 pressing **Run** are **direct manipulations** — the user does them by hand.
@@ -29,6 +29,7 @@ pressing **Run** are **direct manipulations** — the user does them by hand.
 ## Voice examples I should recognize
 - "merge pdfs" → `tools.openPdfTools({ op: 'merge' })`
 - "split a pdf" → `tools.openPdfTools({ op: 'split' })`
+- "extract pages from a pdf" → `tools.openPdfTools({ op: 'extractPages' })`
 - "password protect a pdf" → `tools.openPdfTools({ op: 'encrypt' })`
 - "पीडीएफ़ मिलाओ" → `tools.openPdfTools({ op: 'merge' })`
 

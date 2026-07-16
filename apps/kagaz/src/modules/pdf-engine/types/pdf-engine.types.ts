@@ -252,6 +252,13 @@ export interface PdfEngineService {
     onProgress?: ProgressCallback
   ): Promise<Uint8Array>;
 
+  /** Extract the given page ranges into a single new PDF (F-66) */
+  extractPages(
+    pdf: Uint8Array,
+    ranges: PageRange[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array>;
+
   /** Compress a PDF to reduce file size */
   compressPdf(
     pdf: Uint8Array,

@@ -20,6 +20,11 @@ export const PdfToolsPageAgent = definePage({
     { utterance: 'merge pdfs', action: 'tools.openPdfTools', args: { op: 'merge' } },
     { utterance: 'split a pdf', action: 'tools.openPdfTools', args: { op: 'split' } },
     {
+      utterance: 'extract pages from a pdf',
+      action: 'tools.openPdfTools',
+      args: { op: 'extractPages' },
+    },
+    {
       utterance: 'organize pdf pages',
       action: 'tools.openPdfTools',
       args: { op: 'organize' },

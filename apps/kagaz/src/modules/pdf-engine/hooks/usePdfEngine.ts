@@ -84,6 +84,7 @@ export interface UsePdfEngineResult {
   /** Renders every page to a preview image blob (F-35 organizer; no save). */
   loadPagePreviews: (doc: DocumentEntity) => Promise<Blob[]>;
   organizePages: (doc: DocumentEntity, ops: PageOp[]) => Promise<number>;
+  extractPages: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
   watermarkPdf: (doc: DocumentEntity, text: string) => Promise<number>;
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
@@ -232,6 +233,21 @@ export function usePdfEngine(): UsePdfEngineResult {
         return save([
           {
             name: `${baseName(doc.name)}_organized.pdf`,
+            blob: blobOf(out, 'pdf'),
+            source: 'ai_generated',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
+  const extractPages = useCallback(
+    (doc: DocumentEntity, ranges: PageRange[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const out = await engine.extractPages(await readBytes(doc), ranges, onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_extract.pdf`,
             blob: blobOf(out, 'pdf'),
             source: 'ai_generated',
           },
@@ -479,6 +495,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     splitPdf,
     loadPagePreviews,
     organizePages,
+    extractPages,
     watermarkPdf,
     addPageNumbers,
     compressPdf,
