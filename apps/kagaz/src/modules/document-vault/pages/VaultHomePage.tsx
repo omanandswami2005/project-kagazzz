@@ -39,6 +39,7 @@ import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocLock } from '../hooks/useDocLock';
 import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
+import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -112,6 +113,7 @@ export function VaultHomePage(): ReactNode {
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
   const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
+  const [detailsDoc, setDetailsDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
 
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
@@ -426,6 +428,8 @@ export function VaultHomePage(): ReactNode {
             setNewFolderOpen(false);
           }}
         />
+        <DocumentDetailsSheet document={detailsDoc} onClose={() => setDetailsDoc(null)} />
+
         <IonActionSheet
           isOpen={moreDoc !== null}
           header={moreDoc?.name}
@@ -479,6 +483,14 @@ export function VaultHomePage(): ReactNode {
                   },
                 ]
               : []),
+            // F-67: read-only document details.
+            {
+              text: t('details.title'),
+              data: { action: 'details' },
+              handler: (): void => {
+                if (moreDoc) setDetailsDoc(moreDoc);
+              },
+            },
             // F-20: OCR only offered for image documents on a native platform.
             ...(moreDoc && canOcr(moreDoc)
               ? [

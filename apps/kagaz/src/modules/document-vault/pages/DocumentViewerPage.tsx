@@ -29,6 +29,7 @@ import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
+import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
 
@@ -52,6 +53,7 @@ export function DocumentViewerPage(): ReactNode {
   // into the viewer).
   const [extracted, setExtracted] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const text = extracted ?? document?.ocrText ?? null;
 
@@ -195,6 +197,7 @@ export function DocumentViewerPage(): ReactNode {
                   { text: t('intents.share'), handler: () => void handleShare() },
                 ]
               : []),
+            { text: t('details.title'), handler: () => setDetailsOpen(true) },
             {
               text: t('actions.delete'),
               role: 'destructive',
@@ -202,6 +205,11 @@ export function DocumentViewerPage(): ReactNode {
             },
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
+        />
+
+        <DocumentDetailsSheet
+          document={detailsOpen ? (document ?? null) : null}
+          onClose={() => setDetailsOpen(false)}
         />
         <IonToast
           isOpen={toast !== null}

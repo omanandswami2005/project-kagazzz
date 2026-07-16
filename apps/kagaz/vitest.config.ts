@@ -47,6 +47,9 @@ export default defineConfig({
         // unit-testable core.
         // IonPage screens (navigation, native plugins, IonModal presentation):
         '**/pages/**',
+        // Presentational IonModal overlay sheets — content isn't presented in
+        // jsdom, so they're device-verified rather than unit-covered:
+        'src/modules/document-vault/components/DocumentDetailsSheet.tsx',
         // Native-DB / theme / i18n providers + route dynamic-import thunks:
         '**/providers/**',
         'src/app/routes/lazy-imports.ts',
