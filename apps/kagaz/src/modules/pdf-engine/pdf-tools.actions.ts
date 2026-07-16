@@ -32,6 +32,7 @@ const opSchema = z.enum([
   'encrypt',
   'decrypt',
   'fillForm',
+  'appendScan',
   'metadata',
 ]);
 
@@ -69,6 +70,8 @@ export const toolsActions = {
       'password protect a pdf',
       'unlock a pdf',
       'fill a pdf form',
+      'add a scan to a pdf',
+      'scan and append to a pdf',
       'पीडीएफ़ उपकरण खोलो',
       'पीडीएफ़ मिलाओ',
     ],

@@ -61,6 +61,11 @@ export const PdfToolsPageAgent = definePage({
       args: { op: 'pageNumbers' },
     },
     {
+      utterance: 'add a scan to a pdf',
+      action: 'tools.openPdfTools',
+      args: { op: 'appendScan' },
+    },
+    {
       utterance: 'edit pdf details',
       action: 'tools.openPdfTools',
       args: { op: 'metadata' },

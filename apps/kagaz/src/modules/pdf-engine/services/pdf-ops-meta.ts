@@ -18,6 +18,7 @@ export type PdfOpId =
   | 'encrypt'
   | 'decrypt'
   | 'fillForm'
+  | 'appendScan'
   | 'metadata';
 
 /** What kind of vault documents an operation takes as input. */
@@ -28,6 +29,8 @@ export interface PdfOpMeta {
   id: PdfOpId;
   icon: IconName;
   input: PdfOpInput;
+  /** Op requires a native platform (e.g. the ML Kit scanner) — hidden on web. */
+  native?: boolean;
 }
 
 /** The operations, in the order shown on the hub. */
@@ -48,6 +51,7 @@ export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'encrypt', icon: 'Lock', input: 'pdf-single' },
   { id: 'decrypt', icon: 'Unlock', input: 'pdf-single' },
   { id: 'fillForm', icon: 'FileOutput', input: 'pdf-single' },
+  { id: 'appendScan', icon: 'Scan', input: 'pdf-single', native: true },
   { id: 'metadata', icon: 'Info', input: 'pdf-single' },
 ];
 

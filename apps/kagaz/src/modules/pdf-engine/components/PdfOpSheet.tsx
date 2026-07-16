@@ -312,6 +312,9 @@ export function PdfOpSheet({
         if (op === 'fillForm') {
           return engine.fillForm(doc, fieldValues);
         }
+        if (op === 'appendScan') {
+          return engine.appendScan(doc);
+        }
         if (op === 'metadata') {
           if (!metaDraft) {
             return 0;
@@ -539,6 +542,9 @@ export function PdfOpSheet({
     }
     if (op === 'pdfToWord') {
       return <p className="kg-pdf-op__note">{t('params.word_note')}</p>;
+    }
+    if (op === 'appendScan') {
+      return <p className="kg-pdf-op__note">{t('params.append_scan_note')}</p>;
     }
     if (op === 'pdfToExcel') {
       return (

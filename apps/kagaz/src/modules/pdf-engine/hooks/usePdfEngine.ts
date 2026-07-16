@@ -10,6 +10,7 @@ import { log } from '@/core/logging';
 import { createFileStorage } from '@/infrastructure/filesystem';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
+import { pickFromScanner } from '@/modules/document-vault/services/upload-sources';
 import type { IncomingFile } from '@/modules/document-vault/types/document.types';
 import { PdfEngineServiceImpl } from '../services/pdf-engine.service';
 import {
@@ -89,6 +90,8 @@ export interface UsePdfEngineResult {
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
+  /** Scan pages natively and append them to an existing PDF (F-69). 0 if cancelled. */
+  appendScan: (doc: DocumentEntity) => Promise<number>;
   stampImage: (
     doc: DocumentEntity,
     image: DocumentEntity,
@@ -318,6 +321,26 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const appendScan = useCallback(
+    (doc: DocumentEntity): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const scanned = await pickFromScanner();
+        if (scanned.length === 0) {
+          return 0; // user cancelled the scanner / nothing captured
+        }
+        const scannedPdf = await scannedFilesToPdfBytes(engine, scanned, onProgress);
+        const merged = await engine.mergePdfs([await readBytes(doc), scannedPdf], onProgress);
+        return save([
+          {
+            name: `${baseName(doc.name)}_appended.pdf`,
+            blob: blobOf(merged, 'pdf'),
+            source: 'scanner',
+          },
+        ]);
+      }),
+    [run, readBytes, save]
+  );
+
   const stampImage = useCallback(
     (
       doc: DocumentEntity,
@@ -500,6 +523,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     addPageNumbers,
     compressPdf,
     imagesToPdf,
+    appendScan,
     stampImage,
     pdfToImages,
     exportPdfText,
@@ -517,4 +541,27 @@ export function usePdfEngine(): UsePdfEngineResult {
 /** Wraps engine bytes in a typed Blob for the upload pipeline. */
 function blobOf(bytes: Uint8Array, fileType: 'pdf'): Blob {
   return new Blob([bytes as BlobPart], { type: MIME_FOR[fileType] });
+}
+
+/**
+ * Reduces the native scanner's output (F-69) to a single PDF's bytes. A
+ * multi-page scan already arrives as one combined PDF; single-page scans arrive
+ * as JPEG(s), which are packed into a PDF via the engine's images → PDF op.
+ */
+async function scannedFilesToPdfBytes(
+  engine: PdfEngineServiceImpl,
+  files: IncomingFile[],
+  onProgress: (e: ProgressEvent) => void
+): Promise<Uint8Array> {
+  const combined = files.find((f) => f.name.toLowerCase().endsWith('.pdf'));
+  if (combined) {
+    return new Uint8Array(await combined.blob.arrayBuffer());
+  }
+  const images = await Promise.all(
+    files.map(async (f) => ({
+      data: new Uint8Array(await f.blob.arrayBuffer()),
+      mimeType: f.blob.type || 'image/jpeg',
+    }))
+  );
+  return engine.imagesToPdf(images, onProgress);
 }
