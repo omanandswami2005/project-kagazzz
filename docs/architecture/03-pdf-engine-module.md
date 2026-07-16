@@ -243,6 +243,23 @@ interface PdfEngineServiceWithProgress extends PdfEngineService {
 }
 ```
 
+### 4.3 Composed hook operations (`usePdfEngine`)
+
+A few PDF Tools operations are **compositions** that live in the `usePdfEngine`
+hook rather than as single service methods, because they orchestrate other
+modules' inputs around the engine:
+
+- **`extractPages(doc, ranges)`** (F-66) — flattens page ranges to source-page
+  ops and calls `organizePages`, saving `<name>_extract.pdf`.
+- **`appendScan(doc)`** (F-69, **native only**) — runs the native ML Kit scanner
+  (via document-vault's `pickFromScanner`), turns the scan into PDF bytes (a
+  multi-page scan already is one PDF; single JPEG pages go through
+  `imagesToPdf`), then `mergePdfs([sourceBytes, scannedPdf])` and saves
+  `<name>_appended.pdf` (source `scanner`). Returns `0` when the user cancels the
+  scanner. The op card is hidden on the web build (`PdfOpMeta.native`). No new
+  permission or network — the scanner is Play-Services-hosted (ADR-018), and the
+  merge runs in the existing worker.
+
 ---
 
 ## 5. TypeScript Interfaces

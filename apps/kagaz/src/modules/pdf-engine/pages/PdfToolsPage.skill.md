@@ -21,7 +21,7 @@ PDF ever leaves the device.
 
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
-| Open a specific tool | `tools.openPdfTools` | `op` = `'merge'` \| `'split'` \| `'extractPages'` \| `'compress'` \| `'pdfToImages'` \| `'imagesToPdf'` \| `'encrypt'` \| `'decrypt'` \| `'fillForm'`. Omit `op` to open the hub. |
+| Open a specific tool | `tools.openPdfTools` | `op` = `'merge'` \| `'split'` \| `'extractPages'` \| `'compress'` \| `'pdfToImages'` \| `'imagesToPdf'` \| `'encrypt'` \| `'decrypt'` \| `'fillForm'` \| `'appendScan'` (native only). Omit `op` to open the hub. |
 
 Picking the documents, typing page ranges / passwords / field values, and
 pressing **Run** are **direct manipulations** — the user does them by hand.
@@ -30,6 +30,7 @@ pressing **Run** are **direct manipulations** — the user does them by hand.
 - "merge pdfs" → `tools.openPdfTools({ op: 'merge' })`
 - "split a pdf" → `tools.openPdfTools({ op: 'split' })`
 - "extract pages from a pdf" → `tools.openPdfTools({ op: 'extractPages' })`
+- "add a scan to a pdf" → `tools.openPdfTools({ op: 'appendScan' })` (native only — the card is hidden on the web build)
 - "password protect a pdf" → `tools.openPdfTools({ op: 'encrypt' })`
 - "पीडीएफ़ मिलाओ" → `tools.openPdfTools({ op: 'merge' })`
 

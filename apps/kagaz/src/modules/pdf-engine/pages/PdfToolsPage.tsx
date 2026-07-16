@@ -15,6 +15,7 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Capacitor } from '@capacitor/core';
 import { Icon } from '@kagaz/ui';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
@@ -29,6 +30,9 @@ export function PdfToolsPage(): ReactNode {
   const { documents } = useDocuments();
   const engine = usePdfEngine();
   const [activeOp, setActiveOp] = useState<PdfOpId | null>(null);
+  // Native-only ops (e.g. the ML Kit scanner) are hidden on the web build.
+  const isNative = Capacitor.isNativePlatform();
+  const ops = PDF_OPS.filter((op) => !op.native || isNative);
   const [savedCount, setSavedCount] = useState(0);
 
   return (
@@ -45,7 +49,7 @@ export function PdfToolsPage(): ReactNode {
         <main className="kg-pdf-tools" data-agent-id="pdf-tools.content">
           <p className="kg-pdf-tools__subtitle">{t('subtitle')}</p>
           <ul className="kg-pdf-tools__grid" data-agent-id="pdf-tools.ops">
-            {PDF_OPS.map((op) => (
+            {ops.map((op) => (
               <li key={op.id}>
                 <button
                   type="button"
