@@ -28,6 +28,8 @@ const state = vi.hoisted(
 
 vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'd1' }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+// DocumentDetailsSheet (F-67) reads the locale via useLocale.
+vi.mock('@/core/i18n', () => ({ useLocale: () => ({ locale: 'en' }) }));
 vi.mock('../../hooks/useDocument', () => ({
   useDocument: () => ({ document: state.document, loading: state.loading }),
 }));

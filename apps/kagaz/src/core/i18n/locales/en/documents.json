@@ -26,6 +26,20 @@
     "open_failed": "Couldn't open this document in another app.",
     "share_failed": "Couldn't share this document."
   },
+  "details": {
+    "title": "Details",
+    "name": "Name",
+    "type": "Type",
+    "size": "Size",
+    "added": "Added",
+    "modified": "Modified",
+    "original_name": "Original filename",
+    "status": "Status",
+    "locked": "Locked",
+    "favorite": "Favorite",
+    "none": "—",
+    "hash": "Integrity hash"
+  },
   "ocr": {
     "running": "Reading text…",
     "done": "Text saved — now searchable",
