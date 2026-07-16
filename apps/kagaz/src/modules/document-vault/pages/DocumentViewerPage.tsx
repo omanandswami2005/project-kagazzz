@@ -28,6 +28,7 @@ import { useDocument } from '../hooks/useDocument';
 import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
+import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
 
@@ -42,6 +43,7 @@ export function DocumentViewerPage(): ReactNode {
   const isDocxDoc = document?.fileType.toLowerCase() === 'docx';
   const { extractText, runningId } = useDocumentOcr();
   const { softDelete } = useVaultMutations();
+  const intents = useDocumentIntents();
 
   // Extracted text: the freshly-extracted override, else the stored OCR text.
   // Derived (no effect) so it stays in sync as the document loads.
@@ -72,6 +74,18 @@ export function DocumentViewerPage(): ReactNode {
       } catch {
         setToast(t('ocr.failed'));
       }
+    }
+  };
+
+  const handleShare = async (): Promise<void> => {
+    if (document && !(await intents.share(document))) {
+      setToast(t('intents.share_failed'));
+    }
+  };
+
+  const handleOpenWith = async (): Promise<void> => {
+    if (document && !(await intents.openWith(document))) {
+      setToast(t('intents.open_failed'));
     }
   };
 
@@ -174,6 +188,13 @@ export function DocumentViewerPage(): ReactNode {
           data-agent-id="vault.viewer.menu"
           onDidDismiss={() => setMenuOpen(false)}
           buttons={[
+            // F-64/F-65: hand the document to another app (native only).
+            ...(intents.supported
+              ? [
+                  { text: t('intents.open_with'), handler: () => void handleOpenWith() },
+                  { text: t('intents.share'), handler: () => void handleShare() },
+                ]
+              : []),
             {
               text: t('actions.delete'),
               role: 'destructive',

@@ -38,6 +38,7 @@ import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocLock } from '../hooks/useDocLock';
 import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
+import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -72,6 +73,7 @@ export function VaultHomePage(): ReactNode {
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
+  const intents = useDocumentIntents();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
@@ -116,6 +118,13 @@ export function VaultHomePage(): ReactNode {
   const handleOcr = async (document: DocumentEntity): Promise<void> => {
     const text = await extractText(document);
     setOcrMsg(text === null ? t('ocr.failed') : text.trim() ? t('ocr.done') : t('ocr.none'));
+  };
+  // F-64/F-65: hand a document to another app; toast only on a real failure.
+  const handleOpenWith = async (document: DocumentEntity): Promise<void> => {
+    if (!(await intents.openWith(document))) setOcrMsg(t('intents.open_failed'));
+  };
+  const handleShareDoc = async (document: DocumentEntity): Promise<void> => {
+    if (!(await intents.share(document))) setOcrMsg(t('intents.share_failed'));
   };
   const search = useSearch();
   // While searching, results replace the folder/list view.
@@ -451,6 +460,25 @@ export function VaultHomePage(): ReactNode {
                 if (moreDoc) void toggleLock(moreDoc);
               },
             },
+            // F-64/F-65: open in / share with another app (native only).
+            ...(intents.supported
+              ? [
+                  {
+                    text: t('intents.open_with'),
+                    data: { action: 'open-with' },
+                    handler: (): void => {
+                      if (moreDoc) void handleOpenWith(moreDoc);
+                    },
+                  },
+                  {
+                    text: t('intents.share'),
+                    data: { action: 'share' },
+                    handler: (): void => {
+                      if (moreDoc) void handleShareDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
             // F-20: OCR only offered for image documents on a native platform.
             ...(moreDoc && canOcr(moreDoc)
               ? [
