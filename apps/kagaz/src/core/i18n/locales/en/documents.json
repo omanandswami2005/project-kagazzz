@@ -20,6 +20,12 @@
     "more": "More actions",
     "cancel": "Cancel"
   },
+  "intents": {
+    "open_with": "Open with…",
+    "share": "Share…",
+    "open_failed": "Couldn't open this document in another app.",
+    "share_failed": "Couldn't share this document."
+  },
   "ocr": {
     "running": "Reading text…",
     "done": "Text saved — now searchable",
