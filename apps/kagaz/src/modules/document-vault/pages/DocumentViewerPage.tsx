@@ -29,6 +29,7 @@ import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
+import { copyToClipboard } from '@/core/clipboard';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
@@ -70,12 +71,7 @@ export function DocumentViewerPage(): ReactNode {
 
   const handleCopy = async (): Promise<void> => {
     if (text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        setToast(t('viewer.copied'));
-      } catch {
-        setToast(t('ocr.failed'));
-      }
+      setToast((await copyToClipboard(text)) ? t('viewer.copied') : t('ocr.failed'));
     }
   };
 
