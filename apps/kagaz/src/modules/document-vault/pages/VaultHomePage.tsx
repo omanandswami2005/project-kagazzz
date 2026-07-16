@@ -39,6 +39,7 @@ import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocLock } from '../hooks/useDocLock';
 import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
+import { useCopyDocumentText } from '../hooks/useCopyDocumentText';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
@@ -75,6 +76,7 @@ export function VaultHomePage(): ReactNode {
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
   const intents = useDocumentIntents();
+  const copyText = useCopyDocumentText();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument } = useTags();
@@ -127,6 +129,10 @@ export function VaultHomePage(): ReactNode {
   };
   const handleShareDoc = async (document: DocumentEntity): Promise<void> => {
     if (!(await intents.share(document))) setOcrMsg(t('intents.share_failed'));
+  };
+  // F-68: quick-copy a document's stored OCR/extracted text to the clipboard.
+  const handleCopyText = async (document: DocumentEntity): Promise<void> => {
+    setOcrMsg(t((await copyText.copy(document)) ? 'copy_text.copied' : 'copy_text.failed'));
   };
   const search = useSearch();
   // While searching, results replace the folder/list view.
@@ -491,6 +497,18 @@ export function VaultHomePage(): ReactNode {
                 if (moreDoc) setDetailsDoc(moreDoc);
               },
             },
+            // F-68: quick-copy text, only when the doc already has stored text.
+            ...(moreDoc && copyText.hasText(moreDoc)
+              ? [
+                  {
+                    text: t('copy_text.action'),
+                    data: { action: 'copy-text' },
+                    handler: (): void => {
+                      if (moreDoc) void handleCopyText(moreDoc);
+                    },
+                  },
+                ]
+              : []),
             // F-20: OCR only offered for image documents on a native platform.
             ...(moreDoc && canOcr(moreDoc)
               ? [
