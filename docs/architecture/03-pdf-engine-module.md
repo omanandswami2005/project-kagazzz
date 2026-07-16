@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
 > **Status**: Partially implemented (F-3/F-4/F-5)
-> **Last Updated**: 2026-07-13
+> **Last Updated**: 2026-07-16
 
 ---
 
@@ -172,6 +172,12 @@ interface PdfEngineService {
    * separate rotatePage / deletePage / reorderPages design sketch.
    */
   organizePages(pdf: Uint8Array, ops: PageOp[]): Promise<Uint8Array>;
+  /**
+   * Extract the given page ranges into a single new PDF (F-66). Thin wrapper
+   * over `organizePages`: each range is flattened to source-page ops in range
+   * order (no rotation), so the output keeps only the chosen pages.
+   */
+  extractPages(pdf: Uint8Array, ranges: PageRange[]): Promise<Uint8Array>;
 
   // ── Conversion ────────────────────────────────────────
   /** Render PDF pages to images */

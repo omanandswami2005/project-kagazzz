@@ -18,6 +18,7 @@ export interface ToolsActionContext {
 const opSchema = z.enum([
   'merge',
   'split',
+  'extractPages',
   'organize',
   'compress',
   'pdfToImages',
@@ -44,6 +45,8 @@ export const toolsActions = {
       'open pdf tools',
       'merge pdfs',
       'split a pdf',
+      'extract pages from a pdf',
+      'extract pdf pages to a new document',
       'organize pdf pages',
       'reorder pdf pages',
       'rotate pdf pages',

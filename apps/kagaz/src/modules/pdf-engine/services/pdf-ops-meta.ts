@@ -4,6 +4,7 @@ import type { IconName } from '@kagaz/ui';
 export type PdfOpId =
   | 'merge'
   | 'split'
+  | 'extractPages'
   | 'organize'
   | 'compress'
   | 'pdfToImages'
@@ -33,6 +34,7 @@ export interface PdfOpMeta {
 export const PDF_OPS: readonly PdfOpMeta[] = [
   { id: 'merge', icon: 'Combine', input: 'pdf-multi' },
   { id: 'split', icon: 'Split', input: 'pdf-single' },
+  { id: 'extractPages', icon: 'Scissors', input: 'pdf-single' },
   { id: 'organize', icon: 'LayoutGrid', input: 'pdf-single' },
   { id: 'compress', icon: 'Shrink', input: 'pdf-single' },
   { id: 'pdfToImages', icon: 'FileImage', input: 'pdf-single' },

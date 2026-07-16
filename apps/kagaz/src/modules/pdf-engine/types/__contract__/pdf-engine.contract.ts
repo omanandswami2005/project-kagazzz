@@ -304,6 +304,36 @@ export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): 
       });
     });
 
+    describe('F-66: Extract pages', () => {
+      it('should pull the chosen ranges into one new PDF in range order', async () => {
+        // 5-page source; keep pages 1-2 and 5 (0-indexed 0-1 and 4) → 3 pages.
+        const result = await engine.extractPages(await createTestPdf(5), [
+          { start: 0, end: 1 },
+          { start: 4, end: 4 },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(3);
+      });
+
+      it('should reject an empty range list (UNSUPPORTED_FORMAT)', async () => {
+        await expect(engine.extractPages(await createTestPdf(3), [])).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should reject an out-of-range page (PAGE_OUT_OF_RANGE)', async () => {
+        await expect(
+          engine.extractPages(await createTestPdf(2), [{ start: 0, end: 5 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.extractPages(invalidPdf, [{ start: 0, end: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
     describe('F-38: Image stamp', () => {
       it('should stamp an image onto a page and keep the page count', async () => {
         const original = await createTestPdf(2);

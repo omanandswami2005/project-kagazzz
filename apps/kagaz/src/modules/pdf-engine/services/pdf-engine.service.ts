@@ -343,6 +343,23 @@ export class PdfEngineServiceImpl implements PdfEngineService {
     );
   }
 
+  async extractPages(
+    pdf: Uint8Array,
+    ranges: PageRange[],
+    onProgress?: ProgressCallback
+  ): Promise<Uint8Array> {
+    // F-66 reuses the organise engine: flatten the ranges into an ordered page
+    // list and copy just those pages (no rotation) into one new document.
+    const ops = ranges.flatMap((range) => {
+      const out: PageOp[] = [];
+      for (let i = range.start; i <= range.end; i++) {
+        out.push({ sourceIndex: i, rotation: 0 });
+      }
+      return out;
+    });
+    return this.organizePages(pdf, ops, onProgress);
+  }
+
   async addPageNumbers(
     pdf: Uint8Array,
     options: PageNumberOptions,

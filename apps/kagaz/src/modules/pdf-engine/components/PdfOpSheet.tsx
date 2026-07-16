@@ -247,6 +247,14 @@ export function PdfOpSheet({
           }
           return engine.splitPdf(doc, parsed);
         }
+        if (op === 'extractPages') {
+          const parsed = parsePageRanges(ranges);
+          if (!parsed) {
+            setLocalError(t('errors.bad_ranges'));
+            return 0;
+          }
+          return engine.extractPages(doc, parsed);
+        }
         if (op === 'compress') {
           return engine.compressPdf(doc, quality);
         }
@@ -406,12 +414,16 @@ export function PdfOpSheet({
 
   /** Operation-specific parameter inputs. */
   function renderParams(): ReactNode {
-    if (op === 'split') {
+    if (op === 'split' || op === 'extractPages') {
       return (
         <Input
           label={t('params.ranges')}
           placeholder="1-3, 5, 8-10"
-          helperText={t('params.ranges_hint')}
+          helperText={
+            op === 'extractPages'
+              ? t('params.extract_ranges_hint')
+              : t('params.ranges_hint')
+          }
           value={ranges}
           onChange={setRanges}
           agentId="pdf-tools.op-sheet.ranges"
