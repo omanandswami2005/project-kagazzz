@@ -1,6 +1,7 @@
 /**
  * App entry point (P0-10). Order matters: tokens before component styles.
  */
+import './core/polyfills/pdfjs-runtime-polyfills';
 import { createRoot } from 'react-dom/client';
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';

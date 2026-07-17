@@ -24,7 +24,24 @@ auditConfig:
     - GHSA-vmh5-mc38-953g
     - GHSA-vxpw-j846-p89q
     - GHSA-hm92-r4w5-c3mj
+    # node-tar path-traversal / hardlink / symlink advisories — all reached only
+    # via pdfjs-dist's OPTIONAL `canvas` peer (Node-side/server PDF rendering;
+    # this app renders PDFs only in the WebView, never on Node) →
+    # @mapbox/node-pre-gyp → tar, used solely to unpack canvas's native binary
+    # during an install-time build. `allowBuilds.canvas: false` above means
+    # that build script — and therefore this tar extraction — never runs.
+    - GHSA-34x7-hfp2-rc4v
+    - GHSA-8qq5-rm4j-mr97
+    - GHSA-83g3-92jg-28cx
+    - GHSA-qffp-2rhf-9h96
+    - GHSA-9ppj-qmqm-q256
+    - GHSA-r6q2-hw4h-h46w
+    - GHSA-vmf3-w455-68vh
 allowBuilds:
+  # Optional peer of pdfjs-dist@4.x for Node-side (server) rendering — Kagaz
+  # only renders PDFs inside the WebView/browser, never on Node, so this
+  # native build is unused. Denying it skips an unnecessary native compile.
+  canvas: false
   esbuild: true
   sharp: true
   tesseract.js: true

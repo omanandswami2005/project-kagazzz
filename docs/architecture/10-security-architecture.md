@@ -709,6 +709,7 @@ graph TB
 | SSRF (prerendered error page) | `astro` (apps/docs → Starlight) | Docs site only, not shipped in the app; static output (no SSR server). | **Overridden** to a patched `>=6.4.6`. |
 | TLS-bypass / WS-DoS / request-routing | `undici` (vitest → jsdom, dev/test) | Test-runtime only; never shipped and never makes a real network request. Cannot bump — `jsdom@29` imports undici internals removed in the patched 7.28 line. | **Ignored** (documented). |
 | Prototype-pollution + ReDoS | `xlsx` (SheetJS, F-42) | Both are in the **parsing** path; F-42 only **generates** `.xlsx` from the user's own vault data (no untrusted-spreadsheet parsing), lazy-loaded and offline. No npm fix: SheetJS ships `>0.18.5` only via its own CDN (off-limits under ADR-017). | **Ignored** (documented); re-evaluate if a parse/import path is ever added. |
+| Path-traversal / hardlink / symlink (7 GHSAs) | `tar` (pdfjs-dist → optional `canvas` peer → `@mapbox/node-pre-gyp`) | `canvas` is pdfjs-dist's optional **Node-side** rendering peer — this app renders PDFs only in the WebView, never on Node; its native build is denied (`allowBuilds.canvas: false`), so the `tar` extraction the advisories are in never runs. | **Ignored** (documented); re-evaluate if pdfjs-dist's `canvas` peer is ever exercised. |
 
 Revisit at each release and when V2 adds network surfaces.
 

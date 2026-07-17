@@ -1,3 +1,4 @@
+import '@/core/polyfills/pdfjs-runtime-polyfills';
 import { createWorkerLogger } from '@/core/logging/worker-relay';
 import {
   addPageNumbersImpl,

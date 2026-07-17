@@ -304,6 +304,18 @@ Kagaz needs to display PDF documents to users — for previewing, reviewing befo
 4. **Thumbnail generation** — we can render individual pages to small canvases for document thumbnail generation.
 5. **Complementary to pdf-lib** — pdf-lib handles read/write operations on PDF structure. pdfjs-dist handles pixel-level rendering. Together, they cover all PDF needs.
 
+### Version pin (2026-07-17, device verification)
+
+`pdfjs-dist` is pinned to **exactly `4.6.82`** (no `^` range) — not "latest 4.x", not 5.x/6.x. Root cause, found by opening a real PDF on a Pixel 6 emulator running Android System **WebView 113**: pdfjs's own bundles call several very recent (2024–2025) JS engine APIs unconditionally, none of which exist below roughly Chromium 119, and each fails PDF rendering outright with no fallback:
+
+| pdfjs-dist version | Extra API it needs beyond `Promise.withResolvers` |
+|---|---|
+| 4.0.x – 4.6.x | *(none)* |
+| 4.8.x+ | `Uint8Array.prototype.toBase64` / `.fromBase64` |
+| 6.x | + `Promise.try()`, + `Map.prototype.getOrInsertComputed` (too new to usefully polyfill) |
+
+None of this is caught by the unit/contract test suite — jsdom and Node both ship every one of these APIs natively, so the gap is invisible until a real WebView opens a real PDF. `core/polyfills/pdfjs-runtime-polyfills.ts` polyfills `Promise.withResolvers` (the one gap 4.6.82 actually hits) plus the 4.8.x/6.x-era APIs as inert, feature-detected insurance — but do **not** rely on those extra polyfills to justify bumping past 4.6.x; `Map.prototype.getOrInsertComputed` has no viable polyfill yet, so 6.x cannot currently ship to WebView < 119 no matter what's polyfilled. Re-run this same device check (open a real PDF on an old-WebView emulator/device) before ever changing this pin.
+
 ### Consequences
 
 | Positive | Negative |
@@ -312,6 +324,7 @@ Kagaz needs to display PDF documents to users — for previewing, reviewing befo
 | Web Worker offloading for performance | Complex API — lower-level than wrappers |
 | Text selection and search built-in | Need custom UI for viewer controls |
 | Thumbnail generation capability | Memory-intensive for large PDFs |
+| **Pinned to 4.6.82** — verified against WebView 113 | Newer pdfjs releases (4.8+, 5.x, 6.x) need a JS engine baseline (Chromium 119+) this app cannot assume; re-verify on a real old-WebView device before bumping |
 
 ---
 

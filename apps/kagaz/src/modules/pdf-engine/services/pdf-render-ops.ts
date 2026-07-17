@@ -11,7 +11,14 @@ import {
  * rasterisation needs a canvas. WebView only (jsdom has no canvas).
  */
 
-/** Lazy-load pdfjs once and point it at its bundled worker (off the main chunk). */
+/**
+ * Lazy-load pdfjs once and point it at its bundled worker (off the main
+ * chunk). On WebView builds older than Chromium 119 (observed: WebView 113)
+ * pdfjs never actually spawns that worker — it falls back to running its
+ * worker code inline on the main thread ("fake worker" mode) — which is why
+ * `core/polyfills/pdfjs-runtime-polyfills` (imported once in `main.tsx`) is
+ * enough on its own; see that file's doc comment for the full story.
+ */
 let pdfjsReady: Promise<typeof import('pdfjs-dist')> | null = null;
 async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
   pdfjsReady ??= (async (): Promise<typeof import('pdfjs-dist')> => {
@@ -120,7 +127,7 @@ export async function pdfToImagesImpl(
           op
         );
       }
-      await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+      await page.render({ canvasContext: ctx, viewport }).promise;
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob((out) => resolve(out), mime, quality)
       );

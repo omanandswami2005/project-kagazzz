@@ -113,7 +113,7 @@ const defaultRenderPdf: ThumbnailRenderer = async (blob) => {
     if (!ctx) {
       return null;
     }
-    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+    await page.render({ canvasContext: ctx, viewport }).promise;
     return await new Promise<Blob | null>((resolve) =>
       canvas.toBlob((out) => resolve(out), 'image/jpeg', THUMBNAIL_QUALITY)
     );
