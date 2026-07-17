@@ -7,6 +7,7 @@ import { docRow, entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import type {
   DocumentEntity,
   FolderEntity,
+  TagEntity,
 } from '@/infrastructure/database/types';
 import { EMPTY_FILTERS } from '../../services/filter.service';
 import { BulkActionBar } from '../BulkActionBar';
@@ -372,12 +373,42 @@ describe('FolderBreadcrumb (F-9)', () => {
   });
 });
 
+const noTagsProps = {
+  tags: [],
+  tagsByDocument: new Map<string, TagEntity[]>(),
+  createTag: vi.fn(),
+  assignTag: vi.fn(),
+  removeTag: vi.fn(),
+};
+
 describe('TagSelector (F-10)', () => {
+  // Ionic's ion-modal physically relocates its content to <body> once open,
+  // and React's unmount doesn't reliably reclaim a node a web component
+  // moved outside the tree it originally rendered into — so a *closed*
+  // modal's own element can't be told apart from a previous test's leaked,
+  // still-open one via a `document`-wide query. Run the "closed" assertion
+  // first, before any open-modal instance exists in this suite to leak.
+
+  it('is closed when documentId is null', () => {
+    render(
+      <IonPage>
+        <IonContent>
+          <TagSelector documentId={null} onDismiss={() => undefined} {...noTagsProps} />
+        </IonContent>
+      </IonPage>
+    );
+    expect(
+      document
+        .querySelector('[data-agent-id="vault.home.tag-sheet"]')
+        ?.getAttribute('data-agent-state')
+    ).toBe('collapsed');
+  });
+
   it('opens for a document and shows the empty state + create input', async () => {
     render(
       <IonPage>
         <IonContent>
-          <TagSelector documentId="doc-1" onDismiss={() => undefined} />
+          <TagSelector documentId="doc-1" onDismiss={() => undefined} {...noTagsProps} />
         </IonContent>
       </IonPage>
     );
@@ -388,19 +419,24 @@ describe('TagSelector (F-10)', () => {
     ).not.toBeNull();
   });
 
-  it('is closed when documentId is null', () => {
+  it('toggling a tag calls the shared assignTag prop (not a private useTags instance)', async () => {
+    const assignTag = vi.fn();
+    const tag: TagEntity = { id: 't-1', name: 'Government', createdAt: '' };
     render(
       <IonPage>
         <IonContent>
-          <TagSelector documentId={null} onDismiss={() => undefined} />
+          <TagSelector
+            documentId="doc-1"
+            onDismiss={() => undefined}
+            {...noTagsProps}
+            tags={[tag]}
+            assignTag={assignTag}
+          />
         </IonContent>
       </IonPage>
     );
-    expect(
-      document
-        .querySelector('[data-agent-id="vault.home.tag-sheet"]')
-        ?.getAttribute('data-agent-state')
-    ).toBe('collapsed');
+    await userEvent.click(await screen.findByText('Government'));
+    expect(assignTag).toHaveBeenCalledWith('doc-1', 't-1');
   });
 });
 

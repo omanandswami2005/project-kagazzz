@@ -1,17 +1,24 @@
 /**
  * Tag selector sheet (02-document-vault-module.md §Tag System): toggle a
- * document's tags and create new ones. Drives useTags; the row's chips
- * and any tag filter update from the same source (F-10).
+ * document's tags and create new ones. Takes its `useTags()` slice as props
+ * from the caller (rather than calling the hook itself) so it shares one
+ * `tagsByDocument` snapshot with the vault list — two independent `useTags()`
+ * instances each keep their own local state, so the list's chips wouldn't
+ * see a tag assigned here until something else forced a remount (F-10).
  */
 import { IonModal } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Input, Tag } from '@kagaz/ui';
 import type { TagEntity } from '@/infrastructure/database/types';
-import { useTags } from '../hooks/useTags';
+import type { UseTagsResult } from '../hooks/useTags';
 
 /** Props for {@link TagSelector}. */
-export interface TagSelectorProps {
+export interface TagSelectorProps
+  extends Pick<
+    UseTagsResult,
+    'tags' | 'tagsByDocument' | 'createTag' | 'assignTag' | 'removeTag'
+  > {
   /** Document being tagged; null closes the sheet. */
   documentId: string | null;
   onDismiss: () => void;
@@ -21,9 +28,13 @@ export interface TagSelectorProps {
 export function TagSelector({
   documentId,
   onDismiss,
+  tags,
+  tagsByDocument,
+  createTag,
+  assignTag,
+  removeTag,
 }: TagSelectorProps): ReactNode {
   const { t } = useTranslation('documents');
-  const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
   const [newName, setNewName] = useState('');
 
   const assigned = new Set(

@@ -79,7 +79,7 @@ export function VaultHomePage(): ReactNode {
   const copyText = useCopyDocumentText();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
-  const { tags, tagsByDocument } = useTags();
+  const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
   const { folders, createFolder, moveDocument, createDefaultFolders } =
     useFolders();
 
@@ -419,7 +419,15 @@ export function VaultHomePage(): ReactNode {
             setFilterOpen(false);
           }}
         />
-        <TagSelector documentId={tagDocId} onDismiss={() => setTagDocId(null)} />
+        <TagSelector
+          documentId={tagDocId}
+          onDismiss={() => setTagDocId(null)}
+          tags={tags}
+          tagsByDocument={tagsByDocument}
+          createTag={createTag}
+          assignTag={assignTag}
+          removeTag={removeTag}
+        />
         <MoveToFolderDialog
           documentId={moveDocId}
           onDismiss={() => setMoveDocId(null)}
