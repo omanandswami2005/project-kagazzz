@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { installPdfjsPolyfills } from '../pdfjs-runtime-polyfills';
 
 describe('Promise.withResolvers polyfill', () => {
   it('installs a working implementation when the native one is absent', async () => {
@@ -6,8 +7,7 @@ describe('Promise.withResolvers polyfill', () => {
     // @ts-expect-error simulating an older WebView with no native support
     delete Promise.withResolvers;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(typeof Promise.withResolvers).toBe('function');
     const { promise, resolve } = Promise.withResolvers<string>();
@@ -17,14 +17,13 @@ describe('Promise.withResolvers polyfill', () => {
     Promise.withResolvers = native;
   });
 
-  it('does not overwrite an existing native implementation', async () => {
+  it('does not overwrite an existing native implementation', () => {
     const sentinel = (<T>() =>
       ({}) as ReturnType<typeof Promise.withResolvers<T>>) as typeof Promise.withResolvers;
     const native = Promise.withResolvers;
     Promise.withResolvers = sentinel;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(Promise.withResolvers).toBe(sentinel);
     Promise.withResolvers = native;
@@ -37,8 +36,7 @@ describe('Promise.try polyfill', () => {
     // @ts-expect-error simulating an older WebView with no native support
     delete Promise.try;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(typeof Promise.try).toBe('function');
     await expect(Promise.try(() => 'sync value')).resolves.toBe('sync value');
@@ -54,13 +52,12 @@ describe('Promise.try polyfill', () => {
     Promise.try = native;
   });
 
-  it('does not overwrite an existing native implementation', async () => {
+  it('does not overwrite an existing native implementation', () => {
     const sentinel = (() => Promise.resolve('native')) as typeof Promise.try;
     const native = Promise.try;
     Promise.try = sentinel;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(Promise.try).toBe(sentinel);
     Promise.try = native;
@@ -68,7 +65,7 @@ describe('Promise.try polyfill', () => {
 });
 
 describe('Uint8Array hex/base64 polyfills', () => {
-  it('round-trips bytes through toHex/fromHex when native support is absent', async () => {
+  it('round-trips bytes through toHex/fromHex when native support is absent', () => {
     const nativeToHex = Uint8Array.prototype.toHex;
     const nativeFromHex = Uint8Array.fromHex;
     // @ts-expect-error simulating an older WebView with no native support
@@ -76,8 +73,7 @@ describe('Uint8Array hex/base64 polyfills', () => {
     // @ts-expect-error simulating an older WebView with no native support
     delete Uint8Array.fromHex;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     const bytes = new Uint8Array([0, 1, 15, 16, 255]);
     expect(bytes.toHex()).toBe('00010f10ff');
@@ -87,7 +83,7 @@ describe('Uint8Array hex/base64 polyfills', () => {
     Uint8Array.fromHex = nativeFromHex;
   });
 
-  it('round-trips bytes through toBase64/fromBase64 when native support is absent', async () => {
+  it('round-trips bytes through toBase64/fromBase64 when native support is absent', () => {
     const nativeToBase64 = Uint8Array.prototype.toBase64;
     const nativeFromBase64 = Uint8Array.fromBase64;
     // @ts-expect-error simulating an older WebView with no native support
@@ -95,8 +91,7 @@ describe('Uint8Array hex/base64 polyfills', () => {
     // @ts-expect-error simulating an older WebView with no native support
     delete Uint8Array.fromBase64;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     const bytes = new TextEncoder().encode('Kagaz PDF test');
     const b64 = bytes.toBase64();
@@ -106,13 +101,12 @@ describe('Uint8Array hex/base64 polyfills', () => {
     Uint8Array.fromBase64 = nativeFromBase64;
   });
 
-  it('does not overwrite existing native implementations', async () => {
+  it('does not overwrite existing native implementations', () => {
     const sentinelToHex = (() => 'native-hex') as typeof Uint8Array.prototype.toHex;
     const nativeToHex = Uint8Array.prototype.toHex;
     Uint8Array.prototype.toHex = sentinelToHex;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(Uint8Array.prototype.toHex).toBe(sentinelToHex);
     Uint8Array.prototype.toHex = nativeToHex;
@@ -127,15 +121,14 @@ describe('guardPdfjsWorker', () => {
     }
   }
 
-  it("blocks pdfjs's own worker URL when Promise.withResolvers is missing", async () => {
+  it("blocks pdfjs's own worker URL when Promise.withResolvers is missing", () => {
     const nativeWithResolvers = Promise.withResolvers;
     // @ts-expect-error simulating an older WebView with no native support
     delete Promise.withResolvers;
     const nativeWorker = globalThis.Worker;
     globalThis.Worker = FakeWorker as unknown as typeof Worker;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(() => new Worker('/assets/mjs/pdf.worker.min.abc123.mjs')).toThrow(
       /pdfjs/i
@@ -148,12 +141,11 @@ describe('guardPdfjsWorker', () => {
     Promise.withResolvers = nativeWithResolvers;
   });
 
-  it('leaves the native Worker untouched when Promise.withResolvers is natively present', async () => {
+  it('leaves the native Worker untouched when Promise.withResolvers is natively present', () => {
     const nativeWorker = globalThis.Worker;
     globalThis.Worker = FakeWorker as unknown as typeof Worker;
 
-    vi.resetModules();
-    await import('../pdfjs-runtime-polyfills');
+    installPdfjsPolyfills();
 
     expect(globalThis.Worker).toBe(FakeWorker);
 

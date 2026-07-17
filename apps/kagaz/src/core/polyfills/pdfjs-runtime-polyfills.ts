@@ -32,85 +32,13 @@
  *
  * Import this for its side effect, once, as early as possible, in every realm
  * that may load pdfjs: the main thread (`main.tsx`) and the PDF manipulation
- * worker (`pdf-manipulation.worker.ts`).
+ * worker (`pdf-manipulation.worker.ts`). The install logic is also exported
+ * as {@link installPdfjsPolyfills} so tests can invoke it directly, rather
+ * than relying on `vi.resetModules()` + a dynamic re-import to force the
+ * top-level side effect to re-run — that path proved to behave differently
+ * under `vitest run --coverage` than a plain run in CI (Node 22; observed
+ * nowhere locally), so the tests no longer depend on it.
  */
-
-// Captured before the polyfill below installs itself: true only on the exact
-// old-engine case this file exists for. A Worker spawned by this same JS
-// engine is missing the same natively-unsupported APIs in its own realm, so
-// this main-thread reading doubles as a reliable proxy for "pdfjs's real
-// worker will crash on load" — see `guardPdfjsWorker` at the bottom.
-const nativeWithResolversMissing = typeof Promise.withResolvers !== 'function';
-
-if (typeof Promise.withResolvers !== 'function') {
-  Promise.withResolvers = function <T>(): {
-    promise: Promise<T>;
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: unknown) => void;
-  } {
-    let resolve!: (value: T | PromiseLike<T>) => void;
-    let reject!: (reason?: unknown) => void;
-    const promise = new Promise<T>((res, rej) => {
-      resolve = res;
-      reject = rej;
-    });
-    return { promise, resolve, reject };
-  };
-}
-
-if (typeof Promise.try !== 'function') {
-  Promise.try = function <T, U extends unknown[]>(
-    fn: (...args: U) => T | PromiseLike<T>,
-    ...args: U
-  ): Promise<Awaited<T>> {
-    return new Promise<Awaited<T>>((resolve) =>
-      resolve(fn(...args) as Awaited<T> | PromiseLike<Awaited<T>>)
-    );
-  };
-}
-
-const HEX_CHARS = '0123456789abcdef';
-
-if (typeof Uint8Array.prototype.toHex !== 'function') {
-  Uint8Array.prototype.toHex = function (this: Uint8Array): string {
-    let out = '';
-    for (let i = 0; i < this.length; i++) {
-      out += HEX_CHARS[this[i] >> 4] + HEX_CHARS[this[i] & 0x0f];
-    }
-    return out;
-  };
-}
-
-if (typeof Uint8Array.fromHex !== 'function') {
-  Uint8Array.fromHex = function (hex: string): Uint8Array<ArrayBuffer> {
-    const bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    }
-    return bytes;
-  };
-}
-
-if (typeof Uint8Array.prototype.toBase64 !== 'function') {
-  Uint8Array.prototype.toBase64 = function (this: Uint8Array): string {
-    let binary = '';
-    for (let i = 0; i < this.length; i++) {
-      binary += String.fromCharCode(this[i]);
-    }
-    return btoa(binary);
-  };
-}
-
-if (typeof Uint8Array.fromBase64 !== 'function') {
-  Uint8Array.fromBase64 = function (b64: string): Uint8Array<ArrayBuffer> {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-  };
-}
 
 /**
  * Forces pdfjs's own internal worker to fail synchronously on construction —
@@ -127,7 +55,7 @@ if (typeof Uint8Array.fromBase64 !== 'function') {
  * version never touches how a worker's script loads — it only ever refuses
  * to construct the one specific worker already known to crash on load.
  */
-function guardPdfjsWorker(): void {
+function guardPdfjsWorker(nativeWithResolversMissing: boolean): void {
   if (!nativeWithResolversMissing || typeof Worker === 'undefined') return;
   const NativeWorker = Worker;
   class PdfjsWorkerGuard extends NativeWorker {
@@ -146,4 +74,91 @@ function guardPdfjsWorker(): void {
   globalThis.Worker = PdfjsWorkerGuard;
 }
 
-guardPdfjsWorker();
+/**
+ * Installs every polyfill above, feature-detected (a no-op for anything
+ * already natively present). Runs once automatically on import (below); also
+ * exported directly so tests can re-run it after deleting a global to
+ * simulate an old engine, without depending on module re-import timing.
+ */
+export function installPdfjsPolyfills(): void {
+  // Captured before installing below: true only on the exact old-engine case
+  // this file exists for. A Worker spawned by this same JS engine is missing
+  // the same natively-unsupported APIs in its own realm, so this main-thread
+  // reading doubles as a reliable proxy for "pdfjs's real worker will crash
+  // on load" — see `guardPdfjsWorker` above.
+  const nativeWithResolversMissing = typeof Promise.withResolvers !== 'function';
+
+  if (typeof Promise.withResolvers !== 'function') {
+    Promise.withResolvers = function <T>(): {
+      promise: Promise<T>;
+      resolve: (value: T | PromiseLike<T>) => void;
+      reject: (reason?: unknown) => void;
+    } {
+      let resolve!: (value: T | PromiseLike<T>) => void;
+      let reject!: (reason?: unknown) => void;
+      const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise, resolve, reject };
+    };
+  }
+
+  if (typeof Promise.try !== 'function') {
+    Promise.try = function <T, U extends unknown[]>(
+      fn: (...args: U) => T | PromiseLike<T>,
+      ...args: U
+    ): Promise<Awaited<T>> {
+      return new Promise<Awaited<T>>((resolve) =>
+        resolve(fn(...args) as Awaited<T> | PromiseLike<Awaited<T>>)
+      );
+    };
+  }
+
+  const HEX_CHARS = '0123456789abcdef';
+
+  if (typeof Uint8Array.prototype.toHex !== 'function') {
+    Uint8Array.prototype.toHex = function (this: Uint8Array): string {
+      let out = '';
+      for (let i = 0; i < this.length; i++) {
+        out += HEX_CHARS[this[i] >> 4] + HEX_CHARS[this[i] & 0x0f];
+      }
+      return out;
+    };
+  }
+
+  if (typeof Uint8Array.fromHex !== 'function') {
+    Uint8Array.fromHex = function (hex: string): Uint8Array<ArrayBuffer> {
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      }
+      return bytes;
+    };
+  }
+
+  if (typeof Uint8Array.prototype.toBase64 !== 'function') {
+    Uint8Array.prototype.toBase64 = function (this: Uint8Array): string {
+      let binary = '';
+      for (let i = 0; i < this.length; i++) {
+        binary += String.fromCharCode(this[i]);
+      }
+      return btoa(binary);
+    };
+  }
+
+  if (typeof Uint8Array.fromBase64 !== 'function') {
+    Uint8Array.fromBase64 = function (b64: string): Uint8Array<ArrayBuffer> {
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    };
+  }
+
+  guardPdfjsWorker(nativeWithResolversMissing);
+}
+
+installPdfjsPolyfills();
