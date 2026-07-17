@@ -3,7 +3,7 @@
  * Structure). Display-only in F-1 — preview/detail interactions land
  * with F-24/F-25.
  */
-import type { ReactNode } from 'react';
+import { useRef, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, Tag, type IconName } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
@@ -46,7 +46,16 @@ export interface DocumentListItemProps {
   selected?: boolean;
   /** Toggles this row's selection (F-25). */
   onToggleSelect?: (document: DocumentEntity) => void;
+  /**
+   * Long-press (500ms) enters selection mode (F-25) — interaction-patterns.md
+   * "Long-press (500ms)" row. Ignored while `selectionMode` is already true;
+   * the item-menu's "Select" action is the keyboard/screen-reader equivalent.
+   */
+  onLongPress?: (document: DocumentEntity) => void;
 }
+
+/** interaction-patterns.md "Long-press (500ms)" — enter selection mode on lists. */
+const LONG_PRESS_MS = 500;
 
 /** Name, type badge, size, and created date for one vault document. */
 export function DocumentListItem({
@@ -58,10 +67,32 @@ export function DocumentListItem({
   selectionMode = false,
   selected = false,
   onToggleSelect,
+  onLongPress,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
   const thumbnailUrl = useThumbnail(document.thumbnailPath);
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
+  const clearLongPressTimer = (): void => {
+    if (longPressTimer.current !== null) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLElement>): void => {
+    if (!onLongPress || selectionMode || event.pointerType === 'mouse') return;
+    longPressFired.current = false;
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      onLongPress(document);
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerUpOrCancel = (): void => clearLongPressTimer();
 
   const body = (
     <>
@@ -144,6 +175,16 @@ export function DocumentListItem({
       : undefined;
   const rowState = selectionMode && selected ? 'selected' : 'idle';
 
+  // Long-press already entered selection mode — swallow the trailing click
+  // (pointerup fires a click right after) so it doesn't also toggle a row.
+  const handleClick = (): void => {
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    rowClick?.();
+  };
+
   // A real <button> when interactive (native focus + Enter/Space); a plain
   // row otherwise. Full preview/detail lands with F-24.
   return (
@@ -155,7 +196,11 @@ export function DocumentListItem({
           data-agent-id={agentId}
           data-agent-state={rowState}
           aria-pressed={selectionMode ? selected : undefined}
-          onClick={rowClick}
+          onClick={handleClick}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUpOrCancel}
+          onPointerCancel={handlePointerUpOrCancel}
+          onPointerLeave={handlePointerUpOrCancel}
         >
           {body}
         </button>

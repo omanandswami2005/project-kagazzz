@@ -1,7 +1,7 @@
 import { IonContent, IonPage } from '@ionic/react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { docRow, entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import type {
@@ -136,6 +136,81 @@ describe('DocumentListItem', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home.item-doc-1.favorite"]')
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // interaction-patterns.md "Long-press (500ms)" — enter selection mode.
+  describe('long-press (F-25)', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('enters selection after holding 500ms on a touch pointer', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      const onOpen = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem document={doc} onOpen={onOpen} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch' });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).toHaveBeenCalledWith(doc);
+      fireEvent.click(row);
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    it('does not fire on a short tap, and the tap still opens the document', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      const onOpen = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem document={doc} onOpen={onOpen} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch' });
+      vi.advanceTimersByTime(200);
+      fireEvent.pointerUp(row, { pointerType: 'touch' });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).not.toHaveBeenCalled();
+      fireEvent.click(row);
+      expect(onOpen).toHaveBeenCalledWith(doc);
+    });
+
+    it('is a no-op while already in selection mode', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      const onToggleSelect = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem
+            document={doc}
+            selectionMode
+            onToggleSelect={onToggleSelect}
+            onLongPress={onLongPress}
+          />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch' });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).not.toHaveBeenCalled();
+    });
+
+    it('ignores mouse pointers (touch-only per interaction-patterns.md)', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem document={doc} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'mouse' });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).not.toHaveBeenCalled();
+    });
   });
 });
 

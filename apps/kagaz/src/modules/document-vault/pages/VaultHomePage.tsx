@@ -306,6 +306,7 @@ export function VaultHomePage(): ReactNode {
                         selectionMode={selectionMode}
                         selected={selectedIds.includes(document.id)}
                         onToggleSelect={(doc) => toggleSelection(doc.id)}
+                        onLongPress={(doc) => enterSelection(doc.id)}
                       />
                     ))}
                   </ul>
@@ -390,6 +391,7 @@ export function VaultHomePage(): ReactNode {
                         selectionMode={selectionMode}
                         selected={selectedIds.includes(document.id)}
                         onToggleSelect={(doc) => toggleSelection(doc.id)}
+                        onLongPress={(doc) => enterSelection(doc.id)}
                       />
                     ))}
                   </ul>
