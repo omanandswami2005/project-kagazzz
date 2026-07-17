@@ -27,6 +27,7 @@ import { EmptyVaultState } from '../components/EmptyVaultState';
 import { FilterPanel } from '../components/FilterPanel';
 import { FolderBreadcrumb } from '../components/FolderBreadcrumb';
 import { FolderCard } from '../components/FolderCard';
+import { FolderColorPicker } from '../components/FolderColorPicker';
 import { MoveToFolderDialog } from '../components/MoveToFolderDialog';
 import { NewFolderDialog } from '../components/NewFolderDialog';
 import { RecentStrip } from '../components/RecentStrip';
@@ -64,7 +65,10 @@ import {
   activeFilterCount,
   applyFilters,
 } from '../services/filter.service';
-import type { DocumentEntity } from '@/infrastructure/database/types';
+import type {
+  DocumentEntity,
+  FolderEntity,
+} from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
 import { usePreferencesStore } from '@/core/preferences';
 import type { UploadSource } from '../services/upload-sources';
@@ -90,8 +94,16 @@ export function VaultHomePage(): ReactNode {
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
-  const { folders, createFolder, moveDocument, createDefaultFolders } =
-    useFolders();
+  const {
+    folders,
+    createFolder,
+    renameFolder,
+    updateFolderColor,
+    reorderFolder,
+    deleteFolder,
+    moveDocument,
+    createDefaultFolders,
+  } = useFolders();
 
   // F-30: localized starter folders, created from the empty state.
   const setUpStarterFolders = (): void => {
@@ -124,6 +136,13 @@ export function VaultHomePage(): ReactNode {
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
   const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
   const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
+  // F-9: folder options sheet (rename/change color/reorder/delete).
+  const [moreFolder, setMoreFolder] = useState<FolderEntity | null>(null);
+  const [colorFolder, setColorFolder] = useState<FolderEntity | null>(null);
+  const [renameFolderTarget, setRenameFolderTarget] =
+    useState<FolderEntity | null>(null);
+  const [deleteFolderTarget, setDeleteFolderTarget] =
+    useState<FolderEntity | null>(null);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
   const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
@@ -171,6 +190,11 @@ export function VaultHomePage(): ReactNode {
           : 'enhance.failed'
       )
     );
+  };
+  // F-9: folder options (rename/change color/reorder/delete).
+  const handleDeleteFolder = async (folder: FolderEntity): Promise<void> => {
+    await deleteFolder(folder.id);
+    setDeleteFolderTarget(null);
   };
   const search = useSearch();
   // While searching, results replace the folder/list view.
@@ -380,7 +404,11 @@ export function VaultHomePage(): ReactNode {
                     >
                       {folders.map((folder) => (
                         <li key={folder.id}>
-                          <FolderCard folder={folder} onOpen={enterFolder} />
+                          <FolderCard
+                            folder={folder}
+                            onOpen={enterFolder}
+                            onMore={setMoreFolder}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -648,6 +676,107 @@ export function VaultHomePage(): ReactNode {
               : []),
             { text: t('actions.cancel'), role: 'cancel' as const },
           ]}
+        />
+
+        {/* F-9: folder options — rename, change color, reorder, delete. */}
+        <IonActionSheet
+          isOpen={moreFolder !== null}
+          header={moreFolder?.name}
+          data-agent-id="vault.home.folder-menu"
+          onDidDismiss={() => setMoreFolder(null)}
+          buttons={[
+            {
+              text: t('actions.rename'),
+              data: { action: 'rename' },
+              handler: (): void => {
+                if (moreFolder) setRenameFolderTarget(moreFolder);
+              },
+            },
+            {
+              text: t('folders.change_color'),
+              data: { action: 'change-color' },
+              handler: (): void => {
+                if (moreFolder) setColorFolder(moreFolder);
+              },
+            },
+            {
+              text: t('folders.move_up'),
+              data: { action: 'move-up' },
+              handler: (): void => {
+                if (moreFolder) void reorderFolder(moreFolder.id, -1);
+              },
+            },
+            {
+              text: t('folders.move_down'),
+              data: { action: 'move-down' },
+              handler: (): void => {
+                if (moreFolder) void reorderFolder(moreFolder.id, 1);
+              },
+            },
+            {
+              text: t('actions.delete'),
+              role: 'destructive' as const,
+              data: { action: 'delete' },
+              handler: (): void => {
+                if (moreFolder) setDeleteFolderTarget(moreFolder);
+              },
+            },
+            { text: t('actions.cancel'), role: 'cancel' as const },
+          ]}
+        />
+
+        <FolderColorPicker
+          folder={colorFolder}
+          onDismiss={() => setColorFolder(null)}
+          onSelect={(color) => {
+            if (colorFolder) void updateFolderColor(colorFolder.id, color);
+            setColorFolder(null);
+          }}
+        />
+
+        <IonAlert
+          key={renameFolderTarget?.id ?? 'folder-rename-none'}
+          isOpen={renameFolderTarget !== null}
+          header={t('folders.rename_title')}
+          data-agent-id="vault.home.folder-rename-prompt"
+          inputs={[
+            {
+              name: 'name',
+              type: 'text',
+              value: renameFolderTarget?.name ?? '',
+              attributes: { 'aria-label': t('folders.name_placeholder') },
+            },
+          ]}
+          buttons={[
+            { text: t('actions.cancel'), role: 'cancel' },
+            {
+              text: t('rename.save'),
+              handler: (data: { name?: string }): void => {
+                if (renameFolderTarget && data.name) {
+                  void renameFolder(renameFolderTarget.id, data.name);
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setRenameFolderTarget(null)}
+        />
+
+        <IonAlert
+          isOpen={deleteFolderTarget !== null}
+          header={t('folders.delete_title')}
+          message={t('folders.delete_message')}
+          data-agent-id="vault.home.folder-delete-confirm"
+          buttons={[
+            { text: t('actions.cancel'), role: 'cancel' },
+            {
+              text: t('actions.delete'),
+              role: 'destructive',
+              handler: (): void => {
+                if (deleteFolderTarget) void handleDeleteFolder(deleteFolderTarget);
+              },
+            },
+          ]}
+          onDidDismiss={() => setDeleteFolderTarget(null)}
         />
 
         {selectionMode && (

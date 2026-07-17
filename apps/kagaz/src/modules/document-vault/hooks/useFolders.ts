@@ -1,8 +1,9 @@
 /**
  * Folder data hook (F-9): the subfolders of the current folder plus the
- * folder mutations (create / rename / delete) and moving a document into
- * a folder. Backed by FolderDao + DocumentDao; refreshes after each
- * change and removes a moved document from the current list.
+ * folder mutations (create / rename / recolor / reorder / delete) and
+ * moving a document into a folder. Backed by FolderDao + DocumentDao;
+ * refreshes after each change and removes a moved document from the
+ * current list.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -21,6 +22,16 @@ export interface UseFoldersResult {
   createFolder: (name: string) => Promise<FolderEntity | null>;
   /** Renames a folder. */
   renameFolder: (id: string, name: string) => Promise<void>;
+  /** Sets a folder's color (one of `FOLDER_COLORS`, or null to clear it). */
+  updateFolderColor: (id: string, color: string | null) => Promise<void>;
+  /**
+   * Moves a folder one slot earlier (-1) or later (+1) among its siblings,
+   * swapping `sortOrder` with the neighbour it passes — the same
+   * move-buttons approach F-35 uses for reordering PDF pages (keyboard-
+   * accessible, robust on mobile, no pointer-drag). A move past either end
+   * is a no-op.
+   */
+  reorderFolder: (id: string, direction: -1 | 1) => Promise<void>;
   /** Deletes a folder (children cascade; its documents fall back to root). */
   deleteFolder: (id: string) => Promise<void>;
   /** Moves a document into a folder (null = root) and drops it from view. */
@@ -104,6 +115,40 @@ export function useFolders(): UseFoldersResult {
     [folderDao, load]
   );
 
+  const updateFolderColor = useCallback(
+    async (id: string, color: string | null): Promise<void> => {
+      if (!folderDao) {
+        return;
+      }
+      await folderDao.update(id, { color });
+      logger.info({ event: 'vault.folder.color', folderId: id, color });
+      await load();
+    },
+    [folderDao, load]
+  );
+
+  const reorderFolder = useCallback(
+    async (id: string, direction: -1 | 1): Promise<void> => {
+      if (!folderDao) {
+        return;
+      }
+      const index = folders.findIndex((f) => f.id === id);
+      const targetIndex = index + direction;
+      if (index === -1 || targetIndex < 0 || targetIndex >= folders.length) {
+        return;
+      }
+      const current = folders[index];
+      const target = folders[targetIndex];
+      await Promise.all([
+        folderDao.update(current.id, { sortOrder: target.sortOrder }),
+        folderDao.update(target.id, { sortOrder: current.sortOrder }),
+      ]);
+      logger.info({ event: 'vault.folder.reorder', folderId: id, direction });
+      await load();
+    },
+    [folderDao, folders, load]
+  );
+
   const deleteFolder = useCallback(
     async (id: string): Promise<void> => {
       if (!folderDao) {
@@ -165,6 +210,8 @@ export function useFolders(): UseFoldersResult {
     folders,
     createFolder,
     renameFolder,
+    updateFolderColor,
+    reorderFolder,
     deleteFolder,
     moveDocument,
     createDefaultFolders,

@@ -24,3 +24,12 @@ export const FOLDER_TEMPLATES = [
   { labelKey: 'templates.employment', icon: 'FileText', color: '#6366f1' },
   { labelKey: 'templates.misc', icon: 'File', color: '#6b7280' },
 ] as const satisfies readonly FolderTemplate[];
+
+/**
+ * The palette any folder can be recolored to (F-9) — the same 7 colors the
+ * starter templates already use, so a manually-picked color always matches
+ * one already established in the app rather than an arbitrary new hex.
+ */
+export const FOLDER_COLORS: readonly string[] = FOLDER_TEMPLATES.map(
+  (t) => t.color
+);

@@ -183,6 +183,10 @@
   gap: var(--space-3);
 }
 
+.kg-folder-card-wrap {
+  position: relative;
+}
+
 .kg-folder-card {
   display: flex;
   flex-direction: column;
@@ -204,6 +208,24 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Overflow button overlays the card's top-right corner, above the open
+   button — same pattern as .kg-doc-item__actions. */
+.kg-folder-card__more {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
 }
 
 .kg-move-sheet {

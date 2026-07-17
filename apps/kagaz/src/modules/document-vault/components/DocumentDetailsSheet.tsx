@@ -1,7 +1,10 @@
 /**
  * Document details sheet (F-67): a read-only summary of one vault document —
  * name, type, size, dates, original filename, integrity hash, and lock/favorite
- * status. All from data already on the {@link DocumentEntity}; no I/O.
+ * status, all from data already on the {@link DocumentEntity} (no I/O). For
+ * image documents, pixel dimensions are read lazily via `useImageDimensions`
+ * (F-8's `getImageInfo`) and shown once loaded — the only field here that
+ * isn't already on the row.
  */
 import {
   IonButtons,
@@ -17,6 +20,7 @@ import { Button, Icon } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { formatDateTime, formatFileSize, toFormattingLocale } from '@/core/i18n/utils';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import { useImageDimensions } from '../hooks/useImageDimensions';
 import './document-details.css';
 
 /** Props for {@link DocumentDetailsSheet}. */
@@ -44,6 +48,7 @@ export function DocumentDetailsSheet({
   const { t } = useTranslation('documents');
   const { locale } = useLocale();
   const fmt = toFormattingLocale(locale);
+  const dimensions = useImageDimensions(document);
 
   return (
     <IonModal
@@ -67,6 +72,12 @@ export function DocumentDetailsSheet({
           <dl className="kg-doc-details" data-agent-id="vault.details.content">
             <Row label={t('details.name')} value={document.name} />
             <Row label={t('details.type')} value={document.fileType.toUpperCase()} />
+            {dimensions && (
+              <Row
+                label={t('details.dimensions')}
+                value={`${dimensions.width} × ${dimensions.height}`}
+              />
+            )}
             <Row label={t('details.size')} value={formatFileSize(document.fileSize, fmt)} />
             <Row label={t('details.added')} value={formatDateTime(document.createdAt, fmt)} />
             {document.updatedAt !== document.createdAt && (

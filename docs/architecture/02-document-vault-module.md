@@ -559,6 +559,26 @@ graph TB
 | **Force Delete** | Delete folder with all contents | Confirmation dialog. Recursively deletes all sub-folders and documents. |
 | **Color/Icon** | Customize appearance | Choose from preset colors and icon set. |
 
+> [!NOTE]
+> **V1 implementation (2026-07-18)** — `useFolders.ts` + `FolderDao`, not the
+> generic `FolderService` sketched below. Real differences from the spec
+> table above: **Delete** always cascades (child folders cascade via the DB
+> constraint; documents inside fall back to root via `ON DELETE SET NULL`) —
+> there's no "fails if non-empty" / separate "Force Delete", just one
+> **Delete** action behind a confirm alert. **Reorder** is move-up/move-down
+> buttons swapping adjacent `sortOrder` values (`reorderFolder`), the same
+> keyboard-accessible, no-pointer-drag approach F-35 uses for PDF pages —
+> not real drag-and-drop. **Color** is a `FolderColorPicker` sheet limited to
+> the 7 `FOLDER_TEMPLATES` colors (`FOLDER_COLORS`) plus a "default" clear
+> option, not an open palette. All four (rename, color, reorder, delete) are
+> reached from **FolderCard**'s overflow (⋮) button → a **folder-options**
+> action sheet (`vault.home.folder-menu`) — this UI didn't exist until
+> 2026-07-18 (the engine/DAO methods shipped 2026-06-12 but were never wired
+> to anything, an F-9 checklist follow-up closed the same day as F-8/F-29's
+> identical gap). Multi-level nesting, "unlimited depth," and move-folder
+> (as opposed to move-*document*-into-folder, which does exist) remain
+> spec-only.
+
 ### Folder Service Interface
 
 ```typescript
@@ -1038,7 +1058,11 @@ sequenceDiagram
 `DocumentDetailsSheet` is a **read-only** `IonModal` opened from the **Details**
 item in the vault list item-menu or the viewer menu (see
 [Document Actions](#document-actions)). It renders directly off the already-loaded
-`DocumentEntity` — no extra I/O, no new dependency.
+`DocumentEntity` for every row except **Dimensions** — the one exception,
+loaded lazily via `useImageDimensions` (F-8's `getImageInfo`, see [Convert
+format](#convert-format-f-8)) for Canvas-decodable image documents only, and
+simply omitted for everything else (PDFs, HEIC, non-image types) — no new
+dependency either way.
 
 ### Detail View Sections (as shipped)
 
@@ -1046,6 +1070,7 @@ item in the vault list item-menu or the viewer menu (see
 |---|---|---|
 | **Name** | Document display name | `document.name` |
 | **Type** | File type (PDF / JPG / DOCX / …) | `document.fileType` |
+| **Dimensions** | Pixel width × height (images only, added 2026-07-18) | `useImageDimensions` → F-8 `getImageInfo` |
 | **Size** | Human-readable size | `formatFileSize(document.size)` |
 | **Added** | Creation date, locale-formatted | `formatDateTime(document.createdAt)` |
 | **Modified** | Last-modified date, locale-formatted | `formatDateTime(document.updatedAt)` |

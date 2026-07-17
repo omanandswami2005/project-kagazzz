@@ -54,6 +54,7 @@
     "title": "Details",
     "name": "Name",
     "type": "Type",
+    "dimensions": "Dimensions",
     "size": "Size",
     "added": "Added",
     "modified": "Modified",
@@ -81,7 +82,15 @@
     "name_placeholder": "Folder name",
     "breadcrumb": "Folder path",
     "move": "Move to folder",
-    "move_title": "Move to"
+    "move_title": "Move to",
+    "change_color": "Change color",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "color_picker_title": "Choose a color",
+    "color_default": "Default color",
+    "delete_title": "Delete folder?",
+    "delete_message": "Documents inside will move to the main list. This can't be undone.",
+    "rename_title": "Rename folder"
   },
   "upload": {
     "sheet_title": "Add a document",

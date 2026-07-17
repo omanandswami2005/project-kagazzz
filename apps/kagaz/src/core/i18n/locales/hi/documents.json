@@ -54,6 +54,7 @@
     "title": "विवरण",
     "name": "नाम",
     "type": "प्रकार",
+    "dimensions": "आयाम",
     "size": "आकार",
     "added": "जोड़ा गया",
     "modified": "संशोधित",
@@ -81,7 +82,15 @@
     "name_placeholder": "फ़ोल्डर का नाम",
     "breadcrumb": "फ़ोल्डर पथ",
     "move": "फ़ोल्डर में ले जाएं",
-    "move_title": "यहां ले जाएं"
+    "move_title": "यहां ले जाएं",
+    "change_color": "रंग बदलें",
+    "move_up": "ऊपर ले जाएं",
+    "move_down": "नीचे ले जाएं",
+    "color_picker_title": "एक रंग चुनें",
+    "color_default": "डिफ़ॉल्ट रंग",
+    "delete_title": "फ़ोल्डर हटाएं?",
+    "delete_message": "इसके अंदर के दस्तावेज़ मुख्य सूची में चले जाएंगे। इसे वापस नहीं किया जा सकता।",
+    "rename_title": "फ़ोल्डर का नाम बदलें"
   },
   "upload": {
     "sheet_title": "दस्तावेज़ जोड़ें",

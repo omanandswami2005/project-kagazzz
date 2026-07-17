@@ -16,6 +16,7 @@ import { EmptyVaultState } from '../EmptyVaultState';
 import { FilterPanel } from '../FilterPanel';
 import { FolderBreadcrumb } from '../FolderBreadcrumb';
 import { FolderCard } from '../FolderCard';
+import { FolderColorPicker } from '../FolderColorPicker';
 import { RecentStrip } from '../RecentStrip';
 import { TagSelector } from '../TagSelector';
 import { UploadFAB } from '../UploadFAB';
@@ -351,6 +352,24 @@ describe('FolderCard (F-9)', () => {
     );
     expect(onOpen).toHaveBeenCalledWith(folder);
   });
+
+  it('hides the overflow button when onMore is omitted', () => {
+    render(<FolderCard folder={folder} onOpen={() => undefined} />);
+    expect(
+      document.querySelector('[data-agent-id="vault.home.folder-f-1.more"]')
+    ).toBeNull();
+  });
+
+  it('opens folder options without also opening the folder', async () => {
+    const onOpen = vi.fn();
+    const onMore = vi.fn();
+    render(<FolderCard folder={folder} onOpen={onOpen} onMore={onMore} />);
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.folder-f-1.more"]') as Element
+    );
+    expect(onMore).toHaveBeenCalledWith(folder);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
 });
 
 describe('FolderBreadcrumb (F-9)', () => {
@@ -370,6 +389,68 @@ describe('FolderBreadcrumb (F-9)', () => {
       document.querySelector('[data-agent-id="vault.home.breadcrumb-root"]') as Element
     );
     expect(onNavigate).toHaveBeenCalledWith(0);
+  });
+});
+
+describe('FolderColorPicker (F-9)', () => {
+  // Same leaked-open-modal caveat as TagSelector's tests: run the closed
+  // assertion first, before any open instance exists in this suite to leak.
+
+  it('is closed when folder is null', () => {
+    render(
+      <IonPage>
+        <IonContent>
+          <FolderColorPicker folder={null} onDismiss={() => undefined} onSelect={() => undefined} />
+        </IonContent>
+      </IonPage>
+    );
+    expect(
+      document
+        .querySelector('[data-agent-id="vault.home.folder-color-sheet"]')
+        ?.getAttribute('data-agent-state')
+    ).toBe('collapsed');
+  });
+
+  it('marks the folder\'s current color as pressed and reports a swatch pick', async () => {
+    const onSelect = vi.fn();
+    render(
+      <IonPage>
+        <IonContent>
+          <FolderColorPicker
+            folder={{ ...folder, color: '#3b82f6' }}
+            onDismiss={() => undefined}
+            onSelect={onSelect}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    expect(await screen.findByText('Choose a color')).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-agent-id="vault.home.folder-color-3b82f6"]')
+    ).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.folder-color-ef4444"]') as Element
+    );
+    expect(onSelect).toHaveBeenCalledWith('#ef4444');
+  });
+
+  it('reports null when the default swatch is picked', async () => {
+    const onSelect = vi.fn();
+    render(
+      <IonPage>
+        <IonContent>
+          <FolderColorPicker
+            folder={{ ...folder, color: '#3b82f6' }}
+            onDismiss={() => undefined}
+            onSelect={onSelect}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    await userEvent.click(
+      await screen.findByLabelText('Default color')
+    );
+    expect(onSelect).toHaveBeenCalledWith(null);
   });
 });
 

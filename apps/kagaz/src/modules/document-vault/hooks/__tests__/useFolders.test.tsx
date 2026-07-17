@@ -77,6 +77,59 @@ describe('useFolders (F-9)', () => {
     const { result } = renderHook(() => useFolders());
     await expect(result.current.createFolder('x')).resolves.toBeNull();
     await expect(result.current.moveDocument('d', null)).resolves.toBeUndefined();
+    await expect(
+      result.current.updateFolderColor('f-1', '#ef4444')
+    ).resolves.toBeUndefined();
+    await expect(result.current.reorderFolder('f-1', 1)).resolves.toBeUndefined();
+  });
+
+  it('updateFolderColor persists the new color', async () => {
+    const db = new FakeDb().onQuery(/parent_id IS NULL/, [folderRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useFolders());
+    await waitFor(() => expect(result.current.folders).toHaveLength(1));
+
+    await result.current.updateFolderColor('f-1', '#ef4444');
+    const update = db.calls.find(
+      (c) => c.kind === 'run' && c.sql.includes('UPDATE folders')
+    );
+    expect(update?.sql).toContain('color');
+    expect(update?.params).toContain('#ef4444');
+  });
+
+  it('reorderFolder swaps sort_order with the neighbour it passes', async () => {
+    const db = new FakeDb().onQuery(/parent_id IS NULL/, [
+      { ...folderRow, id: 'f-1', name: 'A', sort_order: 0 },
+      { ...folderRow, id: 'f-2', name: 'B', sort_order: 1 },
+    ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useFolders());
+    await waitFor(() => expect(result.current.folders).toHaveLength(2));
+
+    await result.current.reorderFolder('f-1', 1);
+    const updates = db.calls.filter(
+      (c) => c.kind === 'run' && c.sql.includes('UPDATE folders')
+    );
+    expect(updates).toHaveLength(2);
+    // f-1 takes f-2's old order (1) and vice versa (0).
+    const f1Update = updates.find((c) => c.params.includes('f-1'));
+    const f2Update = updates.find((c) => c.params.includes('f-2'));
+    expect(f1Update?.params).toContain(1);
+    expect(f2Update?.params).toContain(0);
+  });
+
+  it('reorderFolder is a no-op past either end', async () => {
+    const db = new FakeDb().onQuery(/parent_id IS NULL/, [folderRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useFolders());
+    await waitFor(() => expect(result.current.folders).toHaveLength(1));
+
+    await result.current.reorderFolder('f-1', -1); // already first
+    await result.current.reorderFolder('f-1', 1); // already last (only one)
+    const updates = db.calls.filter(
+      (c) => c.kind === 'run' && c.sql.includes('UPDATE folders')
+    );
+    expect(updates).toHaveLength(0);
   });
 
   it('createDefaultFolders inserts each starter folder (F-30)', async () => {
