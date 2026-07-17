@@ -118,3 +118,45 @@ describe('Uint8Array hex/base64 polyfills', () => {
     Uint8Array.prototype.toHex = nativeToHex;
   });
 });
+
+describe('guardPdfjsWorker', () => {
+  class FakeWorker {
+    url: string;
+    constructor(scriptURL: string | URL) {
+      this.url = String(scriptURL);
+    }
+  }
+
+  it("blocks pdfjs's own worker URL when Promise.withResolvers is missing", async () => {
+    const nativeWithResolvers = Promise.withResolvers;
+    // @ts-expect-error simulating an older WebView with no native support
+    delete Promise.withResolvers;
+    const nativeWorker = globalThis.Worker;
+    globalThis.Worker = FakeWorker as unknown as typeof Worker;
+
+    vi.resetModules();
+    await import('../pdfjs-runtime-polyfills');
+
+    expect(() => new Worker('/assets/mjs/pdf.worker.min.abc123.mjs')).toThrow(
+      /pdfjs/i
+    );
+    expect(
+      () => new Worker('/assets/mjs/pdf-manipulation.worker.def456.mjs')
+    ).not.toThrow();
+
+    globalThis.Worker = nativeWorker;
+    Promise.withResolvers = nativeWithResolvers;
+  });
+
+  it('leaves the native Worker untouched when Promise.withResolvers is natively present', async () => {
+    const nativeWorker = globalThis.Worker;
+    globalThis.Worker = FakeWorker as unknown as typeof Worker;
+
+    vi.resetModules();
+    await import('../pdfjs-runtime-polyfills');
+
+    expect(globalThis.Worker).toBe(FakeWorker);
+
+    globalThis.Worker = nativeWorker;
+  });
+});

@@ -3,7 +3,7 @@
  * Android System WebView builds older than Chromium 119 (observed: WebView
  * 113, common on devices that haven't picked up a WebView update) — silent in
  * unit tests (jsdom/Node ship all of these natively), only surfacing
- * on-device, where a missing one fails PDF rendering outright.
+ * on-device, where a missing one fails PDF rendering/text-extraction outright.
  *
  * `pdfjs-dist` is pinned to **4.6.82** exactly (see `package.json` and
  * ADR-005 §Version pin in `08-tech-stack-decisions.md`) specifically because
@@ -15,19 +15,32 @@
  * app actually exercises today; the rest are kept here, feature-detected and
  * inert, as insurance against a future pdfjs bump reintroducing them.
  *
- * pdfjs's own internal rendering worker turned out not to matter here: on
- * WebView 113 pdfjs falls back to running its worker code inline on the
- * *main thread* ("fake worker" mode) rather than spawning a real Worker, so
- * this main-thread polyfill is what actually fixes rendering. (A real Worker
- * cannot be polyfilled into after the fact from outside — a Worker has its
- * own separate global scope — which is also why `pdf-manipulation.worker.ts`
- * imports this module directly at its own top, for the case where pdfjs
- * *does* use a real worker in some other environment.)
+ * pdfjs's own internal worker (`pdf.worker.min.mjs`) is a *separate JS realm*
+ * this main-thread polyfill cannot reach — a Worker only inherits the global
+ * scope the browser gives it, not whatever the page that spawned it patched.
+ * pdfjs tries a real `new Worker(...)` first and only falls back to running
+ * its worker code inline on the main thread ("fake worker" mode) if that
+ * fails. Its fallback path has two triggers: a synchronous `catch` around the
+ * `new Worker()` call (reliable), and an async `worker.addEventListener(
+ * 'error', ...)` for failures *after* construction succeeds (unreliable on
+ * this WebView: a module worker whose top-level code throws — exactly what
+ * happens when its own copy of `Promise.withResolvers` is missing — does not
+ * reliably fire that `error` event here, so pdfjs's "test" handshake message
+ * is never answered and the caller hangs forever, e.g. an upload stuck at
+ * 90%/"Finalizing"). See `guardPdfjsWorker` below, which forces the *reliable*
+ * synchronous path instead of depending on the async one.
  *
  * Import this for its side effect, once, as early as possible, in every realm
  * that may load pdfjs: the main thread (`main.tsx`) and the PDF manipulation
  * worker (`pdf-manipulation.worker.ts`).
  */
+
+// Captured before the polyfill below installs itself: true only on the exact
+// old-engine case this file exists for. A Worker spawned by this same JS
+// engine is missing the same natively-unsupported APIs in its own realm, so
+// this main-thread reading doubles as a reliable proxy for "pdfjs's real
+// worker will crash on load" — see `guardPdfjsWorker` at the bottom.
+const nativeWithResolversMissing = typeof Promise.withResolvers !== 'function';
 
 if (typeof Promise.withResolvers !== 'function') {
   Promise.withResolvers = function <T>(): {
@@ -98,3 +111,39 @@ if (typeof Uint8Array.fromBase64 !== 'function') {
     return bytes;
   };
 }
+
+/**
+ * Forces pdfjs's own internal worker to fail synchronously on construction —
+ * see the top-of-file doc comment for why the async `error`-event fallback
+ * this relies on by default is not reliable on this WebView. Scoped to
+ * pdfjs's worker chunk by URL only (`pdf.worker` in the path); every other
+ * `new Worker(...)` in the app — including this app's own
+ * `pdf-manipulation.worker.ts` — passes through untouched, and this whole
+ * function is a no-op wherever `Promise.withResolvers` is natively present
+ * (i.e. never runs on a modern WebView, or in tests). An earlier attempt
+ * patched *all* Worker construction to inject this polyfill by wrapping the
+ * target script in a blob+import shim; that broke unrelated workers whose
+ * relative imports didn't resolve inside the wrapper and was reverted. This
+ * version never touches how a worker's script loads — it only ever refuses
+ * to construct the one specific worker already known to crash on load.
+ */
+function guardPdfjsWorker(): void {
+  if (!nativeWithResolversMissing || typeof Worker === 'undefined') return;
+  const NativeWorker = Worker;
+  class PdfjsWorkerGuard extends NativeWorker {
+    constructor(scriptURL: string | URL, options?: WorkerOptions) {
+      const url = typeof scriptURL === 'string' ? scriptURL : scriptURL.href;
+      if (/pdf\.worker/i.test(url)) {
+        throw new DOMException(
+          "pdfjs's real worker is disabled on this engine (missing " +
+            'Promise.withResolvers in Worker realms); falls back to fake-worker mode.',
+          'NotSupportedError'
+        );
+      }
+      super(scriptURL, options);
+    }
+  }
+  globalThis.Worker = PdfjsWorkerGuard;
+}
+
+guardPdfjsWorker();
