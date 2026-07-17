@@ -20,7 +20,7 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon } from '@kagaz/ui';
@@ -30,6 +30,7 @@ import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { copyToClipboard } from '@/core/clipboard';
+import { extractNumberSequences } from '../services/extract-numbers';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './viewer.css';
@@ -57,6 +58,10 @@ export function DocumentViewerPage(): ReactNode {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const text = extracted ?? document?.ocrText ?? null;
+  // F-83: standalone number sequences (account/ID numbers, PIN codes, dates, …)
+  // pulled out of the extracted text so one can be copied without drag-selecting
+  // it out of the block — the full text is still selectable text (below).
+  const detectedNumbers = useMemo(() => extractNumberSequences(text ?? ''), [text]);
 
   const running = document != null && runningId === document.id;
 
@@ -73,6 +78,10 @@ export function DocumentViewerPage(): ReactNode {
     if (text) {
       setToast((await copyToClipboard(text)) ? t('viewer.copied') : t('ocr.failed'));
     }
+  };
+
+  const handleCopyNumber = async (value: string): Promise<void> => {
+    setToast((await copyToClipboard(value)) ? t('viewer.copied') : t('ocr.failed'));
   };
 
   const handleShare = async (): Promise<void> => {
@@ -152,7 +161,9 @@ export function DocumentViewerPage(): ReactNode {
                 <h2 className="kg-viewer__text-title">{t('viewer.extracted_text')}</h2>
                 {text && text.trim() ? (
                   <>
-                    <p className="kg-viewer__text-body">{text}</p>
+                    <p className="kg-viewer__text-body" data-agent-id="vault.viewer.text-body">
+                      {text}
+                    </p>
                     <Button
                       variant="secondary"
                       size="sm"
@@ -161,6 +172,32 @@ export function DocumentViewerPage(): ReactNode {
                     >
                       {t('viewer.copy')}
                     </Button>
+                    {detectedNumbers.length > 0 && (
+                      <div
+                        className="kg-viewer__numbers"
+                        data-agent-id="vault.viewer.numbers-panel"
+                      >
+                        <h3 className="kg-viewer__numbers-title">
+                          {t('viewer.detected_numbers')}
+                        </h3>
+                        <ul className="kg-viewer__numbers-list">
+                          {detectedNumbers.map((n) => (
+                            <li key={n}>
+                              <button
+                                type="button"
+                                className="kg-viewer__number-chip"
+                                onClick={() => void handleCopyNumber(n)}
+                                aria-label={t('viewer.copy_number', { number: n })}
+                                data-agent-id="vault.viewer.copy-number"
+                              >
+                                <span className="kg-viewer__number-chip-value">{n}</span>
+                                <Icon name="Copy" size={16} aria-hidden />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </>
                 ) : canExtractText(document) ? (
                   <Button

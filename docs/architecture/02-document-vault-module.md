@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-13
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-17
 
 ---
 
@@ -19,6 +19,7 @@
 - [Favorites & Recently Accessed](#favorites--recently-accessed)
 - [Document Preview](#document-preview)
 - [Document Details View](#document-details-view)
+- [Document Actions](#document-actions)
 - [Bulk Operations](#bulk-operations)
 - [Multilingual Support](#multilingual-support)
 - [Accessibility Features](#accessibility-features)
@@ -1026,59 +1027,134 @@ sequenceDiagram
 
 ## Document Details View
 
-The detail view shows comprehensive metadata and provides quick access to operations.
+> The table below and `DocumentDetailsSheet` are what actually shipped (F-67,
+> 2026-07-16). The original wireframe further down this section (editable
+> description, operation history timeline, an inline quick-actions row) was
+> the pre-implementation sketch — **not built for V1**: it needs new schema
+> (a free-text `description` column) and an operations-log table neither of
+> which exist yet. Kept below for the V2 backlog; do not treat it as current
+> behaviour.
 
-### Detail View Sections
+`DocumentDetailsSheet` is a **read-only** `IonModal` opened from the **Details**
+item in the vault list item-menu or the viewer menu (see
+[Document Actions](#document-actions)). It renders directly off the already-loaded
+`DocumentEntity` — no extra I/O, no new dependency.
 
-| Section | Content |
-|---|---|
-| **Header** | Document name (editable), favorite toggle, lock toggle, share button |
-| **Preview** | Embedded preview (first page / image thumbnail) — tap to open full preview |
-| **Metadata** | File type, size (human-readable), page count, dimensions, created/modified dates |
-| **Organization** | Current folder (with breadcrumb, tap to change), assigned tags (tap to edit) |
-| **Description** | Editable text field for user notes |
-| **OCR Text** | Collapsed/expandable section showing extracted text, with copy button |
-| **Operations** | Quick action buttons: Merge, Split, Convert, Compress, Encrypt, OCR |
-| **History** | Timeline of operations performed on this document |
-| **Danger Zone** | Delete button with confirmation dialog |
+### Detail View Sections (as shipped)
 
-### Detail View Mockup Layout
+| Row | Content | Source |
+|---|---|---|
+| **Name** | Document display name | `document.name` |
+| **Type** | File type (PDF / JPG / DOCX / …) | `document.fileType` |
+| **Size** | Human-readable size | `formatFileSize(document.size)` |
+| **Added** | Creation date, locale-formatted | `formatDateTime(document.createdAt)` |
+| **Modified** | Last-modified date, locale-formatted | `formatDateTime(document.updatedAt)` |
+| **Original filename** | The name the file arrived with (camera/scanner/picker), if different from the current name | `document.originalName` |
+| **Status** | Locked / Favorite badges, or "—" if neither | `document.isLocked`, `document.isFavorite` |
+| **Integrity hash** | The stored content hash (tamper-evidence, §10) | `document.contentHash` |
 
-```
-┌─────────────────────────────┐
-│ ← Back    Document Name  ★ 🔒│
-├─────────────────────────────┤
-│                             │
-│     [Document Preview]      │
-│     (tap to open full)      │
-│                             │
-├─────────────────────────────┤
-│ 📁 Identity Documents > ... │
-│ 🏷️ [Government] [ID] [+]   │
-├─────────────────────────────┤
-│ Type: PDF   Size: 2.4 MB   │
-│ Pages: 2    Created: Jun 5  │
-│ Modified: Jun 7             │
-├─────────────────────────────┤
-│ 📝 Description              │
-│ "My Aadhaar card, updated   │
-│  address version from 2024" │
-├─────────────────────────────┤
-│ 📋 OCR Text           [▼]  │
-│ "GOVERNMENT OF INDIA..."    │
-├─────────────────────────────┤
-│ ⚡ Quick Actions            │
-│ [Merge] [Split] [Convert]  │
-│ [Compress] [Encrypt] [OCR] │
-├─────────────────────────────┤
-│ 📜 Operation History        │
-│ • Jun 7 — Compressed (80%) │
-│ • Jun 5 — OCR completed    │
-│ • Jun 5 — Uploaded          │
-├─────────────────────────────┤
-│ 🗑️ [Delete Document]        │
-└─────────────────────────────┘
-```
+en/hi i18n; excluded from unit coverage (IonModal overlay, device-verified like
+the other sheets — `pnpm --filter kagaz vitest src/modules/document-vault/components`
+covers the pure pieces it composes).
+
+### V2 backlog (not implemented)
+
+The earlier design additionally sketched: an editable description field, a
+folder/tag quick-edit surface inline in the sheet, an operations-history
+timeline, and quick-action buttons for Merge/Split/Convert/Compress/Encrypt/OCR
+directly from the details view. None of these shipped in V1 — folder/tag
+editing already has its own entry points (move dialog, tag sheet) and the PDF
+operations live in the PDF Tools hub ([03](03-pdf-engine-module.md)) instead of
+being duplicated here. Revisit if user feedback asks for it.
+
+---
+
+## Document Actions
+
+Per-document actions are offered two ways: the **vault list item-menu**
+(`IonActionSheet`, `data-agent-id="vault.home.item-menu"`, long-press or the
+overflow button on a list row) and the **viewer menu** (opened from
+`DocumentViewerPage`). Both are agent-actionable — every button has a
+`data-agent-id` and a matching entry in the Action Registry per
+[`agent-interface.md`](../design-system/agent-interface.md).
+
+### Vault list item-menu (top → bottom)
+
+| Action | Feature | Shown when | Handler |
+|---|---|---|---|
+| Add tag | — | always | opens the tag-edit sheet |
+| Move | — | always | opens `MoveToFolderDialog` |
+| Select | — | always | enters bulk-selection mode |
+| Lock / Unlock | — | always | toggles `document.isLocked` |
+| **Open with…** | F-64 | native platform only | `document-intent.service.openDocumentWith` |
+| **Share…** | F-65 | native platform only | `document-intent.service.shareDocument` |
+| **Details** | F-67 | always | opens `DocumentDetailsSheet` |
+| **Copy text** | F-68 | `document.ocrText` has non-whitespace content | `core/clipboard.copyToClipboard` |
+| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
+| Delete | — | always | soft-delete → Trash (recoverable) |
+
+### Viewer menu (`DocumentViewerPage`)
+
+Same **Open with…** / **Share…** (native-gated) / **Details** / **Delete**
+actions as above, plus an inline **Copy** button under the extracted-text panel
+(same `copyToClipboard` helper) once text has been extracted or OCR'd.
+
+### OS document intents (F-64 / F-65)
+
+`document-intent.service.ts` wraps two Android intents behind one contract
+(`isIntentSupported`, `openDocumentWith`, `shareDocument`):
+
+| Action | Plugin | Android intent | Purpose |
+|---|---|---|---|
+| **Open with…** | `@capacitor-community/file-opener` (MIT) — `open({ filePath, contentType, openWithDefault: false })` | `ACTION_VIEW` | Shows the OS **"Open with"** app chooser for every app that can view the document's MIME type |
+| **Share…** | `@capacitor/share` (already a dependency) — `Share.share({ url })` | `ACTION_SEND` | Shows the OS share sheet for every app that accepts the file |
+
+Both resolve a `content://` URI via `Filesystem.getUri` (`Directory.Data`) —
+the document's real on-disk path is never exposed to the receiving app,
+consistent with the FileProvider pattern used everywhere else the vault hands
+a file to the OS (`10-security-architecture.md` §3). MIME type comes from
+`mimeTypeFor(document.fileType)`. `useDocumentIntents` is the React hook: it
+resolves `supported = Capacitor.getPlatform() !== 'web'` once, and both actions
+swallow user-cancellation (dismissing the chooser/share sheet is not an error —
+only a genuine failure surfaces a toast).
+
+**[SEC]** Both are user-initiated (the user explicitly picked the action from
+the menu) and read-only from the vault's perspective — no network call is made
+by the app; the receiving app's own behaviour is outside Kagaz's boundary.
+
+### Copy text (F-68)
+
+`core/clipboard.copyToClipboard(text)` — the async Clipboard API
+(`navigator.clipboard.writeText`, which works inside the Capacitor Android
+WebView's secure `capacitor://` context) with a hidden-`<textarea>` +
+`execCommand('copy')` fallback for older WebViews. Used by both the item-menu's
+**Copy text** (copies `document.ocrText` without opening the viewer — gated on
+`documentHasCopyableText`, `useCopyDocumentText`) and the viewer's inline Copy
+button.
+
+**[SEC]** the copied text is document content (may include OCR'd PII) — it is
+handed straight to the platform clipboard and never logged.
+
+### Select text & Detected numbers (F-83)
+
+The viewer's extracted-text panel is explicitly selectable
+(`user-select: text` / `-webkit-user-select: text`, `viewer.css`
+`.kg-viewer__text-body`) — native drag-select + the WebView's long-press
+"Copy" affordance work on any substring, not just the whole block via the
+**Copy text** button.
+
+For the common case of wanting just *one* number out of a longer block
+(account number, PIN code, phone number, date, invoice amount, …),
+`document-vault/services/extract-numbers.ts` (`extractNumberSequences`) runs a
+pure regex over the already-displayed text (digit runs of 4+ digits, allowing
+internal spaces/hyphens for grouped IDs like "1234 5678 9012") and the viewer
+renders each match as its own tap-to-copy chip under **Detected numbers**
+(shown only when at least one match exists, capped at 20). Purely a read-time
+UI convenience — it extracts nothing new and stores nothing; the same text is
+already fully visible in the panel above it.
+
+**[SEC]** same posture as Copy text — copies straight to the clipboard, never
+logged.
 
 ---
 

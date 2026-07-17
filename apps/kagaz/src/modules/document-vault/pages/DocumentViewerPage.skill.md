@@ -4,7 +4,10 @@
 The user is viewing one document full-screen — an image, or a PDF rendered
 page-by-page — with a panel showing the **text extracted from it** (OCR). This
 is where OCR results are read: after "Extract text" runs, the recognized text
-appears here and can be copied.
+appears here and can be copied — the whole block via **Copy text**, a manual
+selection via native drag-select, or a single detected number (account/ID
+number, PIN code, date, amount, …) via its own tap-to-copy chip under
+**Detected numbers** (F-83, shown only when the text contains one).
 
 ## What I (the AI) can do here
 Read-focused. I can read the extracted text aloud, summarize it, or answer

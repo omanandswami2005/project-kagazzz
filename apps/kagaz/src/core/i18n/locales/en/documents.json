@@ -96,7 +96,9 @@
     "extracted_text": "Extracted text",
     "copy": "Copy text",
     "copied": "Text copied",
-    "no_text": "No text extracted. Extraction works on images, scans, and PDFs."
+    "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
+    "detected_numbers": "Detected numbers",
+    "copy_number": "Copy {{number}}"
   },
   "detail": {
     "size": "Size",

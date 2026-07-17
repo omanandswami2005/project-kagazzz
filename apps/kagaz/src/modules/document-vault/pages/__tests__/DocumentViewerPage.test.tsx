@@ -85,6 +85,21 @@ describe('DocumentViewerPage (UX-6)', () => {
     expect(q('vault.viewer.extract-text')).toBeNull();
   });
 
+  it('offers a copyable chip for each detected number (F-83)', () => {
+    state.document = doc({ ocrText: 'UID: 1234 5678 9012 issued 2024' });
+    render(<DocumentViewerPage />);
+    expect(q('vault.viewer.numbers-panel')).not.toBeNull();
+    const chips = document.querySelectorAll('[data-agent-id="vault.viewer.copy-number"]');
+    expect(chips).toHaveLength(2); // "1234 5678 9012" and "2024"
+    expect(chips[0]?.textContent).toContain('1234 5678 9012');
+  });
+
+  it('hides the numbers panel when the extracted text has no numbers', () => {
+    state.document = doc({ ocrText: 'Government of India' });
+    render(<DocumentViewerPage />);
+    expect(q('vault.viewer.numbers-panel')).toBeNull();
+  });
+
   it('offers Extract text for an image with no text yet', async () => {
     state.document = doc({ ocrText: undefined });
     render(<DocumentViewerPage />);
