@@ -24,11 +24,14 @@ import {
   useImageFormatConversion,
 } from '../useImageFormatConversion';
 
-// `fileType` is the stored lowercased EXTENSION (e.g. 'jpg'), not a MIME type.
+// `fileType` is the stored lowercased EXTENSION (e.g. 'jpg'), not a MIME type,
+// and `name` — the DB-stored value — never carries an extension (the upload
+// pipeline strips it via `splitFileName` at save time); a fixture with an
+// extension baked into `name` would hide bugs the real app can hit.
 const doc = (over: Partial<DocumentEntity> = {}): DocumentEntity =>
   ({
     id: 'd1',
-    name: 'photo.jpg',
+    name: 'photo',
     filePath: 'documents/d1.jpg',
     fileType: 'jpg',
     ...over,
@@ -84,10 +87,10 @@ describe('useImageFormatConversion (F-8)', () => {
     ]);
   });
 
-  it('strips the original extension regardless of target format', async () => {
+  it('appends the target extension to the extension-less stored name', async () => {
     const { result } = renderHook(() => useImageFormatConversion());
     await act(async () => {
-      await result.current.convert(doc({ name: 'scan.jpeg' }), 'webp');
+      await result.current.convert(doc({ name: 'scan' }), 'webp');
     });
     expect(ingestFiles).toHaveBeenCalledWith([
       expect.objectContaining({ name: 'scan.webp' }),

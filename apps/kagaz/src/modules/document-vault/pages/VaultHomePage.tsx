@@ -46,6 +46,8 @@ import {
   useImageFormatConversion,
 } from '../hooks/useImageFormatConversion';
 import type { CanvasFormat } from '@/modules/image-engine/types/image.types';
+import { canApplyImageFilter, useImageEnhancement } from '../hooks/useImageEnhancement';
+import { FILTER_PRESETS, type FilterPreset } from '@/modules/image-engine/services/image-filters';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
@@ -84,6 +86,7 @@ export function VaultHomePage(): ReactNode {
   const intents = useDocumentIntents();
   const copyText = useCopyDocumentText();
   const imageConvert = useImageFormatConversion();
+  const imageEnhance = useImageEnhancement();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
@@ -120,6 +123,7 @@ export function VaultHomePage(): ReactNode {
   const [moveDocId, setMoveDocId] = useState<string | null>(null);
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
   const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
+  const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
   const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
@@ -152,6 +156,19 @@ export function VaultHomePage(): ReactNode {
         (await imageConvert.convert(document, target))
           ? 'convert_format.done'
           : 'convert_format.failed'
+      )
+    );
+  };
+  // F-29: apply an image-filter preset, saved as a new document.
+  const handleApplyFilter = async (
+    document: DocumentEntity,
+    preset: FilterPreset
+  ): Promise<void> => {
+    setOcrMsg(
+      t(
+        (await imageEnhance.applyFilter(document, preset))
+          ? 'enhance.done'
+          : 'enhance.failed'
       )
     );
   };
@@ -552,6 +569,18 @@ export function VaultHomePage(): ReactNode {
                   },
                 ]
               : []),
+            // F-29: image filter presets (grayscale/B&W/auto-enhance/invert).
+            ...(moreDoc && canApplyImageFilter(moreDoc)
+              ? [
+                  {
+                    text: t('enhance.action'),
+                    data: { action: 'enhance' },
+                    handler: (): void => {
+                      if (moreDoc) setEnhanceDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
             // F-20: OCR only offered for image documents on a native platform.
             ...(moreDoc && canOcr(moreDoc)
               ? [
@@ -594,6 +623,26 @@ export function VaultHomePage(): ReactNode {
                   data: { action: `convert-to-${target}` },
                   handler: (): void => {
                     if (convertDoc) void handleConvertFormat(convertDoc, target);
+                  },
+                }))
+              : []),
+            { text: t('actions.cancel'), role: 'cancel' as const },
+          ]}
+        />
+
+        {/* F-29: pick a filter preset after "Enhance photo" is chosen above. */}
+        <IonActionSheet
+          isOpen={enhanceDoc !== null}
+          header={t('enhance.title')}
+          data-agent-id="vault.home.enhance-sheet"
+          onDidDismiss={() => setEnhanceDoc(null)}
+          buttons={[
+            ...(enhanceDoc
+              ? (Object.keys(FILTER_PRESETS) as FilterPreset[]).map((preset) => ({
+                  text: t(`enhance.preset_${preset}`),
+                  data: { action: `enhance-${preset}` },
+                  handler: (): void => {
+                    if (enhanceDoc) void handleApplyFilter(enhanceDoc, preset);
                   },
                 }))
               : []),

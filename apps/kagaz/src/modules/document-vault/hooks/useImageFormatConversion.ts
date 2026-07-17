@@ -76,11 +76,19 @@ export function useImageFormatConversion(): UseImageFormatConversion {
         const { uploaded } = await ingestFiles([
           { name, blob: converted, source: 'ai_generated' },
         ]);
-        logger.info({
-          event: 'vault.image.convert.success',
-          documentId: document.id,
-          target,
-        });
+        if (uploaded > 0) {
+          logger.info({
+            event: 'vault.image.convert.success',
+            documentId: document.id,
+            target,
+          });
+        } else {
+          logger.warn({
+            event: 'vault.image.convert.failed',
+            documentId: document.id,
+            reason: 'save rejected the converted file',
+          });
+        }
         return uploaded > 0;
       } catch (error) {
         logger.warn({

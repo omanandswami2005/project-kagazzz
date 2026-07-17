@@ -1091,6 +1091,7 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Details** | F-67 | always | opens `DocumentDetailsSheet` |
 | **Copy text** | F-68 | `document.ocrText` has non-whitespace content | `core/clipboard.copyToClipboard` |
 | **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
+| **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
 | Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
 | Delete | — | always | soft-delete → Trash (recoverable) |
 
@@ -1152,6 +1153,35 @@ original file, encodes to the target MIME, and saves the result as a **new**
 document via `useUpload().ingestFiles` (`source: 'ai_generated'`, same
 non-destructive pattern the PDF Power Tools use) named `<original base
 name>.<target extension>` — the original document is untouched.
+
+### Enhance photo (F-29)
+
+`useImageEnhancement.ts` applies one of `image-engine/services/image-filters.ts`'s
+`FILTER_PRESETS` (grayscale, black & white, auto-enhance, invert — pure RGBA
+transforms, canvas glue via `applyImageFilter`) and saves the result as a
+**new** document, mirroring Convert format's non-destructive pattern exactly
+— same `canApplyImageFilter` gate (re-exports `canConvertImageFormat`, since
+a filter needs the same Canvas-decodable source), same `ingestFiles` save
+path. The output keeps the document's own format (`mimeTypeFor(fileType)` is
+passed through to `applyImageFilter`'s `deps.mime`, not forced to JPEG) and
+is named `<original>_<preset>.<extension>`.
+
+Brightness/contrast are parameterized filters the engine already exposes but
+aren't offered in this action-sheet UI — a numeric adjustment needs a slider
+surface, not a pick-one list; a follow-up, not scope creep on this pass.
+
+**Bug this pass found and fixed**: `document.name` (the DB-stored value)
+never carries a file extension — `upload.service.ts`'s `splitFileName`
+strips it into `fileType` at save time. The first version of this hook tried
+to extract/reuse an extension from `name` and silently produced an
+extension-less filename whenever `name` had none (i.e. always, in real
+data), which the upload pipeline's own validation then rejected as
+`INVALID_FILE_TYPE` — device-verified failing, then fixed to always derive
+the extension from `document.fileType` instead, and reconfirmed live. F-8's
+Convert format never had this bug (it always appends a fresh extension for
+the target format regardless of the source name), but its own tests shared
+the same unrealistic fixture (`name: 'photo.jpg'` instead of `'photo'`),
+which had been masking exactly this class of bug — fixed in both test files.
 
 ### Select text & Detected numbers (F-83)
 

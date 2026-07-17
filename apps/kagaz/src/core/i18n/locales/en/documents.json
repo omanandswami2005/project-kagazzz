@@ -40,6 +40,16 @@
     "done": "Converted — saved as a new document",
     "failed": "Couldn't convert this image."
   },
+  "enhance": {
+    "action": "Enhance photo",
+    "title": "Apply filter",
+    "preset_grayscale": "Grayscale",
+    "preset_bw": "Black & white (crisp scan)",
+    "preset_enhance": "Auto-enhance",
+    "preset_invert": "Invert colors",
+    "done": "Enhanced — saved as a new document",
+    "failed": "Couldn't enhance this image."
+  },
   "details": {
     "title": "Details",
     "name": "Name",
