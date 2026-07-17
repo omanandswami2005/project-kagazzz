@@ -31,6 +31,15 @@
     "copied": "Text copied to clipboard",
     "failed": "Couldn't copy the text."
   },
+  "convert_format": {
+    "action": "Convert format",
+    "title": "Convert to",
+    "to_jpeg": "Convert to JPEG",
+    "to_png": "Convert to PNG",
+    "to_webp": "Convert to WebP",
+    "done": "Converted — saved as a new document",
+    "failed": "Couldn't convert this image."
+  },
   "details": {
     "title": "Details",
     "name": "Name",

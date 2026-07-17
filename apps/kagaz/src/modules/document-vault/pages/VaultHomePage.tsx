@@ -40,6 +40,12 @@ import { useDocLock } from '../hooks/useDocLock';
 import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useCopyDocumentText } from '../hooks/useCopyDocumentText';
+import {
+  canConvertImageFormat,
+  conversionTargetsFor,
+  useImageFormatConversion,
+} from '../hooks/useImageFormatConversion';
+import type { CanvasFormat } from '@/modules/image-engine/types/image.types';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
@@ -77,6 +83,7 @@ export function VaultHomePage(): ReactNode {
   const { extractText } = useDocumentOcr();
   const intents = useDocumentIntents();
   const copyText = useCopyDocumentText();
+  const imageConvert = useImageFormatConversion();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
@@ -112,6 +119,7 @@ export function VaultHomePage(): ReactNode {
   const [tagDocId, setTagDocId] = useState<string | null>(null);
   const [moveDocId, setMoveDocId] = useState<string | null>(null);
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
+  const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
   const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
@@ -133,6 +141,19 @@ export function VaultHomePage(): ReactNode {
   // F-68: quick-copy a document's stored OCR/extracted text to the clipboard.
   const handleCopyText = async (document: DocumentEntity): Promise<void> => {
     setOcrMsg(t((await copyText.copy(document)) ? 'copy_text.copied' : 'copy_text.failed'));
+  };
+  // F-8: convert an image to another Canvas format, saved as a new document.
+  const handleConvertFormat = async (
+    document: DocumentEntity,
+    target: CanvasFormat
+  ): Promise<void> => {
+    setOcrMsg(
+      t(
+        (await imageConvert.convert(document, target))
+          ? 'convert_format.done'
+          : 'convert_format.failed'
+      )
+    );
   };
   const search = useSearch();
   // While searching, results replace the folder/list view.
@@ -519,6 +540,18 @@ export function VaultHomePage(): ReactNode {
                   },
                 ]
               : []),
+            // F-8: convert an image to another Canvas format (JPEG/PNG/WebP).
+            ...(moreDoc && canConvertImageFormat(moreDoc)
+              ? [
+                  {
+                    text: t('convert_format.action'),
+                    data: { action: 'convert-format' },
+                    handler: (): void => {
+                      if (moreDoc) setConvertDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
             // F-20: OCR only offered for image documents on a native platform.
             ...(moreDoc && canOcr(moreDoc)
               ? [
@@ -545,6 +578,26 @@ export function VaultHomePage(): ReactNode {
               },
             },
             { text: t('actions.cancel'), role: 'cancel' },
+          ]}
+        />
+
+        {/* F-8: pick the target format after "Convert format" is chosen above. */}
+        <IonActionSheet
+          isOpen={convertDoc !== null}
+          header={t('convert_format.title')}
+          data-agent-id="vault.home.convert-format-sheet"
+          onDidDismiss={() => setConvertDoc(null)}
+          buttons={[
+            ...(convertDoc
+              ? conversionTargetsFor(convertDoc).map((target) => ({
+                  text: t(`convert_format.to_${target}`),
+                  data: { action: `convert-to-${target}` },
+                  handler: (): void => {
+                    if (convertDoc) void handleConvertFormat(convertDoc, target);
+                  },
+                }))
+              : []),
+            { text: t('actions.cancel'), role: 'cancel' as const },
           ]}
         />
 

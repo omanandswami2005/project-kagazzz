@@ -12,7 +12,13 @@
 > permissive-only license policy forbids. V1 therefore bundles **no JS
 > HEIC decoder**: format conversion (F-8) uses the **native Canvas API**
 > only (JPEG/PNG/WebP), and HEIC is decoded natively by the OS at camera
-> capture. F-2's document edge detection (listed under §14 as "V2") ships
+> capture. F-8 runs on the **main thread**, not a Worker — canvas decode/
+> encode via `createImageBitmap`/`canvas.toBlob` is cheap enough for a
+> single document that the dedicated `image-convert.worker.ts` in §14
+> below (Web Worker + `OffscreenCanvas`) is unbuilt V2 scope; **UI**: vault
+> item-menu → **Convert format** (only offered for JPEG/PNG/WebP documents)
+> → pick a target → saved as a new, non-destructive document
+> (`useImageFormatConversion.ts`, 2026-07-17). F-2's document edge detection (listed under §14 as "V2") ships
 > in **V1** via **Google ML Kit Document Scanner** (native, Play Services) —
 > see [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)
 > (which supersedes ADR-016's earlier jscanify + OpenCV.js choice).

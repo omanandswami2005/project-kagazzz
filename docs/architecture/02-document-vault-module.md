@@ -1090,6 +1090,7 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Share…** | F-65 | native platform only | `document-intent.service.shareDocument` |
 | **Details** | F-67 | always | opens `DocumentDetailsSheet` |
 | **Copy text** | F-68 | `document.ocrText` has non-whitespace content | `core/clipboard.copyToClipboard` |
+| **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
 | Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
 | Delete | — | always | soft-delete → Trash (recoverable) |
 
@@ -1134,6 +1135,23 @@ button.
 
 **[SEC]** the copied text is document content (may include OCR'd PII) — it is
 handed straight to the platform clipboard and never logged.
+
+### Convert format (F-8)
+
+`useImageFormatConversion.ts` wraps `image-engine/services/image-engine.service.convertFormat`
+(Canvas `createImageBitmap` → `canvas.toBlob`, main thread — see
+[04-image-engine-module.md](04-image-engine-module.md)) with the vault's file
+storage + upload pipeline. `canConvertImageFormat(document)` gates the
+item-menu entry to documents whose stored `fileType` (lowercased extension)
+is `jpg`/`jpeg`/`png`, or `webp` — HEIC/BMP/TIFF/GIF are decode-only
+(ADR-016, no bundled LGPL decoder) so they're never offered as a source.
+Choosing **Convert format** opens a second, small `IonActionSheet`
+(`vault.home.convert-format-sheet`) listing `conversionTargetsFor(document)`
+— the two Canvas formats other than the document's own. Converting reads the
+original file, encodes to the target MIME, and saves the result as a **new**
+document via `useUpload().ingestFiles` (`source: 'ai_generated'`, same
+non-destructive pattern the PDF Power Tools use) named `<original base
+name>.<target extension>` — the original document is untouched.
 
 ### Select text & Detected numbers (F-83)
 
