@@ -251,7 +251,7 @@ modules' inputs around the engine:
 
 - **`extractPages(doc, ranges)`** (F-66) — flattens page ranges to source-page
   ops and calls `organizePages`, saving `<name>_extract.pdf`.
-- **`appendScan(doc)`** (F-69, **native only**) — runs the native ML Kit scanner
+- **`appendScan(doc)`** (F-44, **native only**) — runs the native ML Kit scanner
   (via document-vault's `pickFromScanner`), turns the scan into PDF bytes (a
   multi-page scan already is one PDF; single JPEG pages go through
   `imagesToPdf`), then `mergePdfs([sourceBytes, scannedPdf])` and saves

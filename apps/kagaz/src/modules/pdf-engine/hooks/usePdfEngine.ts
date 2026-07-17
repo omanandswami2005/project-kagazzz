@@ -90,7 +90,7 @@ export interface UsePdfEngineResult {
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
-  /** Scan pages natively and append them to an existing PDF (F-69). 0 if cancelled. */
+  /** Scan pages natively and append them to an existing PDF (F-44). 0 if cancelled. */
   appendScan: (doc: DocumentEntity) => Promise<number>;
   stampImage: (
     doc: DocumentEntity,
@@ -544,7 +544,7 @@ function blobOf(bytes: Uint8Array, fileType: 'pdf'): Blob {
 }
 
 /**
- * Reduces the native scanner's output (F-69) to a single PDF's bytes. A
+ * Reduces the native scanner's output (F-44) to a single PDF's bytes. A
  * multi-page scan already arrives as one combined PDF; single-page scans arrive
  * as JPEG(s), which are packed into a PDF via the engine's images → PDF op.
  */

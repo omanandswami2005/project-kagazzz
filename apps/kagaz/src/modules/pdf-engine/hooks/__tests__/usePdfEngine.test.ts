@@ -77,7 +77,7 @@ describe('usePdfEngine finalize phase (UX-10/11)', () => {
   });
 });
 
-describe('usePdfEngine.appendScan (F-69)', () => {
+describe('usePdfEngine.appendScan (F-44)', () => {
   const pdfDoc = (): DocumentEntity =>
     ({ id: 'src', name: 'contract.pdf', filePath: 'documents/src.pdf' }) as DocumentEntity;
 
