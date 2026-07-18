@@ -305,6 +305,13 @@
       "action": "tools.openPdfTools"
     },
     {
+      "utterance": "extract pages from a pdf",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
       "utterance": "organize pdf pages",
       "pages": [
         "pdf-tools"
@@ -355,6 +362,13 @@
     },
     {
       "utterance": "add page numbers",
+      "pages": [
+        "pdf-tools"
+      ],
+      "action": "tools.openPdfTools"
+    },
+    {
+      "utterance": "add a scan to a pdf",
       "pages": [
         "pdf-tools"
       ],
