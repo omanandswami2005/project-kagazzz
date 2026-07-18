@@ -28,16 +28,10 @@
   margin-block: var(--space-4);
 }
 
-.kg-vault__search {
-  --color: var(--text-primary);
-  --placeholder-color: var(--text-muted);
-  padding-inline: 0;
-  margin-block: 0;
-}
-
 /* UX-3: the searchbar + hold-to-speak mic read as ONE field — a shared rounded
-   container holds the (transparent) searchbar with the mic inline at the end.
-   The permission hint wraps onto its own line beneath (flex-wrap). */
+   container holds the (transparent, G1-4 `Search` atom) field with the mic
+   inline at the end. The permission hint wraps onto its own line beneath
+   (flex-wrap). */
 .kg-vault__search-row {
   display: flex;
   flex-wrap: wrap;
@@ -49,10 +43,8 @@
   border-radius: var(--radius-md);
 }
 
-.kg-vault__search-row .kg-vault__search {
+.kg-vault__search-row .kg-search {
   flex: 1 1 auto;
-  --background: transparent;
-  --box-shadow: none;
   min-width: 0;
 }
 

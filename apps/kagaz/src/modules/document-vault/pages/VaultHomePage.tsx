@@ -5,7 +5,6 @@
  * arrive with F-9/F-11/F-25.
  */
 import {
-  IonAlert,
   IonButtons,
   IonContent,
   IonHeader,
@@ -18,7 +17,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Button, Icon, ProgressBar } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { BulkActionBar } from '../components/BulkActionBar';
@@ -745,26 +744,22 @@ export function VaultHomePage(): ReactNode {
           }}
         />
 
-        <IonAlert
+        <Alert
           key={renameFolderTarget?.id ?? 'folder-rename-none'}
           isOpen={renameFolderTarget !== null}
           header={t('folders.rename_title')}
-          data-agent-id="vault.home.folder-rename-prompt"
-          inputs={[
-            {
-              name: 'name',
-              type: 'text',
-              value: renameFolderTarget?.name ?? '',
-              attributes: { 'aria-label': t('folders.name_placeholder') },
-            },
-          ]}
+          agentId="vault.home.folder-rename-prompt"
+          input={{
+            label: t('folders.name_placeholder'),
+            defaultValue: renameFolderTarget?.name ?? '',
+          }}
           buttons={[
             { text: t('actions.cancel'), role: 'cancel' },
             {
               text: t('rename.save'),
-              handler: (data: { name?: string }): void => {
-                if (renameFolderTarget && data.name) {
-                  void renameFolder(renameFolderTarget.id, data.name);
+              handler: (name?: string): void => {
+                if (renameFolderTarget && name) {
+                  void renameFolder(renameFolderTarget.id, name);
                 }
               },
             },
@@ -772,13 +767,12 @@ export function VaultHomePage(): ReactNode {
           onDidDismiss={() => setRenameFolderTarget(null)}
         />
 
-        <IonAlert
+        <Alert
           isOpen={deleteFolderTarget !== null}
           header={t('folders.delete_title')}
           message={t('folders.delete_message')}
-          data-agent-id="vault.home.folder-delete-confirm"
+          agentId="vault.home.folder-delete-confirm"
           buttons={[
-            { text: t('actions.cancel'), role: 'cancel' },
             {
               text: t('actions.delete'),
               role: 'destructive',
@@ -786,6 +780,7 @@ export function VaultHomePage(): ReactNode {
                 if (deleteFolderTarget) void handleDeleteFolder(deleteFolderTarget);
               },
             },
+            { text: t('actions.cancel'), role: 'cancel' },
           ]}
           onDidDismiss={() => setDeleteFolderTarget(null)}
         />
@@ -857,26 +852,22 @@ export function VaultHomePage(): ReactNode {
         {/* UX-8: rename-on-add prompt, pre-filled with the default name. Keeping
            the default (Skip) stores it as-is. Keyed per document so each
            queued doc re-seeds the input. */}
-        <IonAlert
+        <Alert
           key={renameTarget?.id ?? 'rename-none'}
           isOpen={renameTarget !== null}
           header={t('rename.title')}
-          data-agent-id="vault.home.rename-prompt"
-          inputs={[
-            {
-              name: 'name',
-              type: 'text',
-              value: renameTarget?.name ?? '',
-              attributes: { 'aria-label': t('rename.label') },
-            },
-          ]}
+          agentId="vault.home.rename-prompt"
+          input={{
+            label: t('rename.label'),
+            defaultValue: renameTarget?.name ?? '',
+          }}
           buttons={[
             { text: t('rename.skip'), role: 'cancel' },
             {
               text: t('rename.save'),
-              handler: (data: { name?: string }): void => {
-                if (renameTarget && data.name) {
-                  void rename(renameTarget, data.name);
+              handler: (name?: string): void => {
+                if (renameTarget && name) {
+                  void rename(renameTarget, name);
                 }
               },
             },

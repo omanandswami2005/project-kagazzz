@@ -3,7 +3,7 @@
  * an alert with a single name field; confirming creates a folder in the
  * current folder (F-9).
  */
-import { IonAlert } from '@ionic/react';
+import { Alert } from '@kagaz/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -23,27 +23,23 @@ export function NewFolderDialog({
 }: NewFolderDialogProps): ReactNode {
   const { t } = useTranslation('documents');
   return (
-    <IonAlert
+    <Alert
       isOpen={isOpen}
       header={t('folders.new')}
-      data-agent-id="vault.home.new-folder-dialog"
+      agentId="vault.home.new-folder-dialog"
       onDidDismiss={onDismiss}
-      inputs={[
-        {
-          name: 'name',
-          type: 'text',
-          placeholder: t('folders.name_placeholder'),
-          attributes: { 'aria-label': t('folders.name_placeholder') },
-        },
-      ]}
+      input={{
+        label: t('folders.name_placeholder'),
+        placeholder: t('folders.name_placeholder'),
+      }}
       buttons={[
         { text: t('actions.cancel'), role: 'cancel' },
         {
           text: t('folders.create'),
-          handler: (data: { name?: string }): void => {
-            const name = (data.name ?? '').trim();
-            if (name) {
-              onCreate(name);
+          handler: (name?: string): void => {
+            const trimmed = (name ?? '').trim();
+            if (trimmed) {
+              onCreate(trimmed);
             }
           },
         },

@@ -525,3 +525,143 @@ button.kg-tag {
   background: var(--surface-2);
   font-weight: var(--font-semibold);
 }
+
+/* ── Alert ───────────────────────────────────────────────────────── */
+/* A native <dialog> (showModal), centered — see Alert.tsx's doc comment
+   for why this replaces IonAlert. Centered per interaction-patterns.md's
+   modal rules (bottom sheets are for pickers, modals are for a decision). */
+.kg-alert {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: var(--space-4);
+  border: none;
+  background: transparent;
+}
+.kg-alert::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.kg-alert[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kg-alert__panel {
+  width: 100%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+.kg-alert__header {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+.kg-alert__message {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.kg-alert__input {
+  width: 100%;
+  min-height: var(--target-min);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.kg-alert__input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.kg-alert__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.kg-alert__btn {
+  min-height: var(--target-min);
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.kg-alert__btn--destructive {
+  color: var(--color-danger);
+}
+.kg-alert__btn--cancel {
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+}
+
+/* ── Search ──────────────────────────────────────────────────────── */
+/* A plain <input type="search"> with a leading icon + clear button — see
+   Search.tsx's doc comment for why this replaces IonSearchbar. */
+.kg-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.kg-search__icon {
+  position: absolute;
+  left: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.kg-search__input {
+  width: 100%;
+  min-height: var(--target-min);
+  padding-left: calc(var(--space-3) * 2 + 20px);
+  padding-right: var(--space-8);
+  background: transparent;
+  border: none;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.kg-search__input::placeholder {
+  color: var(--text-muted);
+}
+.kg-search__input:focus {
+  outline: none;
+}
+/* Suppress the native WebKit "x" so only our own clear button shows. */
+.kg-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+.kg-search__clear {
+  position: absolute;
+  right: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  cursor: pointer;
+}

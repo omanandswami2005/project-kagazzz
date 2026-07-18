@@ -13,26 +13,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { clsx } from 'clsx';
 import { agentAttrs, type AgentProps } from '../agent-props';
-
-// jsdom (unit-test env) doesn't implement HTMLDialogElement.showModal/close
-// (as of jsdom 29) — fall back to plain attribute + a manually dispatched
-// 'close' event so onDidDismiss still fires under test. Real WebViews
-// (Chromium-based, Android System WebView 37+) always have both natively.
-function openDialog(dialog: HTMLDialogElement): void {
-  if (typeof dialog.showModal === 'function') {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute('open', '');
-  }
-}
-function closeDialog(dialog: HTMLDialogElement): void {
-  if (typeof dialog.close === 'function') {
-    dialog.close();
-  } else {
-    dialog.removeAttribute('open');
-    dialog.dispatchEvent(new Event('close'));
-  }
-}
+import { closeDialog, openDialog, useDialogBackButton } from '../dialog-utils';
 
 /** One row in an {@link ActionSheet}. */
 export interface ActionSheetButton {
@@ -84,23 +65,7 @@ export function ActionSheet({
     return (): void => dialog.removeEventListener('close', onClose);
   }, [onDidDismiss]);
 
-  // Android hardware back: close the sheet at a higher priority than any
-  // screen-level nav handler (e.g. VaultHomePage registers folder-nav at 10).
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const onIonBackButton = (event: Event): void => {
-      (
-        event as CustomEvent<{
-          register: (priority: number, handler: () => void) => void;
-        }>
-      ).detail.register(100, () => {
-        if (ref.current) closeDialog(ref.current);
-      });
-    };
-    document.addEventListener('ionBackButton', onIonBackButton);
-    return (): void =>
-      document.removeEventListener('ionBackButton', onIonBackButton);
-  }, [isOpen]);
+  useDialogBackButton(isOpen, ref);
 
   const handleScrimClick = (
     event: React.MouseEvent<HTMLDialogElement>
