@@ -5,6 +5,11 @@
     "license": "MIT"
   },
   {
+    "name": "@capacitor-community/file-opener",
+    "version": "8.0.1",
+    "license": "MIT"
+  },
+  {
     "name": "@capacitor-community/speech-recognition",
     "version": "7.0.1",
     "license": "MIT"
@@ -100,11 +105,6 @@
     "license": "MIT"
   },
   {
-    "name": "browser-image-compression",
-    "version": "2.0.2",
-    "license": "MIT"
-  },
-  {
     "name": "capacitor-secure-storage-plugin",
     "version": "0.13.0",
     "license": "MIT"
@@ -171,7 +171,7 @@
   },
   {
     "name": "pdfjs-dist",
-    "version": "6.0.227",
+    "version": "4.6.82",
     "license": "Apache-2.0"
   },
   {

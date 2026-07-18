@@ -49,6 +49,7 @@ import type { CanvasFormat } from '@/modules/image-engine/types/image.types';
 import { canApplyImageFilter, useImageEnhancement } from '../hooks/useImageEnhancement';
 import { FILTER_PRESETS, type FilterPreset } from '@/modules/image-engine/services/image-filters';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
+import { ResizeCompressSheet } from '../components/ResizeCompressSheet';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -135,6 +136,7 @@ export function VaultHomePage(): ReactNode {
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
   const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
   const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
+  const [resizeDoc, setResizeDoc] = useState<DocumentEntity | null>(null);
   // F-9: folder options sheet (rename/change color/reorder/delete).
   const [moreFolder, setMoreFolder] = useState<FolderEntity | null>(null);
   const [colorFolder, setColorFolder] = useState<FolderEntity | null>(null);
@@ -511,6 +513,8 @@ export function VaultHomePage(): ReactNode {
         />
         <DocumentDetailsSheet document={detailsDoc} onClose={() => setDetailsDoc(null)} />
 
+        <ResizeCompressSheet document={resizeDoc} onClose={() => setResizeDoc(null)} />
+
         <ActionSheet
           isOpen={moreDoc !== null}
           header={moreDoc?.name}
@@ -594,6 +598,17 @@ export function VaultHomePage(): ReactNode {
                     text: t('enhance.action'),
                     handler: (): void => {
                       if (moreDoc) setEnhanceDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
+            // F-85: resize to exact dimensions + compress to a size target.
+            ...(moreDoc && canConvertImageFormat(moreDoc)
+              ? [
+                  {
+                    text: t('resize_compress.action'),
+                    handler: (): void => {
+                      if (moreDoc) setResizeDoc(moreDoc);
                     },
                   },
                 ]

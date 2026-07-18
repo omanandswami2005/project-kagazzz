@@ -50,6 +50,25 @@
     "done": "Enhanced — saved as a new document",
     "failed": "Couldn't enhance this image."
   },
+  "resize_compress": {
+    "action": "Resize & compress",
+    "title": "Resize & Compress",
+    "preset_passport": "Passport photo (200×230)",
+    "preset_pan": "PAN photo (213×213)",
+    "preset_signature": "Signature (140×60)",
+    "width": "Width (px)",
+    "height": "Height (px)",
+    "lock_aspect_ratio": "Lock aspect ratio",
+    "max_size_kb": "Max size (KB)",
+    "min_size_kb": "Min size (KB, optional)",
+    "run": "Resize & compress",
+    "running": "Resizing…",
+    "done": "Resized — saved as a new document",
+    "quality_floor_warning": "Couldn't fit under the max size without heavy quality loss — try smaller dimensions or a larger max size.",
+    "below_min_warning": "The result compressed well below your minimum size even at full quality.",
+    "failed": "Couldn't resize this image.",
+    "invalid_dimensions": "Enter a width, height, and max size greater than zero."
+  },
   "details": {
     "title": "Details",
     "name": "Name",
