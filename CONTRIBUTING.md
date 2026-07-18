@@ -16,6 +16,7 @@ Welcome to Kagaz! This document explains how to set up your development environm
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Running the App](#running-the-app)
+  - [App Icon](#app-icon)
 - [Code Style & Linting](#code-style--linting)
   - [ESLint Configuration](#eslint-configuration)
   - [Prettier Formatting](#prettier-formatting)
@@ -339,6 +340,31 @@ pnpm lint:fix
 # Format code
 pnpm format
 ```
+
+### **App Icon**
+
+The launcher icon is generated from SVG sources in `apps/kagaz/assets/`
+(`icon-background.svg` + `icon-foreground.svg` for Android's adaptive-icon
+layers, `icon-only.svg` as the flat composite for iOS/legacy Android/PWA)
+via `@capacitor/assets` — a build-time-only devDependency, never shipped in
+the app. Design rationale + color tokens:
+[docs/design-system/design-tokens.md#app-icon](docs/design-system/design-tokens.md#app-icon).
+
+After editing a source SVG, regenerate every density for both platforms:
+
+```bash
+pnpm --filter kagaz exec capacitor-assets generate --android \
+  --iconBackgroundColor '#1e3a5f' --iconBackgroundColorDark '#142842'
+pnpm --filter kagaz exec capacitor-assets generate --ios
+```
+
+This overwrites every `mipmap-*/ic_launcher*.png` under
+`apps/kagaz/android/app/src/main/res/` and
+`ios/App/App/Assets.xcassets/AppIcon.appiconset/`. Rebuild
+(`pnpm --filter kagaz build:capacitor`) and reinstall to see the change on
+a device/emulator — Android caches launcher icons aggressively, so a fresh
+`adb install -r` (not just a hot-reloaded WebView) is required to confirm
+a change visually.
 
 ---
 
