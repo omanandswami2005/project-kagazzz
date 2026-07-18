@@ -33,11 +33,20 @@
  * Import this for its side effect, once, as early as possible, in every realm
  * that may load pdfjs: the main thread (`main.tsx`) and the PDF manipulation
  * worker (`pdf-manipulation.worker.ts`). The install logic is also exported
- * as {@link installPdfjsPolyfills} so tests can invoke it directly, rather
+ * as {@link installPdfjsPolyfills} so tests can invoke it directly rather
  * than relying on `vi.resetModules()` + a dynamic re-import to force the
- * top-level side effect to re-run — that path proved to behave differently
- * under `vitest run --coverage` than a plain run in CI (Node 22; observed
- * nowhere locally), so the tests no longer depend on it.
+ * top-level side effect to re-run — a real improvement (a plain function
+ * call is simpler to reason about than module-cache-reset timing), though it
+ * turned out not to be why CI failed here: that was `Uint8Array.prototype.
+ * toBase64`/`fromBase64` genuinely missing natively on CI's Node 22 (this
+ * API needs V8 14+, which only ships from Node 25 — nodejs/node#59285) combined
+ * with a jsdom-only quirk where `TextEncoder().encode()` can return a
+ * Uint8Array from a different realm than the bare `Uint8Array` global this
+ * file patches — invisible on any Node new enough to have real native
+ * support in *both* realms (masking the mismatch), fatal once neither does.
+ * Fixed in the test itself (wrap the TextEncoder result in `new
+ * Uint8Array(...)`); a real WebView has only one realm, so this never
+ * affects production.
  */
 
 /**

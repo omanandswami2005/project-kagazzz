@@ -93,7 +93,15 @@ describe('Uint8Array hex/base64 polyfills', () => {
 
     installPdfjsPolyfills();
 
-    const bytes = new TextEncoder().encode('Kagaz PDF test');
+    // `new Uint8Array(...)`, not `new TextEncoder().encode(...)`: jsdom's
+    // TextEncoder can return a Uint8Array from a different realm than the
+    // one just patched above (its `constructor`/prototype chain differ from
+    // the bare `Uint8Array` global) — invisible whenever the *other* realm
+    // also has real native toBase64 (true on newer Node locally), but fatal
+    // once neither realm does (CI's Node 22 — see the file-level doc
+    // comment). Wrapping in a fresh same-realm Uint8Array sidesteps it; a
+    // real WebView has only one realm, so this is a test-only concern.
+    const bytes = new Uint8Array(new TextEncoder().encode('Kagaz PDF test'));
     const b64 = bytes.toBase64();
     expect(Array.from(Uint8Array.fromBase64(b64))).toEqual(Array.from(bytes));
 
