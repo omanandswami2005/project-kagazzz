@@ -400,3 +400,48 @@ button.kg-tag {
   color: var(--text-secondary);
   min-width: 3ch;
 }
+
+/* ── Select ──────────────────────────────────────────────────────── */
+/* A native <select> overlaid on a styled trigger — see Select.tsx's doc
+   comment for why this avoids the popover-viewport-overflow bug class. */
+.kg-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  /* Lets this shrink below its content width when it's itself a flex item
+     in a cramped row (flex items default to min-width:auto) — otherwise
+     .kg-select__value's ellipsis truncation below never gets room to apply
+     and a long option label pushes the whole row wider instead. */
+  min-width: 0;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.kg-select--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.kg-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+.kg-select__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+.kg-select__native:disabled {
+  cursor: not-allowed;
+}

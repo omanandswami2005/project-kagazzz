@@ -6,6 +6,12 @@
   padding-bottom: calc(var(--space-20) + env(safe-area-inset-bottom));
   font-family: var(--font-primary);
   color: var(--text-primary);
+  /* Safety net: a flex row further down (.kg-vault__controls) can only
+     overflow horizontally if one of its children refuses to shrink below
+     its content width (the classic flex min-width:auto default) — fixed at
+     the source below, but this stops it from ever taking the whole page
+     with it again if a future control reintroduces the same mistake. */
+  overflow-x: hidden;
 }
 
 .kg-vault__db-error {
@@ -384,6 +390,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-block: var(--space-2);
 }
@@ -427,11 +434,11 @@
   justify-content: flex-end;
   gap: var(--space-2);
   margin-block: var(--space-3);
-}
-
-.kg-vault__sort-select {
-  max-width: 60%;
-  color: var(--text-primary);
+  /* Flex items default to min-width:auto (refuse to shrink below content
+     width) — this is what let a long sort-key label push the row (and the
+     page) past the viewport. Allowing it to shrink is what lets
+     .kg-select__value's text-overflow:ellipsis actually take effect. */
+  min-width: 0;
 }
 
 .kg-vault__list {

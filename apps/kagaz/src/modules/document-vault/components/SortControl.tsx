@@ -2,11 +2,18 @@
  * Sort control (02-document-vault-module.md §Sort Options): pick a sort
  * key and flip direction. Drives the vault store; the list re-orders
  * client-side (F-34).
+ *
+ * Uses `@kagaz/ui`'s `Select` (a native `<select>` under a styled trigger),
+ * not Ionic's `IonSelect` — its `interface="popover"` could render wider
+ * than the viewport for longer labels (e.g. "Recently opened") with nothing
+ * to contain it, pushing this whole control (and the row it sits in)
+ * outside the screen horizontally. `Select`'s options are drawn by the OS
+ * shell, not app-managed CSS, so this can't happen structurally. First
+ * component swapped for the G1-4 Ionic-overlay refactor.
  */
-import { IonSelect, IonSelectOption } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
-import { Button, Icon } from '@kagaz/ui';
+import { Button, Icon, Select } from '@kagaz/ui';
 import { useVaultStore } from '../store/vault.store';
 import {
   SORT_KEYS,
@@ -24,21 +31,17 @@ export function SortControl(): ReactNode {
 
   return (
     <div className="kg-vault__sort" data-agent-id="vault.home.sort">
-      <IonSelect
-        className="kg-vault__sort-select"
+      <Select
         value={sortBy}
-        interface="popover"
+        options={SORT_KEYS.map((key) => ({
+          value: key,
+          label: t(SORT_KEY_LABELS[key]),
+        }))}
+        onChange={(value) => setSortBy(value as SortKey)}
         aria-label={t('sort.label')}
-        data-agent-id="vault.home.sort-key"
-        data-agent-action="vault.setSortBy"
-        onIonChange={(e) => setSortBy(e.detail.value as SortKey)}
-      >
-        {SORT_KEYS.map((key) => (
-          <IonSelectOption key={key} value={key}>
-            {t(SORT_KEY_LABELS[key])}
-          </IonSelectOption>
-        ))}
-      </IonSelect>
+        agentId="vault.home.sort-key"
+        agentAction="vault.setSortBy"
+      />
       <Button
         variant="ghost"
         size="sm"
