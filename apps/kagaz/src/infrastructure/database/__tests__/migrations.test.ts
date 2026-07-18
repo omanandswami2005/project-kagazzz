@@ -4,12 +4,13 @@ import { initialSchema } from '../migrations/001-initial-schema';
 import { addFts } from '../migrations/002-add-fts';
 import { addLogging } from '../migrations/003-add-logging';
 import { addLastAccessed } from '../migrations/004-add-last-accessed';
+import { addQuickReference } from '../migrations/005-add-quick-reference';
 import { migrations } from '../migrations';
 
 describe('migration registry', () => {
   it('contains all migrations in ascending, gapless version order', () => {
     const versions = migrations.map((m) => m.version);
-    expect(versions).toEqual([1, 2, 3, 4]);
+    expect(versions).toEqual([1, 2, 3, 4, 5]);
   });
 });
 
@@ -28,6 +29,33 @@ describe('004-add-last-accessed', () => {
     await addLastAccessed.down(db);
     expect(db.allSql).toContain('DROP INDEX IF EXISTS idx_documents_last_accessed');
     expect(db.allSql).toContain('DROP COLUMN last_accessed_at');
+  });
+});
+
+describe('005-add-quick-reference', () => {
+  it('creates the entries + tags-junction tables and their indexes', async () => {
+    const db = new FakeDb();
+    await addQuickReference.up(db);
+    expect(db.allSql).toContain(
+      'CREATE TABLE IF NOT EXISTS quick_reference_entries'
+    );
+    expect(db.allSql).toContain(
+      'CREATE TABLE IF NOT EXISTS quick_reference_tags'
+    );
+    expect(db.allSql).toContain('idx_quick_reference_linked_document');
+    expect(db.allSql).toContain('idx_quick_reference_tags_tag_id');
+    // No label_type/value_type column — see 10-security-architecture.md §3.6.
+    expect(db.allSql).not.toContain('label_type');
+    expect(db.allSql).not.toContain('value_type');
+  });
+
+  it('down drops both tables', async () => {
+    const db = new FakeDb();
+    await addQuickReference.down(db);
+    expect(db.allSql).toContain('DROP TABLE IF EXISTS quick_reference_tags');
+    expect(db.allSql).toContain(
+      'DROP TABLE IF EXISTS quick_reference_entries'
+    );
   });
 });
 
