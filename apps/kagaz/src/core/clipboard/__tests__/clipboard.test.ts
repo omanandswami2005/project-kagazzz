@@ -41,3 +41,52 @@ describe('copyToClipboard (F-68)', () => {
     expect(await copyToClipboard('nowhere')).toBe(false);
   });
 });
+
+describe('copyToClipboard autoClearMs (F-84)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it('clears the clipboard after the requested delay', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+
+    await copyToClipboard('secret-value', { autoClearMs: 30_000 });
+    expect(writeText).toHaveBeenCalledWith('secret-value');
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(writeText).toHaveBeenLastCalledWith('');
+  });
+
+  it('a newer copy cancels a pending clear from an older one', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+
+    await copyToClipboard('first', { autoClearMs: 30_000 });
+    await vi.advanceTimersByTimeAsync(10_000);
+    await copyToClipboard('second', { autoClearMs: 30_000 });
+
+    // The first timer would have fired at 30s from its own start (t=30s);
+    // advance past that point without the second's own clear (t=40s) firing yet.
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(writeText).not.toHaveBeenLastCalledWith('');
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(writeText).toHaveBeenLastCalledWith('');
+  });
+
+  it('does not schedule a clear when autoClearMs is omitted', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+
+    await copyToClipboard('no-clear');
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(writeText).toHaveBeenCalledTimes(1);
+    expect(writeText).toHaveBeenCalledWith('no-clear');
+  });
+});

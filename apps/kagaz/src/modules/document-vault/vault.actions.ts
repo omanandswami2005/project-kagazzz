@@ -44,6 +44,8 @@ export interface VaultActionContext {
     documentId: string,
     tagName: string
   ) => Promise<{ tagId: string }>;
+  /** Navigates to the Quick Reference screen (F-84). */
+  openQuickReference: () => void;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files', 'scanner']);
@@ -155,6 +157,23 @@ export const vaultActions = {
     requiresConfirmation: false,
     handler: (_args: unknown, ctx: VaultActionContext): Promise<{ count: number }> =>
       ctx.bulkFavorite(),
+  }),
+
+  openQuickReference: defineAction({
+    id: 'vault.openQuickReference',
+    summary:
+      'Open Quick Reference, the personal saved-values screen (PAN, mobile, bank account, etc.).',
+    voice: [
+      'open quick reference',
+      'show my saved numbers',
+      'क्विक रेफरेंस खोलो',
+    ],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.openQuickReference();
+      return Promise.resolve({ ok: true });
+    },
   }),
 
   openFilters: defineAction({

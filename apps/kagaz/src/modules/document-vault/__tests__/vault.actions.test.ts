@@ -18,6 +18,7 @@ function makeCtx(): VaultActionContext {
     bulkFavorite: vi.fn(() => Promise.resolve({ count: 2 })),
     manageTags: vi.fn(),
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
+    openQuickReference: vi.fn(),
   };
 }
 

@@ -1,0 +1,135 @@
+/* F-84 Quick Reference. */
+.kg-quickref {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.kg-quickref__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: var(--space-8);
+}
+
+.kg-quickref__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-12);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.kg-quickref__empty-message {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+}
+
+.kg-quickref__empty-hint {
+  margin: 0;
+  max-width: 30ch;
+  font-size: var(--text-sm);
+}
+
+.kg-quickref__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-quickref__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.kg-quickref__row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex: 1;
+  /* Lets this shrink below its content width in the flex row — see
+     SortControl/vault.css's identical fix for the same min-width:auto trap. */
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: var(--font-primary);
+  cursor: pointer;
+}
+
+.kg-quickref__label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
+}
+
+.kg-quickref__value {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.kg-quickref__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+}
+
+.kg-quickref__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+/* ── Create/edit sheet ───────────────────────────────────────────── */
+.kg-quickref-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.kg-quickref-edit__templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kg-quickref-edit__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.kg-quickref-edit__footer {
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}

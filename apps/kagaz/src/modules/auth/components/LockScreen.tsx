@@ -10,14 +10,41 @@ import { Button, Icon } from '@kagaz/ui';
 import type { UnlockResult } from '../services/biometric.service';
 import './lock.css';
 
+/** `common:lock.*` keys this component's *Key props accept. */
+type LockCopyKey =
+  | 'lock.title'
+  | 'lock.subtitle'
+  | 'lock.reason'
+  | 'lock.quick_reference_title'
+  | 'lock.quick_reference_subtitle'
+  | 'lock.quick_reference_reason';
+
 /** Props for {@link LockScreen}. */
 export interface LockScreenProps {
   /** Runs the biometric prompt; resolves the outcome. */
   onUnlock: (reason: string) => Promise<UnlockResult>;
+  /** i18n key for the title (default: the app-level lock's own copy). */
+  titleKey?: LockCopyKey;
+  /** i18n key for the subtitle. */
+  subtitleKey?: LockCopyKey;
+  /** i18n key passed to the biometric prompt as its `reason` string. */
+  reasonKey?: LockCopyKey;
+  /** Prefix for this instance's `data-agent-id`s (default: `app.lock`). */
+  agentIdPrefix?: string;
 }
 
-/** The locked-app gate. */
-export function LockScreen({ onUnlock }: LockScreenProps): ReactNode {
+/** A biometric gate: prompts on mount, offers a retry. Reused by F-16's
+ * app-level lock (default copy) and F-84's Quick Reference screen gate
+ * (its own copy, via the *Key props) — same component, same [SEC] posture:
+ * the unlock button carries no `agentAction`, so it can never be bypassed
+ * by voice/AI. */
+export function LockScreen({
+  onUnlock,
+  titleKey = 'lock.title',
+  subtitleKey = 'lock.subtitle',
+  reasonKey = 'lock.reason',
+  agentIdPrefix = 'app.lock',
+}: LockScreenProps): ReactNode {
   const { t } = useTranslation('common');
   const [status, setStatus] = useState<'idle' | 'authenticating' | 'failed'>(
     'idle'
@@ -25,10 +52,10 @@ export function LockScreen({ onUnlock }: LockScreenProps): ReactNode {
 
   const unlock = useCallback((): void => {
     setStatus('authenticating');
-    void onUnlock(t('lock.reason')).then((result) => {
+    void onUnlock(t(reasonKey)).then((result) => {
       setStatus(result === 'success' ? 'idle' : 'failed');
     });
-  }, [onUnlock, t]);
+  }, [onUnlock, reasonKey, t]);
 
   // Prompt automatically when the lock screen appears. Setting the
   // 'authenticating' status synchronously here is intentional (the prompt
@@ -44,17 +71,21 @@ export function LockScreen({ onUnlock }: LockScreenProps): ReactNode {
       className="kg-lock"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="lock-title"
-      data-agent-id="app.lock-screen"
+      aria-labelledby={`${agentIdPrefix}-title`}
+      data-agent-id={`${agentIdPrefix}-screen`}
       data-agent-state={status}
     >
       <Icon name="Lock" size={48} aria-hidden />
-      <h1 id="lock-title" className="kg-lock__title">
-        {t('lock.title')}
+      <h1 id={`${agentIdPrefix}-title`} className="kg-lock__title">
+        {t(titleKey)}
       </h1>
-      <p className="kg-lock__subtitle">{t('lock.subtitle')}</p>
+      <p className="kg-lock__subtitle">{t(subtitleKey)}</p>
       {status === 'failed' && (
-        <p className="kg-lock__error" role="alert" data-agent-id="app.lock.error">
+        <p
+          className="kg-lock__error"
+          role="alert"
+          data-agent-id={`${agentIdPrefix}.error`}
+        >
           {t('lock.failed')}
         </p>
       )}
@@ -63,7 +94,7 @@ export function LockScreen({ onUnlock }: LockScreenProps): ReactNode {
         size="lg"
         onClick={unlock}
         disabled={status === 'authenticating'}
-        agentId="app.lock.unlock"
+        agentId={`${agentIdPrefix}.unlock`}
       >
         {t('lock.unlock')}
       </Button>

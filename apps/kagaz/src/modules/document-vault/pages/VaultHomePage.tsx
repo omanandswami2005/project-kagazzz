@@ -294,6 +294,16 @@ export function VaultHomePage(): ReactNode {
               variant="ghost"
               size="sm"
               iconOnly
+              icon={<Icon name="KeyRound" size={24} />}
+              aria-label={t('quick_reference.title')}
+              onClick={() => router.push('/quick-reference', 'forward', 'push')}
+              agentId="vault.home.quick-reference"
+              agentAction="vault.openQuickReference"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
               icon={<Icon name="Settings" size={24} />}
               aria-label={t('settings')}
               onClick={() => router.push('/settings', 'forward', 'push')}

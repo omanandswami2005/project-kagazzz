@@ -10,11 +10,25 @@
  * logged here — callers pass it straight to the platform clipboard.
  */
 
-/** Copies `text` to the system clipboard. Returns whether it succeeded. */
-export async function copyToClipboard(text: string): Promise<boolean> {
-  if (!text) {
-    return false;
-  }
+/** Options for {@link copyToClipboard}. */
+export interface CopyToClipboardOptions {
+  /**
+   * F-84: clear the clipboard this many ms after a successful copy — bounds
+   * how long a sensitive value sits somewhere a keyboard app's clipboard
+   * history could surface it. Best-effort: this writes an empty string
+   * (there's no clipboard read-back — reading is permission-gated and often
+   * blocked once the app loses focus, exactly when a background timer needs
+   * it most), guarded by a generation counter so a newer copy always
+   * supersedes a pending clear from an older one. Known trade-off (shared by
+   * every password-manager-style clipboard-clear feature): if the user
+   * copies something else from a *different* app in that window, this timer
+   * still clobbers it.
+   */
+  autoClearMs?: number;
+}
+
+/** Writes `text` to the clipboard via the best available API, no side effects. */
+async function writeToClipboard(text: string): Promise<boolean> {
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
@@ -24,6 +38,33 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     }
   }
   return copyViaTextarea(text);
+}
+
+/** Monotonic token — a newer copy invalidates any pending auto-clear. */
+let clearGeneration = 0;
+
+/** Copies `text` to the system clipboard. Returns whether it succeeded. */
+export async function copyToClipboard(
+  text: string,
+  options?: CopyToClipboardOptions
+): Promise<boolean> {
+  if (!text) {
+    return false;
+  }
+  const ok = await writeToClipboard(text);
+  if (!ok) {
+    return false;
+  }
+  clearGeneration += 1;
+  if (options?.autoClearMs) {
+    const myGeneration = clearGeneration;
+    setTimeout(() => {
+      if (clearGeneration === myGeneration) {
+        void writeToClipboard('');
+      }
+    }, options.autoClearMs);
+  }
+  return true;
 }
 
 /** Legacy fallback: select a hidden textarea and run the copy command. */

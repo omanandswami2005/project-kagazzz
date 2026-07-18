@@ -42,7 +42,10 @@
     "subtitle": "जारी रखने के लिए अपनी फ़िंगरप्रिंट, चेहरे या डिवाइस PIN से अनलॉक करें।",
     "unlock": "अनलॉक करें",
     "failed": "सत्यापन नहीं हो सका। पुनः प्रयास करें।",
-    "reason": "Kagaz अनलॉक करें"
+    "reason": "Kagaz अनलॉक करें",
+    "quick_reference_title": "Quick Reference लॉक है",
+    "quick_reference_subtitle": "अपने सहेजे गए मान देखने के लिए फ़िंगरप्रिंट, चेहरे या डिवाइस PIN से अनलॉक करें।",
+    "quick_reference_reason": "Quick Reference अनलॉक करें"
   },
   "root_warning": {
     "message": "यह डिवाइस रूटेड लगता है — आपके दस्तावेज़ कम सुरक्षित हो सकते हैं।",
