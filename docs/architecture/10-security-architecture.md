@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-06-10
+> **Last Updated:** 2026-07-18
 
 ---
 
@@ -16,6 +16,7 @@
   - [3.3 File System Security](#33-file-system-security)
   - [3.4 Secure Key Storage](#34-secure-key-storage)
   - [3.5 Offline-Only Guarantee](#35-offline-only-guarantee)
+  - [3.6 Quick Reference Access Control (F-84)](#36-quick-reference-access-control-f-84)
 - [4. Sharing Security (V2)](#4-sharing-security-v2)
   - [4.1 End-to-End Encryption](#41-end-to-end-encryption)
   - [4.2 Access Controls](#42-access-controls)
@@ -255,6 +256,44 @@ In V1, Kagaz enforces a strict **no-network** policy:
 > [!IMPORTANT]
 > **Network-permission reality (corrected 2026-07-11).** An earlier revision claimed the app ships with **no `INTERNET` permission**. Building and inspecting the **release** APK (`aapt dump permissions`) disproved that: the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)) depends on `play-services-mlkit-document-scanner`, whose transitive Play-Services libraries declare `INTERNET` + `ACCESS_NETWORK_STATE`, and the manifest merger folds them into our app manifest. The **plugin's own** manifest declares no permissions (that part of the ADR-018 verification was right) — but the **merged** result carries them.
 > **Accepted, not stripped** (decision 2026-07-11): the permission is real but the app never uses it — it makes no HTTP calls (F-19 audit), ships no analytics/CDN, and the CSP blocks WebView egress. It exists solely so Play Services can fetch the scanner model once. Stripping it via `tools:node="remove"` was considered and rejected (risk to the Play-Services download path). **Consequence:** the "zero network permission, airplane-mode-provable" claim is downgraded to **"the app makes no network calls of its own; the `INTERNET` permission is present only for the Play-Services scanner model download."** This must be reflected in the Play **data-safety** declaration (G1-6) and the privacy policy. On devices without Play Services, scanning is unavailable; everything else is 100% offline.
+
+---
+
+### 3.6 Quick Reference Access Control (F-84)
+
+Quick Reference ([02-document-vault-module.md](02-document-vault-module.md#quick-reference-f-84))
+stores user-labelled values — potentially government ID numbers, bank
+details, or credentials-adjacent text — so it gets its own, deliberately
+narrow, threat-model note beyond the general document posture:
+
+| Control | Behavior |
+|---|---|
+| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. |
+| **Mask by default** | Values render as `•••• <last 4 chars>` until explicitly revealed per-entry; reveal state is not persisted (resets on screen re-entry). |
+| **No structured PII typing** | The schema has no `label_type`/`value_type` column (§3.6.1 below) — the app never knows or asserts "this value is an Aadhaar number." |
+| **Clipboard auto-clear** | Every copy action clears the clipboard ~30s later if it still holds exactly what was copied (`core/clipboard`'s new `autoClearMs` option) — bounds how long a sensitive value sits somewhere a keyboard app's clipboard history could surface it. |
+| **No `agentAction` on unlock** | Same rule as F-16's own lock/unlock — the biometric prompt itself is never in the Action Registry, so a voice command or AI tool call cannot open the screen; only the already-unlocked copy actions are agent-actionable, mirroring F-68's posture. |
+| **Redaction** | `label`/`value` are added to the `redactRecord` denylist ([14-observability-logging.md](14-observability-logging.md)) — never appear in the pino diagnostic stream, same as OCR text and document content. |
+| **Backup** | Included in F-31's encrypted export via an explicit manifest hook (§10 of [09-database-design.md](09-database-design.md#10-backup--restore-strategy) — not automatic just because the table exists). |
+
+#### 3.6.1 Why no Aadhaar-specific schema (UIDAI alignment)
+
+[docs/indian-compliance-checklist.md](../indian-compliance-checklist.md) §4
+directs avoiding on-device storage of Aadhaar numbers "unless explicitly
+authorized... and for limited lawful purposes." Kagaz already stores Aadhaar
+document images and their OCR'd text (the core vault use case) — Quick
+Reference's incremental risk is narrower but real: a **labelled, structured**
+field is easier to bulk-extract from a compromised device than the same
+digits inside a photo or an OCR text blob. The mitigation is architectural,
+not a UIDAI carve-out: `label` is opaque user-typed text everywhere in the
+schema and code — there is no code path, migration, or query that filters,
+validates, or specially handles a value because its label looks like
+"Aadhaar." From the app's own point of view, "PAN No: ABCDE1234F" and
+"Wi-Fi password: correcthorsebatterystaple" are the identical data shape.
+This keeps Quick Reference in the same category as a generic encrypted notes
+feature (broadly accepted, on-device, user's own data, never transmitted)
+rather than a purpose-built "government ID database" (the pattern UIDAI
+guidance actually targets).
 
 ---
 
@@ -670,6 +709,12 @@ graph TB
 | 11 | Encrypted backup export | ✅ F-31 (AES-256-GCM `KGBK` container, distinct `backup_encryption_key`) | P1 |
 | 12 | Full data erasure | ✅ Settings → Delete all data (`DeleteAllDataDialog` + wipe) | P1 |
 | 13 | CSP headers blocking outbound | ✅ `index.html` strict CSP: `default-src 'self'; connect-src 'self'; object-src 'none'; form-action 'none'` (§3.5) | P0 |
+
+> **Addendum (2026-07-18, not part of the 2026-07-14 audit above — re-run
+> that audit to fold this in once F-84 ships):** Quick Reference (F-84) adds
+> its own access-control surface — screen-level biometric gate, mask-by-default,
+> clipboard auto-clear, no structured PII schema. Full detail in §3.6. Treat
+> as P0 (same tier as per-document lock, item 4) once implemented.
 
 ### V2 — Sharing Security
 

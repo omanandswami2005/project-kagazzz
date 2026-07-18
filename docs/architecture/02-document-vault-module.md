@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-17
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-18
 
 ---
 
@@ -20,6 +20,7 @@
 - [Document Preview](#document-preview)
 - [Document Details View](#document-details-view)
 - [Document Actions](#document-actions)
+- [Quick Reference (F-84)](#quick-reference-f-84)
 - [Bulk Operations](#bulk-operations)
 - [Multilingual Support](#multilingual-support)
 - [Accessibility Features](#accessibility-features)
@@ -1117,6 +1118,7 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Copy text** | F-68 | `document.ocrText` has non-whitespace content | `core/clipboard.copyToClipboard` |
 | **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
 | **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
+| **Resize & compress** | F-85 | same gate as Convert format (`canConvertImageFormat`) | opens a dimensions + size-target sheet → `useResizeCompress.run` |
 | Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
 | Delete | — | always | soft-delete → Trash (recoverable) |
 
@@ -1195,6 +1197,29 @@ Brightness/contrast are parameterized filters the engine already exposes but
 aren't offered in this action-sheet UI — a numeric adjustment needs a slider
 surface, not a pick-one list; a follow-up, not scope creep on this pass.
 
+### Resize & Compress for Forms (F-85)
+
+`useResizeCompress.ts` wraps `image-engine/services/resize-compress.service.ts`
+(pure Canvas — see [04-image-engine-module.md](04-image-engine-module.md) §9
+for the engine spec) with the same non-destructive save pattern as Convert
+format/Enhance photo — same `canConvertImageFormat` gate (any Canvas-decodable
+image), same `ingestFiles` save path, output named
+`<original>_resized.<extension>`. Choosing **Resize & compress** opens a form
+sheet: target width × height (with an aspect-ratio-lock toggle so changing one
+dimension proportionally updates the other), a handful of preset dimension
+chips for common Indian government-form specs (passport photo, PAN photo,
+signature), and a target file-size range (min–max KB, or "as small as
+possible"). Running it resizes first (to the exact requested dimensions —
+stretching, not just fitting within a box, since government forms often
+require an exact non-proportional size), then iteratively re-encodes at
+decreasing JPEG quality until the result lands inside the size range or hits a
+quality floor (surfaced as a warning rather than silently producing a
+blown-out image). See §9.3 of the image-engine doc for the full algorithm.
+
+**[SEC]** pure on-device Canvas transform of an already-owned document — no
+new data collected, no network, output stored the same way as any other
+document.
+
 **Bug this pass found and fixed**: `document.name` (the DB-stored value)
 never carries a file extension — `upload.service.ts`'s `splitFileName`
 strips it into `fileType` at save time. The first version of this hook tried
@@ -1228,6 +1253,119 @@ already fully visible in the panel above it.
 
 **[SEC]** same posture as Copy text — copies straight to the clipboard, never
 logged.
+
+Each detected-number chip also carries a secondary **Save to Quick Reference**
+action (F-84, see the section below) — pre-fills a new Quick Reference entry's
+value with the tapped number and links it to the source document, so the
+common "I want to keep grabbing this one number later without reopening the
+document" case is one tap instead of a manual copy-paste round trip.
+
+---
+
+## Quick Reference (F-84)
+
+A personal key-value vault for the numbers/text users copy out of their
+documents often — Aadhaar/PAN/mobile/bank account/IFSC, social handles,
+emails, or anything else the user names. Reached from a **Quick Reference**
+button in the vault home header (same pattern as the existing **Tools**
+button that opens PDF Tools — a header entry, not a bottom tab; see
+`app/routes/index.tsx`'s 3-tab bar, which this deliberately does not extend).
+
+### Why a separate feature from Tags/Details
+
+Tags (F-10) organize *documents*; Quick Reference stores *values extracted
+from* documents (or typed standalone) for fast retrieval independent of
+opening the source document again. A value here is not document content
+duplicated for its own sake — it is the specific fragment (a number, an ID, a
+URL) the user actually needs to paste elsewhere, e.g. filling a government
+form that asks for "PAN" without wanting to hunt through a scanned PDF for it.
+
+### Data model
+
+```typescript
+interface QuickReferenceEntry {
+  id: string;
+  label: string;              // fully user-typed; the app never assigns
+                               // semantic meaning to a label (see Security)
+  value: string;               // text value; masked by default in the UI
+  linkedDocumentId: string | null; // provenance / "Copy image" source
+  tagIds: string[];            // reuses the F-10 tag system, not a new one
+  createdAt: string;           // ISO 8601
+  updatedAt: string;
+}
+```
+
+One new table, `quick_reference_entries` (migration 005) — see
+[09-database-design.md](09-database-design.md) §4.12 for the DDL, and §10 for
+how it folds into the F-31 encrypted backup.
+
+### Template suggestions (not a schema)
+
+The "new entry" sheet offers a row of tappable label suggestions — Aadhaar
+No, PAN No, Mobile Number, Bank A/C No, IFSC Code, Email, Voter ID, Driving
+Licence No, Passport No, UAN — the same empty-state-CTA interaction F-30's
+folder templates established. Tapping one only pre-fills the **label** text
+field; the user still types the value. **This is presentation-layer
+convenience only** — there is no `label_type` column, no per-label
+validation, and no code path that treats an "Aadhaar No"-labelled entry any
+differently from a custom one the user typed themselves. See
+[10-security-architecture.md](10-security-architecture.md) §3.6 for why this
+distinction matters.
+
+### List, mask, and reveal
+
+Entries render label + a masked value (`•••• ` + last 4 characters, tap to
+reveal — the standard secure-notes pattern) grouped/filterable by tag (reuses
+F-10's `TagSelector`/filter UI, no new tag picker built). The whole
+**Quick Reference** screen requires a biometric prompt to open (reuses F-16's
+`biometric.service`, same call the per-document lock uses) — this data is
+denser and more sensitive than a single locked document, so it gets the
+stronger of the two existing lock postures rather than a new third one.
+
+### Copy actions
+
+| Action | Behavior |
+|---|---|
+| **Copy value** | Copies the raw value via `core/clipboard.copyToClipboard` (F-68's helper). |
+| **Copy with label** | Copies `"<label>: <value>"`. |
+| **Copy image** | Only shown when `linkedDocumentId` resolves to an image document — copies the image bytes to the OS clipboard (`ClipData`/`ClipboardItem` with an image MIME type; supported by Android's clipboard and consumable by Gboard's clipboard picker like any other image copy). |
+
+All three **auto-clear the clipboard ~30s after copy** — a new
+`core/clipboard.copyToClipboard` option (`autoClearMs`), which re-reads the
+clipboard before clearing and only clears if it still holds exactly what was
+copied (so a second, unrelated copy in that window is never clobbered). This
+is new behavior beyond F-68/F-83's plain copy — those stay opt-in per call
+site, existing callers are unaffected.
+
+### Multi-select & bulk copy
+
+Long-press an entry to enter selection mode — the exact F-25 pattern
+(`useBulkActions`-style selection store, a floating `BulkActionBar`-shaped
+toolbar) reused rather than a new one invented. Bulk actions: **Copy** (all
+selected values, one per line), **Copy with labels** (`Label: Value` per
+line), **Delete**, **Add tag**.
+
+### Linking to a document
+
+An entry can be created two ways: standalone (from the Quick Reference
+screen's own **+** button) or linked (from a document's Details sheet or the
+viewer's Detected-numbers chips — see above). A linked entry shows a small
+provenance chip ("from <document name>") that opens the source document on
+tap; deleting the source document does not delete the entry (`linkedDocumentId`
+is nulled, `ON DELETE SET NULL` — the value the user saved is theirs to keep
+independent of the document it came from).
+
+### Agent contract
+
+New page trio (`QuickReferencePage.tsx` / `.agent.ts` / `.skill.md`) per
+[agent-interface.md](../design-system/agent-interface.md). Actions:
+`quickref.create`, `quickref.edit`, `quickref.delete`, `quickref.copyValue`,
+`quickref.copyWithLabel`, `quickref.copyImage`, `quickref.reveal`,
+`quickref.bulkCopy`, `quickref.bulkCopyWithLabels`, `quickref.bulkDelete`.
+Copy actions keep an `agentAction` (voice/AI can trigger them, same posture as
+F-68's Copy text — user-initiated, non-destructive, never logged); per F-16's
+own precedent the **biometric unlock prompt itself has no `agentAction`** so
+an AI tool call cannot bypass the screen's lock.
 
 ---
 

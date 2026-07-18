@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/image-engine`
 > **Version**: 1.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-12
+> **Last Updated**: 2026-07-18
 
 > [!IMPORTANT]
 > **Superseded in part by [ADR-016](08-tech-stack-decisions.md#adr-016-image-engine--document-scanner-offline-permissive-only).**
@@ -25,7 +25,12 @@
 > unit-tested since 2026-07-10 with no UI at all until then. F-2's document edge detection (listed under §14 as "V2") ships
 > in **V1** via **Google ML Kit Document Scanner** (native, Play Services) —
 > see [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)
-> (which supersedes ADR-016's earlier jscanify + OpenCV.js choice).
+> (which supersedes ADR-016's earlier jscanify + OpenCV.js choice). **F-85**
+> (Resize & Compress for Forms, 2026-07-18) follows the same
+> zero-new-dependency precedent — `browser-image-compression` and `pica`
+> named in §2 were never adopted; F-85's resize/compress is pure Canvas
+> (§9.3), and the dangling `browser-image-compression` dependency (installed,
+> license-audited, never imported) is removed as part of this item.
 
 ---
 
@@ -491,9 +496,15 @@ async function convertHeicToJpeg(heicBlob: Blob): Promise<Blob> {
 | **High Quality** | ≤ 5 MB | 0.92 | When quality matters |
 | **Original** | No limit | 1.0 | Uncompressed archival |
 
-### 9.2 Smart Compression
+### 9.2 Smart Compression (original design — superseded for F-85 below)
 
-The engine implements smart compression that adapts based on image content:
+The original design called for adapting compression via `resize()`/`compress()`
+against the `pica`/`browser-image-compression` libraries in §2's stack.
+**Neither shipped** — F-8/F-29 built the engine as pure Canvas, zero runtime
+deps (see §2's actual status vs. plan), and §9.3 below follows that same
+precedent for F-85 rather than introducing either library. This subsection's
+`smartCompress` sketch is kept for the general "shrink an oversized image"
+idea; §9.3 is the concrete, real feature spec.
 
 ```typescript
 async function smartCompress(image: Blob, targetSizeMB: number): Promise<Blob> {
@@ -518,6 +529,74 @@ async function smartCompress(image: Blob, targetSizeMB: number): Promise<Blob> {
   });
 }
 ```
+
+### 9.3 Resize & Compress for Forms (F-85) — as shipped
+
+The concrete, real V1 feature: an item-menu action (see
+[02-document-vault-module.md](02-document-vault-module.md#resize--compress-for-forms-f-85))
+that resizes an image to **exact** target dimensions and iteratively
+compresses it into a **target file-size range** — the two-constraint shape
+Indian government portals (SSC/UPSC/passport/university photo & signature
+uploads) commonly specify, e.g. "200×230px, 20–50 KB."
+
+**Why exact dimensions, not "fit within a box":** `browser-image-compression`'s
+`maxWidthOrHeight` (§9.2's original plan) only constrains the *larger*
+dimension proportionally — it cannot hit a specific non-square target like
+`200×230` that most government specs actually want. `resize-compress.service.ts`
+therefore does the resize step itself via Canvas `drawImage`, stretching to
+the exact requested width/height (an explicit UI toggle locks the aspect
+ratio when the user wants proportional scaling instead of stretching).
+
+**Algorithm (pure Canvas, no new dependency):**
+
+```typescript
+interface ResizeCompressTarget {
+  width: number;
+  height: number;
+  lockAspectRatio: boolean;
+  minSizeBytes?: number;   // omit = no floor
+  maxSizeBytes: number;
+}
+
+interface ResizeCompressResult {
+  blob: Blob;
+  width: number;
+  height: number;
+  qualityUsed: number;
+  hitQualityFloor: boolean; // true = couldn't reach the size range without
+                             // unacceptable quality loss; caller should warn
+}
+
+async function resizeAndCompress(
+  image: Blob,
+  target: ResizeCompressTarget
+): Promise<ResizeCompressResult> {
+  // 1. Resize to exact dimensions via a target-size canvas + drawImage
+  //    (stretch, unless lockAspectRatio letterboxes/crops to fit).
+  const resized = await resizeToExact(image, target.width, target.height, target.lockAspectRatio);
+
+  // 2. Binary-search JPEG quality (canvas.toBlob(cb, 'image/jpeg', q)) until
+  //    the encoded size falls within [minSizeBytes, maxSizeBytes]. A pure
+  //    binary search on quality isn't strictly monotonic pixel-for-pixel,
+  //    but is close enough in practice for photo/signature-style inputs;
+  //    the loop is capped (e.g. 8 iterations) and falls back to the closest
+  //    quality tried rather than looping forever.
+  return binarySearchQuality(resized, target);
+}
+```
+
+This is the same "inject the canvas ops, unit-test the dispatch logic without
+jsdom canvas" pattern F-8's `image-engine.service.ts` already established —
+`resizeToExact`/the encode step are injectable, so the search-loop logic
+(convergence, floor detection, iteration cap) is fully unit-testable, and only
+the actual canvas calls need device verification.
+
+**Dead dependency removed:** `browser-image-compression` (`^2.0.2`) has sat
+in `package.json` since this module was originally speced, license-audited,
+but **never imported anywhere in the code**. F-85 is the natural point to
+remove it as part of the item's stale-code sweep — it's not the right tool
+for exact-dimension resizing anyway (see above), and the pure-Canvas
+implementation needs it for nothing.
 
 ---
 

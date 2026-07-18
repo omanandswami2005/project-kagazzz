@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical (logs can leak PII if done wrong)
-> **Last Updated:** 2026-06-10
+> **Last Updated:** 2026-07-18
 
 ---
 
@@ -184,6 +184,7 @@ Enforced centrally via pino `redact` paths **and** a serializer denylist — not
 | Encryption keys, passwords, PINs, share-code secrets | [10](10-security-architecture.md) §3.4 — keys live in secure storage only |
 | Document content, file bytes, OCR text, thumbnails | Same boundary as the AI ([10](10-security-architecture.md) §5.2) |
 | Aadhaar numbers, PAN, biometric data | UIDAI rules — [indian-compliance-checklist.md](../indian-compliance-checklist.md) |
+| Quick Reference labels/values (F-84) | Same PII posture as OCR text/document content — [10](10-security-architecture.md) §3.6. Best practice: never pass them into a log context object at all (log the entry `id` only); the `quickReferenceLabel`/`quickReferenceValue` denylist entries are defense-in-depth, not the primary control — bare `label`/`value` are deliberately **not** denylisted (too generic, would blanket-redact unrelated legitimate fields like a sort label or a settings value elsewhere in the app). |
 | Absolute file paths | Only relative paths ([10](10-security-architecture.md) §3.3) |
 | Full user names / phone / email in diagnostic logs | Diagnostic stream is for *system* behavior; identity belongs only in audit records that require it |
 | AI conversation text | Log `event` + token counts + tool names, never message content |
@@ -194,6 +195,8 @@ export const REDACT_PATHS = [
   'key', '*.key', 'token', '*.token', 'ocrText', '*.ocrText',
   'content', '*.content', 'aadhaar', '*.aadhaar', 'pan', '*.pan',
   'messages', '*.messages', 'filePathAbsolute', '*.filePathAbsolute',
+  'quickReferenceLabel', '*.quickReferenceLabel', // F-84
+  'quickReferenceValue', '*.quickReferenceValue', // F-84
 ];
 ```
 

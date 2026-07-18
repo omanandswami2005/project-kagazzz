@@ -33,6 +33,10 @@ export const REDACT_PATHS = [
   '*.messages',
   'filePathAbsolute',
   '*.filePathAbsolute',
+  'quickReferenceLabel',
+  '*.quickReferenceLabel',
+  'quickReferenceValue',
+  '*.quickReferenceValue',
 ] as const;
 
 /** Replacement value for redacted fields. */

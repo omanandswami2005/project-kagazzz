@@ -1,6 +1,6 @@
 # Data Protection Impact Assessment (DPIA) — Kagaz (Omni Docs)
 
-Last updated: 2026-07-14
+Last updated: 2026-07-18
 
 ## V1-scope review (launch gate G1-9) — 2026-07-14
 
@@ -14,6 +14,7 @@ Last updated: 2026-07-14
 |---|---|---|
 | On-device document storage (images, PDFs) | ✅ | Encrypted at rest (SQLCipher; platform-keystore key). Never transmitted. |
 | On-device OCR text extraction | ✅ | Bundled ML Kit; text stored only in the encrypted DB, never logged/sent. |
+| Quick Reference (F-84) — user-typed key-value entries | ✅ | Added 2026-07-18. Same risk shape as document storage above (on-device, encrypted, never transmitted) plus a narrower, additional mitigation set: screen-level biometric gate, mask-by-default display, clipboard auto-clear, and — the actual design decision that keeps this from reading as a "government ID database" — no structured `label_type`/`value_type` in the schema; see [10-security-architecture.md](../architecture/10-security-architecture.md) §3.6. |
 | Consent logging | ⬜ V2 | No consent events in V1 (no data leaves the device); DPDP consent flows land with cloud/sharing. |
 | DigiLocker import | ⬜ V3 | OAuth authorization; **never store raw Aadhaar numbers/biometrics.** |
 | Cloud backup to servers | ⬜ V2 | Opt-in, E2E-encrypted, **India-region hosting**. |
