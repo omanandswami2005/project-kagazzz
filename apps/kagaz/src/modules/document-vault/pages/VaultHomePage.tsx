@@ -5,7 +5,6 @@
  * arrive with F-9/F-11/F-25.
  */
 import {
-  IonActionSheet,
   IonAlert,
   IonButtons,
   IonContent,
@@ -19,7 +18,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, ProgressBar } from '@kagaz/ui';
+import { ActionSheet, Button, Icon, ProgressBar } from '@kagaz/ui';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { BulkActionBar } from '../components/BulkActionBar';
@@ -512,36 +511,32 @@ export function VaultHomePage(): ReactNode {
         />
         <DocumentDetailsSheet document={detailsDoc} onClose={() => setDetailsDoc(null)} />
 
-        <IonActionSheet
+        <ActionSheet
           isOpen={moreDoc !== null}
           header={moreDoc?.name}
-          data-agent-id="vault.home.item-menu"
+          agentId="vault.home.item-menu"
           onDidDismiss={() => setMoreDoc(null)}
           buttons={[
             {
               text: t('actions.add_tag'),
-              data: { action: 'tags' },
               handler: (): void => {
                 if (moreDoc) setTagDocId(moreDoc.id);
               },
             },
             {
               text: t('folders.move'),
-              data: { action: 'move' },
               handler: (): void => {
                 if (moreDoc) setMoveDocId(moreDoc.id);
               },
             },
             {
               text: t('bulk.select'),
-              data: { action: 'select' },
               handler: (): void => {
                 if (moreDoc) enterSelection(moreDoc.id);
               },
             },
             {
               text: t(moreDoc?.isLocked ? 'actions.unlock' : 'actions.lock'),
-              data: { action: 'lock' },
               handler: (): void => {
                 if (moreDoc) void toggleLock(moreDoc);
               },
@@ -551,14 +546,12 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('intents.open_with'),
-                    data: { action: 'open-with' },
                     handler: (): void => {
                       if (moreDoc) void handleOpenWith(moreDoc);
                     },
                   },
                   {
                     text: t('intents.share'),
-                    data: { action: 'share' },
                     handler: (): void => {
                       if (moreDoc) void handleShareDoc(moreDoc);
                     },
@@ -568,7 +561,6 @@ export function VaultHomePage(): ReactNode {
             // F-67: read-only document details.
             {
               text: t('details.title'),
-              data: { action: 'details' },
               handler: (): void => {
                 if (moreDoc) setDetailsDoc(moreDoc);
               },
@@ -578,7 +570,6 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('copy_text.action'),
-                    data: { action: 'copy-text' },
                     handler: (): void => {
                       if (moreDoc) void handleCopyText(moreDoc);
                     },
@@ -590,7 +581,6 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('convert_format.action'),
-                    data: { action: 'convert-format' },
                     handler: (): void => {
                       if (moreDoc) setConvertDoc(moreDoc);
                     },
@@ -602,7 +592,6 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('enhance.action'),
-                    data: { action: 'enhance' },
                     handler: (): void => {
                       if (moreDoc) setEnhanceDoc(moreDoc);
                     },
@@ -614,7 +603,6 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('actions.extract_text'),
-                    data: { action: 'ocr' },
                     handler: (): void => {
                       if (moreDoc) void handleOcr(moreDoc);
                     },
@@ -625,7 +613,6 @@ export function VaultHomePage(): ReactNode {
             {
               text: t('actions.delete'),
               role: 'destructive',
-              data: { action: 'delete' },
               handler: (): void => {
                 if (moreDoc) {
                   const doc = moreDoc;
@@ -639,16 +626,15 @@ export function VaultHomePage(): ReactNode {
         />
 
         {/* F-8: pick the target format after "Convert format" is chosen above. */}
-        <IonActionSheet
+        <ActionSheet
           isOpen={convertDoc !== null}
           header={t('convert_format.title')}
-          data-agent-id="vault.home.convert-format-sheet"
+          agentId="vault.home.convert-format-sheet"
           onDidDismiss={() => setConvertDoc(null)}
           buttons={[
             ...(convertDoc
               ? conversionTargetsFor(convertDoc).map((target) => ({
                   text: t(`convert_format.to_${target}`),
-                  data: { action: `convert-to-${target}` },
                   handler: (): void => {
                     if (convertDoc) void handleConvertFormat(convertDoc, target);
                   },
@@ -659,16 +645,15 @@ export function VaultHomePage(): ReactNode {
         />
 
         {/* F-29: pick a filter preset after "Enhance photo" is chosen above. */}
-        <IonActionSheet
+        <ActionSheet
           isOpen={enhanceDoc !== null}
           header={t('enhance.title')}
-          data-agent-id="vault.home.enhance-sheet"
+          agentId="vault.home.enhance-sheet"
           onDidDismiss={() => setEnhanceDoc(null)}
           buttons={[
             ...(enhanceDoc
               ? (Object.keys(FILTER_PRESETS) as FilterPreset[]).map((preset) => ({
                   text: t(`enhance.preset_${preset}`),
-                  data: { action: `enhance-${preset}` },
                   handler: (): void => {
                     if (enhanceDoc) void handleApplyFilter(enhanceDoc, preset);
                   },
@@ -679,36 +664,32 @@ export function VaultHomePage(): ReactNode {
         />
 
         {/* F-9: folder options — rename, change color, reorder, delete. */}
-        <IonActionSheet
+        <ActionSheet
           isOpen={moreFolder !== null}
           header={moreFolder?.name}
-          data-agent-id="vault.home.folder-menu"
+          agentId="vault.home.folder-menu"
           onDidDismiss={() => setMoreFolder(null)}
           buttons={[
             {
               text: t('actions.rename'),
-              data: { action: 'rename' },
               handler: (): void => {
                 if (moreFolder) setRenameFolderTarget(moreFolder);
               },
             },
             {
               text: t('folders.change_color'),
-              data: { action: 'change-color' },
               handler: (): void => {
                 if (moreFolder) setColorFolder(moreFolder);
               },
             },
             {
               text: t('folders.move_up'),
-              data: { action: 'move-up' },
               handler: (): void => {
                 if (moreFolder) void reorderFolder(moreFolder.id, -1);
               },
             },
             {
               text: t('folders.move_down'),
-              data: { action: 'move-down' },
               handler: (): void => {
                 if (moreFolder) void reorderFolder(moreFolder.id, 1);
               },
@@ -716,7 +697,6 @@ export function VaultHomePage(): ReactNode {
             {
               text: t('actions.delete'),
               role: 'destructive' as const,
-              data: { action: 'delete' },
               handler: (): void => {
                 if (moreFolder) setDeleteFolderTarget(moreFolder);
               },

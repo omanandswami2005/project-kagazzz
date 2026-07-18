@@ -8,7 +8,6 @@
  * encrypted DB and copied only on explicit user action.
  */
 import {
-  IonActionSheet,
   IonBackButton,
   IonButtons,
   IonContent,
@@ -23,7 +22,7 @@ import {
 import { useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon } from '@kagaz/ui';
+import { ActionSheet, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
@@ -217,10 +216,10 @@ export function DocumentViewerPage(): ReactNode {
           )}
         </main>
 
-        <IonActionSheet
+        <ActionSheet
           isOpen={menuOpen}
           header={document?.name}
-          data-agent-id="vault.viewer.menu"
+          agentId="vault.viewer.menu"
           onDidDismiss={() => setMenuOpen(false)}
           buttons={[
             // F-64/F-65: hand the document to another app (native only).

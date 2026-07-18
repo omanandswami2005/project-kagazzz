@@ -16,3 +16,8 @@ export { Icon, type IconName, type IconProps } from './atoms/Icon';
 export { Spinner, type SpinnerProps } from './atoms/Spinner';
 export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
 export { Select, type SelectProps, type SelectOption } from './atoms/Select';
+export {
+  ActionSheet,
+  type ActionSheetProps,
+  type ActionSheetButton,
+} from './atoms/ActionSheet';

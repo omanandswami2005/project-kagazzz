@@ -3,10 +3,9 @@
  * floating toolbar shown in multi-select mode with the selection count
  * and the batch actions (F-25). Delete asks for confirmation.
  */
-import { IonActionSheet } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@kagaz/ui';
+import { ActionSheet, Icon } from '@kagaz/ui';
 
 /** Props for {@link BulkActionBar}. */
 export interface BulkActionBarProps {
@@ -86,10 +85,10 @@ export function BulkActionBar({
         </button>
       </span>
 
-      <IonActionSheet
+      <ActionSheet
         isOpen={confirmOpen}
         header={t('bulk.delete_confirm', { count })}
-        data-agent-id="vault.home.bulk-delete-confirm"
+        agentId="vault.home.bulk-delete-confirm"
         onDidDismiss={() => setConfirmOpen(false)}
         buttons={[
           {
@@ -103,3 +102,4 @@ export function BulkActionBar({
     </div>
   );
 }
+

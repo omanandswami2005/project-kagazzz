@@ -445,3 +445,83 @@ button.kg-tag {
 .kg-select__native:disabled {
   cursor: not-allowed;
 }
+
+/* ── ActionSheet ─────────────────────────────────────────────────── */
+/* A native <dialog> (showModal) — see ActionSheet.tsx's doc comment for
+   why this replaces IonActionSheet. `<dialog>` renders in the top layer,
+   so position/margin here only shape the panel, not stacking. */
+.kg-action-sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  overscroll-behavior: contain;
+}
+.kg-action-sheet::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.kg-action-sheet[open] {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.kg-action-sheet__panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface-1);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-xl);
+}
+.kg-action-sheet__handle {
+  width: 36px;
+  height: 4px;
+  margin: var(--space-2) auto;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+}
+.kg-action-sheet__header {
+  margin: var(--space-2) var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.kg-action-sheet__buttons {
+  display: flex;
+  flex-direction: column;
+}
+.kg-action-sheet__btn {
+  min-height: var(--target-min);
+  padding: var(--space-3);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--surface-3, var(--surface-2));
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  text-align: center;
+  cursor: pointer;
+}
+.kg-action-sheet__btn:first-child {
+  border-top: none;
+}
+.kg-action-sheet__btn--destructive {
+  color: var(--color-danger);
+}
+.kg-action-sheet__btn--cancel {
+  margin-top: var(--space-2);
+  border-top: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  font-weight: var(--font-semibold);
+}
