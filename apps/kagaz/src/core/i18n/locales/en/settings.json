@@ -16,15 +16,46 @@
     "density_comfortable": "Comfortable",
     "density_compact": "Compact"
   },
+  "documents": {
+    "title": "Documents",
+    "rename_on_add": "Ask to rename after adding",
+    "rename_on_add_hint": "Show a name prompt right after you scan or add a document. Turn off to keep the default name."
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",
-    "auto_lock": "Auto-lock"
+    "biometric_lock_hint": "Require your fingerprint, face, or device PIN to open Kagaz.",
+    "biometric_unavailable": "Set up a screen lock (fingerprint, face, or PIN) on your device first.",
+    "auto_lock": "Auto-lock after",
+    "auto_lock_immediate": "Immediately",
+    "auto_lock_30s": "30 seconds",
+    "auto_lock_1min": "1 minute",
+    "auto_lock_5min": "5 minutes"
+  },
+  "data": {
+    "title": "Data & Privacy",
+    "trash": "Trash",
+    "trash_hint": "View documents you've deleted. They're kept for 30 days, then removed for good.",
+    "backup": "Export encrypted backup",
+    "backup_hint": "Save an encrypted archive of all your documents. Only this app, on this device, can open it.",
+    "backup_done_one": "Encrypted backup saved — {{count}} document.",
+    "backup_done_other": "Encrypted backup saved — {{count}} documents.",
+    "backup_error": "Backup failed. Please try again.",
+    "delete_all": "Delete all data",
+    "delete_all_hint": "Permanently remove every document, folder, tag, and setting from this device.",
+    "confirm_title": "Delete everything?",
+    "confirm_body": "This permanently erases all your documents, folders, tags, and settings from this device. This cannot be undone.",
+    "confirm_keyword": "DELETE",
+    "confirm_prompt": "Type {{keyword}} to confirm",
+    "confirm_button": "Delete everything",
+    "cancel": "Cancel"
   },
   "about": {
     "title": "About",
     "privacy_policy": "Privacy Policy",
     "terms": "Terms & Conditions",
-    "licenses": "Open-source licenses"
+    "licenses": "Open-source licenses",
+    "licenses_intro": "Kagaz is built with these open-source libraries. Thank you to their authors.",
+    "version": "Version {{version}}"
   }
 }

@@ -1,0 +1,35 @@
+/* F-9 folder color picker. */
+.kg-folder-colors {
+  padding: var(--page-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.kg-folder-colors__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+.kg-folder-colors__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.kg-folder-colors__swatch {
+  width: var(--target-min);
+  height: var(--target-min);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--border-default);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.kg-folder-colors__swatch--default {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}

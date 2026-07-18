@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { Checkbox } from '../Checkbox';
 import { Input } from '../Input';
 import { Radio } from '../Radio';
+import { Select } from '../Select';
 import { Toggle } from '../Toggle';
 
 describe('Input', () => {
@@ -120,5 +121,64 @@ describe('Toggle', () => {
     expect(sw).toHaveAttribute('aria-checked', 'true');
     expect(sw).toBeDisabled();
     expect(sw).toHaveAttribute('data-agent-state', 'disabled');
+  });
+});
+
+describe('Select', () => {
+  const options = [
+    { value: 'name', label: 'Name' },
+    { value: 'date', label: 'Date added' },
+    { value: 'size', label: 'File size' },
+  ];
+
+  it('shows the current option label and reports changes via the native control', async () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <Select
+        value="name"
+        options={options}
+        onChange={onChange}
+        aria-label="Sort by"
+      />
+    );
+    expect(container.querySelector('.kg-select__value')).toHaveTextContent('Name');
+    const native = screen.getByLabelText('Sort by');
+    await userEvent.selectOptions(native, 'size');
+    expect(onChange).toHaveBeenCalledWith('size');
+  });
+
+  it('exposes the agent contract: id, state, value', () => {
+    render(
+      <Select
+        value="date"
+        options={options}
+        onChange={() => undefined}
+        aria-label="Sort by"
+        agentId="vault.home.sort-key"
+        agentAction="vault.setSortBy"
+      />
+    );
+    const native = screen.getByLabelText('Sort by');
+    const wrapper = native.closest('[data-agent-id="vault.home.sort-key"]');
+    expect(wrapper).toHaveAttribute('data-agent-action', 'vault.setSortBy');
+    expect(wrapper).toHaveAttribute('data-agent-state', 'idle');
+    expect(wrapper).toHaveAttribute('data-agent-value', 'date');
+  });
+
+  it('is disabled via both the wrapper and the native control', () => {
+    render(
+      <Select
+        value="name"
+        options={options}
+        onChange={() => undefined}
+        aria-label="Sort by"
+        disabled
+      />
+    );
+    expect(screen.getByLabelText('Sort by')).toBeDisabled();
+    expect(screen.getByLabelText('Sort by').closest('.kg-select')).toHaveAttribute(
+      'data-agent-state',
+      'disabled'
+    );
   });
 });

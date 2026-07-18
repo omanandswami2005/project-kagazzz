@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ThemeProvider, useTheme } from '../ThemeProvider';
 
 function Probe(): React.ReactNode {
@@ -52,6 +52,59 @@ describe('ThemeProvider', () => {
 
   it('useTheme throws outside the provider', () => {
     expect(() => render(<Probe />)).toThrow('inside <ThemeProvider>');
+  });
+
+  describe('theme persistence (F-18)', () => {
+    let store: Record<string, string>;
+    beforeEach(() => {
+      store = {};
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string): string | null => store[k] ?? null,
+        setItem: (k: string, v: string): void => {
+          store[k] = v;
+        },
+        removeItem: (k: string): void => {
+          delete store[k];
+        },
+        clear: (): void => {
+          store = {};
+        },
+        key: (): null => null,
+        length: 0,
+      });
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('restores the saved theme on mount', () => {
+      store['kagaz:theme'] = 'dark';
+      render(
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>
+      );
+      expect(screen.getByTestId('mode').textContent).toMatch(/^dark\//);
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    it('persists a theme change to localStorage', async () => {
+      render(
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'dark' }));
+      expect(store['kagaz:theme']).toBe('dark');
+    });
+
+    it('ignores a corrupt stored value and falls back to system', () => {
+      store['kagaz:theme'] = 'chartreuse';
+      render(
+        <ThemeProvider>
+          <Probe />
+        </ThemeProvider>
+      );
+      expect(screen.getByTestId('mode').textContent).toMatch(/^system\//);
+    });
   });
 
   it('follows the system dark preference and tracks changes', () => {

@@ -10,6 +10,21 @@ shipped yet.
 | User intent | Action to invoke | Notes / args |
 |---|---|---|
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
+| Open PDF tools | `tools.openPdfTools` | Opens the PDF Tools hub (merge, split, compress, PDF↔image, password protect/unlock, fill form). Pass `op` to jump straight to one tool. |
+| Open Quick Reference | `vault.openQuickReference` | Opens the personal saved-values screen (PAN, mobile, bank account, etc.) — behind its own biometric gate. |
+| Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
+| Filter the list | `vault.openFilters` | Opens the filter panel (type / size / tags / favorites). |
+| Remove filters | `vault.clearFilters` | Clears every active filter. |
+| Delete selected (bulk) | `vault.bulkDelete` | Soft-deletes the multi-selected documents. Destructive — confirm the count first. |
+| Favorite selected (bulk) | `vault.bulkFavorite` | Stars the multi-selected documents. |
+| Favorite / unfavorite | `vault.toggleFavorite` | `documentId` — resolve from the document the user means. Toggles the star. |
+| Create a folder | `vault.createFolder` | `name`. Created inside the folder the user is currently viewing. |
+| Set up starter folders | `vault.createStarterFolders` | One-tap default set (Identity, Education, Financial, Health, Property, Employment, Misc). Best for an empty vault. |
+| Move a document | `vault.moveDocument` | `documentId` + `folderId` (`null` = vault root). |
+| Edit a document's tags | `vault.manageTags` | `documentId`. Opens the tag editor sheet. |
+| Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |
+| Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |
+| Reverse sort | `vault.toggleSortDirection` | Flips ascending ↔ descending. |
 
 Supported upload formats: PDF, JPG, PNG, HEIC, WEBP. Max 100 MB per
 file.

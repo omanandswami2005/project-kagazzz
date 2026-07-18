@@ -34,6 +34,7 @@ function mapRow(row: SqlRow): DocumentEntity {
     originalFilename: asOptionalString(row, 'original_filename'),
     createdAt: asString(row, 'created_at'),
     updatedAt: asString(row, 'updated_at'),
+    lastAccessedAt: asOptionalString(row, 'last_accessed_at'),
     deletedAt: asOptionalString(row, 'deleted_at'),
     metadataJson: asOptionalString(row, 'metadata_json'),
     synced: asBool(row, 'synced'),
@@ -65,6 +66,105 @@ export class DocumentDao {
       : `SELECT * FROM documents WHERE folder_id IS NULL AND deleted_at IS NULL
          ORDER BY created_at DESC`;
     const rows = await this.db.query(sql, folderId ? [folderId] : []);
+    return rows.map(mapRow);
+  }
+
+  /**
+   * Lists every non-deleted document across all folders, newest first.
+   * Used by the encrypted-backup export (SEC-V1 §8 #11 / F-31).
+   */
+  async findAll(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      'SELECT * FROM documents WHERE deleted_at IS NULL ORDER BY created_at DESC'
+    );
+    return rows.map(mapRow);
+  }
+
+  /** Total bytes + document count across the (non-deleted) vault (F-26). */
+  async getStorageTotals(): Promise<{ totalBytes: number; count: number }> {
+    const rows = await this.db.query(
+      `SELECT COALESCE(SUM(file_size), 0) AS total, COUNT(*) AS n
+       FROM documents WHERE deleted_at IS NULL`
+    );
+    return {
+      totalBytes: asNumber(rows[0] ?? {}, 'total'),
+      count: asNumber(rows[0] ?? {}, 'n'),
+    };
+  }
+
+  /** Bytes + count grouped by file type, largest first (F-26). */
+  async getUsageByType(): Promise<
+    { fileType: string; bytes: number; count: number }[]
+  > {
+    const rows = await this.db.query(
+      `SELECT file_type, SUM(file_size) AS bytes, COUNT(*) AS n
+       FROM documents WHERE deleted_at IS NULL
+       GROUP BY file_type ORDER BY bytes DESC`
+    );
+    return rows.map((row) => ({
+      fileType: asString(row, 'file_type'),
+      bytes: asNumber(row, 'bytes'),
+      count: asNumber(row, 'n'),
+    }));
+  }
+
+  /** The largest non-deleted documents (F-26). */
+  async getLargestDocuments(limit = 10): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NULL
+       ORDER BY file_size DESC LIMIT ?`,
+      [limit]
+    );
+    return rows.map(mapRow);
+  }
+
+  /** Counts duplicate groups (same file_hash) and their reclaimable bytes (F-26). */
+  async getDuplicateStats(): Promise<{ groups: number; wastedBytes: number }> {
+    const rows = await this.db.query(
+      `SELECT file_hash, COUNT(*) AS n, MAX(file_size) AS size
+       FROM documents
+       WHERE deleted_at IS NULL AND file_hash IS NOT NULL
+       GROUP BY file_hash HAVING n > 1`
+    );
+    let groups = 0;
+    let wastedBytes = 0;
+    for (const row of rows) {
+      groups += 1;
+      // Keeping one copy, the rest (n-1) are reclaimable.
+      wastedBytes += (asNumber(row, 'n') - 1) * asNumber(row, 'size');
+    }
+    return { groups, wastedBytes };
+  }
+
+  /** Most-recently-opened non-deleted documents (F-32). */
+  async findRecent(limit = 10): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE last_accessed_at IS NOT NULL AND deleted_at IS NULL
+       ORDER BY last_accessed_at DESC
+       LIMIT ?`,
+      [limit]
+    );
+    return rows.map(mapRow);
+  }
+
+  /** Stamps last_accessed_at = now for the "recent" list (F-32). */
+  async touchLastAccessed(id: string): Promise<number> {
+    const result = await this.db.run(
+      `UPDATE documents SET last_accessed_at = ?
+       WHERE id = ? AND deleted_at IS NULL`,
+      [nowIso(), id]
+    );
+    return result.changes;
+  }
+
+  /** Non-deleted favorites, newest first (F-33). */
+  async findFavorites(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE is_favorite = 1 AND deleted_at IS NULL
+       ORDER BY created_at DESC`
+    );
     return rows.map(mapRow);
   }
 
@@ -181,6 +281,32 @@ export class DocumentDao {
       `UPDATE documents SET deleted_at = NULL, updated_at = ?,
         version = version + 1 WHERE id = ? AND deleted_at IS NOT NULL`,
       [nowIso(), id]
+    );
+    return result.changes;
+  }
+
+  /**
+   * Lists soft-deleted documents (the Trash, F-57), most-recently-deleted
+   * first. These are hidden from every other query by the `deleted_at IS NULL`
+   * filter; this is the only view that surfaces them.
+   */
+  async findTrashed(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NOT NULL
+       ORDER BY deleted_at DESC`
+    );
+    return rows.map(mapRow);
+  }
+
+  /**
+   * Permanently removes a document row (F-57). Guarded to trashed rows only, so
+   * a live document can never be hard-deleted without first going to Trash. The
+   * caller is responsible for deleting the associated files.
+   */
+  async hardDelete(id: string): Promise<number> {
+    const result = await this.db.run(
+      'DELETE FROM documents WHERE id = ? AND deleted_at IS NOT NULL',
+      [id]
     );
     return result.changes;
   }

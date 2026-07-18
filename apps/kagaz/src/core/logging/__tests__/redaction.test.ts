@@ -15,6 +15,8 @@ describe('redactRecord ([SEC] 14-observability §7)', () => {
       pan: 'ABCDE1234F',
       messages: ['hi'],
       filePathAbsolute: 'C:/Users/x/doc.pdf',
+      quickReferenceLabel: 'PAN No',
+      quickReferenceValue: 'ABCDE1234F',
       event: 'vault.upload.success',
     };
     const out = redactRecord(input);
@@ -30,6 +32,8 @@ describe('redactRecord ([SEC] 14-observability §7)', () => {
       'pan',
       'messages',
       'filePathAbsolute',
+      'quickReferenceLabel',
+      'quickReferenceValue',
     ] as const) {
       expect(out[field]).toBe(REDACTION_CENSOR);
     }
@@ -79,6 +83,8 @@ describe('redactRecord ([SEC] 14-observability §7)', () => {
       'pan',
       'messages',
       'filePathAbsolute',
+      'quickReferenceLabel',
+      'quickReferenceValue',
     ]) {
       expect(joined).toContain(required);
     }

@@ -1,0 +1,565 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { PDFDocument } from 'pdf-lib';
+import { type PdfEngineService, type ProgressEvent } from '../pdf-engine.types';
+
+/**
+ * Helper to generate a valid PDF with a specific number of pages.
+ */
+async function createTestPdf(pagesCount: number, textPrefix = 'Page'): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  for (let i = 0; i < pagesCount; i++) {
+    const page = pdfDoc.addPage([600, 800]);
+    page.drawText(`${textPrefix} ${i + 1}`, { x: 50, y: 400 });
+  }
+  return pdfDoc.save();
+}
+
+/**
+ * Helper to read page count from a PDF byte array.
+ */
+async function getPageCount(pdfBytes: Uint8Array): Promise<number> {
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  return pdfDoc.getPageCount();
+}
+
+/** A 1×1 PNG, for the images → PDF contract (F-7). */
+function tinyPng(): Uint8Array {
+  const base64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+/** A PDF with one text field ('fullName') and one checkbox ('agree') (F-28). */
+async function createTestFormPdf(): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const page = doc.addPage([300, 200]);
+  const form = doc.getForm();
+  const name = form.createTextField('fullName');
+  name.addToPage(page, { x: 50, y: 120, width: 200, height: 20 });
+  const agree = form.createCheckBox('agree');
+  agree.addToPage(page, { x: 50, y: 80, width: 15, height: 15 });
+  return doc.save();
+}
+
+/**
+ * True when a real 2D canvas is available. The compressor (@quicktoolsone/
+ * pdf-compress) rasterises pages to images, which needs a canvas — jsdom has
+ * none, so the byte-reducing path is device-verified rather than run in CI.
+ * Merge/split and every validation/error path run everywhere.
+ */
+const HAS_CANVAS =
+  typeof document !== 'undefined' && document.createElement('canvas').getContext('2d') !== null;
+
+export function pdfEngineContract(makeEngine: () => Promise<PdfEngineService>): void {
+  describe('PdfEngineService Contract (Lane B: F-3, F-4, F-5)', () => {
+    let engine: PdfEngineService;
+    let validPdf1Page: Uint8Array;
+    let validPdf2Pages: Uint8Array;
+    let invalidPdf: Uint8Array;
+
+    beforeAll(async () => {
+      engine = await makeEngine();
+      await engine.initialize();
+      validPdf1Page = await createTestPdf(1, 'DocA');
+      validPdf2Pages = await createTestPdf(2, 'DocB');
+      invalidPdf = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    });
+
+    afterAll(async () => {
+      if (engine) {
+        await engine.destroy();
+      }
+    });
+
+    describe('F-3: PDF Merge', () => {
+      it('should merge two valid PDFs into a single document with correct page count', async () => {
+        const progressEvents: ProgressEvent[] = [];
+        const result = await engine.mergePdfs([validPdf1Page, validPdf2Pages], (event) =>
+          progressEvents.push(event)
+        );
+
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(result.length).toBeGreaterThan(0);
+
+        const count = await getPageCount(result);
+        expect(count).toBe(3);
+
+        // Verify progress callback was triggered
+        if (progressEvents.length > 0) {
+          expect(progressEvents[progressEvents.length - 1].percent).toBe(100);
+          expect(progressEvents[progressEvents.length - 1].operation).toBe('mergePdfs');
+        }
+      });
+
+      it('should throw INVALID_PDF if any of the input PDFs are invalid', async () => {
+        await expect(engine.mergePdfs([validPdf1Page, invalidPdf])).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'INVALID_PDF',
+            operation: 'mergePdfs',
+          })
+        );
+      });
+
+      it('should throw INVALID_PDF if the input list is empty', async () => {
+        await expect(engine.mergePdfs([])).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'INVALID_PDF',
+            operation: 'mergePdfs',
+          })
+        );
+      });
+    });
+
+    describe('F-4: PDF Split', () => {
+      it('should split a PDF into sub-documents according to page ranges', async () => {
+        // Create a 3-page PDF
+        const pdf3Pages = await createTestPdf(3, 'SplitDoc');
+        const progressEvents: ProgressEvent[] = [];
+
+        // Split: range 0-1 (2 pages), range 2-2 (1 page)
+        const ranges = [
+          { start: 0, end: 1 },
+          { start: 2, end: 2 },
+        ];
+
+        const results = await engine.splitPdf(pdf3Pages, ranges, (event) =>
+          progressEvents.push(event)
+        );
+
+        expect(results).toHaveLength(2);
+        expect(results[0]).toBeInstanceOf(Uint8Array);
+        expect(results[1]).toBeInstanceOf(Uint8Array);
+
+        expect(await getPageCount(results[0])).toBe(2);
+        expect(await getPageCount(results[1])).toBe(1);
+
+        // Verify progress callback
+        if (progressEvents.length > 0) {
+          expect(progressEvents[progressEvents.length - 1].percent).toBe(100);
+          expect(progressEvents[progressEvents.length - 1].operation).toBe('splitPdf');
+        }
+      });
+
+      it('should throw PAGE_OUT_OF_RANGE if a range is out of bounds', async () => {
+        const pdf3Pages = await createTestPdf(3, 'SplitDoc');
+
+        // Range out of bounds (start page 3 does not exist for a 3-page PDF)
+        const outOfBoundsRanges = [
+          { start: 0, end: 1 },
+          { start: 3, end: 3 },
+        ];
+
+        await expect(engine.splitPdf(pdf3Pages, outOfBoundsRanges)).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'PAGE_OUT_OF_RANGE',
+            operation: 'splitPdf',
+          })
+        );
+      });
+
+      it('should throw PAGE_OUT_OF_RANGE if start > end in a range', async () => {
+        const pdf3Pages = await createTestPdf(3, 'SplitDoc');
+
+        const invalidRanges = [{ start: 2, end: 1 }];
+
+        await expect(engine.splitPdf(pdf3Pages, invalidRanges)).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'PAGE_OUT_OF_RANGE',
+            operation: 'splitPdf',
+          })
+        );
+      });
+
+      it('should throw INVALID_PDF if input PDF is invalid', async () => {
+        const ranges = [{ start: 0, end: 0 }];
+
+        await expect(engine.splitPdf(invalidPdf, ranges)).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'INVALID_PDF',
+            operation: 'splitPdf',
+          })
+        );
+      });
+    });
+
+    describe('F-5: PDF Compress', () => {
+      // Byte reduction rasterises pages (needs a canvas) — device-verified.
+      it.skipIf(!HAS_CANVAS)('should successfully compress a valid PDF', async () => {
+        const pdfPages = await createTestPdf(2, 'CompressDoc');
+        const progressEvents: ProgressEvent[] = [];
+
+        const compressed = await engine.compressPdf(pdfPages, 'medium', (event) =>
+          progressEvents.push(event)
+        );
+
+        expect(compressed).toBeInstanceOf(Uint8Array);
+        expect(compressed.length).toBeGreaterThan(0);
+        expect(await getPageCount(compressed)).toBe(2);
+
+        // Verify progress callback
+        if (progressEvents.length > 0) {
+          expect(progressEvents[progressEvents.length - 1].percent).toBe(100);
+          expect(progressEvents[progressEvents.length - 1].operation).toBe('compressPdf');
+        }
+      });
+
+      it('should throw INVALID_PDF if input PDF is invalid', async () => {
+        await expect(engine.compressPdf(invalidPdf, 'medium')).rejects.toThrowError(
+          expect.objectContaining({
+            code: 'INVALID_PDF',
+            operation: 'compressPdf',
+          })
+        );
+      });
+    });
+
+    describe('F-7: Images → PDF', () => {
+      it('should build a one-page PDF from a single image', async () => {
+        const result = await engine.imagesToPdf([
+          { data: tinyPng(), mimeType: 'image/png' },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(1);
+      });
+
+      it('should build a multi-page PDF from multiple images', async () => {
+        const result = await engine.imagesToPdf([
+          { data: tinyPng(), mimeType: 'image/png' },
+          { data: tinyPng(), mimeType: 'image/png' },
+        ]);
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should throw UNSUPPORTED_FORMAT for an unsupported image type', async () => {
+        await expect(
+          engine.imagesToPdf([{ data: tinyPng(), mimeType: 'image/gif' }])
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+    });
+
+    describe('F-37: Watermark', () => {
+      it('should stamp every page and keep the page count', async () => {
+        const original = await createTestPdf(3);
+        const result = await engine.watermarkPdf(original, 'COPY');
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(3);
+        // The stamp adds content, so the output is larger than the source.
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should reject an empty watermark (UNSUPPORTED_FORMAT)', async () => {
+        await expect(
+          engine.watermarkPdf(await createTestPdf(1), '   ')
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.watermarkPdf(invalidPdf, 'COPY')).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
+    describe('F-35: Organize pages', () => {
+      it('should reorder and drop pages per the ops list', async () => {
+        // 3-page source; keep page 3 then page 1 (page 2 deleted) → 2 pages.
+        const result = await engine.organizePages(await createTestPdf(3), [
+          { sourceIndex: 2, rotation: 0 },
+          { sourceIndex: 0, rotation: 0 },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should apply rotation and keep pages', async () => {
+        const result = await engine.organizePages(await createTestPdf(2), [
+          { sourceIndex: 0, rotation: 90 },
+          { sourceIndex: 1, rotation: 180 },
+        ]);
+        const doc = await PDFDocument.load(result);
+        expect(doc.getPageCount()).toBe(2);
+        expect(doc.getPage(0).getRotation().angle).toBe(90);
+      });
+
+      it('should reject an empty ops list (UNSUPPORTED_FORMAT)', async () => {
+        await expect(engine.organizePages(await createTestPdf(1), [])).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should reject an out-of-range page (PAGE_OUT_OF_RANGE)', async () => {
+        await expect(
+          engine.organizePages(await createTestPdf(1), [{ sourceIndex: 5, rotation: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.organizePages(invalidPdf, [{ sourceIndex: 0, rotation: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-66: Extract pages', () => {
+      it('should pull the chosen ranges into one new PDF in range order', async () => {
+        // 5-page source; keep pages 1-2 and 5 (0-indexed 0-1 and 4) → 3 pages.
+        const result = await engine.extractPages(await createTestPdf(5), [
+          { start: 0, end: 1 },
+          { start: 4, end: 4 },
+        ]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(3);
+      });
+
+      it('should reject an empty range list (UNSUPPORTED_FORMAT)', async () => {
+        await expect(engine.extractPages(await createTestPdf(3), [])).rejects.toThrowError(
+          expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' })
+        );
+      });
+
+      it('should reject an out-of-range page (PAGE_OUT_OF_RANGE)', async () => {
+        await expect(
+          engine.extractPages(await createTestPdf(2), [{ start: 0, end: 5 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.extractPages(invalidPdf, [{ start: 0, end: 0 }])
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-38: Image stamp', () => {
+      it('should stamp an image onto a page and keep the page count', async () => {
+        const original = await createTestPdf(2);
+        const result = await engine.stampImage(
+          original,
+          { data: tinyPng(), mimeType: 'image/png' },
+          { page: 0, position: 'bottom-right', widthPercent: 25 }
+        );
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(2);
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should throw PAGE_OUT_OF_RANGE for a page past the end', async () => {
+        await expect(
+          engine.stampImage(
+            await createTestPdf(1),
+            { data: tinyPng(), mimeType: 'image/png' },
+            { page: 5 }
+          )
+        ).rejects.toThrowError(expect.objectContaining({ code: 'PAGE_OUT_OF_RANGE' }));
+      });
+
+      it('should reject an unsupported image type (UNSUPPORTED_FORMAT)', async () => {
+        await expect(
+          engine.stampImage(
+            await createTestPdf(1),
+            { data: tinyPng(), mimeType: 'image/gif' },
+            { page: 0 }
+          )
+        ).rejects.toThrowError(expect.objectContaining({ code: 'UNSUPPORTED_FORMAT' }));
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.stampImage(invalidPdf, { data: tinyPng(), mimeType: 'image/png' }, { page: 0 })
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-36: Page numbers', () => {
+      it('should number every page and keep the page count', async () => {
+        const original = await createTestPdf(4);
+        const result = await engine.addPageNumbers(original, {
+          position: 'bottom-center',
+          format: 'plain',
+        });
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(await getPageCount(result)).toBe(4);
+        // The drawn numbers add content, so the output grows.
+        expect(result.byteLength).toBeGreaterThan(original.byteLength);
+      });
+
+      it('should accept the n-of-total format and a custom start', async () => {
+        const result = await engine.addPageNumbers(await createTestPdf(2), {
+          position: 'top-right',
+          format: 'n-of-total',
+          startAt: 5,
+        });
+        expect(await getPageCount(result)).toBe(2);
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(
+          engine.addPageNumbers(invalidPdf, { position: 'bottom-center' })
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-21 / F-22: Encrypt + Decrypt', () => {
+      it('should encrypt a PDF and round-trip it back with decrypt', async () => {
+        const original = await createTestPdf(2, 'Secret');
+        const encrypted = await engine.encryptPdf(original, 'pa55word');
+        expect(encrypted).toBeInstanceOf(Uint8Array);
+
+        // The encrypted bytes can no longer be opened without the password.
+        await expect(PDFDocument.load(encrypted)).rejects.toBeTruthy();
+
+        const decrypted = await engine.decryptPdf(encrypted, 'pa55word');
+        expect(await getPageCount(decrypted)).toBe(2);
+      });
+
+      it('should reject decrypt with the wrong password (WRONG_PASSWORD)', async () => {
+        const encrypted = await engine.encryptPdf(
+          await createTestPdf(1),
+          'correct-horse'
+        );
+        await expect(engine.decryptPdf(encrypted, 'wrong')).rejects.toThrowError(
+          expect.objectContaining({ code: 'WRONG_PASSWORD' })
+        );
+      });
+
+      it('should require a password to encrypt (PASSWORD_REQUIRED)', async () => {
+        await expect(
+          engine.encryptPdf(await createTestPdf(1), '')
+        ).rejects.toThrowError(
+          expect.objectContaining({ code: 'PASSWORD_REQUIRED' })
+        );
+      });
+
+      it('should reject decrypting a non-encrypted PDF (INVALID_PDF)', async () => {
+        await expect(
+          engine.decryptPdf(await createTestPdf(1), 'whatever')
+        ).rejects.toThrowError(expect.objectContaining({ code: 'INVALID_PDF' }));
+      });
+    });
+
+    describe('F-28: Form fields', () => {
+      it('should list the fillable fields', async () => {
+        const fields = await engine.getFormFields(await createTestFormPdf());
+        const byName = Object.fromEntries(fields.map((f) => [f.name, f]));
+        expect(byName['fullName']?.type).toBe('text');
+        expect(byName['agree']?.type).toBe('checkbox');
+      });
+
+      it('should fill text + checkbox fields and flatten', async () => {
+        const filled = await engine.fillForm(await createTestFormPdf(), {
+          fullName: 'Asha Rao',
+          agree: 'true',
+        });
+        expect(filled).toBeInstanceOf(Uint8Array);
+        // Flattened → no live form fields remain.
+        const reloaded = await PDFDocument.load(filled);
+        expect(reloaded.getForm().getFields()).toHaveLength(0);
+      });
+    });
+
+    describe('F-39: Metadata', () => {
+      it('should write metadata and read it back', async () => {
+        const updated = await engine.setMetadata(await createTestPdf(1), {
+          title: 'Aadhaar Card',
+          author: 'Asha Rao',
+          subject: 'ID proof',
+          keywords: 'id, government, kyc',
+        });
+        expect(updated).toBeInstanceOf(Uint8Array);
+        const meta = await engine.getMetadata(updated);
+        expect(meta.title).toBe('Aadhaar Card');
+        expect(meta.author).toBe('Asha Rao');
+        expect(meta.subject).toBe('ID proof');
+        expect(meta.keywords).toContain('id');
+        expect(meta.keywords).toContain('kyc');
+      });
+
+      it('should return empty strings for a PDF with no metadata', async () => {
+        const meta = await engine.getMetadata(await createTestPdf(1));
+        expect(meta.title).toBe('');
+        expect(meta.author).toBe('');
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.getMetadata(invalidPdf)).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
+    describe('F-40: Extract text', () => {
+      // pdfjs text extraction needs browser globals (DOMMatrix, …) — device.
+      it.skipIf(!HAS_CANVAS)('should extract the embedded text layer', async () => {
+        const text = await engine.extractText(await createTestPdf(2, 'Ledger'));
+        expect(typeof text).toBe('string');
+        expect(text).toContain('Ledger');
+      });
+
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(engine.extractText(invalidPdf)).rejects.toMatchObject({
+          code: 'INVALID_PDF',
+        });
+      });
+    });
+
+    describe('F-41: PDF → Word', () => {
+      // Text extraction needs pdfjs browser globals — device/browser only.
+      it.skipIf(!HAS_CANVAS)('should produce a .docx Blob from a text PDF', async () => {
+        const blob = await engine.pdfToWord(await createTestPdf(1, 'Report'), 'Report');
+        expect(blob).toBeInstanceOf(Blob);
+        expect(blob.size).toBeGreaterThan(0);
+      });
+
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(engine.pdfToWord(invalidPdf, 'x')).rejects.toMatchObject({
+          code: 'INVALID_PDF',
+        });
+      });
+    });
+
+    describe('F-42: PDF → Excel/CSV', () => {
+      it('should build an .xlsx from a form PDF (no canvas needed)', async () => {
+        const blob = await engine.pdfToSheet(await createTestFormPdf(), 'xlsx');
+        expect(blob).toBeInstanceOf(Blob);
+        expect(blob.size).toBeGreaterThan(0);
+      });
+
+      it('should build a .csv from a form PDF', async () => {
+        const blob = await engine.pdfToSheet(await createTestFormPdf(), 'csv');
+        const text = await blob.text();
+        // The header row plus the two fields from createTestFormPdf.
+        expect(text).toContain('Field');
+        expect(text).toContain('fullName');
+      });
+
+      it('should throw INVALID_PDF for invalid input', async () => {
+        await expect(engine.pdfToSheet(invalidPdf, 'xlsx')).rejects.toThrowError(
+          expect.objectContaining({ code: 'INVALID_PDF' })
+        );
+      });
+    });
+
+    describe('F-6: PDF → Images', () => {
+      // Rasterising needs a canvas (jsdom has none) — device-verified.
+      it.skipIf(!HAS_CANVAS)('should render each page to an image blob', async () => {
+        const blobs = await engine.pdfToImages(await createTestPdf(2), {
+          format: 'png',
+          scale: 1,
+        });
+        expect(blobs).toHaveLength(2);
+        expect(blobs[0]).toBeInstanceOf(Blob);
+      });
+
+      // pdfjs itself only loads with browser globals (DOMMatrix, …) — device.
+      it.skipIf(!HAS_CANVAS)('should reject an invalid PDF (INVALID_PDF)', async () => {
+        await expect(
+          engine.pdfToImages(invalidPdf, { format: 'png' })
+        ).rejects.toMatchObject({ code: 'INVALID_PDF', operation: 'pdfToImages' });
+      });
+    });
+  });
+}

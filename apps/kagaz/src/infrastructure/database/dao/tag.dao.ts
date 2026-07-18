@@ -31,6 +31,23 @@ export class TagDao {
     return rows.map(mapRow);
   }
 
+  /**
+   * Every (documentId, tag) assignment in one query — lets the vault
+   * render each row's chips without an N+1 fetch (F-10).
+   */
+  async findAllAssignments(): Promise<{ documentId: string; tag: TagEntity }[]> {
+    const rows = await this.db.query(
+      `SELECT dt.document_id AS document_id, t.*
+       FROM document_tags dt
+       JOIN tags t ON t.id = dt.tag_id
+       ORDER BY t.name`
+    );
+    return rows.map((row) => ({
+      documentId: asString(row, 'document_id'),
+      tag: mapRow(row),
+    }));
+  }
+
   /** Lists tags attached to a document. */
   async findByDocument(documentId: string): Promise<TagEntity[]> {
     const rows = await this.db.query(

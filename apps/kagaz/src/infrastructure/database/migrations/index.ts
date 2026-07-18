@@ -7,6 +7,14 @@ import type { Migration } from '../migration-runner';
 import { initialSchema } from './001-initial-schema';
 import { addFts } from './002-add-fts';
 import { addLogging } from './003-add-logging';
+import { addLastAccessed } from './004-add-last-accessed';
+import { addQuickReference } from './005-add-quick-reference';
 
 /** All known migrations in ascending version order. */
-export const migrations: Migration[] = [initialSchema, addFts, addLogging];
+export const migrations: Migration[] = [
+  initialSchema,
+  addFts,
+  addLogging,
+  addLastAccessed,
+  addQuickReference,
+];

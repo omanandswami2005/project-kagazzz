@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-06-07
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-18
 
 ---
 
@@ -19,6 +19,8 @@
 - [Favorites & Recently Accessed](#favorites--recently-accessed)
 - [Document Preview](#document-preview)
 - [Document Details View](#document-details-view)
+- [Document Actions](#document-actions)
+- [Quick Reference (F-84)](#quick-reference-f-84)
 - [Bulk Operations](#bulk-operations)
 - [Multilingual Support](#multilingual-support)
 - [Accessibility Features](#accessibility-features)
@@ -123,8 +125,11 @@ enum FileType {
   TIFF = 'tiff',
   BMP = 'bmp',
   GIF = 'gif',
-  DOCX = 'docx',
+  DOCX = 'docx',   // F-41: PDF → Word export; F-43 view
   TXT = 'txt',
+  MD = 'md',       // F-40: PDF → Markdown export target
+  XLSX = 'xlsx',   // F-42: PDF → Excel export
+  CSV = 'csv',     // F-42: PDF → CSV export
 }
 
 enum OcrStatus {
@@ -247,11 +252,31 @@ src/modules/document-vault/
 │   └── tag.types.ts               # Tag types
 │
 └── pages/
-    ├── VaultHomePage.tsx           # Main vault page (grid/list + folders)
+    ├── VaultHomePage.tsx           # Main vault page (grid/list + folders) — "Documents" tab
     ├── FolderPage.tsx              # Contents of a specific folder
     ├── DocumentDetailPage.tsx      # Document detail + operations
-    └── StoragePage.tsx             # Storage management page
+    ├── FavoritesPage.tsx           # Starred documents (F-33) — "Favorites" tab
+    └── StoragePage.tsx             # Storage management page — "Storage" tab
 ```
+
+### Bottom-tab navigation
+
+The app shell (`app/routes/index.tsx`) wraps the router outlet in an
+`IonTabs` bottom bar with three destinations, each a vault page:
+
+| Tab | Route | Page | Icon |
+|-----|-------|------|------|
+| **Documents** | `/vault` | `VaultHomePage` | folder |
+| **Favorites** | `/favorites` | `FavoritesPage` | star |
+| **Storage** | `/storage` | `StoragePage` | hard-drive |
+
+`/` redirects to `/vault` via `<Redirect>` (a history *replace*, so it
+adds no back-stack entry). `IonTabs` reserves the bar's height plus the
+device safe-area inset, so each tab's `IonContent` — and the upload FAB
+(`IonFab slot="fixed"`) — sits *above* the bar, never behind it. The
+Android hardware-back handler lives above Ionic's navigation handler so
+that back pops a folder → pops the route → double-back-to-exit at the
+true root (see `app/routes/index.tsx` header comment).
 
 ---
 
@@ -358,7 +383,7 @@ interface UploadProgress {
 
 | Check | Rule | Error Message |
 |---|---|---|
-| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT" |
+| **File Type** | Must be in supported `FileType` enum | "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP, TIFF, DOCX, TXT, MD, XLSX, CSV" |
 | **File Size** | Max 100 MB | "File exceeds maximum size of 100 MB" |
 | **File Name** | Non-empty after sanitization | "Invalid file name" |
 | **Corruption** | File header validation (magic bytes) | "File appears to be corrupted" |
@@ -368,7 +393,20 @@ interface UploadProgress {
 
 ## Document Scanning Flow
 
-The scanning feature uses ML Kit's document scanner for automatic edge detection, perspective correction, and image enhancement.
+> [!IMPORTANT]
+> **Engine confirmed by [ADR-018](../architecture/08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)** (2026-07-10).
+> F-2 uses **Google ML Kit Document Scanner** via `@capacitor-mlkit/document-scanner`
+> — exactly the "ML Kit Scanner" this sequence names. (An intermediate
+> decision, ADR-016, briefly switched to jscanify + OpenCV.js over an offline
+> concern that verification disproved — the plugin adds **no** `INTERNET`/`CAMERA`
+> permission; Play Services fetches the model out-of-process. ADR-018 reverses
+> that.) Unlike the flow drawn below, ML Kit renders its **own** native
+> full-screen scan UI (edge detection → capture → perspective correction →
+> multi-page review → filters), so the app does not build a custom camera or
+> draggable-corner screen; it receives finished JPEG/PDF pages and imports
+> them. **Android-only** (scan hidden where Play Services is absent).
+
+The scanning feature provides automatic edge detection, perspective correction, and image enhancement, all on-device (Android, via Play Services).
 
 ```mermaid
 sequenceDiagram
@@ -521,6 +559,26 @@ graph TB
 | **Delete** | Delete an empty folder | Fails if folder contains documents or sub-folders. User must empty first. |
 | **Force Delete** | Delete folder with all contents | Confirmation dialog. Recursively deletes all sub-folders and documents. |
 | **Color/Icon** | Customize appearance | Choose from preset colors and icon set. |
+
+> [!NOTE]
+> **V1 implementation (2026-07-18)** — `useFolders.ts` + `FolderDao`, not the
+> generic `FolderService` sketched below. Real differences from the spec
+> table above: **Delete** always cascades (child folders cascade via the DB
+> constraint; documents inside fall back to root via `ON DELETE SET NULL`) —
+> there's no "fails if non-empty" / separate "Force Delete", just one
+> **Delete** action behind a confirm alert. **Reorder** is move-up/move-down
+> buttons swapping adjacent `sortOrder` values (`reorderFolder`), the same
+> keyboard-accessible, no-pointer-drag approach F-35 uses for PDF pages —
+> not real drag-and-drop. **Color** is a `FolderColorPicker` sheet limited to
+> the 7 `FOLDER_TEMPLATES` colors (`FOLDER_COLORS`) plus a "default" clear
+> option, not an open palette. All four (rename, color, reorder, delete) are
+> reached from **FolderCard**'s overflow (⋮) button → a **folder-options**
+> action sheet (`vault.home.folder-menu`) — this UI didn't exist until
+> 2026-07-18 (the engine/DAO methods shipped 2026-06-12 but were never wired
+> to anything, an F-9 checklist follow-up closed the same day as F-8/F-29's
+> identical gap). Multi-level nesting, "unlimited depth," and move-folder
+> (as opposed to move-*document*-into-folder, which does exist) remain
+> spec-only.
 
 ### Folder Service Interface
 
@@ -990,59 +1048,324 @@ sequenceDiagram
 
 ## Document Details View
 
-The detail view shows comprehensive metadata and provides quick access to operations.
+> The table below and `DocumentDetailsSheet` are what actually shipped (F-67,
+> 2026-07-16). The original wireframe further down this section (editable
+> description, operation history timeline, an inline quick-actions row) was
+> the pre-implementation sketch — **not built for V1**: it needs new schema
+> (a free-text `description` column) and an operations-log table neither of
+> which exist yet. Kept below for the V2 backlog; do not treat it as current
+> behaviour.
 
-### Detail View Sections
+`DocumentDetailsSheet` is a **read-only** `IonModal` opened from the **Details**
+item in the vault list item-menu or the viewer menu (see
+[Document Actions](#document-actions)). It renders directly off the already-loaded
+`DocumentEntity` for every row except **Dimensions** — the one exception,
+loaded lazily via `useImageDimensions` (F-8's `getImageInfo`, see [Convert
+format](#convert-format-f-8)) for Canvas-decodable image documents only, and
+simply omitted for everything else (PDFs, HEIC, non-image types) — no new
+dependency either way.
 
-| Section | Content |
+### Detail View Sections (as shipped)
+
+| Row | Content | Source |
+|---|---|---|
+| **Name** | Document display name | `document.name` |
+| **Type** | File type (PDF / JPG / DOCX / …) | `document.fileType` |
+| **Dimensions** | Pixel width × height (images only, added 2026-07-18) | `useImageDimensions` → F-8 `getImageInfo` |
+| **Size** | Human-readable size | `formatFileSize(document.size)` |
+| **Added** | Creation date, locale-formatted | `formatDateTime(document.createdAt)` |
+| **Modified** | Last-modified date, locale-formatted | `formatDateTime(document.updatedAt)` |
+| **Original filename** | The name the file arrived with (camera/scanner/picker), if different from the current name | `document.originalName` |
+| **Status** | Locked / Favorite badges, or "—" if neither | `document.isLocked`, `document.isFavorite` |
+| **Integrity hash** | The stored content hash (tamper-evidence, §10) | `document.contentHash` |
+
+en/hi i18n; excluded from unit coverage (IonModal overlay, device-verified like
+the other sheets — `pnpm --filter kagaz vitest src/modules/document-vault/components`
+covers the pure pieces it composes).
+
+### V2 backlog (not implemented)
+
+The earlier design additionally sketched: an editable description field, a
+folder/tag quick-edit surface inline in the sheet, an operations-history
+timeline, and quick-action buttons for Merge/Split/Convert/Compress/Encrypt/OCR
+directly from the details view. None of these shipped in V1 — folder/tag
+editing already has its own entry points (move dialog, tag sheet) and the PDF
+operations live in the PDF Tools hub ([03](03-pdf-engine-module.md)) instead of
+being duplicated here. Revisit if user feedback asks for it.
+
+---
+
+## Document Actions
+
+Per-document actions are offered two ways: the **vault list item-menu**
+(`IonActionSheet`, `data-agent-id="vault.home.item-menu"`, long-press or the
+overflow button on a list row) and the **viewer menu** (opened from
+`DocumentViewerPage`). Both are agent-actionable — every button has a
+`data-agent-id` and a matching entry in the Action Registry per
+[`agent-interface.md`](../design-system/agent-interface.md).
+
+### Vault list item-menu (top → bottom)
+
+| Action | Feature | Shown when | Handler |
+|---|---|---|---|
+| Add tag | — | always | opens the tag-edit sheet |
+| Move | — | always | opens `MoveToFolderDialog` |
+| Select | — | always | enters bulk-selection mode |
+| Lock / Unlock | — | always | toggles `document.isLocked` |
+| **Open with…** | F-64 | native platform only | `document-intent.service.openDocumentWith` |
+| **Share…** | F-65 | native platform only | `document-intent.service.shareDocument` |
+| **Details** | F-67 | always | opens `DocumentDetailsSheet` |
+| **Copy text** | F-68 | `document.ocrText` has non-whitespace content | `core/clipboard.copyToClipboard` |
+| **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
+| **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
+| **Resize & compress** | F-85 | same gate as Convert format (`canConvertImageFormat`) | opens a dimensions + size-target sheet → `useResizeCompress.run` |
+| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
+| Delete | — | always | soft-delete → Trash (recoverable) |
+
+### Viewer menu (`DocumentViewerPage`)
+
+Same **Open with…** / **Share…** (native-gated) / **Details** / **Delete**
+actions as above, plus an inline **Copy** button under the extracted-text panel
+(same `copyToClipboard` helper) once text has been extracted or OCR'd.
+
+### OS document intents (F-64 / F-65)
+
+`document-intent.service.ts` wraps two Android intents behind one contract
+(`isIntentSupported`, `openDocumentWith`, `shareDocument`):
+
+| Action | Plugin | Android intent | Purpose |
+|---|---|---|---|
+| **Open with…** | `@capacitor-community/file-opener` (MIT) — `open({ filePath, contentType, openWithDefault: false })` | `ACTION_VIEW` | Shows the OS **"Open with"** app chooser for every app that can view the document's MIME type |
+| **Share…** | `@capacitor/share` (already a dependency) — `Share.share({ url })` | `ACTION_SEND` | Shows the OS share sheet for every app that accepts the file |
+
+Both resolve a `content://` URI via `Filesystem.getUri` (`Directory.Data`) —
+the document's real on-disk path is never exposed to the receiving app,
+consistent with the FileProvider pattern used everywhere else the vault hands
+a file to the OS (`10-security-architecture.md` §3). MIME type comes from
+`mimeTypeFor(document.fileType)`. `useDocumentIntents` is the React hook: it
+resolves `supported = Capacitor.getPlatform() !== 'web'` once, and both actions
+swallow user-cancellation (dismissing the chooser/share sheet is not an error —
+only a genuine failure surfaces a toast).
+
+**[SEC]** Both are user-initiated (the user explicitly picked the action from
+the menu) and read-only from the vault's perspective — no network call is made
+by the app; the receiving app's own behaviour is outside Kagaz's boundary.
+
+### Copy text (F-68)
+
+`core/clipboard.copyToClipboard(text)` — the async Clipboard API
+(`navigator.clipboard.writeText`, which works inside the Capacitor Android
+WebView's secure `capacitor://` context) with a hidden-`<textarea>` +
+`execCommand('copy')` fallback for older WebViews. Used by both the item-menu's
+**Copy text** (copies `document.ocrText` without opening the viewer — gated on
+`documentHasCopyableText`, `useCopyDocumentText`) and the viewer's inline Copy
+button.
+
+**[SEC]** the copied text is document content (may include OCR'd PII) — it is
+handed straight to the platform clipboard and never logged.
+
+### Convert format (F-8)
+
+`useImageFormatConversion.ts` wraps `image-engine/services/image-engine.service.convertFormat`
+(Canvas `createImageBitmap` → `canvas.toBlob`, main thread — see
+[04-image-engine-module.md](04-image-engine-module.md)) with the vault's file
+storage + upload pipeline. `canConvertImageFormat(document)` gates the
+item-menu entry to documents whose stored `fileType` (lowercased extension)
+is `jpg`/`jpeg`/`png`, or `webp` — HEIC/BMP/TIFF/GIF are decode-only
+(ADR-016, no bundled LGPL decoder) so they're never offered as a source.
+Choosing **Convert format** opens a second, small `IonActionSheet`
+(`vault.home.convert-format-sheet`) listing `conversionTargetsFor(document)`
+— the two Canvas formats other than the document's own. Converting reads the
+original file, encodes to the target MIME, and saves the result as a **new**
+document via `useUpload().ingestFiles` (`source: 'ai_generated'`, same
+non-destructive pattern the PDF Power Tools use) named `<original base
+name>.<target extension>` — the original document is untouched.
+
+### Enhance photo (F-29)
+
+`useImageEnhancement.ts` applies one of `image-engine/services/image-filters.ts`'s
+`FILTER_PRESETS` (grayscale, black & white, auto-enhance, invert — pure RGBA
+transforms, canvas glue via `applyImageFilter`) and saves the result as a
+**new** document, mirroring Convert format's non-destructive pattern exactly
+— same `canApplyImageFilter` gate (re-exports `canConvertImageFormat`, since
+a filter needs the same Canvas-decodable source), same `ingestFiles` save
+path. The output keeps the document's own format (`mimeTypeFor(fileType)` is
+passed through to `applyImageFilter`'s `deps.mime`, not forced to JPEG) and
+is named `<original>_<preset>.<extension>`.
+
+Brightness/contrast are parameterized filters the engine already exposes but
+aren't offered in this action-sheet UI — a numeric adjustment needs a slider
+surface, not a pick-one list; a follow-up, not scope creep on this pass.
+
+### Resize & Compress for Forms (F-85)
+
+`useResizeCompress.ts` wraps `image-engine/services/resize-compress.service.ts`
+(pure Canvas — see [04-image-engine-module.md](04-image-engine-module.md) §9
+for the engine spec) with the same non-destructive save pattern as Convert
+format/Enhance photo — same `canConvertImageFormat` gate (any Canvas-decodable
+image), same `ingestFiles` save path, output named
+`<original>_resized.<extension>`. Choosing **Resize & compress** opens a form
+sheet: target width × height (with an aspect-ratio-lock toggle so changing one
+dimension proportionally updates the other), a handful of preset dimension
+chips for common Indian government-form specs (passport photo, PAN photo,
+signature), and a target file-size range (min–max KB, or "as small as
+possible"). Running it resizes first (to the exact requested dimensions —
+stretching, not just fitting within a box, since government forms often
+require an exact non-proportional size), then iteratively re-encodes at
+decreasing JPEG quality until the result lands inside the size range or hits a
+quality floor (surfaced as a warning rather than silently producing a
+blown-out image). See §9.3 of the image-engine doc for the full algorithm.
+
+**[SEC]** pure on-device Canvas transform of an already-owned document — no
+new data collected, no network, output stored the same way as any other
+document.
+
+**Bug this pass found and fixed**: `document.name` (the DB-stored value)
+never carries a file extension — `upload.service.ts`'s `splitFileName`
+strips it into `fileType` at save time. The first version of this hook tried
+to extract/reuse an extension from `name` and silently produced an
+extension-less filename whenever `name` had none (i.e. always, in real
+data), which the upload pipeline's own validation then rejected as
+`INVALID_FILE_TYPE` — device-verified failing, then fixed to always derive
+the extension from `document.fileType` instead, and reconfirmed live. F-8's
+Convert format never had this bug (it always appends a fresh extension for
+the target format regardless of the source name), but its own tests shared
+the same unrealistic fixture (`name: 'photo.jpg'` instead of `'photo'`),
+which had been masking exactly this class of bug — fixed in both test files.
+
+### Select text & Detected numbers (F-83)
+
+The viewer's extracted-text panel is explicitly selectable
+(`user-select: text` / `-webkit-user-select: text`, `viewer.css`
+`.kg-viewer__text-body`) — native drag-select + the WebView's long-press
+"Copy" affordance work on any substring, not just the whole block via the
+**Copy text** button.
+
+For the common case of wanting just *one* number out of a longer block
+(account number, PIN code, phone number, date, invoice amount, …),
+`document-vault/services/extract-numbers.ts` (`extractNumberSequences`) runs a
+pure regex over the already-displayed text (digit runs of 4+ digits, allowing
+internal spaces/hyphens for grouped IDs like "1234 5678 9012") and the viewer
+renders each match as its own tap-to-copy chip under **Detected numbers**
+(shown only when at least one match exists, capped at 20). Purely a read-time
+UI convenience — it extracts nothing new and stores nothing; the same text is
+already fully visible in the panel above it.
+
+**[SEC]** same posture as Copy text — copies straight to the clipboard, never
+logged.
+
+Each detected-number chip also carries a secondary **Save to Quick Reference**
+action (F-84, see the section below) — pre-fills a new Quick Reference entry's
+value with the tapped number and links it to the source document, so the
+common "I want to keep grabbing this one number later without reopening the
+document" case is one tap instead of a manual copy-paste round trip.
+
+---
+
+## Quick Reference (F-84)
+
+A personal key-value vault for the numbers/text users copy out of their
+documents often — Aadhaar/PAN/mobile/bank account/IFSC, social handles,
+emails, or anything else the user names. Reached from a **Quick Reference**
+button in the vault home header (same pattern as the existing **Tools**
+button that opens PDF Tools — a header entry, not a bottom tab; see
+`app/routes/index.tsx`'s 3-tab bar, which this deliberately does not extend).
+
+### Why a separate feature from Tags/Details
+
+Tags (F-10) organize *documents*; Quick Reference stores *values extracted
+from* documents (or typed standalone) for fast retrieval independent of
+opening the source document again. A value here is not document content
+duplicated for its own sake — it is the specific fragment (a number, an ID, a
+URL) the user actually needs to paste elsewhere, e.g. filling a government
+form that asks for "PAN" without wanting to hunt through a scanned PDF for it.
+
+### Data model
+
+```typescript
+interface QuickReferenceEntry {
+  id: string;
+  label: string;              // fully user-typed; the app never assigns
+                               // semantic meaning to a label (see Security)
+  value: string;               // text value; masked by default in the UI
+  linkedDocumentId: string | null; // provenance / "Copy image" source
+  tagIds: string[];            // reuses the F-10 tag system, not a new one
+  createdAt: string;           // ISO 8601
+  updatedAt: string;
+}
+```
+
+One new table, `quick_reference_entries` (migration 005) — see
+[09-database-design.md](09-database-design.md) §4.12 for the DDL, and §10 for
+how it folds into the F-31 encrypted backup.
+
+### Template suggestions (not a schema)
+
+The "new entry" sheet offers a row of tappable label suggestions — Aadhaar
+No, PAN No, Mobile Number, Bank A/C No, IFSC Code, Email, Voter ID, Driving
+Licence No, Passport No, UAN — the same empty-state-CTA interaction F-30's
+folder templates established. Tapping one only pre-fills the **label** text
+field; the user still types the value. **This is presentation-layer
+convenience only** — there is no `label_type` column, no per-label
+validation, and no code path that treats an "Aadhaar No"-labelled entry any
+differently from a custom one the user typed themselves. See
+[10-security-architecture.md](10-security-architecture.md) §3.6 for why this
+distinction matters.
+
+### List, mask, and reveal
+
+Entries render label + a masked value (`•••• ` + last 4 characters, tap to
+reveal — the standard secure-notes pattern) grouped/filterable by tag (reuses
+F-10's `TagSelector`/filter UI, no new tag picker built). The whole
+**Quick Reference** screen requires a biometric prompt to open (reuses F-16's
+`biometric.service`, same call the per-document lock uses) — this data is
+denser and more sensitive than a single locked document, so it gets the
+stronger of the two existing lock postures rather than a new third one.
+
+### Copy actions
+
+| Action | Behavior |
 |---|---|
-| **Header** | Document name (editable), favorite toggle, lock toggle, share button |
-| **Preview** | Embedded preview (first page / image thumbnail) — tap to open full preview |
-| **Metadata** | File type, size (human-readable), page count, dimensions, created/modified dates |
-| **Organization** | Current folder (with breadcrumb, tap to change), assigned tags (tap to edit) |
-| **Description** | Editable text field for user notes |
-| **OCR Text** | Collapsed/expandable section showing extracted text, with copy button |
-| **Operations** | Quick action buttons: Merge, Split, Convert, Compress, Encrypt, OCR |
-| **History** | Timeline of operations performed on this document |
-| **Danger Zone** | Delete button with confirmation dialog |
+| **Copy value** | Copies the raw value via `core/clipboard.copyToClipboard` (F-68's helper). |
+| **Copy with label** | Copies `"<label>: <value>"`. |
+| **Copy image** | Only shown when `linkedDocumentId` resolves to an image document — copies the image bytes to the OS clipboard (`ClipData`/`ClipboardItem` with an image MIME type; supported by Android's clipboard and consumable by Gboard's clipboard picker like any other image copy). |
 
-### Detail View Mockup Layout
+All three **auto-clear the clipboard ~30s after copy** — a new
+`core/clipboard.copyToClipboard` option (`autoClearMs`), which re-reads the
+clipboard before clearing and only clears if it still holds exactly what was
+copied (so a second, unrelated copy in that window is never clobbered). This
+is new behavior beyond F-68/F-83's plain copy — those stay opt-in per call
+site, existing callers are unaffected.
 
-```
-┌─────────────────────────────┐
-│ ← Back    Document Name  ★ 🔒│
-├─────────────────────────────┤
-│                             │
-│     [Document Preview]      │
-│     (tap to open full)      │
-│                             │
-├─────────────────────────────┤
-│ 📁 Identity Documents > ... │
-│ 🏷️ [Government] [ID] [+]   │
-├─────────────────────────────┤
-│ Type: PDF   Size: 2.4 MB   │
-│ Pages: 2    Created: Jun 5  │
-│ Modified: Jun 7             │
-├─────────────────────────────┤
-│ 📝 Description              │
-│ "My Aadhaar card, updated   │
-│  address version from 2024" │
-├─────────────────────────────┤
-│ 📋 OCR Text           [▼]  │
-│ "GOVERNMENT OF INDIA..."    │
-├─────────────────────────────┤
-│ ⚡ Quick Actions            │
-│ [Merge] [Split] [Convert]  │
-│ [Compress] [Encrypt] [OCR] │
-├─────────────────────────────┤
-│ 📜 Operation History        │
-│ • Jun 7 — Compressed (80%) │
-│ • Jun 5 — OCR completed    │
-│ • Jun 5 — Uploaded          │
-├─────────────────────────────┤
-│ 🗑️ [Delete Document]        │
-└─────────────────────────────┘
-```
+### Multi-select & bulk copy
+
+Long-press an entry to enter selection mode — the exact F-25 pattern
+(`useBulkActions`-style selection store, a floating `BulkActionBar`-shaped
+toolbar) reused rather than a new one invented. Bulk actions: **Copy** (all
+selected values, one per line), **Copy with labels** (`Label: Value` per
+line), **Delete**, **Add tag**.
+
+### Linking to a document
+
+An entry can be created two ways: standalone (from the Quick Reference
+screen's own **+** button) or linked (from a document's Details sheet or the
+viewer's Detected-numbers chips — see above). A linked entry shows a small
+provenance chip ("from <document name>") that opens the source document on
+tap; deleting the source document does not delete the entry (`linkedDocumentId`
+is nulled, `ON DELETE SET NULL` — the value the user saved is theirs to keep
+independent of the document it came from).
+
+### Agent contract
+
+New page trio (`QuickReferencePage.tsx` / `.agent.ts` / `.skill.md`) per
+[agent-interface.md](../design-system/agent-interface.md). Actions:
+`quickref.create`, `quickref.edit`, `quickref.delete`, `quickref.copyValue`,
+`quickref.copyWithLabel`, `quickref.copyImage`, `quickref.reveal`,
+`quickref.bulkCopy`, `quickref.bulkCopyWithLabels`, `quickref.bulkDelete`.
+Copy actions keep an `agentAction` (voice/AI can trigger them, same posture as
+F-68's Copy text — user-initiated, non-destructive, never logged); per F-16's
+own precedent the **biometric unlock prompt itself has no `agentAction`** so
+an AI tool call cannot bypass the screen's lock.
 
 ---
 

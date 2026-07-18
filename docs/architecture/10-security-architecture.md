@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-06-10
+> **Last Updated:** 2026-07-18
 
 ---
 
@@ -16,6 +16,7 @@
   - [3.3 File System Security](#33-file-system-security)
   - [3.4 Secure Key Storage](#34-secure-key-storage)
   - [3.5 Offline-Only Guarantee](#35-offline-only-guarantee)
+  - [3.6 Quick Reference Access Control (F-84)](#36-quick-reference-access-control-f-84)
 - [4. Sharing Security (V2)](#4-sharing-security-v2)
   - [4.1 End-to-End Encryption](#41-end-to-end-encryption)
   - [4.2 Access Controls](#42-access-controls)
@@ -245,11 +246,54 @@ In V1, Kagaz enforces a strict **no-network** policy:
 | **No crash reporting** | Errors logged locally only |
 | **No remote config** | All configuration is bundled and local |
 | **No push notifications** | No FCM/APNs integration |
-| **Network permissions** | Not requested in app manifest (V1) |
-| **CSP headers** | Content Security Policy blocks all outbound connections |
+| **No HTTP calls in app code** | No API endpoints, no REST/GraphQL clients; the only `fetch()` reads local `blob:`/`capacitor:` URLs (F-19 audit) |
+| **Network permissions** | ⚠️ `INTERNET` + `ACCESS_NETWORK_STATE` **are present in the release manifest**, merged transitively by the Play-Services ML Kit scanner (ADR-018). The app's own code makes no network calls; the permission exists only so Play Services can perform the one-time scanner model download. `CAMERA` is **not** requested. See the note below. |
+| **CSP headers** | Content Security Policy blocks all outbound connections from the WebView |
 
 > [!NOTE]
-> Users can verify the offline nature of V1 by using the app in airplane mode — every feature works identically with no network connection.
+> Users can verify the app makes no network calls of its own by using it in airplane mode — every feature except the (first-run) scanner works identically with no connection.
+
+> [!IMPORTANT]
+> **Network-permission reality (corrected 2026-07-11).** An earlier revision claimed the app ships with **no `INTERNET` permission**. Building and inspecting the **release** APK (`aapt dump permissions`) disproved that: the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)) depends on `play-services-mlkit-document-scanner`, whose transitive Play-Services libraries declare `INTERNET` + `ACCESS_NETWORK_STATE`, and the manifest merger folds them into our app manifest. The **plugin's own** manifest declares no permissions (that part of the ADR-018 verification was right) — but the **merged** result carries them.
+> **Accepted, not stripped** (decision 2026-07-11): the permission is real but the app never uses it — it makes no HTTP calls (F-19 audit), ships no analytics/CDN, and the CSP blocks WebView egress. It exists solely so Play Services can fetch the scanner model once. Stripping it via `tools:node="remove"` was considered and rejected (risk to the Play-Services download path). **Consequence:** the "zero network permission, airplane-mode-provable" claim is downgraded to **"the app makes no network calls of its own; the `INTERNET` permission is present only for the Play-Services scanner model download."** This must be reflected in the Play **data-safety** declaration (G1-6) and the privacy policy. On devices without Play Services, scanning is unavailable; everything else is 100% offline.
+
+---
+
+### 3.6 Quick Reference Access Control (F-84)
+
+Quick Reference ([02-document-vault-module.md](02-document-vault-module.md#quick-reference-f-84))
+stores user-labelled values — potentially government ID numbers, bank
+details, or credentials-adjacent text — so it gets its own, deliberately
+narrow, threat-model note beyond the general document posture:
+
+| Control | Behavior |
+|---|---|
+| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. |
+| **Mask by default** | Values render as `•••• <last 4 chars>` until explicitly revealed per-entry; reveal state is not persisted (resets on screen re-entry). |
+| **No structured PII typing** | The schema has no `label_type`/`value_type` column (§3.6.1 below) — the app never knows or asserts "this value is an Aadhaar number." |
+| **Clipboard auto-clear** | Every copy action clears the clipboard ~30s later if it still holds exactly what was copied (`core/clipboard`'s new `autoClearMs` option) — bounds how long a sensitive value sits somewhere a keyboard app's clipboard history could surface it. |
+| **No `agentAction` on unlock** | Same rule as F-16's own lock/unlock — the biometric prompt itself is never in the Action Registry, so a voice command or AI tool call cannot open the screen; only the already-unlocked copy actions are agent-actionable, mirroring F-68's posture. |
+| **Redaction** | `label`/`value` are added to the `redactRecord` denylist ([14-observability-logging.md](14-observability-logging.md)) — never appear in the pino diagnostic stream, same as OCR text and document content. |
+| **Backup** | Included in F-31's encrypted export via an explicit manifest hook (§10 of [09-database-design.md](09-database-design.md#10-backup--restore-strategy) — not automatic just because the table exists). |
+
+#### 3.6.1 Why no Aadhaar-specific schema (UIDAI alignment)
+
+[docs/indian-compliance-checklist.md](../indian-compliance-checklist.md) §4
+directs avoiding on-device storage of Aadhaar numbers "unless explicitly
+authorized... and for limited lawful purposes." Kagaz already stores Aadhaar
+document images and their OCR'd text (the core vault use case) — Quick
+Reference's incremental risk is narrower but real: a **labelled, structured**
+field is easier to bulk-extract from a compromised device than the same
+digits inside a photo or an OCR text blob. The mitigation is architectural,
+not a UIDAI carve-out: `label` is opaque user-typed text everywhere in the
+schema and code — there is no code path, migration, or query that filters,
+validates, or specially handles a value because its label looks like
+"Aadhaar." From the app's own point of view, "PAN No: ABCDE1234F" and
+"Wi-Fi password: correcthorsebatterystaple" are the identical data shape.
+This keeps Quick Reference in the same category as a generic encrypted notes
+feature (broadly accepted, on-device, user's own data, never transmitted)
+rather than a purpose-built "government ID database" (the pattern UIDAI
+guidance actually targets).
 
 ---
 
@@ -648,21 +692,29 @@ graph TB
 
 ### V1 — Local Security
 
+> **Status audited 2026-07-14 (G1-2).** All P0 + P1 items verified against the code; only the P2 root/jailbreak warning remains (out of V1 P0 scope). See per-item evidence below.
+
 | # | Item | Status | Priority |
 |---|---|---|---|
-| 1 | App-level biometric authentication | 🔲 | P0 |
-| 2 | SQLCipher database encryption | 🔲 | P0 |
-| 3 | Secure key storage (Keychain/Keystore) | 🔲 | P0 |
-| 4 | Per-document biometric lock | 🔲 | P0 |
-| 5 | Screenshot prevention | 🔲 | P1 |
-| 6 | App switcher content blur | 🔲 | P1 |
-| 7 | Temp file cleanup | 🔲 | P1 |
-| 8 | No network permissions | 🔲 | P0 |
-| 9 | No analytics SDKs | 🔲 | P0 |
-| 10 | Root/jailbreak detection (warning) | 🔲 | P2 |
-| 11 | Encrypted backup export | 🔲 | P1 |
-| 12 | Full data erasure | 🔲 | P1 |
-| 13 | CSP headers blocking outbound | 🔲 | P0 |
+| 1 | App-level biometric authentication | ✅ F-16 (`auth` module: LockGate/LockScreen, `@aparajita/capacitor-biometric-auth`) | P0 |
+| 2 | SQLCipher database encryption | ✅ `db_encryption_key` in platform secure storage; DB opened encrypted (§3.2) | P0 |
+| 3 | Secure key storage (Keychain/Keystore) | ✅ `capacitor-secure-storage-plugin` (iOS Keychain / Android Keystore); keys never logged | P0 |
+| 4 | Per-document biometric lock | ✅ F-16 (§3.1 per-doc lock enforced at viewer entry) | P0 |
+| 5 | Screenshot prevention | ✅ `FLAG_SECURE` in `MainActivity.onCreate` (device-verified) | P1 |
+| 6 | App switcher content blur | ✅ `FLAG_SECURE` blanks the recents preview (device-verified) | P1 |
+| 7 | Temp file cleanup | ✅ `infrastructure/filesystem/temp-cleanup.ts` (clears `temp/` on launch) | P1 |
+| 8 | No network permissions | ⚠️ **No app-initiated network**; release APK carries `INTERNET`+`ACCESS_NETWORK_STATE` transitively from the Play-Services ML Kit scanner (ADR-018) — never used by app code. See §3.5. | P0 |
+| 9 | No analytics SDKs | ✅ Zero analytics/crash/telemetry deps (F-19 audit; `pnpm ls` clean) | P0 |
+| 10 | Root/jailbreak detection (warning) | 🔲 Deferred (P2 — not a V1 P0 gate) | P2 |
+| 11 | Encrypted backup export | ✅ F-31 (AES-256-GCM `KGBK` container, distinct `backup_encryption_key`) | P1 |
+| 12 | Full data erasure | ✅ Settings → Delete all data (`DeleteAllDataDialog` + wipe) | P1 |
+| 13 | CSP headers blocking outbound | ✅ `index.html` strict CSP: `default-src 'self'; connect-src 'self'; object-src 'none'; form-action 'none'` (§3.5) | P0 |
+
+> **Addendum (2026-07-18, not part of the 2026-07-14 audit above — re-run
+> that audit to fold this in once F-84 ships):** Quick Reference (F-84) adds
+> its own access-control surface — screen-level biometric gate, mask-by-default,
+> clipboard auto-clear, no structured PII schema. Full detail in §3.6. Treat
+> as P0 (same tier as per-document lock, item 4) once implemented.
 
 ### V2 — Sharing Security
 
@@ -691,6 +743,20 @@ graph TB
 | 29 | Signed model weights | 🔲 | P2 |
 
 ---
+
+### Dependency audit posture (CI `pnpm audit --audit-level high`)
+
+`pnpm-workspace.yaml` pins/ignores a small set of advisories, each assessed —
+**none is exploitable in the shipped, offline V1 app** (apps/kagaz):
+
+| Advisory(s) | Package | Assessment | Action |
+|---|---|---|---|
+| SSRF (prerendered error page) | `astro` (apps/docs → Starlight) | Docs site only, not shipped in the app; static output (no SSR server). | **Overridden** to a patched `>=6.4.6`. |
+| TLS-bypass / WS-DoS / request-routing | `undici` (vitest → jsdom, dev/test) | Test-runtime only; never shipped and never makes a real network request. Cannot bump — `jsdom@29` imports undici internals removed in the patched 7.28 line. | **Ignored** (documented). |
+| Prototype-pollution + ReDoS | `xlsx` (SheetJS, F-42) | Both are in the **parsing** path; F-42 only **generates** `.xlsx` from the user's own vault data (no untrusted-spreadsheet parsing), lazy-loaded and offline. No npm fix: SheetJS ships `>0.18.5` only via its own CDN (off-limits under ADR-017). | **Ignored** (documented); re-evaluate if a parse/import path is ever added. |
+| Path-traversal / hardlink / symlink (7 GHSAs) | `tar` (pdfjs-dist → optional `canvas` peer → `@mapbox/node-pre-gyp`) | `canvas` is pdfjs-dist's optional **Node-side** rendering peer — this app renders PDFs only in the WebView, never on Node; its native build is denied (`allowBuilds.canvas: false`), so the `tar` extraction the advisories are in never runs. | **Ignored** (documented); re-evaluate if pdfjs-dist's `canvas` peer is ever exercised. |
+
+Revisit at each release and when V2 adds network surfaces.
 
 ## 9. Incident Response
 

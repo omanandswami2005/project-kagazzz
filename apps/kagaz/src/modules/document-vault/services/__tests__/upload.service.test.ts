@@ -21,6 +21,7 @@ function makeService(overrides?: {
   storage?: MemoryFileStorage;
   createImpl?: (doc: NewDocument) => Promise<ReturnType<typeof entityFromNew>>;
   convertHeic?: (blob: Blob) => Promise<Blob>;
+  makeThumbnail?: (blob: Blob, fileType: string) => Promise<Uint8Array | null>;
 }): {
   service: UploadService;
   storage: MemoryFileStorage;
@@ -35,6 +36,7 @@ function makeService(overrides?: {
     storage,
     documents: { create },
     convertHeic: overrides?.convertHeic,
+    makeThumbnail: overrides?.makeThumbnail,
   });
   return { service, storage, create };
 }
@@ -57,6 +59,35 @@ describe('UploadService.processFile', () => {
     expect(row.fileHash).toMatch(/^[0-9a-f]{64}$/);
     expect(row.filePath).toMatch(/^documents\/[0-9a-f-]+\.pdf$/);
     expect(storage.files.has(row.filePath)).toBe(true);
+  });
+
+  it('generates + caches a thumbnail and links it on the row (F-24)', async () => {
+    const makeThumbnail = vi.fn(() =>
+      Promise.resolve(new Uint8Array([1, 2, 3]))
+    );
+    const { service, storage, create } = makeService({ makeThumbnail });
+    await service.processFile(incoming('a.png', pngBytes()), {});
+
+    expect(makeThumbnail).toHaveBeenCalledOnce();
+    const row = create.mock.calls[0]?.[0] as NewDocument;
+    expect(row.thumbnailPath).toMatch(/^thumbnails\/[0-9a-f-]+\.jpg$/);
+    expect(storage.files.has(row.thumbnailPath ?? '')).toBe(true);
+  });
+
+  it('a thumbnail failure is non-fatal (no thumbnailPath)', async () => {
+    const makeThumbnail = vi.fn(() => Promise.reject(new Error('canvas boom')));
+    const { service, create } = makeService({ makeThumbnail });
+    await service.processFile(incoming('a.png', pngBytes()), {});
+    const row = create.mock.calls[0]?.[0] as NewDocument;
+    expect(row.thumbnailPath).toBeUndefined();
+  });
+
+  it('skips the thumbnail when the maker returns null', async () => {
+    const makeThumbnail = vi.fn(() => Promise.resolve(null));
+    const { service, create } = makeService({ makeThumbnail });
+    await service.processFile(incoming('a.pdf', pdfBytes()), {});
+    const row = create.mock.calls[0]?.[0] as NewDocument;
+    expect(row.thumbnailPath).toBeUndefined();
   });
 
   it('stores HEIC as-is until F-8 provides a converter', async () => {

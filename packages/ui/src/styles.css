@@ -400,3 +400,268 @@ button.kg-tag {
   color: var(--text-secondary);
   min-width: 3ch;
 }
+
+/* ── Select ──────────────────────────────────────────────────────── */
+/* A native <select> overlaid on a styled trigger — see Select.tsx's doc
+   comment for why this avoids the popover-viewport-overflow bug class. */
+.kg-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  /* Lets this shrink below its content width when it's itself a flex item
+     in a cramped row (flex items default to min-width:auto) — otherwise
+     .kg-select__value's ellipsis truncation below never gets room to apply
+     and a long option label pushes the whole row wider instead. */
+  min-width: 0;
+  min-height: var(--target-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.kg-select--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.kg-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+.kg-select__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: inherit;
+}
+.kg-select__native:disabled {
+  cursor: not-allowed;
+}
+
+/* ── ActionSheet ─────────────────────────────────────────────────── */
+/* A native <dialog> (showModal) — see ActionSheet.tsx's doc comment for
+   why this replaces IonActionSheet. `<dialog>` renders in the top layer,
+   so position/margin here only shape the panel, not stacking. */
+.kg-action-sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  overscroll-behavior: contain;
+}
+.kg-action-sheet::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.kg-action-sheet[open] {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.kg-action-sheet__panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface-1);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-xl);
+}
+.kg-action-sheet__handle {
+  width: 36px;
+  height: 4px;
+  margin: var(--space-2) auto;
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+}
+.kg-action-sheet__header {
+  margin: var(--space-2) var(--space-2) var(--space-3);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.kg-action-sheet__buttons {
+  display: flex;
+  flex-direction: column;
+}
+.kg-action-sheet__btn {
+  min-height: var(--target-min);
+  padding: var(--space-3);
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--surface-3, var(--surface-2));
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  text-align: center;
+  cursor: pointer;
+}
+.kg-action-sheet__btn:first-child {
+  border-top: none;
+}
+.kg-action-sheet__btn--destructive {
+  color: var(--color-danger);
+}
+.kg-action-sheet__btn--cancel {
+  margin-top: var(--space-2);
+  border-top: none;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  font-weight: var(--font-semibold);
+}
+
+/* ── Alert ───────────────────────────────────────────────────────── */
+/* A native <dialog> (showModal), centered — see Alert.tsx's doc comment
+   for why this replaces IonAlert. Centered per interaction-patterns.md's
+   modal rules (bottom sheets are for pickers, modals are for a decision). */
+.kg-alert {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: var(--space-4);
+  border: none;
+  background: transparent;
+}
+.kg-alert::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.kg-alert[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kg-alert__panel {
+  width: 100%;
+  max-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+.kg-alert__header {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+.kg-alert__message {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.kg-alert__input {
+  width: 100%;
+  min-height: var(--target-min);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.kg-alert__input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.kg-alert__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.kg-alert__btn {
+  min-height: var(--target-min);
+  padding: 0 var(--space-4);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+.kg-alert__btn--destructive {
+  color: var(--color-danger);
+}
+.kg-alert__btn--cancel {
+  color: var(--text-secondary);
+  font-weight: var(--font-medium);
+}
+
+/* ── Search ──────────────────────────────────────────────────────── */
+/* A plain <input type="search"> with a leading icon + clear button — see
+   Search.tsx's doc comment for why this replaces IonSearchbar. */
+.kg-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.kg-search__icon {
+  position: absolute;
+  left: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.kg-search__input {
+  width: 100%;
+  min-height: var(--target-min);
+  padding-left: calc(var(--space-3) * 2 + 20px);
+  padding-right: var(--space-8);
+  background: transparent;
+  border: none;
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.kg-search__input::placeholder {
+  color: var(--text-muted);
+}
+.kg-search__input:focus {
+  outline: none;
+}
+/* Suppress the native WebKit "x" so only our own clear button shows. */
+.kg-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+.kg-search__clear {
+  position: absolute;
+  right: var(--space-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--target-min);
+  min-height: var(--target-min);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  cursor: pointer;
+}

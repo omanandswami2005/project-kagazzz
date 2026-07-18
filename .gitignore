@@ -19,3 +19,11 @@ Thumbs.db
 # a future shared .claude/settings.json must not carry permission modes)
 .claude/settings.json
 .claude/settings.local.json
+
+# Ad-hoc device-verification screenshots pulled via adb (root-level only)
+/*.png
+
+# Debug APK copied to root for convenient manual install (always the debug
+# build's own output artifact, never a source file — the real build lives at
+# apps/kagaz/android/app/build/outputs/apk/debug/app-debug.apk)
+/*.apk

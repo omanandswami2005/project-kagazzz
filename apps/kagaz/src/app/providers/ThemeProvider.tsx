@@ -36,6 +36,33 @@ export interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+/**
+ * Theme lives in localStorage, not the SQLCipher `app_settings` DAO: this
+ * provider mounts *outside* DatabaseProvider (AppProviders order), so the DB
+ * isn't open yet, and localStorage is synchronous — it applies the saved
+ * theme on first render with no flash. Theme is a non-sensitive UI preference.
+ */
+const THEME_STORAGE_KEY = 'kagaz:theme';
+const THEME_SETTINGS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
+
+function readStoredTheme(): ThemeSetting {
+  if (typeof localStorage === 'undefined') {
+    return 'system';
+  }
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  return THEME_SETTINGS.includes(stored as ThemeSetting)
+    ? (stored as ThemeSetting)
+    : 'system';
+}
+
+function storeTheme(theme: ThemeSetting): void {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch {
+    // Private mode / quota — persistence is best-effort, not fatal.
+  }
+}
+
 function systemPrefersDark(): boolean {
   return (
     typeof window !== 'undefined' &&
@@ -50,14 +77,23 @@ function resolveTheme(setting: ThemeSetting): Theme {
 
 /** Applies data-theme / data-density / data-contrast on <html>. */
 export function ThemeProvider({ children }: { children: ReactNode }): ReactNode {
-  const [theme, setTheme] = useState<ThemeSetting>('system');
+  const [theme, setThemeState] = useState<ThemeSetting>(readStoredTheme);
   const [density, setDensity] = useState<DensityMode>(DEFAULT_DENSITY);
   const [highContrast, setHighContrast] = useState(false);
 
+  // F-18: persist the manual theme choice so it survives an app restart.
+  const setTheme = useCallback((next: ThemeSetting): void => {
+    setThemeState(next);
+    storeTheme(next);
+  }, []);
+
   const apply = useCallback((): void => {
     const root = document.documentElement;
-    root.setAttribute(THEME_ATTRIBUTE, resolveTheme(theme));
+    const resolved = resolveTheme(theme);
+    root.setAttribute(THEME_ATTRIBUTE, resolved);
     root.setAttribute(DENSITY_ATTRIBUTE, density);
+    // Drive Ionic's class-based dark palette in lock-step with our tokens.
+    root.classList.toggle('ion-palette-dark', resolved === 'dark');
     if (highContrast) {
       root.setAttribute(CONTRAST_ATTRIBUTE, 'high');
     } else {
@@ -87,7 +123,7 @@ export function ThemeProvider({ children }: { children: ReactNode }): ReactNode 
       highContrast,
       setHighContrast,
     }),
-    [theme, density, highContrast]
+    [theme, setTheme, density, highContrast]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

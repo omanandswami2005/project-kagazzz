@@ -18,6 +18,9 @@ export enum FileType {
   GIF = 'gif',
   DOCX = 'docx',
   TXT = 'txt',
+  MD = 'md',
+  XLSX = 'xlsx',
+  CSV = 'csv',
 }
 
 /**
@@ -32,6 +35,14 @@ export const UPLOADABLE_FILE_TYPES: readonly FileType[] = [
   FileType.PNG,
   FileType.HEIC,
   FileType.WEBP,
+  // Text/Markdown (F-40 PDF→text export saves these; also uploadable).
+  FileType.TXT,
+  FileType.MD,
+  // Word (F-41 PDF→Word export; F-43 opens/views these).
+  FileType.DOCX,
+  // Spreadsheets (F-42 PDF→Excel/CSV export).
+  FileType.XLSX,
+  FileType.CSV,
 ];
 
 /** Spec §Validation Rules: max document size. */

@@ -1,0 +1,144 @@
+/* Document viewer (UX-6). */
+
+.kg-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+
+.kg-viewer__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  color: var(--text-muted);
+}
+
+.kg-viewer__pages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  background: var(--surface-2);
+}
+
+.kg-viewer__page {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* F-43: rendered Word document. Constrain width and give it document-like
+   spacing so headings/paragraphs/tables read cleanly. */
+.kg-viewer__docx {
+  padding: var(--space-4);
+  max-width: 46rem;
+  margin: 0 auto;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.kg-viewer__docx img {
+  max-width: 100%;
+  height: auto;
+}
+
+.kg-viewer__docx table {
+  border-collapse: collapse;
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.kg-viewer__docx td,
+.kg-viewer__docx th {
+  border: 1px solid var(--surface-3, var(--surface-2));
+  padding: var(--space-1) var(--space-2);
+}
+
+.kg-viewer__text {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border-top: 1px solid var(--surface-3, var(--surface-2));
+}
+
+.kg-viewer__text-title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+}
+
+.kg-viewer__text-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  /* Explicit: the extracted text is meant to be selected and copied in part
+     (F-83) — don't rely on the WebView's default, guard against any future
+     app-wide user-select reset. */
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+  cursor: text;
+}
+
+.kg-viewer__text-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.kg-viewer__numbers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-viewer__numbers-title {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
+}
+
+.kg-viewer__numbers-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kg-viewer__number-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--surface-3, var(--surface-2));
+  border-radius: var(--radius-full, 999px);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.kg-viewer__number-chip-value {
+  /* The chip button copies the whole number on tap; the value itself stays
+     selectable too, for a manual partial-copy. */
+  user-select: text;
+}
+
+.kg-viewer__menu-btn {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  color: var(--text-primary);
+  cursor: pointer;
+}

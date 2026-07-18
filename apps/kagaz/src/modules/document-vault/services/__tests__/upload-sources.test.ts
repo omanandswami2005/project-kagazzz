@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Camera } from '@capacitor/camera';
+import { scanDocument } from '@/modules/document-scanner/services/scanner.service';
 import {
   pickFiles,
   pickFromCamera,
   pickFromFiles,
   pickFromGallery,
+  pickFromScanner,
 } from '../upload-sources';
 
 vi.mock('@capacitor/camera', () => ({
@@ -12,9 +14,17 @@ vi.mock('@capacitor/camera', () => ({
   CameraResultType: { Uri: 'uri' },
   CameraSource: { Camera: 'CAMERA' },
 }));
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { getPlatform: () => 'android', convertFileSrc: (u: string) => u },
+}));
+vi.mock('@/modules/document-scanner/services/scanner.service', () => ({
+  scanDocument: vi.fn(),
+  isScanningSupported: () => true,
+}));
 
 const getPhoto = vi.mocked(Camera.getPhoto);
 const pickImages = vi.mocked(Camera.pickImages);
+const mockScan = vi.mocked(scanDocument);
 
 const photoBlob = new Blob([new Uint8Array([0xff, 0xd8, 0xff])]);
 
@@ -115,6 +125,36 @@ describe('pickFromFiles', () => {
     );
     input?.dispatchEvent(new Event('cancel'));
     await expect(promise).resolves.toEqual([]);
+  });
+});
+
+describe('pickFromScanner (F-2 / ADR-018)', () => {
+  it('imports a multi-page scan as a single combined PDF', async () => {
+    mockScan.mockResolvedValue({
+      imageUris: ['file:///a.jpg', 'file:///b.jpg'],
+      pdfUri: 'file:///scan.pdf',
+      pageCount: 2,
+    });
+    const files = await pickFromScanner();
+    expect(files).toHaveLength(1);
+    expect(files[0]?.source).toBe('scanner');
+    expect(files[0]?.name).toMatch(/^Scan_.+\.pdf$/);
+  });
+
+  it('imports a single-page scan as a JPEG', async () => {
+    mockScan.mockResolvedValue({
+      imageUris: ['file:///a.jpg'],
+      pageCount: 1,
+    });
+    const files = await pickFromScanner();
+    expect(files).toHaveLength(1);
+    expect(files[0]?.name).toMatch(/^Scan_.+\.jpg$/);
+    expect(files[0]?.source).toBe('scanner');
+  });
+
+  it('returns [] when the scan is cancelled', async () => {
+    mockScan.mockResolvedValue(null);
+    await expect(pickFromScanner()).resolves.toEqual([]);
   });
 });
 

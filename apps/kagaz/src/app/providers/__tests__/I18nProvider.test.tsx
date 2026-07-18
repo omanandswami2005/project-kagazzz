@@ -21,8 +21,12 @@ describe('I18nProvider', () => {
       expect(screen.getByText('ready-child')).toBeInTheDocument()
     );
     expect(i18n.isInitialized).toBe(true);
-    expect(document.documentElement.lang).toBeTruthy();
-    expect(document.documentElement.dir).toBe('ltr');
+    // <html lang>/<dir> are set by an effect that runs a tick after
+    // children mount, so wait for it rather than asserting synchronously.
+    await waitFor(() => {
+      expect(document.documentElement.lang).toBeTruthy();
+      expect(document.documentElement.dir).toBe('ltr');
+    });
   });
 });
 

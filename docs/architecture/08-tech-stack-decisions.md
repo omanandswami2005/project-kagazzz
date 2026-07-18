@@ -22,6 +22,10 @@
 - [ADR-013: Pino for Structured Logging](#adr-013-pino-for-structured-logging)
 - [ADR-014: Biometric Auth Plugin Selection](#adr-014-biometric-auth-plugin-selection)
 - [ADR-015: pnpm Workspaces + Turborepo Monorepo](#adr-015-pnpm-workspaces--turborepo-monorepo)
+- [ADR-016: Image Engine & Document Scanner (offline, permissive-only)](#adr-016-image-engine--document-scanner-offline-permissive-only)
+- [ADR-017: Offline CSP & no runtime-fetched WASM/models](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)
+- [ADR-018: Document Scanner — Google ML Kit (via Play Services)](#adr-018-document-scanner--google-ml-kit-via-play-services)
+- [ADR-019: OCR — bundled native ML Kit Text Recognition](#adr-019-ocr--bundled-native-ml-kit-text-recognition)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -40,11 +44,15 @@
 | 008 | State Management | **Zustand** | Redux, MobX, Jotai | ✅ Accepted |
 | 009 | Build Tool | **Vite** | Webpack, Parcel, esbuild | ✅ Accepted |
 | 010 | Language | **TypeScript** | JavaScript | ✅ Accepted |
-| 011 | OCR Engine | **Tesseract.js** | Google Vision, AWS Textract | ✅ Accepted |
+| 011 | OCR Engine | ~~Tesseract.js~~ | Google Vision, AWS Textract | ⚠️ Superseded → ADR-019 |
 | 012 | Speech I/O | **Native Capacitor Plugins** | Web Speech API | ✅ Accepted |
 | 013 | Structured Logging | **pino** (+ pino-pretty in dev) | tslog, consola, loglevel | ✅ Accepted |
 | 014 | Biometric Auth | **@aparajita/capacitor-biometric-auth** | capacitor-native-biometric | ✅ Accepted |
 | 015 | Repo Structure | **pnpm workspaces + Turborepo** | Nx, single package | ✅ Accepted |
+| 016 | Image conversion / Doc scanner | **Canvas (native)** / ~~jscanify + OpenCV.js~~ | heic-to, ML Kit scanner | ✅ Accepted (F-8) · scanner → ADR-018 |
+| 017 | OpenCV scanner CSP | `wasm-unsafe-eval` weakening | — | ⚠️ Moot (scanner → ML Kit, ADR-018) |
+| 018 | Document Scanner | **Google ML Kit** (`@capacitor-mlkit/document-scanner`, native/Play Services) | jscanify + OpenCV.js (ADR-016) | ✅ Accepted |
+| 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
 
 ---
 
@@ -296,6 +304,18 @@ Kagaz needs to display PDF documents to users — for previewing, reviewing befo
 4. **Thumbnail generation** — we can render individual pages to small canvases for document thumbnail generation.
 5. **Complementary to pdf-lib** — pdf-lib handles read/write operations on PDF structure. pdfjs-dist handles pixel-level rendering. Together, they cover all PDF needs.
 
+### Version pin (2026-07-17, device verification)
+
+`pdfjs-dist` is pinned to **exactly `4.6.82`** (no `^` range) — not "latest 4.x", not 5.x/6.x. Root cause, found by opening a real PDF on a Pixel 6 emulator running Android System **WebView 113**: pdfjs's own bundles call several very recent (2024–2025) JS engine APIs unconditionally, none of which exist below roughly Chromium 119, and each fails PDF rendering outright with no fallback:
+
+| pdfjs-dist version | Extra API it needs beyond `Promise.withResolvers` |
+|---|---|
+| 4.0.x – 4.6.x | *(none)* |
+| 4.8.x+ | `Uint8Array.prototype.toBase64` / `.fromBase64` |
+| 6.x | + `Promise.try()`, + `Map.prototype.getOrInsertComputed` (too new to usefully polyfill) |
+
+None of this is caught by the unit/contract test suite — jsdom and Node both ship every one of these APIs natively, so the gap is invisible until a real WebView opens a real PDF. `core/polyfills/pdfjs-runtime-polyfills.ts` polyfills `Promise.withResolvers` (the one gap 4.6.82 actually hits) plus the 4.8.x/6.x-era APIs as inert, feature-detected insurance — but do **not** rely on those extra polyfills to justify bumping past 4.6.x; `Map.prototype.getOrInsertComputed` has no viable polyfill yet, so 6.x cannot currently ship to WebView < 119 no matter what's polyfilled. Re-run this same device check (open a real PDF on an old-WebView emulator/device) before ever changing this pin.
+
 ### Consequences
 
 | Positive | Negative |
@@ -304,6 +324,7 @@ Kagaz needs to display PDF documents to users — for previewing, reviewing befo
 | Web Worker offloading for performance | Complex API — lower-level than wrappers |
 | Text selection and search built-in | Need custom UI for viewer controls |
 | Thumbnail generation capability | Memory-intensive for large PDFs |
+| **Pinned to 4.6.82** — verified against WebView 113 | Newer pdfjs releases (4.8+, 5.x, 6.x) need a JS engine baseline (Chromium 119+) this app cannot assume; re-verify on a real old-WebView device before bumping |
 
 ---
 
@@ -625,9 +646,9 @@ Kagaz is a complex application with multiple subsystems: document management, PD
 
 | Field | Detail |
 |---|---|
-| **Status** | ✅ Accepted |
+| **Status** | ⚠️ **SUPERSEDED by [ADR-019](#adr-019-ocr--bundled-native-ml-kit-text-recognition) (2026-07-10)** |
 | **Date** | 2026-06-07 |
-| **Decision** | Use **Tesseract.js** for on-device Optical Character Recognition (OCR) instead of cloud-based services. |
+| **Decision** | ~~Use **Tesseract.js** for on-device OCR.~~ **Reversed — see ADR-019.** Tesseract.js is a WASM engine in the WebView: it needs `wasm-unsafe-eval` (weakens the strict CSP on a PII app, [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)) and ~30 MB of bundled `eng`/`hin` traineddata, and is slower on mid-range phones than native OCR. F-20 uses **bundled native ML Kit text recognition** instead. `tesseract.js` is removed from the dependencies. |
 
 ### Context
 
@@ -895,6 +916,268 @@ scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
 
 ---
 
+## ADR-016: Image Engine & Document Scanner (offline, permissive-only)
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted (image conversion, F-8) · ⚠️ **Scanner portion SUPERSEDED by [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services) (2026-07-10)** |
+| **Date** | 2026-06-12 |
+| **Decision** | **Image conversion (F-8):** convert among JPEG/PNG/WebP with the **native Canvas / OffscreenCanvas API** — zero bundle, on-device. **Do not bundle any JS HEIC decoder.** ~~**Document scanner (F-2):** edge detection + perspective correction via **jscanify** (MIT) on **OpenCV.js**…~~ **← reversed; see ADR-018.** The scanner now uses Google's ML Kit Document Scanner (native, via Play Services). |
+
+> **⚠️ 2026-07-10 — the scanner half of this ADR is superseded by [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services).** The "why not native ML Kit" rejection below rested on an **incorrect premise**: verification of `@capacitor-mlkit/document-scanner@8.1.0` shows its Android manifest declares **no `INTERNET` and no `CAMERA` permission** — Google Play Services hosts the scan UI and fetches the model out-of-process, so adopting it does **not** add a network permission to our app. The real trade-off (Play-Services dependency + one-time model download, Android-only) is weighed in ADR-018. The image-conversion (F-8) decision stands unchanged.
+
+### Context
+
+Lane C needs image format conversion (F-8) and a document scanner (F-2,
+edge detection + perspective correction). Two hard constraints dominate
+the choice: V1 is **100% offline with zero network permission** (SEC
+§3.5, the privacy policy), and dependencies must be **permissive-licensed
+only** (MIT/Apache-2.0/BSD/ISC — copyleft is forbidden because the app
+ships proprietary/`UNLICENSED`).
+
+### HEIC: why no decoder is bundled
+
+The image-engine spec (04) originally named **`heic-to`**. On review,
+`heic-to`, `heic2any`, and the underlying `libheif-js` are **all
+LGPL-3.0** — every JS HEIC decoder wraps libheif, which is LGPL. Bundling
+any of them into a statically-linked app violates the permissive-only
+policy. There is no permissive pure-JS HEIC decoder.
+
+Resolution: HEIC is decoded by the **OS natively at camera capture** —
+`@capacitor/camera` returns JPEG, so HEIC never reaches the WebView as
+HEIC. Imported `.heic` files (file picker) are stored as-is (F-1's
+existing behavior); converting those would need a small **native**
+Capacitor decoder (ImageIO on iOS, `BitmapFactory` on Android 28+),
+tracked as a follow-up — still no bundled LGPL code.
+
+### Scanner: why not native ML Kit
+
+| Option | Verdict |
+|---|---|
+| **jscanify + OpenCV.js** (WASM, WebView) | ✅ Fully offline, permissive (MIT + Apache-2.0), cross-platform, no native maintenance. ~8 MB WASM, **lazy-loaded only on the scanner screen** (off the initial-load budget, [PERF]). Self-hosted, never from a CDN. |
+| **@capacitor-mlkit/document-scanner** / Cap-go (Google ML Kit) | ❌ Downloads its model via **Google Play Services at runtime** → needs INTERNET permission + Play Services. Breaks the zero-network offline guarantee and the privacy policy. |
+| **iOS VisionKit + jscanify (Android)** | ⚠️ Both offline, best per-platform UX, but two code paths — more complexity/testing than the win justifies for V1. |
+
+### Consequences
+
+- **F-8 adds no runtime dependency** — native Canvas only. Conversion logic
+  is injected (`ImageEngineDeps`) so it stays unit-testable (jsdom has no
+  canvas); the canvas path is device-verified.
+- ~~**F-2** will add `jscanify` + `@techstark/opencv-js`…~~ **Reversed by ADR-018:** F-2 uses ML Kit's native scanner instead — no `jscanify`/`opencv-js` dependency, no ~8 MB WASM, no CSP weakening (cf. ADR-017).
+- **Supersedes** two statements in [04-image-engine-module.md](04-image-engine-module.md):
+  the `heic-to` library choice (§2) and the §14 note listing "document
+  edge detection" as V2 (F-2 ships it in V1). That doc is corrected to
+  point here.
+
+---
+
+## ADR-017: Offline CSP & no runtime-fetched WASM/models
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-06-14 |
+| **Decision** | The V1 Content-Security-Policy stays **strict**: no `unsafe-eval`, no `wasm-unsafe-eval`, `connect-src 'self'`. A media library is **rejected** if it (a) needs an eval-class CSP relaxation for a WASM/Emscripten/Go runtime, or (b) fetches a worker/WASM/model from a CDN at runtime. Assets must be bundled/self-hosted; heavy engines run natively instead. |
+
+### Context
+
+This app handles Aadhaar/PAN-grade PII and is offline-first with zero
+network permission. Two recurring library behaviours violate that posture:
+runtime CDN fetches (a "works on my machine" library silently fails on the
+zero-network device) and WASM runtimes that demand `wasm-unsafe-eval`,
+which materially weakens the CSP on a PII app.
+
+### Evidence that drove it
+
+- **F-5 compression** dropped **`@quicktoolsone/pdf-compress`**: it loads a
+  pdfjs worker + Go WASM from jsdelivr by default → fails offline
+  (see [03-pdf-engine-module.md](03-pdf-engine-module.md)).
+- **F-2 scanner (OpenCV.js)** required `wasm-unsafe-eval` — the CSP
+  weakening this ADR exists to avoid. Combined with ADR-018's finding that
+  the native ML Kit scanner needs **no** WebView runtime at all, this
+  reversed the scanner engine choice (jscanify/OpenCV.js → ML Kit).
+
+### Consequences
+
+- Before adding any PDF/image/CV/OCR/AI library, grep its `dist/` for
+  `workerSrc|jsdelivr|wasmUrl|GlobalWorkerOptions` and check its CSP needs
+  (the checklist in [CLAUDE.md](../../CLAUDE.md) and
+  [device-verification.md](../guides/device-verification.md)).
+- Prefer **native** engines (Capacitor plugins) for heavy media work that
+  would otherwise need an eval-class CSP.
+
+---
+
+## ADR-018: Document Scanner — Google ML Kit (via Play Services)
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-10 |
+| **Supersedes** | The **scanner half** of [ADR-016](#adr-016-image-engine--document-scanner-offline-permissive-only) (jscanify + OpenCV.js). Image conversion (F-8) in ADR-016 is unchanged. |
+| **Decision** | **Document scanner (F-2):** use **Google ML Kit Document Scanner** via **`@capacitor-mlkit/document-scanner`** (Apache-2.0). Play Services hosts a full-screen native scan flow (auto edge detection, perspective correction, filters, ML page-cleaning, multi-page, JPEG/PDF output); we import the returned image URIs through the existing vault pipeline. **Android-only**; scanning is hidden where unsupported. |
+
+### Context
+
+ADR-016 chose jscanify + OpenCV.js to keep scanning 100% offline and
+permissive-licensed. In practice that path carried real costs: ~8 MB of
+lazy WASM, a **CSP weakening** to allow `wasm-unsafe-eval` on a PII app
+(ADR-017), a hand-built camera + draggable-corner review UI,
+and cross-platform WASM maintenance — all to approximate UX that the OS
+already provides. ADR-016 rejected ML Kit for a reason that **verification
+disproved**: the plugin adds no `INTERNET`/`CAMERA` permission to our app.
+
+### Verification (per the media-library rules in CLAUDE.md)
+
+- **Permissions/network:** `@capacitor-mlkit/document-scanner@8.1.0`'s **own**
+  Android manifest declares no permissions (only `minSdk 24`), and Play
+  Services renders the scan UI + downloads the model in its own process — so no
+  app `CAMERA` permission is needed (verified: `CAMERA` is absent from the
+  release APK).
+  > ⚠️ **Correction (2026-07-11):** the original claim that our app "keeps a
+  > zero-`INTERNET` manifest" was **wrong**. Building the release APK and
+  > running `aapt dump permissions` shows `INTERNET` + `ACCESS_NETWORK_STATE`
+  > **are** merged in — the plugin depends on `play-services-mlkit-document-scanner`,
+  > whose transitive Play-Services libraries declare them, and the manifest
+  > merger folds them into the app. Decision: **accept + document** (not strip)
+  > — the app makes no network calls of its own; the permission exists only for
+  > the Play-Services scanner model download. See
+  > [10-security §3.5](10-security-architecture.md) and update the Play
+  > data-safety declaration (G1-6).
+- **License:** Apache-2.0 (plugin) over `play-services-mlkit-document-scanner`
+  — permissive, allowed.
+- **No WebView runtime deps:** no WASM, no CDN fetch, no CSP change — the
+  scanner runs natively, entirely outside the WebView.
+
+### Trade-offs accepted
+
+| Gain | Cost |
+|---|---|
+| Best-in-class native UX (auto-capture, edge detect, filters, ML cleanup, multi-page, PDF) | **Requires Google Play Services** on the device |
+| No ~8 MB WASM in our bundle; no CSP weakening (ADR-017 moot for the scanner) | **One-time model download** via Play Services (the "one-time internet" for this feature only) |
+| No app camera/network permission; less attack surface | **Android-only** (no iOS/web scanner path in V1) |
+| Deletes the geometry + corner-review + engine-seam code we'd have to maintain | Devices without Play Services (rare, de-Googled) can't scan |
+
+### Consequences
+
+- The rest of V1 stays 100% offline with no network permission; **the
+  scanner is the single, documented feature that needs Play Services + a
+  one-time download** (see [10-security §3.5](10-security-architecture.md)).
+  It **degrades gracefully**: the Scan entry is hidden when unsupported.
+- F-2 slice-1's OpenCV-oriented seam is removed as stale code:
+  `scan-geometry.ts`, the `ScannerEngine` interface + JS-warp path, and the
+  `Quad`/`Point`/`ScanResult` geometry types (ML Kit returns finished
+  images, so none of it runs).
+- Scanned pages import through the existing vault upload pipeline as
+  `IncomingFile`s with `source: 'scanner'`.
+
+---
+
+## ADR-019: OCR — bundled native ML Kit Text Recognition
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-10 |
+| **Supersedes** | [ADR-011](#adr-011-tesseractjs-for-ocr) (Tesseract.js). |
+| **Decision** | **F-20 OCR** uses **Google ML Kit Text Recognition v2 with its models statically bundled in the APK** (`com.google.mlkit:text-recognition` + `com.google.mlkit:text-recognition-devanagari`), via a **thin custom Capacitor plugin** (`OcrPlugin`, like `RootCheckPlugin`). Native, Android/iOS; **no WASM, no CSP change, no runtime download** — OCR works offline the instant the app installs, Hindi (Devanagari) + English. Web degrades (no ML Kit web SDK). |
+
+### Context
+
+F-20 must OCR scanned documents/photos in English **and** Hindi, on-device,
+fully offline, with everything **bundled in the APK** (no runtime/CDN/Play-
+Services download). It should also not reintroduce the WASM/CSP weakening that
+[ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels) exists to avoid
+and that [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services)
+removed from the scanner.
+
+### Options considered
+
+| Option | Verdict |
+|---|---|
+| **Tesseract.js / LiteParse-web** (WASM in WebView) | ❌ Needs `wasm-unsafe-eval` (CSP weakening, ADR-017); ~30 MB `eng`/`hin` traineddata; slower on mid-range phones. LiteParse's edge is PDF *layout parsing*, not raw image OCR (it delegates to Tesseract). Web-capable, but the CSP cost is disqualifying on a PII app. |
+| **Native LiteParse plugin** (cross-compile Rust + native libtesseract) | ❌ Weeks of custom Rust/NDK/JNI work with no upstream Android build; OCR quality still lands at Tesseract; LiteParse's parsing win is out of F-20's scope. Earmarked for a *future* smart-PDF-parsing feature, not OCR. |
+| **`@capacitor-mlkit/text-recognition`** (Capawesome) | ❌ Not on public npm — a paid **Capawesome Insiders** plugin. |
+| **`@jcesarmobile/capacitor-ocr`** (MIT, public) | ⚠️ Bundled `com.google.mlkit:text-recognition` but **Latin-only** — no Devanagari, fails the Hindi requirement. |
+| **`@capacitor-community/image-to-text`** | ❌ Licensed **Hippocratic License 2.0** — not permissive (violates the MIT/Apache/BSD/ISC-only policy; legal risk for a proprietary/`UNLICENSED` app). Also uses the deprecated *Firebase* ML Kit and shows no Devanagari support. |
+| **`@pantrist/capacitor-plugin-ml-kit-text-recognition`** (MIT) | ❌ Uses the **unbundled** `play-services-mlkit-text-recognition` — **downloads the model at runtime** (fails the in-APK / no-download requirement); no documented Devanagari support. |
+| **Custom `OcrPlugin` over bundled ML Kit** ✅ — the only option that is permissive **and** in-APK **and** supports Hindi. | Thin Java Capacitor plugin (RootCheck precedent) adding the bundled `text-recognition` + `text-recognition-devanagari` Gradle deps. Full control, Hindi + English, in-APK, offline, no CSP/WASM, no third-party/paywall. ML Kit is Apache-2.0. |
+
+### Consequences
+
+- Adds `com.google.mlkit:text-recognition:16.0.1` +
+  `com.google.mlkit:text-recognition-devanagari:16.0.1` to the Android build
+  (**bundled** models, ~a few MB each). No new app permission (processes a
+  local image path; no camera/internet).
+- `tesseract.js` removed from `package.json` (was unused — OCR module hadn't
+  shipped). The search module README note is corrected.
+- **[SEC]** OCR text is sensitive → stored only in the encrypted `documents.ocr_text`
+  column (feeds FTS search); never logged.
+- Android/iOS only; the Web build has no OCR (degrades, like the scanner).
+
+---
+
+## ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-13 |
+| **Decision** | The "PDF Power Tools" conversion features (PDF→Word, PDF→Excel/CSV, open Word) use three **pure-JavaScript, permissively-licensed** libraries, each **lazy-loaded per tool** (never in the main chunk): **[`docx`](https://www.npmjs.com/package/docx)** (MIT) to generate `.docx`, **[SheetJS `xlsx`](https://docs.sheetjs.com/) Community Edition** (Apache-2.0) to read/write spreadsheets, and **[`mammoth`](https://github.com/mwilliamson/mammoth.js)** (BSD-2-Clause) to convert `.docx`→HTML for viewing. All run **fully offline in the WebView** — **no WASM, no CSP change, no runtime/CDN fetch** — so they satisfy [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels). **LibreOffice-WASM/ZetaOffice and all commercial SDKs are rejected** (below). |
+
+### Context
+
+Users ask for PDF↔Office conversion (esp. "PDF to Word"). V1 makes **no network
+calls** (offline-first), depends only on **MIT/Apache/BSD/ISC** code, cannot
+weaken the strict CSP on Aadhaar/PAN-grade PII (ADR-017), and has a tight JS
+budget (< 500 KB gzipped total). Any conversion must run **on-device**. Note the
+honest limitation: **faithful, layout-preserving PDF→DOCX is not achievable**
+with small permissive offline libraries — it needs a LibreOffice-class engine.
+So V1 targets the **usable, content-first 80%** (extract text/tables into an
+*editable* Office file), with an explicit in-UI disclaimer, not pixel-fidelity.
+
+### Options considered
+
+| Option | Verdict |
+|---|---|
+| **`docx`** (MIT), **SheetJS `xlsx`** (Apache-2.0), **`mammoth`** (BSD-2) ✅ | Pure JS, no WASM/worker/CDN fetch → no CSP change, vendorable offline. Cover generate-Word, read/write-Excel, view-Word. Lazy-loaded per tool (SheetJS full ≈ 300 KB gz, `docx`/`mammoth` smaller) so the main + PDF chunks stay within budget. **Chosen.** |
+| **ZetaOffice / LibreOffice-WASM** (`zetajs` wrapper MIT; engine MPL-2.0/LGPL) | ❌ 50–250 MB WASM fetched from a **CDN** at runtime + needs `unsafe-eval`. Violates the bundle budget, offline-no-CDN (ADR-017), **and** the CSP. The *only* faithful converter, but only viable **later as an optional V2 server-side** conversion on an India-residency server — never bundled in V1. |
+| **Nutrient / Apryse (PDFTron) / Aspose / Cloudmersive / ConvertAPI** | ❌ Non-permissive commercial SDKs and/or cloud APIs (data leaves the device). Disqualified on license **and** offline policy. |
+
+### Consequences
+
+- Adds `docx`, `xlsx` (SheetJS Community), `mammoth` to `package.json`. Each is
+  **dynamically `import()`-ed inside its tool's code path** so it lands in a lazy
+  chunk, not the app/vendor chunk (enforce with the perf budget check).
+- **Before adding each**: verify it's on npm and grep its `dist` for
+  `workerSrc|jsdelivr|wasm|fetch(` — same media-lib gate that caught the bad PDF
+  compressors — to confirm no runtime network/WASM dependency.
+  - **`docx` @ 9.7.1 (MIT) audited & added 2026-07-13 (F-41):** dist carries **no
+    `.wasm`, no CDN/jsdelivr/unpkg, no `fetch`/XHR/`importScripts`** worker load;
+    the only `http(s)` strings are doc-comment reference links (officeopenxml.com)
+    and a `fromCodePoint` polyfill note. Lazy-loaded via `pdf-to-word-ops.ts`.
+  - **`xlsx` @ 0.18.5 (SheetJS, Apache-2.0) audited & added 2026-07-13 (F-42):**
+    dist carries **no `.wasm`, no CDN (jsdelivr/unpkg/cdn.sheetjs), no
+    `fetch`/XHR/`importScripts`**; the only `http(s)` strings are XML **namespace
+    URIs** (docs.oasis-open.org, purl.org, schemas.microsoft.com). Lazy-loaded via
+    `pdf-to-sheet-ops.ts`. (npm publishes 0.18.5; newer builds are CDN-only — we
+    pin the permissive npm release.)
+  - **`mammoth` @ 1.12.0 (BSD-2-Clause) audited & added 2026-07-13 (F-43):** the
+    browser build carries **no `.wasm`, no CDN, no `fetch`/XHR/`importScripts`**;
+    its `browser` field swaps the Node `fs`/unzip for a pure-JS unzipper, so the
+    Vite bundle pulls **no `fs`** (verified — no externalization warning). Lazy-
+    loaded via `docx-viewer.ts`; mammoth's HTML is **allow-list sanitised**
+    (`sanitizeDocxHtml`) before it reaches the viewer.
+- **[SEC]** conversion outputs are document content (PII) → treated exactly like
+  documents: written only through `FileStorage` into the encrypted vault, never
+  logged; the source never leaves the device.
+- **Honest UX:** PDF→Word/Excel is **text/table-first, not layout-faithful** —
+  the tool shows a one-line "text extracted, layout may differ" note. Faithful
+  conversion is explicitly out of V1 scope (see ZetaOffice row).
+- Web + native both supported (pure JS); no new native permission.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -909,4 +1192,4 @@ scripts/              # Workspace-wide tooling (agent:lint, agent:sitemap)
 
 ---
 
-*Last updated: 2026-06-10 · Kagaz Architecture Decision Records v1.1*
+*Last updated: 2026-07-13 · Kagaz Architecture Decision Records v1.2 (ADR-020 client-side Office interop)*

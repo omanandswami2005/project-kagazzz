@@ -39,7 +39,17 @@ export class SqliteDbAdapter implements DbConnection {
   }
 
   async execute(sql: string): Promise<void> {
-    await this.db.execute(sql, false);
+    // The native plugin batch-splits DDL on ";\n" and only folds a
+    // trailing `END;` into its CREATE TRIGGER when that `END;` is
+    // newline-terminated (UtilsSQLite.concatRemoveEnd matches the bare
+    // token "END", not "END;"). A DDL ending in `END;` with no trailing
+    // newline therefore leaves the last trigger unclosed and the whole
+    // migration aborts with "incomplete input". Guaranteeing a trailing
+    // newline here makes every migration splitter-safe regardless of its
+    // own formatting. (Trigger bodies must still be single-statement —
+    // a separate native-splitter constraint enforced by migrations.test.)
+    const normalized = sql.endsWith('\n') ? sql : `${sql}\n`;
+    await this.db.execute(normalized, false);
   }
 
   async transaction<T>(fn: (tx: DbConnection) => Promise<T>): Promise<T> {
@@ -92,4 +102,33 @@ export async function openDatabase(
   const connection = new SqliteDbAdapter(db);
   await runMigrations(connection, migrations, onMigrationApplied);
   return connection;
+}
+
+/**
+ * Deletes the encrypted database file (SEC-V1 §8 #12 full data erasure). Must
+ * run while the SQLCipher secret is still active (i.e. before the secure-storage
+ * key is removed) — otherwise the encrypted file can't be opened to delete it.
+ * Best-effort: resolves even if there is nothing to delete.
+ */
+export async function deleteDatabase(): Promise<void> {
+  const sqlite = new SQLiteConnection(CapacitorSQLite);
+  // The app's live connection was opened by a *different* SQLiteConnection
+  // instance; this fresh wrapper's local map is empty, so createConnection
+  // would collide ("Connection kagaz already exists"). Sync the map with the
+  // native registry first, then retrieve the existing connection.
+  await sqlite.checkConnectionsConsistency().catch(() => undefined);
+  const { result: isConn } = await sqlite.isConnection(DATABASE_NAME, false);
+  const db = isConn
+    ? await sqlite.retrieveConnection(DATABASE_NAME, false)
+    : await sqlite.createConnection(DATABASE_NAME, true, 'secret', 1, false);
+  if (!(await db.isDBOpen()).result) {
+    await db.open();
+  }
+  await db.delete();
+  await sqlite.closeConnection(DATABASE_NAME, false).catch(() => undefined);
+  // NB: the SQLCipher secret is deliberately NOT cleared here. Deleting the
+  // file already removes all data; regenerating the key/secret on the next
+  // launch left the fresh DB unable to persist writes across restarts. The
+  // retained key protects nothing (there is no old DB), and keeps the
+  // re-created empty DB stable.
 }

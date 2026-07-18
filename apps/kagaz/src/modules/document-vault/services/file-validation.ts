@@ -22,10 +22,17 @@ const EXTENSION_TO_TYPE: Record<string, FileType> = {
   heic: FileType.HEIC,
   heif: FileType.HEIC,
   webp: FileType.WEBP,
+  txt: FileType.TXT,
+  md: FileType.MD,
+  markdown: FileType.MD,
+  docx: FileType.DOCX,
+  xlsx: FileType.XLSX,
+  csv: FileType.CSV,
 };
 
 /** `accept` attribute value for the file-picker input. */
-export const UPLOAD_ACCEPT_ATTR = '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp';
+export const UPLOAD_ACCEPT_ATTR =
+  '.pdf,.jpg,.jpeg,.png,.heic,.heif,.webp,.txt,.md,.docx,.xlsx,.csv';
 
 /** MIME type stored for each uploadable FileType. */
 export const TYPE_TO_MIME: Record<string, string> = {
@@ -35,7 +42,20 @@ export const TYPE_TO_MIME: Record<string, string> = {
   [FileType.PNG]: 'image/png',
   [FileType.HEIC]: 'image/heic',
   [FileType.WEBP]: 'image/webp',
+  [FileType.TXT]: 'text/plain',
+  [FileType.MD]: 'text/markdown',
+  [FileType.DOCX]:
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  [FileType.XLSX]:
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  [FileType.CSV]: 'text/csv',
 };
+
+/** Text file types have no binary signature — the magic-byte check is skipped. */
+const TEXT_TYPES = new Set<FileType>([FileType.TXT, FileType.MD, FileType.CSV]);
+
+/** Office Open XML types are ZIP containers — the "PK\x03\x04" header. */
+const ZIP_TYPES = new Set<FileType>([FileType.DOCX, FileType.XLSX]);
 
 /**
  * Strips path separators and control characters, trims, and caps length
@@ -85,6 +105,19 @@ const HEIC_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heif', 'mif1', 'msf1'];
  * check). Returns true when the header matches the claimed type.
  */
 export function matchesMagicBytes(type: FileType, header: Uint8Array): boolean {
+  // Plain-text formats carry no signature; accept on extension + size checks.
+  if (TEXT_TYPES.has(type)) {
+    return true;
+  }
+  // Office Open XML formats (.docx/.xlsx) are ZIP containers.
+  if (ZIP_TYPES.has(type)) {
+    return (
+      header[0] === 0x50 &&
+      header[1] === 0x4b &&
+      header[2] === 0x03 &&
+      header[3] === 0x04
+    );
+  }
   switch (type) {
     case FileType.PDF:
       return ascii(header, 0, 4) === '%PDF';

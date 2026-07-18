@@ -7,6 +7,7 @@
 ## Table of Contents
 
 - [Color Palette](#color-palette)
+- [App Icon](#app-icon)
 - [Typography](#typography)
 - [Spacing](#spacing)
 - [Border Radius](#border-radius)
@@ -46,6 +47,60 @@
 | `--color-warning-light` | `#FDBA74` | Warning hover | Warning backgrounds |
 | `--color-info` | `#0EA5E9` | Informational | Tips, AI suggestions, help text |
 | `--color-info-light` | `#38BDF8` | Info hover | Info backgrounds |
+
+---
+
+## App Icon
+
+> **Added 2026-07-18**, replacing the default Capacitor/Ionic placeholder
+> icon (the app previously shipped with the framework's generic starter
+> icon on every platform — no icon design had ever been done). Marketing/
+> brand *guidelines* live outside this design-system folder per the
+> [README](README.md#whats-intentionally-not-here), but the icon itself is
+> built entirely from tokens already defined above, so its rationale is
+> documented here rather than starting a separate brand doc for one asset.
+
+**Concept:** a folded-corner page — the *kagaz* ("paper") the app
+manages — with a security badge overlaid on its corner, combining the
+app's two core ideas (document vault + privacy) into one shape. A
+heading bar + three body lines suggest written content without needing
+literal text, so the mark reads the same in every locale.
+
+**Colors — token-only, no new hex values invented:**
+
+| Element | Token | Hex |
+|---|---|---|
+| Background gradient start | `--color-primary` | `#1E3A5F` |
+| Background gradient end | `--color-accent` (darkened ~15% for contrast against white) | `#0F6E5C` |
+| Page | white | `#FFFFFF` |
+| Folded-corner flap / body text lines | a neutral between `--surface-3` and `--border-default` | `#C7D2DE` |
+| Heading line | `--color-primary` | `#1E3A5F` |
+| Security badge | `--color-accent` | `#10B981` |
+
+**Safe zone:** the mark is centered within roughly the middle 66% of the
+1024×1024 source canvas (Android's adaptive-icon safe zone — content
+outside it can be clipped by circle/squircle/rounded-square OEM launcher
+masks). Verified device-side on `Pixel6_API34`: legible at both the home
+-screen size and the ~48dp app-drawer size, with no clipping in the round
+icon variant.
+
+**Source files:** `apps/kagaz/assets/icon-background.svg`,
+`icon-foreground.svg` (Android adaptive-icon layers), and `icon-only.svg`
+(flat composite, used for iOS/legacy Android/PWA). Regenerate every
+platform's icon set from these sources after an edit:
+
+```bash
+pnpm --filter kagaz exec capacitor-assets generate --android \
+  --iconBackgroundColor '#1e3a5f' --iconBackgroundColorDark '#142842'
+pnpm --filter kagaz exec capacitor-assets generate --ios
+```
+
+`@capacitor/assets` (MIT, `ionic-team`) is a build-time-only devDependency
+— it generates PNGs at build time and never ships in the app bundle, so it
+carries none of the runtime-dependency scrutiny in the root
+[CLAUDE.md](../../CLAUDE.md) (network/WASM/CSP checks apply to *shipped*
+libraries). See [CONTRIBUTING.md](../../CONTRIBUTING.md#app-icon) for the
+full regeneration workflow.
 
 ### Surface Colors
 
@@ -598,4 +653,4 @@ The original `--ease-out`, `--ease-in`, `--ease-in-out` remain unchanged. Prefer
 
 ---
 
-*Last updated: 2026-06-08 · Kagaz Design System v2.0*
+*Last updated: 2026-07-18 · Kagaz Design System v2.0*

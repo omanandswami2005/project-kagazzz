@@ -31,6 +31,8 @@ export interface DocumentEntity {
   originalFilename?: string;
   createdAt: string;
   updatedAt: string;
+  /** When the document was last opened/previewed (F-32); null if never. */
+  lastAccessedAt?: string;
   deletedAt?: string;
   metadataJson?: string;
   synced: boolean;
@@ -64,6 +66,20 @@ export interface TagEntity {
   name: string;
   color?: string;
   createdAt: string;
+}
+
+/**
+ * quick_reference_entries row (§4.12, F-84). `label` is always user-typed
+ * free text — deliberately no `labelType`/`valueType` field (see
+ * 10-security-architecture.md §3.6).
+ */
+export interface QuickReferenceEntry {
+  id: string;
+  label: string;
+  value: string;
+  linkedDocumentId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** operations_history.operation_type CHECK constraint values (§4.5). */

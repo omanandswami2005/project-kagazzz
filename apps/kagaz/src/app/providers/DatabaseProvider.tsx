@@ -13,6 +13,7 @@ import {
 import type { DbConnection } from '@/infrastructure/database/connection';
 import { openDatabase } from '@/infrastructure/database/database.service';
 import { createFileStorage, cleanupTempFiles } from '@/infrastructure/filesystem';
+import { createTrashDeps, purgeExpiredTrash } from '@/modules/document-vault/services/trash.service';
 import { DiagnosticSink, log, setDiagnosticSink } from '@/core/logging';
 
 const logger = log('database');
@@ -62,7 +63,17 @@ export function DatabaseProvider({
         setDiagnosticSink(sink);
 
         // [SEC] §3.3: temp/ must not survive across sessions.
-        await cleanupTempFiles(createFileStorage());
+        const files = createFileStorage();
+        await cleanupTempFiles(files);
+
+        // [LEGAL] F-57: honour the 30-day Trash retention on every launch, so
+        // deleted data is purged even if the user never opens the Trash.
+        await purgeExpiredTrash(createTrashDeps(db, files)).catch((err: unknown) => {
+          logger.warn({
+            event: 'vault.trash.launch_purge_error',
+            err: { message: String(err) },
+          });
+        });
 
         if (!cancelled) {
           setValue({ status: 'ready', db });

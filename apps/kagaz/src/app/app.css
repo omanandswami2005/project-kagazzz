@@ -1,4 +1,18 @@
 /* App-shell styles — tokens only. */
+
+/* Bridge Ionic's component variables to the design tokens so IonContent /
+   IonModal / IonToast follow data-theme. Without this, Ionic keeps its
+   white default background while dark-mode tokens turn text near-white —
+   unreadable screens on devices in dark mode. */
+:root {
+  --ion-background-color: var(--surface-1);
+  --ion-text-color: var(--text-primary);
+  --ion-toolbar-background: var(--surface-2);
+  --ion-toolbar-color: var(--text-primary);
+  --ion-item-background: var(--surface-1);
+  --ion-color-primary: var(--color-primary);
+}
+
 .kg-crash {
   display: flex;
   flex-direction: column;

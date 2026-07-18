@@ -112,6 +112,46 @@ describe('validateFile', () => {
     });
   });
 
+  it('accepts a text file (F-40, no magic bytes)', async () => {
+    await expect(
+      validateFile('notes.txt', new Blob(['hello world']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.TXT });
+  });
+
+  it('accepts a Markdown file (F-40)', async () => {
+    await expect(
+      validateFile('readme.md', new Blob(['# Title']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.MD });
+  });
+
+  it('accepts a .docx with the ZIP signature (F-41)', async () => {
+    const zip = new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0])]);
+    await expect(validateFile('resume.docx', zip)).resolves.toEqual({
+      valid: true,
+      fileType: FileType.DOCX,
+    });
+  });
+
+  it('rejects a .docx whose header is not a ZIP (F-41)', async () => {
+    await expect(
+      validateFile('fake.docx', blobOf(pdfBytes()))
+    ).resolves.toEqual({ valid: false, code: VaultErrorCode.CORRUPTED_FILE });
+  });
+
+  it('accepts a .xlsx with the ZIP signature (F-42)', async () => {
+    const zip = new Blob([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0, 0, 0, 0])]);
+    await expect(validateFile('budget.xlsx', zip)).resolves.toEqual({
+      valid: true,
+      fileType: FileType.XLSX,
+    });
+  });
+
+  it('accepts a .csv (F-42, text, no signature)', async () => {
+    await expect(
+      validateFile('data.csv', new Blob(['a,b\n1,2']))
+    ).resolves.toEqual({ valid: true, fileType: FileType.CSV });
+  });
+
   it('rejects files over the size ceiling', async () => {
     const big = {
       size: MAX_FILE_SIZE_BYTES + 1,

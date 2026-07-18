@@ -35,6 +35,19 @@ describe('TagDao', () => {
     expect(db.calls[0]?.sql).toContain('ORDER BY name');
   });
 
+  it('findAllAssignments returns documentId + mapped tag (F-10)', async () => {
+    db.onQuery(/FROM document_tags dt\s+JOIN tags/, [
+      { ...tagRow, document_id: 'doc-1' },
+      { ...tagRow, id: 't-2', name: 'personal', document_id: 'doc-2' },
+    ]);
+    const result = await dao.findAllAssignments();
+    expect(result).toHaveLength(2);
+    expect(result[0]?.documentId).toBe('doc-1');
+    expect(result[0]?.tag.id).toBe('t-1');
+    expect(result[1]?.documentId).toBe('doc-2');
+    expect(result[1]?.tag.name).toBe('personal');
+  });
+
   it('findByDocument joins through document_tags', async () => {
     db.onQuery(/JOIN document_tags/, [tagRow]);
     const tags = await dao.findByDocument('doc-1');

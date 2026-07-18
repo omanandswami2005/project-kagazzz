@@ -1,5 +1,11 @@
 {
   "app_name": "Kagaz",
+  "exit_hint": "Press back again to exit",
+  "tabs": {
+    "documents": "Documents",
+    "favorites": "Favorites",
+    "storage": "Storage"
+  },
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",
@@ -25,6 +31,47 @@
     "file_too_large": "File is too large. Maximum size is {{maxSize}} MB.",
     "unsupported_format": "This file format is not supported.",
     "biometric_failed": "Authentication failed. Please try again."
+  },
+  "crash": {
+    "title": "Something went wrong",
+    "body": "Your documents are safe. Restart the app to continue.",
+    "restart": "Restart"
+  },
+  "lock": {
+    "title": "Kagaz is locked",
+    "subtitle": "Unlock with your fingerprint, face, or device PIN to continue.",
+    "unlock": "Unlock",
+    "failed": "Couldn't verify. Try again.",
+    "reason": "Unlock Kagaz",
+    "quick_reference_title": "Quick Reference is locked",
+    "quick_reference_subtitle": "Unlock with your fingerprint, face, or device PIN to view your saved values.",
+    "quick_reference_reason": "Unlock Quick Reference"
+  },
+  "root_warning": {
+    "message": "This device looks rooted — your documents may be less secure.",
+    "dismiss": "Dismiss"
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "get_started": "Get Started",
+    "welcome": {
+      "title": "Welcome to Kagaz",
+      "body": "Keep all your important documents safe on your phone. No account needed."
+    },
+    "privacy": {
+      "title": "Private by design",
+      "body": "Your files never leave your device. Kagaz works fully offline."
+    },
+    "organize": {
+      "title": "Scan and organize",
+      "body": "Scan papers into clean PDFs and sort them into folders you choose."
+    },
+    "backup": {
+      "title": "Locked and backed up",
+      "body": "Lock the app with your fingerprint, and export an encrypted backup anytime."
+    }
   },
   "confirmations": {
     "delete_title": "Delete Document?",

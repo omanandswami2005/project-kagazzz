@@ -2,10 +2,22 @@
 
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
-> **Status**: Draft
-> **Last Updated**: 2026-06-10
+> **Status**: Partially implemented (F-3/F-4/F-5)
+> **Last Updated**: 2026-07-16
 
 ---
+
+> [!NOTE]
+> **Implementation status (2026-06-13).** F-3 (merge), F-4 (split), and F-5
+> (compress) are implemented as the **real** worker-backed `PdfEngineServiceImpl`
+> (`apps/kagaz/src/modules/pdf-engine/`) — no mock in the shipped path. The
+> behavioural contract runs against the real service via `@vitest/web-worker`.
+> Compression's byte-reduction step rasterises pages (needs a canvas), so that
+> assertion is **device-verified** rather than run in jsdom CI. The rest of the
+> API below (creation, conversion, security, OCR, forms, metadata, annotation)
+> is the target design for later items. Code samples here predate the React
+> decision (ADR-001) and show Angular `@Injectable` for illustration only — the
+> app is React.
 
 ## 1. Overview
 
@@ -24,7 +36,7 @@ The PDF Engine module is the core document-processing backbone of Kagaz. It prov
 | **pdfjs-dist** | Apache 2.0 | Rendering — PDF → image, text extraction, in-app PDF viewing | ~400 KB |
 | **@pdfsmaller/pdf-encrypt** | MIT | AES-256 + RC4 encryption | ~18 KB |
 | **@pdfsmaller/pdf-decrypt** | MIT | Decryption (matching encrypt counterpart) | ~18 KB |
-| **@quicktoolsone/pdf-compress** | MIT | True PDF compression via WASM | ~150 KB |
+| **pdfjs-dist + pdf-lib** (rasterise) | Apache 2.0 / MIT | Compression — render pages → JPEG → rebuild PDF (F-5). ~~@quicktoolsone/pdf-compress~~ dropped: it loads a Go WASM + pdfjs worker from a CDN, which fails on the zero-network app (see implementation note + ADR-017) | (reuses pdfjs) |
 | **tesseract.js** | Apache 2.0 | OCR for scanned documents (50+ languages) | ~1 MB (core) + language data |
 
 ### Library Responsibility Matrix
@@ -57,7 +69,7 @@ graph LR
 | PDF manipulation | pdf-lib | Pure JS, no native deps, excellent TypeScript support, actively maintained |
 | PDF rendering | pdfjs-dist | Mozilla's battle-tested renderer, used by Firefox, only viable browser option |
 | Encryption | @pdfsmaller/pdf-encrypt + pdf-decrypt | Tiny (~36 KB combined), AES-256 + RC4, MIT licensed |
-| Compression | @quicktoolsone/pdf-compress | WASM-based = near-native performance, true recompression (not just zip) |
+| Compression | pdfjs-dist + pdf-lib (rasterise) | The only offline + permissive (MIT/Apache) + no-CSP-eval path. Lossy (text→raster), fine for scans/photos. MuPDF/Ghostscript (lossless) are AGPL — forbidden; MuPDF-commercial is the upgrade path |
 | OCR | tesseract.js | Industry-standard Tesseract via WASM, 50+ languages, Web Worker native |
 
 ---
@@ -149,12 +161,23 @@ interface PdfEngineService {
   mergePdfs(pdfs: Uint8Array[]): Promise<Uint8Array>;
   /** Split a PDF into multiple documents by page ranges */
   splitPdf(pdf: Uint8Array, ranges: PageRange[]): Promise<Uint8Array[]>;
-  /** Rotate a specific page */
-  rotatePage(pdf: Uint8Array, pageIndex: number, degrees: RotationDegrees): Promise<Uint8Array>;
-  /** Delete a specific page */
-  deletePage(pdf: Uint8Array, pageIndex: number): Promise<Uint8Array>;
-  /** Reorder pages according to the given order */
-  reorderPages(pdf: Uint8Array, newOrder: number[]): Promise<Uint8Array>;
+  /** Stamp a diagonal text watermark across every page (F-37) */
+  watermarkPdf(pdf: Uint8Array, text: string): Promise<Uint8Array>;
+  /** Stamp sequential page numbers onto every page (F-36) */
+  addPageNumbers(pdf: Uint8Array, options: PageNumberOptions): Promise<Uint8Array>;
+  /**
+   * Reorder / rotate / delete pages in one pass (F-35). `ops` is the final page
+   * list: each entry names a source page + its extra rotation; omit to delete,
+   * repeat to duplicate, and order = the new page order. Supersedes the earlier
+   * separate rotatePage / deletePage / reorderPages design sketch.
+   */
+  organizePages(pdf: Uint8Array, ops: PageOp[]): Promise<Uint8Array>;
+  /**
+   * Extract the given page ranges into a single new PDF (F-66). Thin wrapper
+   * over `organizePages`: each range is flattened to source-page ops in range
+   * order (no rotation), so the output keeps only the chosen pages.
+   */
+  extractPages(pdf: Uint8Array, ranges: PageRange[]): Promise<Uint8Array>;
 
   // ── Conversion ────────────────────────────────────────
   /** Render PDF pages to images */
@@ -171,8 +194,12 @@ interface PdfEngineService {
   compressPdf(pdf: Uint8Array, quality: CompressionLevel): Promise<Uint8Array>;
 
   // ── Text & OCR ────────────────────────────────────────
-  /** Extract selectable text from a PDF */
+  /** Extract selectable text from a PDF (F-40 exports it to .txt/.md) */
   extractText(pdf: Uint8Array): Promise<string>;
+  /** Convert a PDF's text into an editable Word .docx (F-41, ADR-020 `docx`) */
+  pdfToWord(pdf: Uint8Array, title: string): Promise<Blob>;
+  /** Convert a PDF's form fields / rows into a .xlsx/.csv (F-42, ADR-020 SheetJS) */
+  pdfToSheet(pdf: Uint8Array, format: 'xlsx' | 'csv'): Promise<Blob>;
   /** Run OCR on a scanned PDF to extract text */
   ocrPdf(pdf: Uint8Array, language: string): Promise<string>;
 
@@ -183,16 +210,16 @@ interface PdfEngineService {
   fillForm(pdf: Uint8Array, values: Record<string, string>): Promise<Uint8Array>;
 
   // ── Metadata ──────────────────────────────────────────
-  /** Read PDF metadata (title, author, dates, etc.) */
+  /** Read PDF metadata (title, author, subject, keywords) (F-39) */
   getMetadata(pdf: Uint8Array): Promise<PdfMetadata>;
-  /** Update PDF metadata */
-  setMetadata(pdf: Uint8Array, metadata: Partial<PdfMetadata>): Promise<Uint8Array>;
+  /** Update PDF metadata (F-39) */
+  setMetadata(pdf: Uint8Array, metadata: PdfMetadata): Promise<Uint8Array>;
 
   // ── Annotation ────────────────────────────────────────
   /** Add a text watermark to all pages */
   addWatermark(pdf: Uint8Array, text: string, options: WatermarkOptions): Promise<Uint8Array>;
-  /** Stamp an image onto specific pages */
-  addStamp(pdf: Uint8Array, image: Uint8Array, position: StampPosition): Promise<Uint8Array>;
+  /** Stamp an image (signature/photo) onto a chosen page (F-38) */
+  stampImage(pdf: Uint8Array, image: ImageInput, options: StampOptions): Promise<Uint8Array>;
 
   // ── Lifecycle ─────────────────────────────────────────
   /** Initialize the engine (preload WASM, spawn workers) */
@@ -215,6 +242,23 @@ interface PdfEngineServiceWithProgress extends PdfEngineService {
   ocrPdf(pdf: Uint8Array, language: string, onProgress?: ProgressCallback): Promise<string>;
 }
 ```
+
+### 4.3 Composed hook operations (`usePdfEngine`)
+
+A few PDF Tools operations are **compositions** that live in the `usePdfEngine`
+hook rather than as single service methods, because they orchestrate other
+modules' inputs around the engine:
+
+- **`extractPages(doc, ranges)`** (F-66) — flattens page ranges to source-page
+  ops and calls `organizePages`, saving `<name>_extract.pdf`.
+- **`appendScan(doc)`** (F-44, **native only**) — runs the native ML Kit scanner
+  (via document-vault's `pickFromScanner`), turns the scan into PDF bytes (a
+  multi-page scan already is one PDF; single JPEG pages go through
+  `imagesToPdf`), then `mergePdfs([sourceBytes, scannedPdf])` and saves
+  `<name>_appended.pdf` (source `scanner`). Returns `0` when the user cancels the
+  scanner. The op card is hidden on the web build (`PdfOpMeta.native`). No new
+  permission or network — the scanner is Play-Services-hosted (ADR-018), and the
+  merge runs in the existing worker.
 
 ---
 

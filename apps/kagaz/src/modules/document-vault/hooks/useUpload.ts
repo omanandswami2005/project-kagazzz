@@ -7,16 +7,34 @@ import { useCallback, useMemo } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import { createFileStorage } from '@/infrastructure/filesystem';
-import { useVaultStore } from '../store/vault.store';
+import { currentFolderId, useVaultStore } from '../store/vault.store';
 import { UploadService } from '../services/upload.service';
 import { pickFiles, type UploadSource } from '../services/upload-sources';
+import { generateThumbnail } from '../services/thumbnail.service';
+import type { IncomingFile } from '../types/document.types';
+import type { DocumentEntity } from '@/infrastructure/database/types';
+
+/** Outcome of an upload: how many landed, and the rows that were created. */
+export interface UploadOutcome {
+  /** Number of documents successfully added. */
+  uploaded: number;
+  /** The newly-created rows (UX-8 uses these to offer a rename prompt). */
+  documents: DocumentEntity[];
+}
 
 /** What {@link useUpload} exposes to pages and actions. */
 export interface UseUploadResult {
   /** True until the database is ready for uploads. */
   isReady: boolean;
-  /** Picks files from a source and uploads them to the vault root. */
-  uploadFrom: (source: UploadSource) => Promise<{ uploaded: number }>;
+  /** Picks files from a source and uploads them to the current folder. */
+  uploadFrom: (source: UploadSource) => Promise<UploadOutcome>;
+  /**
+   * Persists already-prepared files through the same pipeline (validate →
+   * hash → store → row), used by producers that build their own blob — e.g.
+   * the PDF Tools outputs. Reports progress + errors via the vault store
+   * exactly like {@link uploadFrom}.
+   */
+  ingestFiles: (files: IncomingFile[]) => Promise<UploadOutcome>;
 }
 
 /** Wires the upload pipeline into React state. */
@@ -30,39 +48,37 @@ export function useUpload(): UseUploadResult {
     return new UploadService({
       storage: createFileStorage(),
       documents: new DocumentDao(db),
+      makeThumbnail: (blob, fileType): Promise<Uint8Array | null> =>
+        generateThumbnail(blob, fileType),
     });
   }, [db]);
 
-  const uploadFrom = useCallback(
-    async (source: UploadSource): Promise<{ uploaded: number }> => {
+  const ingestFiles = useCallback(
+    async (files: IncomingFile[]): Promise<UploadOutcome> => {
       const store = useVaultStore.getState();
-      store.closeUploadSheet();
-      if (!service) {
-        return { uploaded: 0 };
-      }
-      const files = await pickFiles(source);
-      if (files.length === 0) {
-        return { uploaded: 0 };
+      if (!service || files.length === 0) {
+        return { uploaded: 0, documents: [] };
       }
       store.startUpload();
       try {
         service.onProgress((progress) =>
           useVaultStore.getState().setUploadProgress(progress)
         );
-        const result = await service.uploadFiles(files);
-        useVaultStore
-          .getState()
-          .prependDocuments(
-            [...result.documents].sort((a, b) =>
-              b.createdAt.localeCompare(a.createdAt)
-            )
-          );
+        // Persist into the folder the user is currently viewing (null =
+        // root) so the document appears where they are.
+        const result = await service.uploadFiles(files, {
+          folderId: currentFolderId(store) ?? undefined,
+        });
+        const created = [...result.documents].sort((a, b) =>
+          b.createdAt.localeCompare(a.createdAt)
+        );
+        useVaultStore.getState().prependDocuments(created);
         useVaultStore
           .getState()
           .finishUpload(
             result.failures.map(({ error }) => error.userMessage)
           );
-        return { uploaded: result.documents.length };
+        return { uploaded: created.length, documents: created };
       } catch (error) {
         useVaultStore.getState().finishUpload(['upload.errors.file_read_error']);
         throw error;
@@ -71,5 +87,18 @@ export function useUpload(): UseUploadResult {
     [service]
   );
 
-  return { isReady: status === 'ready' && service !== null, uploadFrom };
+  const uploadFrom = useCallback(
+    async (source: UploadSource): Promise<UploadOutcome> => {
+      useVaultStore.getState().closeUploadSheet();
+      const files = await pickFiles(source);
+      return ingestFiles(files);
+    },
+    [ingestFiles]
+  );
+
+  return {
+    isReady: status === 'ready' && service !== null,
+    uploadFrom,
+    ingestFiles,
+  };
 }

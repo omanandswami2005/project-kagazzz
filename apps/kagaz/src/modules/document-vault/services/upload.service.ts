@@ -40,6 +40,15 @@ const logger = log('document-vault');
  */
 export type HeicConverter = (blob: Blob) => Promise<Blob>;
 
+/**
+ * Generates a thumbnail (Uint8Array) for a file, or null to skip (F-24).
+ * Injectable so the pipeline can be tested without canvas/pdfjs.
+ */
+export type ThumbnailMaker = (
+  blob: Blob,
+  fileType: string
+) => Promise<Uint8Array | null>;
+
 /** Everything the pipeline needs, injected (protocol-based design). */
 export interface UploadServiceDeps {
   storage: FileStorage;
@@ -47,6 +56,8 @@ export interface UploadServiceDeps {
   documents: Pick<DocumentDao, 'create'>;
   /** Optional HEIC→JPEG converter (F-8). Absent: HEIC stored as-is. */
   convertHeic?: HeicConverter;
+  /** Optional thumbnail generator (F-24). Absent: no thumbnail. */
+  makeThumbnail?: ThumbnailMaker;
 }
 
 /** Outcome of a batch upload: per-file successes and failures. */
@@ -208,12 +219,31 @@ export class UploadService {
       );
     }
 
+    // Thumbnail (F-24): best-effort — failure just means a generic icon.
+    let thumbnailPath: string | undefined;
+    if (this.deps.makeThumbnail) {
+      try {
+        const thumb = await this.deps.makeThumbnail(blob, fileType);
+        if (thumb) {
+          const path = `${STORAGE_DIRS.thumbnails}/${crypto.randomUUID()}.jpg`;
+          await this.deps.storage.write(path, thumb);
+          thumbnailPath = path;
+        }
+      } catch (error) {
+        logger.warn({
+          event: 'vault.thumbnail.failed',
+          err: { message: String(error) },
+        });
+      }
+    }
+
     const row: NewDocument = {
       name,
       filePath,
       fileType,
       fileSize: data.byteLength,
       fileHash: await sha256Hex(data),
+      thumbnailPath,
       folderId: options.folderId,
       isFavorite: false,
       isLocked: false,

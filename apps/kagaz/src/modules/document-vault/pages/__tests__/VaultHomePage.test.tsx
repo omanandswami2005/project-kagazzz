@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { i18n, initI18n } from '@/core/i18n';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import { useDocuments } from '../../hooks/useDocuments';
@@ -11,9 +12,11 @@ import { VaultHomePageAgent } from '../VaultHomePage.agent';
 
 vi.mock('../../hooks/useDocuments', () => ({ useDocuments: vi.fn() }));
 vi.mock('../../hooks/useUpload', () => ({ useUpload: vi.fn() }));
+vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 
 const useDocumentsMock = vi.mocked(useDocuments);
 const useUploadMock = vi.mocked(useUpload);
+const useDatabaseMock = vi.mocked(useDatabase);
 
 const doc = entityFromNew({
   name: 'Aadhaar',
@@ -44,16 +47,17 @@ beforeEach(() => {
   useDocumentsMock.mockReturnValue({ documents: [], isLoading: false });
   useUploadMock.mockReturnValue({
     isReady: true,
-    uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 1 })),
+    uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
+    ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
   });
+  useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
 });
 
 describe('VaultHomePage', () => {
   it('shows the empty state when the vault has no documents', () => {
     render(<VaultHomePage />);
-    expect(
-      screen.getByRole('heading', { name: 'My Documents' })
-    ).toBeInTheDocument();
+    // Title now lives in an IonTitle (toolbar), not a semantic <h1>.
+    expect(screen.getByText('My Documents')).toBeInTheDocument();
     expect(screen.getByText('No documents yet')).toBeInTheDocument();
     expect(
       document.querySelector('[data-agent-id="vault.home"]')
@@ -80,8 +84,12 @@ describe('VaultHomePage', () => {
   });
 
   it('starts the upload when a source is chosen from the sheet', async () => {
-    const uploadFrom = vi.fn(() => Promise.resolve({ uploaded: 2 }));
-    useUploadMock.mockReturnValue({ isReady: true, uploadFrom });
+    const uploadFrom = vi.fn(() => Promise.resolve({ uploaded: 2, documents: [] }));
+    useUploadMock.mockReturnValue({
+      isReady: true,
+      uploadFrom,
+      ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 0, documents: [] })),
+    });
     useVaultStore.setState({ isUploadSheetOpen: true });
 
     render(<VaultHomePage />);
@@ -110,6 +118,14 @@ describe('VaultHomePage', () => {
     ).toHaveAttribute('data-agent-state', 'disabled');
   });
 
+  it('shows a visible alert when the database failed to open', () => {
+    useDatabaseMock.mockReturnValue({ status: 'error', db: null });
+    render(<VaultHomePage />);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /Secure storage could not start/
+    );
+  });
+
   it('surfaces batch failures through the error toast', () => {
     useVaultStore.setState({
       lastUploadErrors: ['upload.errors.file_too_large'],
@@ -124,9 +140,7 @@ describe('VaultHomePage', () => {
   it('renders in Hindi after a language switch', async () => {
     await i18n.changeLanguage('hi');
     render(<VaultHomePage />);
-    expect(
-      screen.getByRole('heading', { name: 'मेरे दस्तावेज़' })
-    ).toBeInTheDocument();
+    expect(screen.getByText('मेरे दस्तावेज़')).toBeInTheDocument();
     await i18n.changeLanguage('en');
   });
 });

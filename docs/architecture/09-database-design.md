@@ -3,7 +3,7 @@
 > **Project:** Kagaz
 > **Database Engine:** SQLite (via `@capacitor-community/sqlite`)
 > **Encryption:** SQLCipher
-> **Last Updated:** 2026-06-10
+> **Last Updated:** 2026-07-18
 
 ---
 
@@ -24,6 +24,7 @@
   - [4.9 shared_link_access_log (V2)](#49-shared_link_access_log-v2)
   - [4.10 csc_services (V3)](#410-csc_services-v3)
   - [4.11 app_settings](#411-app_settings)
+  - [4.12 quick_reference_entries (F-84, migration 005)](#412-quick_reference_entries-f-84-migration-005)
 - [5. Indexes](#5-indexes)
 - [6. Full-Text Search (FTS)](#6-full-text-search-fts)
 - [7. Migration Strategy](#7-migration-strategy)
@@ -588,6 +589,46 @@ CREATE TABLE app_settings (
 
 ---
 
+### 4.12 `quick_reference_entries` (F-84, migration 005)
+
+A personal key-value vault — see
+[02-document-vault-module.md](02-document-vault-module.md#quick-reference-f-84)
+for the full feature spec. `label` is always user-typed free text; the schema
+deliberately has **no `label_type`/`value_type` column** — see
+[10-security-architecture.md](10-security-architecture.md) §3.6 for why that's
+a compliance decision, not an oversight. Tags reuse the existing
+`document_tags`-style junction, scoped to this table instead.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | TEXT | `PRIMARY KEY` | UUID v4 |
+| `label` | TEXT | `NOT NULL` | User-typed name, e.g. `"PAN No"` |
+| `value` | TEXT | `NOT NULL` | The stored value; masked in the UI, never in the DB |
+| `linked_document_id` | TEXT | `REFERENCES documents(id) ON DELETE SET NULL` | Provenance; null = standalone entry |
+| `created_at` | TEXT | `NOT NULL` | ISO 8601 timestamp |
+| `updated_at` | TEXT | `NOT NULL` | ISO 8601 timestamp |
+
+**DDL:**
+
+```sql
+CREATE TABLE quick_reference_entries (
+    id                 TEXT PRIMARY KEY,
+    label              TEXT NOT NULL,
+    value              TEXT NOT NULL,
+    linked_document_id TEXT REFERENCES documents(id) ON DELETE SET NULL,
+    created_at         TEXT NOT NULL,
+    updated_at         TEXT NOT NULL
+);
+
+CREATE TABLE quick_reference_tags (
+    entry_id TEXT NOT NULL REFERENCES quick_reference_entries(id) ON DELETE CASCADE,
+    tag_id   TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (entry_id, tag_id)
+);
+```
+
+---
+
 ## 5. Indexes
 
 Indexes are critical for query performance, especially on the `documents` table which will be the most frequently queried.
@@ -621,6 +662,10 @@ CREATE INDEX idx_shared_links_expires ON shared_links(expires_at) WHERE expires_
 
 -- Access log: shared link lookup
 CREATE INDEX idx_access_log_shared_link ON shared_link_access_log(shared_link_id);
+
+-- Quick Reference (F-84): provenance lookup + tag reverse lookup
+CREATE INDEX idx_quick_reference_linked_document ON quick_reference_entries(linked_document_id);
+CREATE INDEX idx_quick_reference_tags_tag_id ON quick_reference_tags(tag_id);
 ```
 
 > [!TIP]
@@ -1022,6 +1067,18 @@ ORDER BY oh.created_at ASC;
 ---
 
 ## 10. Backup & Restore Strategy
+
+> **As shipped (F-31), this section's diagram/table below describe the
+> original design; the real implementation
+> (`modules/settings/services/backup.service.ts`) is narrower: a
+> manifest-based ZIP of `documents` + `folders` only (not a raw `.db` file
+> copy, and — a pre-existing gap this note surfaces, not one introduced by
+> F-84 — `document_tags` isn't in the manifest either). **F-84 needs an
+> explicit hook**: `BackupManifest` gains a `quickReferenceEntries` field and
+> `createBackup` fetches them alongside documents/folders, or Quick Reference
+> data silently isn't covered by "Export encrypted backup." Track this as a
+> required implementation step for F-84, not an automatic consequence of
+> adding the table.
 
 ### Backup Approach
 

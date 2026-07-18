@@ -34,7 +34,12 @@ describe('useDocuments', () => {
     const { result } = renderHook(() => useDocuments());
     await waitFor(() => expect(result.current.documents).toHaveLength(2));
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.documents[1]?.name).toBe('PAN');
+    // Store sorts on set (default createdAt desc; equal createdAt → id desc),
+    // so doc-2/PAN precedes doc-1/Aadhaar.
+    expect(result.current.documents.map((d) => d.name)).toEqual([
+      'PAN',
+      'Aadhaar',
+    ]);
   });
 
   it('stays empty without a database connection', () => {

@@ -54,7 +54,7 @@ These features define the core product. Without any one of them, Kagaz does not 
 | # | Feature | Description | Effort | Impact | Dependencies |
 |---|---|---|---|---|---|
 | 1 | **Document Upload** | Upload documents via camera, gallery, or file picker. Support PDF, JPG, PNG, HEIC, WEBP. | 🟡 M | ⭐⭐⭐ | Capacitor Camera/Filesystem plugins |
-| 2 | **Document Scanning** | Camera-based scanner with auto-edge detection, perspective correction, and crop adjustment. | 🔴 L | ⭐⭐⭐ | OpenCV.js or custom edge detection |
+| 2 | **Document Scanning** | Camera-based scanner with auto-edge detection, perspective correction, and crop adjustment. | 🔴 L | ⭐⭐⭐ | Google ML Kit Document Scanner (native, Play Services; ADR-018) |
 | 3 | **PDF Merge** | Combine multiple PDF files into a single document. Select order, preview result. | 🟡 M | ⭐⭐⭐ | pdf-lib |
 | 4 | **PDF Split** | Extract specific pages from a PDF into a new document. Page range selection UI. | 🟡 M | ⭐⭐⭐ | pdf-lib |
 | 5 | **PDF Compress** | Reduce PDF file size by compressing images and removing metadata. Compression level options. | 🟡 M | ⭐⭐⭐ | pdf-lib, image compression |
@@ -105,6 +105,10 @@ Nice-to-have features that polish the experience. First to be cut if timeline is
 | 32 | **Recent Documents** | Quick-access list of recently viewed/edited documents on home screen. | 🟢 S | ⭐ | SQLite (timestamp tracking) |
 | 33 | **Favorites** | Star/bookmark documents for quick access. | 🟢 S | ⭐ | SQLite |
 | 34 | **Sort Options** | Sort documents by name, date, size, type in ascending/descending order. | 🟢 S | ⭐ | — |
+| F-84 | **Quick Reference** | A personal key-value vault for numbers users copy often (Aadhaar/PAN/mobile/account/IFSC/emails/URLs, user-named), optionally linked to a source document. Template suggestions, mask-by-default, biometric-gated, multi-select bulk copy. Added 2026-07-18 — see [02-document-vault-module.md](../architecture/02-document-vault-module.md) §Quick Reference. | 🟡 M | ⭐⭐ | SQLite, biometric auth (F-16) |
+| F-85 | **Resize & Compress for Forms** | Resize an image to exact target dimensions (with an aspect-ratio-lock toggle) and iteratively compress to a target file-size range — the two-constraints-at-once shape Indian government portals (SSC/UPSC/passport/university uploads) commonly require for photo/signature fields. Added 2026-07-18 — see [04-image-engine-module.md](../architecture/04-image-engine-module.md) §9. | 🟢 S | ⭐⭐ | Canvas API |
+
+> **F-84/F-85 numbering note:** items above use the checklist's actual `F-` numbers, not the sequential `#` numbering in this table's original scope (`#1`–`#34` = `F-1`–`F-34`; the many V1-extra features shipped since, `F-35`–`F-83`, were never backfilled into this table — `DEVELOPMENT-CHECKLIST.md` is the current source of truth for the full V1 feature list and their status). `F-84`/`F-85` use the next free ID gap.
 
 ---
 

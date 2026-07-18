@@ -16,6 +16,7 @@ Welcome to Kagaz! This document explains how to set up your development environm
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Running the App](#running-the-app)
+  - [App Icon](#app-icon)
 - [Code Style & Linting](#code-style--linting)
   - [ESLint Configuration](#eslint-configuration)
   - [Prettier Formatting](#prettier-formatting)
@@ -250,7 +251,7 @@ const repository = isDev
 - **pnpm**: 10.0 or higher (we use pnpm, not npm)
 - **Git**: 2.37.0 or higher
 - **Android Studio** (for Android development) or **Xcode** (for iOS)
-- **Java Development Kit (JDK)**: 11.0 or higher (for Android)
+- **Java Development Kit (JDK)**: 17 or higher (for Android) — Android Studio bundles a JBR (currently Java 21), so a separate JDK install is usually unnecessary; point `JAVA_HOME` at it (see below)
 
 ### **Installation**
 
@@ -278,8 +279,24 @@ pod install
 cd ..
 
 # 7. Install native dependencies (Android)
-# Open Android Studio, let it auto-download SDK/NDK
+# Open Android Studio once, let it auto-download SDK/NDK, and create an
+# emulator (AVD) with an API 24+ system image (API 24 is our primary target).
 ```
+
+### **Android CLI environment (macOS)**
+
+Kagaz is driven from the terminal (agents can't click the Android Studio GUI), so put the SDK tools and a JDK on `PATH`. Add to `~/.zshrc`, then `source ~/.zshrc`:
+
+```bash
+# --- Android SDK + JDK (Kagaz dev) ---
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$JAVA_HOME/bin:$PATH"
+# --- end Android SDK ---
+```
+
+Verify: `adb version`, `java -version`, and `emulator -list-avds` must all succeed. Full setup + the build/install/verify loop live in [docs/guides/device-verification.md](docs/guides/device-verification.md).
 
 ### **Running the App**
 
@@ -293,10 +310,12 @@ pnpm build
 # Preview production build
 pnpm preview
 
-# Build for Android
-pnpm build
-pnpm exec cap sync android
-pnpm exec cap open android
+# Build + install on Android (CLI — see docs/guides/device-verification.md)
+emulator -avd Medium_Phone &          # boot an AVD; then: adb wait-for-device
+pnpm --filter kagaz build:capacitor   # vite build + cap sync
+cd apps/kagaz/android && ./gradlew assembleDebug   # macOS/Linux — NOT gradlew.bat
+adb install -r app/build/outputs/apk/debug/app-debug.apk && cd ../../..
+# (or, for the GUI:) pnpm --filter kagaz cap:open:android
 
 # Build for iOS
 pnpm build
@@ -321,6 +340,31 @@ pnpm lint:fix
 # Format code
 pnpm format
 ```
+
+### **App Icon**
+
+The launcher icon is generated from SVG sources in `apps/kagaz/assets/`
+(`icon-background.svg` + `icon-foreground.svg` for Android's adaptive-icon
+layers, `icon-only.svg` as the flat composite for iOS/legacy Android/PWA)
+via `@capacitor/assets` — a build-time-only devDependency, never shipped in
+the app. Design rationale + color tokens:
+[docs/design-system/design-tokens.md#app-icon](docs/design-system/design-tokens.md#app-icon).
+
+After editing a source SVG, regenerate every density for both platforms:
+
+```bash
+pnpm --filter kagaz exec capacitor-assets generate --android \
+  --iconBackgroundColor '#1e3a5f' --iconBackgroundColorDark '#142842'
+pnpm --filter kagaz exec capacitor-assets generate --ios
+```
+
+This overwrites every `mipmap-*/ic_launcher*.png` under
+`apps/kagaz/android/app/src/main/res/` and
+`ios/App/App/Assets.xcassets/AppIcon.appiconset/`. Rebuild
+(`pnpm --filter kagaz build:capacitor`) and reinstall to see the change on
+a device/emulator — Android caches launcher icons aggressively, so a fresh
+`adb install -r` (not just a hot-reloaded WebView) is required to confirm
+a change visually.
 
 ---
 

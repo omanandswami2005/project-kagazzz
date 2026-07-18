@@ -1,0 +1,242 @@
+/**
+ * PDF Tools hub + operation sheet styles (F-3..F-28). Tokens only.
+ */
+
+.kg-pdf-tools {
+  padding: var(--page-padding);
+}
+
+.kg-pdf-tools__subtitle {
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4);
+}
+
+.kg-pdf-tools__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.kg-pdf-tools__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--color-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.kg-pdf-tools__card:active {
+  background: var(--surface-2);
+}
+
+.kg-pdf-tools__card-title {
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-base);
+}
+
+.kg-pdf-tools__card-desc {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* ── Operation sheet ───────────────────────────────────────── */
+
+.kg-pdf-op {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.kg-pdf-op__label {
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  margin: 0 0 var(--space-2);
+}
+
+.kg-pdf-op__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.kg-pdf-op__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* F-38 image stamp: image sub-picker + placement controls, stacked. */
+.kg-pdf-op__stamp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* F-35 page organiser: responsive thumbnail grid. */
+.kg-pdf-organize {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.kg-pdf-organize__page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  border: 1px solid var(--border-subtle, var(--color-border, #ccc));
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.kg-pdf-organize__thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface-sunken, var(--color-surface, #f2f2f2));
+}
+
+.kg-pdf-organize__thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  transition: transform 0.15s ease;
+}
+
+.kg-pdf-organize__num {
+  position: absolute;
+  bottom: var(--space-1);
+  right: var(--space-1);
+  min-width: 1.5rem;
+  text-align: center;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--surface-inverse, rgba(0, 0, 0, 0.65));
+  color: var(--text-inverse, #fff);
+  font-size: var(--text-xs);
+}
+
+.kg-pdf-organize__controls {
+  display: flex;
+  justify-content: space-between;
+}
+
+.kg-pdf-op__status {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+/* Conversion disclaimer (F-41/F-42: text-first, layout may differ). */
+.kg-pdf-op__note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+  padding: var(--space-2);
+  border-left: 3px solid var(--color-primary, currentColor);
+  background: var(--surface-sunken, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.kg-pdf-op__error {
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.kg-pdf-op__progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-pdf-op__footer {
+  padding: var(--space-3) var(--space-4);
+  padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}
+
+/* ── Document picker ───────────────────────────────────────── */
+
+.kg-pdf-picker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.kg-pdf-picker__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kg-pdf-picker__row[data-agent-state='selected'] {
+  border-color: var(--color-primary);
+  background: var(--surface-2);
+}
+
+.kg-pdf-picker__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 2px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: #fff;
+}
+
+.kg-pdf-picker__check[data-checked='true'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.kg-pdf-picker__name {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kg-pdf-picker__empty {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+}

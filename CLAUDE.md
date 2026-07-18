@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`develop` is the integration branch** (exists since 2026-06-10): claim commits go on `develop`, feature branches are cut from `develop` (`feature/<item-id>-<short-name>`), and merges/PRs target `develop`. `main` only receives merges from `develop` at release points — never commit work or claims directly to `main`.
 - **Every completed unit of work (feature, bugfix, doc change, refactor) gets its own Conventional Commit immediately** — never leave finished work uncommitted, never batch unrelated changes into one commit.
 - **Stale-code sweep before closing every checklist item** (full checklist: `DEVELOPMENT-CHECKLIST.md` protocol step 4): after gates are green, delete what the item's own development made obsolete — dependencies added but no longer imported (lint won't catch them), exports used only by their own tests, placeholders the item replaced (incl. their tests/`.agent.ts`/`.skill.md`), orphaned CSS classes and i18n keys, READMEs describing the pre-item state. Commit as `chore(scope): <item> stale-code sweep`. Forward-looking code survives only with a comment naming the future item that uses it.
+- **Device verification before closing device-affecting items** (full protocol: `DEVELOPMENT-CHECKLIST.md` step 5): green unit gates are not evidence the app works — mocks hide config-runtime mismatches and jsdom has no pixels. Items touching native plugins/`capacitor.config.ts`, theming, navigation, permissions, or storage require an installed debug APK exercised on an emulator/device: cold start, primary flow end-to-end, dark mode + hi locale readability, hardware back from every new screen. Journal what was verified.
 - **At session start and before ending a turn of work, run `git status` + `git diff`.** If uncommitted changes exist that this session didn't make, review the diffs, group them into logical commits with accurate messages, and commit them — then record them in the Commit Journal in `DEVELOPMENT-CHECKLIST.md`.
 - Record the commit hash next to the checklist item it completes. Do not push unless the user asks.
 
@@ -39,11 +40,19 @@ pnpm docs:dev            # Astro Starlight docs site
 pnpm --filter kagaz cap:sync / cap:open:android       # Capacitor (also build:capacitor)
 ```
 
+**Fast inner loop — do NOT run the full `pnpm lint && pnpm type-check && pnpm test` after every edit** (that's ~2 min: full ESLint type-aware pass + tsc + all ~300 tests). While iterating on a feature, run only what you touched, then run the full gates **once** before committing:
+- **Tests (biggest win — ~8 s vs ~90 s):** `pnpm --filter kagaz exec vitest run src/modules/<area>` for just the affected module/files. Never `pnpm test` mid-iteration.
+- **Types (fast, advisory):** `pnpm --filter kagaz type-check:native` (tsgo, the Go compiler, ~10× faster than tsc). Run the real `pnpm type-check` (tsc) only in the pre-commit gate.
+- **Lint:** scope it — `pnpm --filter kagaz exec eslint src/path/file.ts`. The whole-workspace `pnpm lint` is `--cache`d (warm runs ~8 s vs ~19 s), but type-aware rules still load the TS program, so it has a ~8 s floor regardless of file count — save it for pre-commit.
+- **Pre-commit gate (run once, all of it):** `pnpm lint && pnpm type-check && pnpm --filter kagaz test` (+ `pnpm agent:lint` when pages/actions changed).
+
 Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional Commits** (`feat(scope): subject`, scopes = module names); branches `feature/…`, `bugfix/…`, `docs/…`, etc. PRs target `develop`.
 
 **Parallel development**: work is split into lanes (A–F) with a claim-by-commit protocol on `DEVELOPMENT-CHECKLIST.md` — claim an item (🟨 line + push) before branching; never edit another lane's module; cross-module needs go through a Wave-1 contract PR (interface + mock + contract tests first). Full rules: `docs/guides/parallel-development.md`.
 
 **Tech constraints to never "fix"**: `react-router-dom` stays at **v5** (`@ionic/react-router` peer requirement); `pdf-lib` is unmaintained-but-chosen (fallback: `@cantoo/pdf-lib`, see Dependency Version Policy in `08`); verify a package exists on npm before adding it (two past deps were hallucinated names); TypeScript stays at **6.0.x** (typescript-eslint max) with `pnpm type-check:native` (tsgo, the 10× Go compiler) as a fast advisory check — move `type-check` to TS 7 only when typescript-eslint supports it (policy in `08`).
+
+**Before adding ANY media library (PDF/image/CV/OCR/AI), search + verify — never assume from its API** (a third-party media lib's TS signature hides how it runs): (1) **runtime network deps** — many fetch a worker/WASM/model from a CDN at runtime (e.g. `@quicktoolsone/pdf-compress` loads a pdfjs worker + Go WASM from jsdelivr by default → silently fails on our zero-network offline app; grep the dist for `workerSrc|jsdelivr|wasmUrl|GlobalWorkerOptions`); (2) **license** — MIT/Apache/BSD/ISC only, **AGPL/GPL/SSPL forbidden** (proprietary/UNLICENSED app) — note MuPDF.js and Ghostscript-wasm are AGPL, so the best PDF compressors are off-limits; (3) **CSP** — any WASM/Emscripten/Go runtime needs `wasm-unsafe-eval` (often `unsafe-eval`), which weakens the strict offline CSP on this PII app (the OpenCV scanner hit exactly this, see ADR-017 — which is why F-2 moved to the **native** Google ML Kit scanner in ADR-018: no WebView WASM/CSP, no app network/camera permission). When a media op fails on-device with a generic message, read the library's *real* underlying error and grep its bundle before writing a workaround.
 
 ## Architecture (full detail: `docs/architecture/01-system-architecture.md`)
 
@@ -55,7 +64,7 @@ Husky + lint-staged run ESLint/Prettier on commit. Commits follow **Conventional
 - **Imports**: relative paths within a module; the `@/` alias (= `apps/kagaz/src/`) for anything cross-module (`import { log } from '@/core/logging'`). Workspace packages via `@kagaz/*`.
 - Tests live in `__tests__/` folders beside the implementation.
 - Tech choices are ADRs in `docs/architecture/08-tech-stack-decisions.md` — changing a technology requires updating the ADR.
-- Offline-first is non-negotiable: V1 is 100% offline (no HTTP clients, analytics, or network permission); cloud is always an enhancement.
+- Offline-first is non-negotiable: V1 makes **no network calls of its own** (no HTTP clients, no analytics); cloud is always an enhancement. ⚠️ **Caveat (2026-07-11):** the release APK *does* carry `INTERNET`+`ACCESS_NETWORK_STATE`, merged transitively by the Play-Services ML Kit **scanner** (ADR-018) — the app never uses them; they serve only Play Services' one-time scanner model download. So it's "no app-initiated network," not "no network permission." See [10-security §3.5](docs/architecture/10-security-architecture.md).
 
 ## Design System (`docs/design-system/` — read `README.md` there for the file order; the rules win over any screen that contradicts them)
 

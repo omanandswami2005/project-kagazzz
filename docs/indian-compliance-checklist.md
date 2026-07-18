@@ -2,7 +2,7 @@
 
 > Purpose: A single, living reference for legal, privacy, security, and government-integration requirements relevant to an app that stores and processes citizens' government documents (locally on-device) and integrates with DigiLocker and Common Service Centres (CSCs).
 >
-> Last updated: 2026-06-08
+> Last updated: 2026-07-18
 
 ---
 
@@ -81,6 +81,19 @@ This document summarizes required approvals, mandatory policy language, technica
 - If your app uses Aadhaar authentication flows, follow UIDAI authentication APIs, collect consent per UIDAI wording, and ensure you follow UIDAI's data handling and storage instructions.
 
 - Any use of Aadhaar-related data must comply with the Aadhaar Act (see Section 29 and others) and UIDAI technical/operational guidelines.
+
+**Design decision on record (2026-07-18, F-84 Quick Reference):** Kagaz
+already stores Aadhaar document images and their OCR'd text on-device as the
+core vault use case (encrypted, never transmitted). F-84 adds a personal
+key-value vault where a user can save a labelled value themselves (e.g.
+"Aadhaar No: XXXX"). The incremental risk of a *structured, labelled* field
+vs. the same digits inside a photo/OCR blob is mitigated architecturally, not
+by a UIDAI carve-out: the schema and code treat every label as opaque
+user-typed text — there is no `label_type` column, no Aadhaar-aware
+validation, and no query that filters or specially handles an entry because
+its label looks like "Aadhaar." This keeps the feature in the same risk
+category as a generic on-device notes app rather than a purpose-built ID
+database. Full detail: [10-security-architecture.md](architecture/10-security-architecture.md) §3.6.
 
 ---
 
@@ -163,6 +176,29 @@ Priority P0 — Do before any public release or DigiLocker/CSC integration:
 - [ ] Prepare incident response plan & designate compliance/grievance officer
 - [ ] Start DigiLocker partner onboarding (apply; prepare docs)
 - [ ] Start CSC outreach (state nodal / CSC SPV) if integrating CSCs
+
+### V1-launch applicability review (gate G1-7) — 2026-07-14
+
+The P0 list above spans the whole lifecycle. For the **V1 (offline vault)**
+release, only a subset applies — V1 transmits no data, has no backend, and does
+no DigiLocker/CSC/eSign:
+
+| P0 item | Applies to V1? | V1 status |
+|---|---|---|
+| Publish Privacy Policy & Terms (en + hi) | ✅ Yes | **Partial** — in-app screens done (G1-5); **finalize placeholder text + publish public URL = you** (`apps/legal-site/`). |
+| Explicit consent flows + consent records | ⬜ V2 | No data leaves the device in V1 → no consent events. Lands with cloud/sharing. |
+| Device encryption (AES-256) + Keystore/Keychain | ✅ Yes | **Done** — SQLCipher DB + platform-keystore-only keys (G1-2 audit). |
+| TLS + certificate pinning for backend APIs | ⬜ V2 | No backend in V1. |
+| Security audit / pentest (external) | ➖ Advisory | V1 attack surface is on-device only; a code security review is advisable, full external pentest is a V2 (backend) must (G2-6). |
+| CCA-licensed eSign provider | ⬜ V3 | No eSign in V1. |
+| Incident response plan + grievance officer | ✅ Yes | **Partial** — incident-response plan exists ([10-security §9](architecture/10-security-architecture.md)); **designate + name the grievance officer = you** (also required in the privacy policy). |
+| DigiLocker partner onboarding | ⬜ V3 | Not in V1. |
+| CSC outreach | ⬜ V3 | Not in V1. |
+
+**V1 gate summary:** the two *technical* P0s (encryption/key storage, incident
+plan) are ✅ done; the rest are either V2/V3 or the **legal/content items you
+own** (finalize + publish the policy/T&C, name the grievance officer). No V1
+blocker sits in code.
 
 Priority P1 — Important before scale / growth features (sync, cloud backups):
 

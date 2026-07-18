@@ -10,11 +10,145 @@
     "new_folder": "New Folder",
     "move": "Move",
     "rename": "Rename",
-    "add_tag": "Add Tag"
+    "add_tag": "Add Tag",
+    "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "lock": "Lock document",
+    "unlock": "Unlock document",
+    "extract_text": "Extract text",
+    "delete": "Delete",
+    "more": "More actions",
+    "cancel": "Cancel"
+  },
+  "intents": {
+    "open_with": "Open with…",
+    "share": "Share…",
+    "open_failed": "Couldn't open this document in another app.",
+    "share_failed": "Couldn't share this document."
+  },
+  "copy_text": {
+    "action": "Copy text",
+    "copied": "Text copied to clipboard",
+    "failed": "Couldn't copy the text."
+  },
+  "convert_format": {
+    "action": "Convert format",
+    "title": "Convert to",
+    "to_jpeg": "Convert to JPEG",
+    "to_png": "Convert to PNG",
+    "to_webp": "Convert to WebP",
+    "done": "Converted — saved as a new document",
+    "failed": "Couldn't convert this image."
+  },
+  "enhance": {
+    "action": "Enhance photo",
+    "title": "Apply filter",
+    "preset_grayscale": "Grayscale",
+    "preset_bw": "Black & white (crisp scan)",
+    "preset_enhance": "Auto-enhance",
+    "preset_invert": "Invert colors",
+    "done": "Enhanced — saved as a new document",
+    "failed": "Couldn't enhance this image."
+  },
+  "resize_compress": {
+    "action": "Resize & compress",
+    "title": "Resize & Compress",
+    "preset_passport": "Passport photo (200×230)",
+    "preset_pan": "PAN photo (213×213)",
+    "preset_signature": "Signature (140×60)",
+    "width": "Width (px)",
+    "height": "Height (px)",
+    "lock_aspect_ratio": "Lock aspect ratio",
+    "max_size_kb": "Max size (KB)",
+    "min_size_kb": "Min size (KB, optional)",
+    "run": "Resize & compress",
+    "running": "Resizing…",
+    "done": "Resized — saved as a new document",
+    "quality_floor_warning": "Couldn't fit under the max size without heavy quality loss — try smaller dimensions or a larger max size.",
+    "below_min_warning": "The result compressed well below your minimum size even at full quality.",
+    "failed": "Couldn't resize this image.",
+    "invalid_dimensions": "Enter a width, height, and max size greater than zero."
+  },
+  "quick_reference": {
+    "title": "Quick Reference",
+    "empty_state": "No saved values yet",
+    "empty_hint": "Save numbers you copy often — PAN, mobile, bank account — for one-tap access.",
+    "add": "Add",
+    "add_title": "Add Quick Reference",
+    "edit_title": "Edit Quick Reference",
+    "label_field": "Name",
+    "value_field": "Value",
+    "save": "Save",
+    "templates_label": "Common values",
+    "template_aadhaar": "Aadhaar No",
+    "template_pan": "PAN No",
+    "template_mobile": "Mobile Number",
+    "template_bank_account": "Bank A/C No",
+    "template_ifsc": "IFSC Code",
+    "template_email": "Email",
+    "template_voter_id": "Voter ID",
+    "template_driving_licence": "Driving Licence No",
+    "template_passport": "Passport No",
+    "template_uan": "UAN",
+    "reveal": "Reveal value",
+    "hide": "Hide value",
+    "copy_value": "Copy value",
+    "copy_with_label": "Copy with label",
+    "edit": "Edit",
+    "delete": "Delete",
+    "delete_confirm_title": "Delete this entry?",
+    "delete_confirm_message": "This can't be undone.",
+    "cancel": "Cancel",
+    "copied": "Copied to clipboard",
+    "copy_failed": "Couldn't copy.",
+    "more_actions": "More actions"
+  },
+  "details": {
+    "title": "Details",
+    "name": "Name",
+    "type": "Type",
+    "dimensions": "Dimensions",
+    "size": "Size",
+    "added": "Added",
+    "modified": "Modified",
+    "original_name": "Original filename",
+    "status": "Status",
+    "locked": "Locked",
+    "favorite": "Favorite",
+    "none": "—",
+    "hash": "Integrity hash"
+  },
+  "ocr": {
+    "running": "Reading text…",
+    "done": "Text saved — now searchable",
+    "none": "No text found in this image",
+    "failed": "Couldn't read text. Please try again."
+  },
+  "lock": {
+    "reason": "Unlock this document",
+    "blocked": "Unlock to open this document"
+  },
+  "folders": {
+    "root": "My Vault",
+    "new": "New folder",
+    "create": "Create",
+    "name_placeholder": "Folder name",
+    "breadcrumb": "Folder path",
+    "move": "Move to folder",
+    "move_title": "Move to",
+    "change_color": "Change color",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "color_picker_title": "Choose a color",
+    "color_default": "Default color",
+    "delete_title": "Delete folder?",
+    "delete_message": "Documents inside will move to the main list. This can't be undone.",
+    "rename_title": "Rename folder"
   },
   "upload": {
     "sheet_title": "Add a document",
     "sources": {
+      "scan": "Scan document",
       "camera": "Take a photo",
       "gallery": "Choose from gallery",
       "files": "Browse files"
@@ -34,6 +168,19 @@
       "conversion_failed": "The photo could not be converted"
     }
   },
+  "banner": {
+    "db_unavailable": "Secure storage could not start. Restart the app — if this keeps happening, reinstall."
+  },
+  "viewer": {
+    "error": "Couldn't open this document",
+    "page": "Page {{n}}",
+    "extracted_text": "Extracted text",
+    "copy": "Copy text",
+    "copied": "Text copied",
+    "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
+    "detected_numbers": "Detected numbers",
+    "copy_number": "Copy {{number}}"
+  },
   "detail": {
     "size": "Size",
     "type": "Type",
@@ -41,8 +188,110 @@
     "modified": "Modified",
     "location": "Folder"
   },
+  "sort": {
+    "label": "Sort by",
+    "name": "Name",
+    "created": "Date added",
+    "modified": "Last modified",
+    "accessed": "Recently opened",
+    "size": "File size",
+    "type": "File type",
+    "ascending": "Sort ascending",
+    "descending": "Sort descending"
+  },
+  "view": {
+    "label": "View",
+    "list": "List view",
+    "grid": "Grid view",
+    "compact": "Compact view"
+  },
+  "rename": {
+    "title": "Name this document",
+    "label": "Document name",
+    "save": "Save",
+    "skip": "Keep default"
+  },
+  "recent": {
+    "title": "Recent"
+  },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "No favorites yet",
+    "empty_hint": "Tap the star on any document to keep it here"
+  },
+  "search": {
+    "placeholder": "Search documents",
+    "no_results": "No documents match \"{{query}}\"",
+    "voice": {
+      "start": "Search by voice",
+      "stop": "Stop listening",
+      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice."
+    }
+  },
+  "templates": {
+    "cta": "Set up starter folders",
+    "identity": "Identity Documents",
+    "education": "Education",
+    "financial": "Financial",
+    "health": "Health",
+    "property": "Property",
+    "employment": "Employment",
+    "misc": "Miscellaneous"
+  },
+  "storage": {
+    "title": "Storage",
+    "loading": "Calculating storage…",
+    "used": "{{count}} document(s)",
+    "by_type": "By file type",
+    "largest": "Largest documents",
+    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed"
+  },
+  "bulk": {
+    "select": "Select",
+    "toolbar": "Bulk actions",
+    "cancel": "Cancel selection",
+    "selected": "{{count}} selected",
+    "delete": "Delete",
+    "delete_confirm": "Delete {{count}} document(s)?"
+  },
+  "filters": {
+    "title": "Filter",
+    "active": "Filter ({{count}})",
+    "type": "File type",
+    "size": "File size",
+    "tags": "Tags",
+    "favorites_only": "Favorites only",
+    "kind_pdf": "PDF",
+    "kind_image": "Images",
+    "kind_other": "Other",
+    "size_lt1": "< 1 MB",
+    "size_1to5": "1–5 MB",
+    "size_5to25": "5–25 MB",
+    "size_gt25": "> 25 MB",
+    "apply": "Apply",
+    "clear": "Clear all",
+    "no_matches": "No documents match these filters"
+  },
+  "tags": {
+    "title": "Tags",
+    "empty": "No tags yet. Create one below.",
+    "new_placeholder": "New tag name",
+    "create": "Create"
+  },
   "trash": {
     "moved_to_trash": "Document moved to Trash",
-    "undo": "Undo"
-  }
+    "undo": "Undo",
+    "title": "Trash",
+    "retention_note": "Deleted documents are kept for {{days}} days, then removed permanently.",
+    "empty_state": "Trash is empty",
+    "deleted_on": "Deleted {{date}}",
+    "restore": "Restore",
+    "delete_forever": "Delete forever",
+    "empty_trash": "Empty Trash",
+    "empty_confirm": "Permanently delete everything in Trash?",
+    "empty_confirm_yes": "Delete all",
+    "cancel": "Cancel"
+  },
+  "pdf_tools": "Tools",
+  "settings": "Settings"
 }

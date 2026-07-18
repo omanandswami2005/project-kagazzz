@@ -73,6 +73,66 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('getStorageTotals sums size and counts (F-26)', async () => {
+    db.onQuery(/SUM\(file_size\)/, [{ total: 5000, n: 3 }]);
+    const totals = await dao.getStorageTotals();
+    expect(totals).toEqual({ totalBytes: 5000, count: 3 });
+  });
+
+  it('getUsageByType groups by file_type ordered by bytes (F-26)', async () => {
+    db.onQuery(/GROUP BY file_type/, [
+      { file_type: 'pdf', bytes: 4000, n: 2 },
+      { file_type: 'jpg', bytes: 1000, n: 1 },
+    ]);
+    const usage = await dao.getUsageByType();
+    expect(usage[0]).toEqual({ fileType: 'pdf', bytes: 4000, count: 2 });
+  });
+
+  it('getLargestDocuments orders by size desc, binds limit (F-26)', async () => {
+    db.onQuery(/ORDER BY file_size DESC/, [docRow()]);
+    const docs = await dao.getLargestDocuments(3);
+    expect(docs).toHaveLength(1);
+    expect(db.calls[0]?.params).toEqual([3]);
+  });
+
+  it('getDuplicateStats counts groups and reclaimable bytes (F-26)', async () => {
+    db.onQuery(/GROUP BY file_hash HAVING/, [
+      { file_hash: 'h1', n: 3, size: 100 },
+      { file_hash: 'h2', n: 2, size: 50 },
+    ]);
+    const dupes = await dao.getDuplicateStats();
+    // (3-1)*100 + (2-1)*50 = 250
+    expect(dupes).toEqual({ groups: 2, wastedBytes: 250 });
+  });
+
+  it('findRecent filters last_accessed_at, orders desc, binds limit', async () => {
+    db.onQuery(/last_accessed_at IS NOT NULL/, [
+      docRow({ last_accessed_at: '2026-06-11T00:00:00.000Z' }),
+    ]);
+    const docs = await dao.findRecent(5);
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.lastAccessedAt).toBe('2026-06-11T00:00:00.000Z');
+    expect(db.calls[0]?.sql).toContain('ORDER BY last_accessed_at DESC');
+    expect(db.calls[0]?.params).toEqual([5]);
+  });
+
+  it('touchLastAccessed stamps the access time on live rows', async () => {
+    const changes = await dao.touchLastAccessed('doc-1');
+    expect(changes).toBe(1);
+    const call = db.calls[0];
+    expect(call?.sql).toContain('SET last_accessed_at = ?');
+    expect(call?.sql).toContain('deleted_at IS NULL');
+    expect(call?.params?.[1]).toBe('doc-1');
+  });
+
+  it('findFavorites filters is_favorite and excludes deleted', async () => {
+    db.onQuery(/is_favorite = 1/, [docRow({ is_favorite: 1 })]);
+    const docs = await dao.findFavorites();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.isFavorite).toBe(true);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NULL');
+  });
+
   it('create inserts with generated id, timestamps, synced=0, version=1', async () => {
     db.onQuery(/FROM documents WHERE id/, [docRow()]);
     await dao.create({
@@ -187,5 +247,20 @@ describe('DocumentDao', () => {
   it('search defaults to 20 results', async () => {
     await dao.search('aadhaar');
     expect(db.calls[0]?.params).toEqual(['aadhaar', 20]);
+  });
+
+  it('findTrashed lists soft-deleted rows, newest-deleted first', async () => {
+    db.onQuery(/deleted_at IS NOT NULL/, [docRow({ deleted_at: '2026-07-01T00:00:00.000Z' })]);
+    const trashed = await dao.findTrashed();
+    expect(trashed).toHaveLength(1);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
+    expect(db.calls[0]?.sql).toContain('ORDER BY deleted_at DESC');
+  });
+
+  it('hardDelete removes trashed rows only', async () => {
+    await dao.hardDelete('doc-1');
+    expect(db.calls[0]?.sql).toContain('DELETE FROM documents');
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
+    expect(db.calls[0]?.params).toEqual(['doc-1']);
   });
 });
