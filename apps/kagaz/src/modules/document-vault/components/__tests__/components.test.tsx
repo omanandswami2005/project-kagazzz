@@ -213,6 +213,55 @@ describe('DocumentListItem', () => {
       vi.advanceTimersByTime(500);
       expect(onLongPress).not.toHaveBeenCalled();
     });
+
+    it('tolerates small finger drift (real touchscreens can\'t hold perfectly still)', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem document={doc} onOpen={vi.fn()} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 100 });
+      // A few pixels of drift — within tolerance, must not cancel the hold.
+      fireEvent.pointerMove(row, { pointerType: 'touch', pointerId: 1, clientX: 104, clientY: 102 });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).toHaveBeenCalledWith(doc);
+    });
+
+    it('cancels the hold once drift exceeds the scroll-intent threshold', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      render(
+        <ul>
+          <DocumentListItem document={doc} onOpen={vi.fn()} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 100 });
+      // Well past the tolerance — reads as a scroll, not a long-press.
+      fireEvent.pointerMove(row, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 140 });
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).not.toHaveBeenCalled();
+    });
+
+    it('clears a pending timer on unmount so it never fires on a stale document', () => {
+      vi.useFakeTimers();
+      const onLongPress = vi.fn();
+      const { unmount } = render(
+        <ul>
+          <DocumentListItem document={doc} onOpen={vi.fn()} onLongPress={onLongPress} />
+        </ul>
+      );
+      const row = document.querySelector('[data-agent-id="vault.home.item-doc-1"]') as Element;
+      fireEvent.pointerDown(row, { pointerType: 'touch' });
+      // The row disappears mid-press (list re-sort/filter/refresh) without a
+      // pointerup/cancel ever reaching this instance.
+      unmount();
+      vi.advanceTimersByTime(500);
+      expect(onLongPress).not.toHaveBeenCalled();
+    });
   });
 });
 

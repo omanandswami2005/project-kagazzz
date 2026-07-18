@@ -479,7 +479,13 @@ export function VaultHomePage(): ReactNode {
           )}
         </main>
 
-        <UploadFAB disabled={!isReady || isUploading} onClick={openSheet} />
+        {/* Hidden during selection mode — it overlaps BulkActionBar's
+           right-aligned actions (both are bottom-right-anchored fixed
+           elements); one primary action at a time, per design-principles.md
+           #1, same as the bottom nav hiding in selection mode. */}
+        {!selectionMode && (
+          <UploadFAB disabled={!isReady || isUploading} onClick={openSheet} />
+        )}
         <UploadOptionsSheet
           isOpen={isSheetOpen}
           onDismiss={closeSheet}
