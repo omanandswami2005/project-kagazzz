@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { ActionSheet, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
+import { useQuickReferenceLockStore } from '@/modules/auth/store/quick-reference-lock.store';
 import { biometricAuthenticator } from '@/modules/auth/services/biometric.service';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 import { QuickReferenceEditSheet } from '../components/QuickReferenceEditSheet';
@@ -40,6 +41,7 @@ export function QuickReferencePage(): ReactNode {
   const { t } = useTranslation('documents');
   const { entries, isLoading, createEntry, updateEntry, deleteEntry } =
     useQuickReference();
+  const lockEnabled = useQuickReferenceLockStore((s) => s.enabled);
 
   const [checkingLock, setCheckingLock] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
@@ -53,22 +55,27 @@ export function QuickReferencePage(): ReactNode {
   );
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Screen-level biometric gate: skip entirely when unavailable (no biometry
-  // AND no device credential set), same graceful-degrade posture as the
-  // rest of the app — there is no lock screen at all on such a device.
+  // Screen-level biometric gate: skip when the user turned it off in Settings
+  // (F-84 follow-up — off by user choice) or when unavailable (no biometry AND
+  // no device credential set, same graceful-degrade posture as the rest of the
+  // app) — either way, no lock screen shows.
   useEffect(() => {
     let cancelled = false;
-    void biometricAuthenticator.isAvailable().then((available) => {
+    // Skip the native check entirely when the user turned the gate off.
+    const check = lockEnabled
+      ? biometricAuthenticator.isAvailable()
+      : Promise.resolve(false);
+    void check.then((available) => {
       if (cancelled) {
         return;
       }
-      setUnlocked(!available);
+      setUnlocked(!lockEnabled || !available);
       setCheckingLock(false);
     });
     return (): void => {
       cancelled = true;
     };
-  }, []);
+  }, [lockEnabled]);
 
   const toggleReveal = (id: string): void => {
     setRevealedIds((prev) => {

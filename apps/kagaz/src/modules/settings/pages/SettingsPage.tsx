@@ -25,6 +25,7 @@ import {
   type SupportedLanguage,
 } from '@/core/i18n';
 import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
+import { useQuickReferenceLockSettings } from '@/modules/auth/hooks/useQuickReferenceLockSettings';
 import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import { usePreferencesStore } from '@/core/preferences';
@@ -44,6 +45,7 @@ export function SettingsPage(): ReactNode {
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
   const lock = useLockSettings();
+  const quickRefLock = useQuickReferenceLockSettings();
   const backup = useBackupExport();
   const router = useIonRouter();
   const [eraseOpen, setEraseOpen] = useState(false);
@@ -181,6 +183,15 @@ export function SettingsPage(): ReactNode {
                 </div>
               </div>
             )}
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={quickRefLock.enabled}
+                label={t('security.quickref_lock')}
+                onChange={quickRefLock.setEnabled}
+                agentId="settings.quickref-lock"
+              />
+              <p className="kg-settings__hint">{t('security.quickref_lock_hint')}</p>
+            </div>
           </section>
 
           <section className="kg-settings__section">

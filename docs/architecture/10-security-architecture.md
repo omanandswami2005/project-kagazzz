@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-07-18
+> **Last Updated:** 2026-07-21
 
 ---
 
@@ -268,7 +268,7 @@ narrow, threat-model note beyond the general document posture:
 
 | Control | Behavior |
 |---|---|
-| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. |
+| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. **On by default, user-toggleable** (2026-07-21 follow-up): unlike F-16's app lock (opt-in), this gate ships enabled because Quick Reference is the highest-sensitivity screen in the app (§3.6.1) — but it's a Settings → Security switch (`quick-reference-lock.store.ts`, `kagaz:lock:quick-reference`), not a hardcoded requirement, since the per-visit prompt is real friction for a phone the user already keeps locked. Turning it off doesn't require a biometric proof first (unlike enabling F-16's app lock) because there's no lockout risk to guard against — the page already skips the gate gracefully when no biometric/credential is enrolled, so disabling only ever *reduces* friction, never denies access. |
 | **Mask by default** | Values render as `•••• <last 4 chars>` until explicitly revealed per-entry; reveal state is not persisted (resets on screen re-entry). |
 | **No structured PII typing** | The schema has no `label_type`/`value_type` column (§3.6.1 below) — the app never knows or asserts "this value is an Aadhaar number." |
 | **Clipboard auto-clear** | Every copy action clears the clipboard ~30s later if it still holds exactly what was copied (`core/clipboard`'s new `autoClearMs` option) — bounds how long a sensitive value sits somewhere a keyboard app's clipboard history could surface it. |

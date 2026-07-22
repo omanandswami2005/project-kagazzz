@@ -30,7 +30,9 @@
     "auto_lock_immediate": "Immediately",
     "auto_lock_30s": "30 seconds",
     "auto_lock_1min": "1 minute",
-    "auto_lock_5min": "5 minutes"
+    "auto_lock_5min": "5 minutes",
+    "quickref_lock": "Lock Quick Reference",
+    "quickref_lock_hint": "Require your fingerprint, face, or device PIN every time you open Quick Reference (your saved PAN, bank, and other personal values). On by default."
   },
   "data": {
     "title": "Data & Privacy",
