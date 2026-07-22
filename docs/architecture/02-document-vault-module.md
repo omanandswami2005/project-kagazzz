@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-18
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-21
 
 ---
 
@@ -1138,14 +1138,25 @@ actions as above, plus an inline **Copy** button under the extracted-text panel
 | **Open with…** | `@capacitor-community/file-opener` (MIT) — `open({ filePath, contentType, openWithDefault: false })` | `ACTION_VIEW` | Shows the OS **"Open with"** app chooser for every app that can view the document's MIME type |
 | **Share…** | `@capacitor/share` (already a dependency) — `Share.share({ url })` | `ACTION_SEND` | Shows the OS share sheet for every app that accepts the file |
 
-Both resolve a `content://` URI via `Filesystem.getUri` (`Directory.Data`) —
-the document's real on-disk path is never exposed to the receiving app,
-consistent with the FileProvider pattern used everywhere else the vault hands
-a file to the OS (`10-security-architecture.md` §3). MIME type comes from
-`mimeTypeFor(document.fileType)`. `useDocumentIntents` is the React hook: it
-resolves `supported = Capacitor.getPlatform() !== 'web'` once, and both actions
-swallow user-cancellation (dismissing the chooser/share sheet is not an error —
-only a genuine failure surfaces a toast).
+`Filesystem.getUri` (`Directory.Data`) itself returns a plain `file://` URI —
+correction (2026-07-21): an earlier revision of this doc claimed it returns
+`content://` directly, which is wrong. The `file://` → `content://` conversion
+happens later, natively, inside each plugin via `FileProvider.getUriForFile`
+(so the document's real on-disk path is still never exposed to the receiving
+app) — `@capacitor-community/file-opener` mints its own FileProvider
+(`${applicationId}.file.opener.provider`) for **Open with…**, while
+**Share…** goes through `@capacitor/share`'s call into the app's *own*
+FileProvider (`${applicationId}.fileprovider`, declared in
+`AndroidManifest.xml`), whose allowed roots are `android/app/src/main/res/xml/file_paths.xml`.
+**Bug fixed 2026-07-21**: that file was missing a `<files-path>` entry, so
+`FileProvider.getUriForFile` threw `IllegalArgumentException: Failed to find
+configured root` for every document (all of which live under `Directory.Data`)
+— **Share… failed for every target, including WhatsApp**, while Open with…
+kept working (different provider, whose paths file already covered it). MIME
+type comes from `mimeTypeFor(document.fileType)`. `useDocumentIntents` is the
+React hook: it resolves `supported = Capacitor.getPlatform() !== 'web'` once,
+and both actions swallow user-cancellation (dismissing the chooser/share sheet
+is not an error — only a genuine failure surfaces a toast).
 
 **[SEC]** Both are user-initiated (the user explicitly picked the action from
 the menu) and read-only from the vault's perspective — no network call is made
