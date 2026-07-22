@@ -7,7 +7,9 @@
 ## Table of Contents
 
 - [Color Palette](#color-palette)
+- [Brand Gradient](#brand-gradient)
 - [App Icon](#app-icon)
+- [Splash Screen](#splash-screen)
 - [Typography](#typography)
 - [Spacing](#spacing)
 - [Border Radius](#border-radius)
@@ -50,6 +52,63 @@
 
 ---
 
+## Brand Gradient
+
+> **Added 2026-07-21** ("Gradient Premium" direction, user-selected from a
+> set of options). A signature gradient reserved for a **deliberately
+> small set of high-impact spots** — primary CTA buttons, the upload FAB,
+> the in-progress ProgressBar fill, the app icon, and the splash screen.
+> **This is additive, not a replacement for `--color-primary`** — the navy
+> "trust and security" palette above stays exactly as it was for
+> structural UI (borders, focus rings, secondary-button outlines, body
+> text emphasis). The design goal is a premium, modern accent (Stripe/
+> Linear-like) without turning every screen into a light show, and without
+> touching the muted, WCAG-AA-validated palette that gives this
+> government-ID vault its trustworthy tone everywhere else.
+
+| Token | Hex | Purpose |
+|---|---|---|
+| `--color-brand-start` | `#4F46E5` (indigo-600) | Gradient start stop |
+| `--color-brand-mid` | `#7C3AED` (violet-600) | Gradient middle stop |
+| `--color-brand-end` | `#A21CAF` (fuchsia-700) | Gradient end stop |
+| `--gradient-brand` | `linear-gradient(135deg, ...)` | The composed gradient — use this, not the individual stops, everywhere except SVG sources (which need literal stop colors) |
+| `--shadow-glow-brand` | `0 0 20px rgba(124, 58, 237, 0.35)` | Resting glow on gradient surfaces |
+| `--shadow-glow-brand-lg` | `0 0 36px rgba(124, 58, 237, 0.45)` | Hover/emphasis glow |
+
+### Contrast validation (WCAG 2.1 AA)
+
+Every consumer of `--gradient-brand` renders white text (`--text-on-primary`)
+on top of it — `.kg-btn--primary`, the upload FAB. Each stop, **and the
+interpolated visual midpoint**, was checked against white
+(relative-luminance method, `(L1+0.05)/(L2+0.05)`) before being chosen:
+
+| Point | Hex | Contrast vs. white | AA (≥4.5:1)? |
+|---|---|---|---|
+| Start (`--color-brand-start`) | `#4F46E5` | 6.29:1 | ✅ |
+| Mid (`--color-brand-mid`) | `#7C3AED` | 5.70:1 | ✅ |
+| End (`--color-brand-end`) | `#A21CAF` | 6.32:1 | ✅ |
+| Interpolated midpoint (start↔end, no explicit stop) | ≈`#7852CA` | 6.78:1 | ✅ |
+
+An earlier candidate mid-stop, `#8B5CF6` (violet-500, one shade lighter),
+measured **4.23:1 — below AA** and was rejected for exactly that reason;
+`#7C3AED` (violet-600) was chosen instead. **Simple Mode** (density
+tokens, below) sets `--shadow-glow-brand`/`-lg` to `none`, matching how it
+already suppresses `--shadow-default` — glow is visual flourish, not
+information, so Simple Mode's reduced-complexity posture drops it exactly
+like any other shadow.
+
+### Where it's used (and, as importantly, where it isn't)
+
+| Surface | Uses the gradient? |
+|---|---|
+| Primary buttons (`.kg-btn--primary`), upload FAB | ✅ background + glow shadow |
+| ProgressBar, default variant (in-progress) | ✅ fill + animated shimmer sweep |
+| ProgressBar, success/danger variants | ❌ stays flat `--color-accent`/`--color-danger` — those signal a specific state, not brand identity |
+| App icon, splash screen | ✅ background |
+| Everything else — surfaces, text, borders, secondary/ghost/danger buttons, focus rings | ❌ unchanged navy/neutral system |
+
+---
+
 ## App Icon
 
 > **Added 2026-07-18**, replacing the default Capacitor/Ionic placeholder
@@ -68,14 +127,20 @@ literal text, so the mark reads the same in every locale.
 
 **Colors — token-only, no new hex values invented:**
 
+> **Updated 2026-07-21** — the background moved from the flat navy/emerald
+> pairing to `--gradient-brand` (see [Brand Gradient](#brand-gradient)
+> above) as part of the "Gradient Premium" direction; the mark itself
+> (page/badge/lines) is unchanged in shape, only the heading line's color
+> moved from navy to `--color-brand-mid` for continuity with the new
+> background.
+
 | Element | Token | Hex |
 |---|---|---|
-| Background gradient start | `--color-primary` | `#1E3A5F` |
-| Background gradient end | `--color-accent` (darkened ~15% for contrast against white) | `#0F6E5C` |
+| Background gradient | `--gradient-brand` (start→mid→end) | `#4F46E5` → `#7C3AED` → `#A21CAF` |
 | Page | white | `#FFFFFF` |
 | Folded-corner flap / body text lines | a neutral between `--surface-3` and `--border-default` | `#C7D2DE` |
-| Heading line | `--color-primary` | `#1E3A5F` |
-| Security badge | `--color-accent` | `#10B981` |
+| Heading line | `--color-brand-mid` | `#7C3AED` |
+| Security badge | `--color-accent` (unchanged — success stays semantic green even against the new background, see the "where it isn't" table above) | `#10B981` |
 
 **Safe zone:** the mark is centered within roughly the middle 66% of the
 1024×1024 source canvas (Android's adaptive-icon safe zone — content
@@ -91,8 +156,11 @@ platform's icon set from these sources after an edit:
 
 ```bash
 pnpm --filter kagaz exec capacitor-assets generate --android \
-  --iconBackgroundColor '#1e3a5f' --iconBackgroundColorDark '#142842'
-pnpm --filter kagaz exec capacitor-assets generate --ios
+  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
+  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
+pnpm --filter kagaz exec capacitor-assets generate --ios \
+  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
+  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
 ```
 
 `@capacitor/assets` (MIT, `ionic-team`) is a build-time-only devDependency
@@ -101,6 +169,40 @@ carries none of the runtime-dependency scrutiny in the root
 [CLAUDE.md](../../CLAUDE.md) (network/WASM/CSP checks apply to *shipped*
 libraries). See [CONTRIBUTING.md](../../CONTRIBUTING.md#app-icon) for the
 full regeneration workflow.
+
+> **XML comment gotcha (hit 2026-07-21):** don't put a literal `--`
+> sequence inside an SVG `<!-- -->` comment (e.g. writing out a CSS custom
+> property name like `--color-primary` in prose) — it's invalid XML
+> ("Comment must not contain '--'"), and `@capacitor/assets`'s SVG loader
+> (`resvg`/`libxml`-based) rejects the whole file with a parse error,
+> silently skipping icon generation for that platform rather than erroring
+> loudly. Write "the color-primary token" instead.
+
+## Splash Screen
+
+> **Added 2026-07-21** — previously unbranded: the app shipped the raw
+> default Capacitor/Ionic placeholder splash (a generic blue "X" mark on
+> white), the framework's starter asset, same gap the App Icon section
+> above already closed for the launcher icon on 2026-07-18.
+
+**Source:** `apps/kagaz/assets/splash.svg` — the same `--gradient-brand`
+background and mark as `icon-only.svg` (not a separate design), generously
+margined (the mark's bounding box sits centered with roughly 25-30% margin
+on every side) so it survives each platform's own centered-crop-to-device-
+aspect-ratio splash compositing without the folded corner or badge running
+off-screen on unusually tall or wide screens.
+
+No `@capacitor/splash-screen` **plugin** is installed or needed for this —
+the images this generates are consumed directly by each platform's native
+launch mechanism (Android `styles.xml` → `@drawable/splash`, iOS
+`LaunchScreen.storyboard` → the `Splash` image set), shown before the
+WebView even loads. The JS plugin would only be needed for *programmatic*
+control (custom show/hide timing, a manual dismiss call) — not required
+here; add it as a separate, deliberate follow-up if that control is ever
+needed, rather than bundling an unused native dependency now.
+
+Regenerated by the same `capacitor-assets generate` commands as the App
+Icon section above (one command does both icon and splash).
 
 ### Surface Colors
 

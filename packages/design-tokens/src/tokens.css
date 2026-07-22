@@ -13,6 +13,26 @@
   --color-secondary-light: #fbbf24;
   --color-secondary-dark: #d97706;
 
+  /* ── Brand gradient ("Gradient Premium", 2026-07-21) ────────────
+     A signature gradient reserved for high-impact spots — primary CTA
+     buttons, the upload FAB, progress bars, the app icon, and the splash
+     screen. NOT a replacement for --color-primary, which stays the
+     structural "trust" navy (borders, focus rings, secondary-button
+     outlines) — see design-tokens.md for the full rationale and the
+     WCAG contrast validation (white text ≥4.5:1 at every stop, incl. the
+     interpolated midpoint). */
+  --color-brand-start: #4f46e5; /* indigo-600 */
+  --color-brand-mid: #7c3aed; /* violet-600 */
+  --color-brand-end: #a21caf; /* fuchsia-700 */
+  --gradient-brand: linear-gradient(
+    135deg,
+    var(--color-brand-start) 0%,
+    var(--color-brand-mid) 50%,
+    var(--color-brand-end) 100%
+  );
+  --shadow-glow-brand: 0 0 20px rgba(124, 58, 237, 0.35);
+  --shadow-glow-brand-lg: 0 0 36px rgba(124, 58, 237, 0.45);
+
   /* ── Semantic colors ──────────────────────────────────────────── */
   --color-accent: #10b981;
   --color-accent-light: #34d399;

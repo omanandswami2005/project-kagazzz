@@ -1,0 +1,17 @@
+/* Upload FAB — the screen's one primary action (design-principles.md #1),
+   so it gets the same brand-gradient + glow treatment as .kg-btn--primary
+   rather than Ionic's flat --ion-color-primary. ion-fab-button exposes
+   --background/--background-activated/--box-shadow as public CSS custom
+   properties (Shadow DOM parts), so this overrides them directly instead of
+   fighting Ionic's solid-color theming system. */
+ion-fab-button.kg-upload-fab {
+  --background: var(--gradient-brand);
+  --background-activated: var(--gradient-brand);
+  --background-hover: var(--gradient-brand);
+  --box-shadow: var(--shadow-glow-brand);
+  --color: var(--text-on-primary);
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+ion-fab-button.kg-upload-fab:hover {
+  --box-shadow: var(--shadow-glow-brand-lg);
+}

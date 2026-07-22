@@ -28,14 +28,19 @@
   cursor: not-allowed;
 }
 .kg-btn--primary {
-  background: var(--color-primary);
+  background: var(--gradient-brand);
   color: var(--text-on-primary);
+  box-shadow: var(--shadow-glow-brand);
+  transition:
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 .kg-btn--primary:hover:not(:disabled) {
-  background: var(--color-primary-light);
+  box-shadow: var(--shadow-glow-brand-lg);
 }
 .kg-btn--primary:active:not(:disabled) {
-  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-glow-brand);
+  transform: scale(0.98);
 }
 .kg-btn--secondary {
   background: transparent;
@@ -371,16 +376,53 @@ button.kg-tag {
   height: 8px;
 }
 .kg-progress__fill {
+  position: relative;
   height: 100%;
-  background: var(--color-primary);
+  background: var(--gradient-brand);
   border-radius: var(--radius-full);
+  overflow: hidden;
   transition: width var(--duration-fast) var(--ease-standard);
+}
+/* Shimmer sweep — a soft light band drifting across the fill, the "alive"
+   motion modern loading bars use instead of a flat static color. Only on
+   the default (in-progress) variant: success/danger mean "this is over",
+   not "still working", so they stay still. */
+.kg-progress__fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: kg-progress-shimmer 1.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kg-progress__fill::after {
+    animation: none;
+  }
+}
+@keyframes kg-progress-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 .kg-progress--success .kg-progress__fill {
   background: var(--color-accent);
 }
+.kg-progress--success .kg-progress__fill::after {
+  display: none;
+}
 .kg-progress--danger .kg-progress__fill {
   background: var(--color-danger);
+}
+.kg-progress--danger .kg-progress__fill::after {
+  display: none;
 }
 .kg-progress--indeterminate .kg-progress__fill {
   width: 40%;
@@ -470,6 +512,38 @@ button.kg-tag {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+}
+/* Entrance animation — a bottom sheet should visibly arrive, not snap into
+   place. Native <dialog> can't `transition` from display:none, so this uses
+   a keyframe `animation` (which plays on first paint) rather than
+   `transition`; prefers-reduced-motion already collapses --duration-normal
+   to 0ms globally (tokens.css), so this degrades to an instant, correct
+   no-animation open for anyone who asked for that. Exit stays instant —
+   animating a native <dialog>'s close needs deferring the real close() call
+   until the animation ends, a bigger change than this pass covers. */
+@keyframes kg-sheet-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes kg-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.kg-action-sheet[open]::backdrop {
+  animation: kg-backdrop-in var(--duration-fast) var(--ease-standard);
+}
+.kg-action-sheet[open] .kg-action-sheet__panel {
+  animation: kg-sheet-in var(--duration-normal) var(--ease-emphasized);
 }
 .kg-action-sheet__panel {
   width: 100%;
@@ -569,6 +643,25 @@ button.kg-tag {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* Entrance animation — see the matching note on .kg-action-sheet[open]. A
+   centered dialog reads better scaling in than sliding, unlike a bottom
+   sheet. */
+@keyframes kg-alert-in {
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.kg-alert[open]::backdrop {
+  animation: kg-backdrop-in var(--duration-fast) var(--ease-standard);
+}
+.kg-alert[open] .kg-alert__panel {
+  animation: kg-alert-in var(--duration-normal) var(--ease-emphasized);
 }
 .kg-alert__panel {
   width: 100%;

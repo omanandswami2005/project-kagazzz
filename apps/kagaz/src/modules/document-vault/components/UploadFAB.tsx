@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { useAgentProps } from '@kagaz/agent-kit';
 import { Icon } from '@kagaz/ui';
+import './upload-fab.css';
 
 /** Props for {@link UploadFAB}. */
 export interface UploadFABProps {

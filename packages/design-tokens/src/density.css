@@ -31,6 +31,10 @@
   --radius-default: var(--radius-md);
   --icon-default: var(--icon-lg);
   --focus-ring-width: 4px;
+  /* Glow shadows are visual flourish, same category as --shadow-default —
+     suppressed here for the same reason (reduced visual complexity). */
+  --shadow-glow-brand: none;
+  --shadow-glow-brand-lg: none;
 }
 
 :root[data-density='compact'] {
