@@ -46,6 +46,29 @@ function mapRow(row: SqlRow): DocumentEntity {
 export class DocumentDao {
   constructor(private readonly db: DbConnection) {}
 
+  // Cached across calls on this instance — `hasFts()` is called on every
+  // keystroke's search via useSearch, and the answer never changes for the
+  // lifetime of a connection (§6, and the fallback note on `search()` below).
+  private ftsAvailable: boolean | null = null;
+
+  /**
+   * Whether `documents_fts` exists. Some Android SQLCipher builds omit the
+   * FTS5 module at runtime even when the DDL is well-formed ("no such
+   * module: fts5" — a known gap, not specific to this app); migration 002
+   * catches that and skips creating the table rather than failing the whole
+   * migration chain, so its absence is a real, on-device possibility to
+   * check for, not just a defensive test case.
+   */
+  private async hasFts(): Promise<boolean> {
+    if (this.ftsAvailable === null) {
+      const rows = await this.db.query(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'documents_fts'"
+      );
+      this.ftsAvailable = rows.length > 0;
+    }
+    return this.ftsAvailable;
+  }
+
   /** Returns a non-deleted document by id, or null. */
   async findById(id: string): Promise<DocumentEntity | null> {
     const rows = await this.db.query(
@@ -311,8 +334,19 @@ export class DocumentDao {
     return result.changes;
   }
 
-  /** FTS5 search across name/description/ocr_text (§6), rank order. */
+  /**
+   * FTS5 search across name/description/ocr_text (§6), rank order. Falls
+   * back to a plain `LIKE` scan (still AND-across-tokens, OR-across-columns —
+   * same semantics as the FTS query, just unranked) when `documents_fts`
+   * doesn't exist on this device (see {@link hasFts}). `query` is the
+   * already-built FTS5 match string from `buildFtsMatchQuery` (e.g.
+   * `"aadh* card*"`); the fallback re-derives its tokens from it rather than
+   * taking raw input, so callers don't need a second code path.
+   */
   async search(query: string, limit = 20): Promise<DocumentEntity[]> {
+    if (!(await this.hasFts())) {
+      return this.searchWithoutFts(query, limit);
+    }
     const rows = await this.db.query(
       `SELECT d.* FROM documents d
        JOIN documents_fts fts ON d.rowid = fts.rowid
@@ -321,6 +355,35 @@ export class DocumentDao {
        ORDER BY rank
        LIMIT ?`,
       [query, limit]
+    );
+    return rows.map(mapRow);
+  }
+
+  private async searchWithoutFts(
+    query: string,
+    limit: number
+  ): Promise<DocumentEntity[]> {
+    const tokens = query
+      .split(' ')
+      .map((token) => token.replace(/\*$/, ''))
+      .filter((token) => token.length > 0);
+    if (tokens.length === 0) {
+      return [];
+    }
+    const perToken = tokens.map(
+      () => '(name LIKE ? OR description LIKE ? OR ocr_text LIKE ?)'
+    );
+    const params: SqlValue[] = tokens.flatMap((token) => {
+      const pattern = `%${token}%`;
+      return [pattern, pattern, pattern];
+    });
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE deleted_at IS NULL
+         AND ${perToken.join(' AND ')}
+       ORDER BY updated_at DESC
+       LIMIT ?`,
+      [...params, limit]
     );
     return rows.map(mapRow);
   }

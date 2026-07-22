@@ -26,7 +26,9 @@ describe('useSearch (F-11)', () => {
   });
 
   it('debounces, runs an FTS query, and exposes results', async () => {
-    const db = new FakeDb().onQuery(/documents_fts MATCH/, [docRow()]);
+    const db = new FakeDb()
+      .onQuery(/sqlite_master/, [{ 1: 1 }])
+      .onQuery(/documents_fts MATCH/, [docRow()]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     const { result } = renderHook(() => useSearch());
 
@@ -46,7 +48,9 @@ describe('useSearch (F-11)', () => {
   });
 
   it('clears results when the query is emptied', async () => {
-    const db = new FakeDb().onQuery(/documents_fts MATCH/, [docRow()]);
+    const db = new FakeDb()
+      .onQuery(/sqlite_master/, [{ 1: 1 }])
+      .onQuery(/documents_fts MATCH/, [docRow()]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     const { result } = renderHook(() => useSearch());
 

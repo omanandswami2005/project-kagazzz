@@ -237,16 +237,43 @@ describe('DocumentDao', () => {
   });
 
   it('search joins documents_fts, excludes deleted, binds limit', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
     db.onQuery(/documents_fts MATCH/, [docRow()]);
     const results = await dao.search('pan*', 5);
     expect(results).toHaveLength(1);
-    expect(db.calls[0]?.sql).toContain('ORDER BY rank');
-    expect(db.calls[0]?.params).toEqual(['pan*', 5]);
+    const searchCall = db.calls[1];
+    expect(searchCall?.sql).toContain('ORDER BY rank');
+    expect(searchCall?.params).toEqual(['pan*', 5]);
   });
 
   it('search defaults to 20 results', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
     await dao.search('aadhaar');
-    expect(db.calls[0]?.params).toEqual(['aadhaar', 20]);
+    expect(db.calls[1]?.params).toEqual(['aadhaar', 20]);
+  });
+
+  it('search falls back to a LIKE scan when documents_fts is absent', async () => {
+    // No sqlite_master row served → hasFts() reads false.
+    db.onQuery(/FROM documents/, [docRow()]);
+    const results = await dao.search('pan* card*', 5);
+    expect(results).toHaveLength(1);
+    const fallbackCall = db.calls[1];
+    expect(fallbackCall?.sql).toContain('LIKE');
+    expect(fallbackCall?.sql).not.toContain('documents_fts');
+    expect(fallbackCall?.params).toEqual([
+      '%pan%',
+      '%pan%',
+      '%pan%',
+      '%card%',
+      '%card%',
+      '%card%',
+      5,
+    ]);
+  });
+
+  it('search fallback returns nothing for an empty match query', async () => {
+    const results = await dao.search('', 5);
+    expect(results).toEqual([]);
   });
 
   it('findTrashed lists soft-deleted rows, newest-deleted first', async () => {

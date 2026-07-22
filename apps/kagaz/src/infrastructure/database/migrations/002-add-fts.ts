@@ -16,6 +16,16 @@
  * (The splitter's other quirk — needing a trailing newline — is handled
  * centrally by SqliteDbAdapter.execute. Both constraints are covered by
  * the native-splitter regression test in migrations.test.ts.)
+ *
+ * FTS5-UNAVAILABLE FALLBACK — some Android SQLCipher builds omit the FTS5
+ * module at runtime ("no such module: fts5") even though the DDL itself is
+ * correct; this is a documented, recurring gap across multiple SQLite
+ * wrapper libraries on Android, not a bug in this migration. If it happens
+ * here, the whole migration chain must not die with it (migrations 3+ still
+ * need to run) — so `up` catches exactly that error and leaves
+ * `documents_fts` absent. `DocumentDao.search()` checks for the table and
+ * falls back to a plain `LIKE` scan when it's missing, so search degrades
+ * instead of the app failing to open.
  */
 import type { Migration } from '../migration-runner';
 
@@ -58,12 +68,26 @@ DROP TRIGGER IF EXISTS documents_fts_insert;
 DROP TABLE IF EXISTS documents_fts;
 `;
 
+/** True for the specific "FTS5 module not compiled in" runtime error. */
+function isFts5Unavailable(error: unknown): boolean {
+  const message = String(error).toLowerCase();
+  return message.includes('fts5') && message.includes('no such module');
+}
+
 /** FTS5 virtual table + sync triggers for document search. */
 export const addFts: Migration = {
   version: 2,
   name: 'add-fts',
   up: async (db) => {
-    await db.execute(FTS_DDL);
+    try {
+      await db.execute(FTS_DDL);
+    } catch (error) {
+      if (!isFts5Unavailable(error)) {
+        throw error;
+      }
+      // See the FTS5-UNAVAILABLE FALLBACK note above — leave documents_fts
+      // absent; DocumentDao.search() falls back to LIKE.
+    }
   },
   down: async (db) => {
     await db.execute(DROP_DDL);
