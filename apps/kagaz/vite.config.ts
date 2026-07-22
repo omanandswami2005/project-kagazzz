@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -7,6 +8,20 @@ import { visualizer } from 'rollup-plugin-visualizer';
 // Build configuration per docs/architecture/01-system-architecture.md
 // §Build & Platform Configuration: route-based code splitting (React.lazy),
 // Vite `?worker` imports for heavy ops, bundle analysis via `--mode analyze`.
+//
+// App version (2026-07-21 fix): previously read from a `VITE_APP_VERSION`
+// env var that nothing ever actually set — no .env file ships (only
+// .env.example, gitignored), no CI/build step injected it — so Settings'
+// "About" screen always showed the '0.0.0-dev' fallback, never the real
+// released version, regardless of what package.json said. Reading
+// package.json directly at build time makes it a single source of truth
+// with no env var to forget to set.
+const appVersion = (
+  JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')) as {
+    version: string;
+  }
+).version;
+
 export default defineConfig(({ mode }) => {
   const plugins: PluginOption[] = [react(), tailwindcss()];
 
@@ -23,6 +38,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins,
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
