@@ -15,7 +15,7 @@ import {
   useIonRouter,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, ProgressBar } from '@kagaz/ui';
 import {
@@ -25,7 +25,7 @@ import {
   hapticTap,
 } from '@/core/haptics';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
-import { DocumentListItem } from '../components/DocumentListItem';
+import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
 import { FilterPanel } from '../components/FilterPanel';
@@ -87,6 +87,25 @@ import './vault.css';
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
   const router = useIonRouter();
+  // Virtualization support (UX pass, 2026-07-23): IonContent's scroll
+  // element isn't a plain DOM ref, it's resolved async through its own API
+  // — Ionic's documented pattern for wiring a scroll-position-dependent
+  // library (like a virtualizer) to IonContent's real (shadow-DOM-internal)
+  // scrollable element. Resolves once on mount; IonContent doesn't replace
+  // its scroll element for the life of the component.
+  const ionContentRef = useRef<HTMLIonContentElement>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void ionContentRef.current?.getScrollElement().then((el) => {
+      if (!cancelled) {
+        setScrollElement(el);
+      }
+    });
+    return (): void => {
+      cancelled = true;
+    };
+  }, []);
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
@@ -312,22 +331,22 @@ export function VaultHomePage(): ReactNode {
             <Button
               variant="ghost"
               size="sm"
-              icon={<Icon name="FileText" size={24} />}
-              onClick={() => router.push('/pdf-tools', 'forward', 'push')}
-              agentId="vault.home.pdf-tools"
-              agentAction="tools.openPdfTools"
-            >
-              {t('pdf_tools')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
               iconOnly
               icon={<Icon name="KeyRound" size={24} />}
               aria-label={t('quick_reference.title')}
               onClick={() => router.push('/quick-reference', 'forward', 'push')}
               agentId="vault.home.quick-reference"
               agentAction="vault.openQuickReference"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Icon name="StickyNote" size={24} />}
+              aria-label={t('quick_notes.title')}
+              onClick={() => router.push('/quick-notes', 'forward', 'push')}
+              agentId="vault.home.quick-notes"
+              agentAction="vault.openQuickNotes"
             />
             <Button
               variant="ghost"
@@ -342,7 +361,7 @@ export function VaultHomePage(): ReactNode {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <IonContent ref={ionContentRef}>
         <main className="kg-vault" data-agent-id="vault.home.content">
 
           {dbStatus === 'error' && (
@@ -392,26 +411,21 @@ export function VaultHomePage(): ReactNode {
                     {t('search.no_results', { query: search.query })}
                   </p>
                 ) : (
-                  <ul
-                    className={`kg-vault__list kg-vault__list--${viewMode}`}
-                    data-agent-id="vault.home.search-results"
-                    data-agent-state={search.isSearching ? 'loading' : 'success'}
-                  >
-                    {visibleDocuments.map((document) => (
-                      <DocumentListItem
-                        key={document.id}
-                        document={document}
-                        tags={tagsByDocument.get(document.id) ?? []}
-                        onOpen={handleOpen}
-                        onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
-                        onMore={(doc) => setMoreDoc(doc)}
-                        selectionMode={selectionMode}
-                        selected={selectedIds.includes(document.id)}
-                        onToggleSelect={(doc) => toggleSelection(doc.id)}
-                        onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
-                      />
-                    ))}
-                  </ul>
+                  <VirtualDocumentList
+                    documents={visibleDocuments}
+                    viewMode={viewMode}
+                    tagsByDocument={tagsByDocument}
+                    scrollElement={scrollElement}
+                    onOpen={handleOpen}
+                    onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
+                    onMore={(doc) => setMoreDoc(doc)}
+                    selectionMode={selectionMode}
+                    selectedIds={selectedIds}
+                    onToggleSelect={(doc) => toggleSelection(doc.id)}
+                    onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
+                    agentId="vault.home.search-results"
+                    agentState={search.isSearching ? 'loading' : 'success'}
+                  />
                 )
               ) : (
                 <>
@@ -481,26 +495,21 @@ export function VaultHomePage(): ReactNode {
                       {t('filters.no_matches')}
                     </p>
                   ) : (
-                  <ul
-                    className={`kg-vault__list kg-vault__list--${viewMode}`}
-                    data-agent-id="vault.home.list"
-                    data-agent-state={listState}
-                  >
-                    {filteredDocuments.map((document) => (
-                      <DocumentListItem
-                        key={document.id}
-                        document={document}
-                        tags={tagsByDocument.get(document.id) ?? []}
-                        onOpen={handleOpen}
-                        onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
-                        onMore={(doc) => setMoreDoc(doc)}
-                        selectionMode={selectionMode}
-                        selected={selectedIds.includes(document.id)}
-                        onToggleSelect={(doc) => toggleSelection(doc.id)}
-                        onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
-                      />
-                    ))}
-                  </ul>
+                  <VirtualDocumentList
+                    documents={filteredDocuments}
+                    viewMode={viewMode}
+                    tagsByDocument={tagsByDocument}
+                    scrollElement={scrollElement}
+                    onOpen={handleOpen}
+                    onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
+                    onMore={(doc) => setMoreDoc(doc)}
+                    selectionMode={selectionMode}
+                    selectedIds={selectedIds}
+                    onToggleSelect={(doc) => toggleSelection(doc.id)}
+                    onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
+                    agentId="vault.home.list"
+                    agentState={listState}
+                  />
                   )}
                 </>
               )}

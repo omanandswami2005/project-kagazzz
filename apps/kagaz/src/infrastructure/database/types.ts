@@ -78,6 +78,10 @@ export interface QuickReferenceEntry {
   label: string;
   value: string;
   linkedDocumentId?: string;
+  /** Whether this entry lives on the biometric-gated Quick Reference board
+   * (true) or the faster, gate-free Quick Notes board (false) — UX pass,
+   * 2026-07-23, migration 006. Defaults to true for every pre-existing row. */
+  isSecure: boolean;
   createdAt: string;
   updatedAt: string;
 }

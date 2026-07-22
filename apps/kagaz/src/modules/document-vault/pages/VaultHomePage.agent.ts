@@ -19,6 +19,7 @@ export const VaultHomePageAgent = definePage({
     toolsActions.openPdfTools,
     vaultActions.searchDocuments,
     vaultActions.openQuickReference,
+    vaultActions.openQuickNotes,
     vaultActions.openFilters,
     vaultActions.clearFilters,
     vaultActions.bulkDelete,

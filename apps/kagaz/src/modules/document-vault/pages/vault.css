@@ -267,8 +267,28 @@
   margin-block: var(--space-4);
 }
 
-.kg-recent__title {
+.kg-recent__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--target-min);
+  padding: 0;
   margin: 0 0 var(--space-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.kg-recent__header .kg-icon {
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.kg-recent__header[aria-expanded='false'] .kg-icon {
+  transform: rotate(-90deg);
+}
+
+.kg-recent__title {
+  margin: 0;
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text-secondary);
@@ -440,6 +460,41 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Virtualized list (UX pass, 2026-07-23): the outer <ul> only sets total
+   scroll height (inline style, from the virtualizer) — visual layout stays
+   entirely on the per-row inner .kg-vault__list--* below it, unchanged from
+   the non-virtualized markup. */
+.kg-vault__virtual-outer {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.kg-vault__virtual-row {
+  list-style: none;
+}
+.kg-vault__virtual-row .kg-vault__list {
+  /* Each row already has exactly one row's worth of items (grid: the live
+     column count; list/compact: 1) — no extra vertical gap needed between
+     items that don't visually stack within a row. */
+  gap: 0;
+}
+.kg-vault__virtual-row .kg-vault__list--grid {
+  gap: var(--space-3);
+}
+/* Inter-row spacing: with each row absolutely positioned by measured
+   height, the vertical gap between rows has to be reserved space *inside*
+   each row (padding-bottom, included in what measureElement measures)
+   rather than a CSS `gap`, matching each mode's original inter-item gap. */
+.kg-vault__virtual-row--list {
+  padding-bottom: var(--space-2);
+}
+.kg-vault__virtual-row--compact {
+  padding-bottom: var(--space-1);
+}
+.kg-vault__virtual-row--grid {
+  padding-bottom: var(--space-3);
 }
 
 /* ── UX-7: view modes ─────────────────────────────────────────────────────

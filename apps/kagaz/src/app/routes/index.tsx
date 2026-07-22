@@ -29,6 +29,7 @@ import {
   LazyLegalPage,
   LazyPdfToolsPage,
   LazyDocumentViewerPage,
+  LazyQuickNotesPage,
   LazyQuickReferencePage,
   LazySettingsPage,
   LazyStoragePage,
@@ -93,12 +94,18 @@ function useHardwareBack(): void {
 }
 
 /**
- * Top-level shell: a bottom tab bar (Documents / Favorites / Storage)
- * wrapping the router outlet. IonTabs reserves the tab bar's height and
- * safe-area inset itself, so each tab's IonContent scrolls *above* the
- * bar — nothing renders behind it. '/' redirects to the Documents tab so
- * that tab highlights on cold start (Redirect replaces, no extra history
- * entry — the hardware-back handler above still owns the root exit).
+ * Top-level shell: a bottom tab bar (Documents / Favorites / Tools /
+ * Storage) wrapping the router outlet. IonTabs reserves the tab bar's
+ * height and safe-area inset itself, so each tab's IonContent scrolls
+ * *above* the bar — nothing renders behind it. '/' redirects to the
+ * Documents tab so that tab highlights on cold start (Redirect replaces,
+ * no extra history entry — the hardware-back handler above still owns the
+ * root exit).
+ *
+ * Tools moved here from a VaultHomePage header button (UX pass,
+ * 2026-07-23, user-requested) — one tap from anywhere instead of only from
+ * the vault home header, and consistent with Favorites/Storage already
+ * being tab-only rather than also duplicated as header buttons.
  */
 export function AppRoutes(): ReactNode {
   useHardwareBack();
@@ -117,6 +124,7 @@ export function AppRoutes(): ReactNode {
             path="/quick-reference"
             component={LazyQuickReferencePage}
           />
+          <Route exact path="/quick-notes" component={LazyQuickNotesPage} />
           <Route exact path="/doc/:id" component={LazyDocumentViewerPage} />
           <Route exact path="/favorites" component={LazyFavoritesPage} />
           <Route exact path="/storage" component={LazyStoragePage} />
@@ -137,6 +145,14 @@ export function AppRoutes(): ReactNode {
         >
           <Icon name="Star" size={24} aria-hidden />
           <IonLabel>{t('tabs.favorites')}</IonLabel>
+        </IonTabButton>
+        <IonTabButton
+          tab="tools"
+          href="/pdf-tools"
+          data-agent-id="app.tab.tools"
+        >
+          <Icon name="FileText" size={24} aria-hidden />
+          <IonLabel>{t('tabs.tools')}</IonLabel>
         </IonTabButton>
         <IonTabButton
           tab="storage"

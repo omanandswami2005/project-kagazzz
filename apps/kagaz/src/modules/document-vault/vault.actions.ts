@@ -46,6 +46,8 @@ export interface VaultActionContext {
   ) => Promise<{ tagId: string }>;
   /** Navigates to the Quick Reference screen (F-84). */
   openQuickReference: () => void;
+  /** Navigates to the Quick Notes screen (UX pass, 2026-07-23). */
+  openQuickNotes: () => void;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files', 'scanner']);
@@ -172,6 +174,19 @@ export const vaultActions = {
     requiresConfirmation: false,
     handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
       ctx.openQuickReference();
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
+  openQuickNotes: defineAction({
+    id: 'vault.openQuickNotes',
+    summary:
+      'Open Quick Notes, the fast, gate-free personal notes screen for non-sensitive data.',
+    voice: ['open quick notes', 'show my notes', 'क्विक नोट्स खोलो'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.openQuickNotes();
       return Promise.resolve({ ok: true });
     },
   }),

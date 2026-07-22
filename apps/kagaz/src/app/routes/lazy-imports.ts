@@ -25,6 +25,10 @@ export const LazyQuickReferencePage = lazy(
   () => import('@/modules/document-vault/pages/QuickReferencePage')
 );
 
+export const LazyQuickNotesPage = lazy(
+  () => import('@/modules/document-vault/pages/QuickNotesPage')
+);
+
 export const LazyDocumentViewerPage = lazy(
   () => import('@/modules/document-vault/pages/DocumentViewerPage')
 );

@@ -5,12 +5,13 @@ import { addFts } from '../migrations/002-add-fts';
 import { addLogging } from '../migrations/003-add-logging';
 import { addLastAccessed } from '../migrations/004-add-last-accessed';
 import { addQuickReference } from '../migrations/005-add-quick-reference';
+import { addQuickReferenceSecurityFlag } from '../migrations/006-add-quick-reference-security-flag';
 import { migrations } from '../migrations';
 
 describe('migration registry', () => {
   it('contains all migrations in ascending, gapless version order', () => {
     const versions = migrations.map((m) => m.version);
-    expect(versions).toEqual([1, 2, 3, 4, 5]);
+    expect(versions).toEqual([1, 2, 3, 4, 5, 6]);
   });
 });
 
@@ -56,6 +57,22 @@ describe('005-add-quick-reference', () => {
     expect(db.allSql).toContain(
       'DROP TABLE IF EXISTS quick_reference_entries'
     );
+  });
+});
+
+describe('006-add-quick-reference-security-flag', () => {
+  it('adds the column, defaulting existing rows to secure (1)', async () => {
+    const db = new FakeDb();
+    await addQuickReferenceSecurityFlag.up(db);
+    expect(db.allSql).toContain(
+      'ALTER TABLE quick_reference_entries ADD COLUMN is_secure INTEGER NOT NULL DEFAULT 1'
+    );
+  });
+
+  it('down is a documented no-op (no DROP COLUMN support assumed)', async () => {
+    const db = new FakeDb();
+    await addQuickReferenceSecurityFlag.down(db);
+    expect(db.calls).toEqual([]);
   });
 });
 

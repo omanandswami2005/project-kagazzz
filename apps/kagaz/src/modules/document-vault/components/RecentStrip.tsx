@@ -2,10 +2,17 @@
  * Recent documents strip (02-document-vault-module.md §Favorites &
  * Recently Accessed): a horizontal row of the last-opened documents
  * shown above the full list (F-32). Hidden when nothing was opened yet.
+ * Collapsible (UX pass, 2026-07-23, user-requested) — the row itself was
+ * already height-bounded (a single horizontal scroller, never grows
+ * vertically), so this isn't a height-cap fix; it's reclaiming the
+ * section's vertical space entirely when the user doesn't want it, same
+ * accordion pattern as everywhere else in the app that shows/hides a
+ * whole section. Persisted so the choice survives relaunch.
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@kagaz/ui';
+import { usePreferencesStore } from '@/core/preferences';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useThumbnail } from '../hooks/useThumbnail';
 import { FileType } from '../types/document.types';
@@ -60,17 +67,37 @@ export function RecentStrip({
   onOpen,
 }: RecentStripProps): ReactNode {
   const { t } = useTranslation('documents');
+  const collapsed = usePreferencesStore((s) => s.recentSectionCollapsed);
+  const setCollapsed = usePreferencesStore((s) => s.setRecentSectionCollapsed);
   if (documents.length === 0) {
     return null;
   }
   return (
     <section className="kg-recent" data-agent-id="vault.home.recent">
-      <h2 className="kg-recent__title">{t('recent.title')}</h2>
-      <ul className="kg-recent__row">
-        {documents.map((document) => (
-          <RecentItem key={document.id} document={document} onOpen={onOpen} />
-        ))}
-      </ul>
+      <button
+        type="button"
+        className="kg-recent__header"
+        aria-expanded={!collapsed}
+        aria-controls="vault-home-recent-row"
+        data-agent-id="vault.home.recent-toggle"
+        data-agent-state={collapsed ? 'collapsed' : 'expanded'}
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        <h2 className="kg-recent__title">{t('recent.title')}</h2>
+        <Icon
+          name="ChevronDown"
+          size={20}
+          color="var(--text-secondary)"
+          aria-label={t(collapsed ? 'recent.expand' : 'recent.collapse')}
+        />
+      </button>
+      {!collapsed && (
+        <ul id="vault-home-recent-row" className="kg-recent__row">
+          {documents.map((document) => (
+            <RecentItem key={document.id} document={document} onOpen={onOpen} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

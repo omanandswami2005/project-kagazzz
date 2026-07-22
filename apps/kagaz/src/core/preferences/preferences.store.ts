@@ -14,10 +14,17 @@ import { create } from 'zustand';
 export interface AppPreferences {
   /** UX-8: prompt to rename each document just after it is added. */
   renameOnAdd: boolean;
+  /** UX pass (2026-07-23): collapse the vault home "Recent" strip — the
+   * row itself is already height-bounded (single horizontal scroller,
+   * F-32), this is purely "let me reclaim the vertical space." */
+  recentSectionCollapsed: boolean;
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
-const DEFAULTS: AppPreferences = { renameOnAdd: true };
+const DEFAULTS: AppPreferences = {
+  renameOnAdd: true,
+  recentSectionCollapsed: false,
+};
 
 /** Reads persisted preferences, tolerating missing/corrupt values. */
 export function readPreferences(): AppPreferences {
@@ -30,7 +37,10 @@ export function readPreferences(): AppPreferences {
       return DEFAULTS;
     }
     const parsed = JSON.parse(raw) as Partial<AppPreferences>;
-    return { renameOnAdd: parsed.renameOnAdd !== false };
+    return {
+      renameOnAdd: parsed.renameOnAdd !== false,
+      recentSectionCollapsed: parsed.recentSectionCollapsed === true,
+    };
   } catch {
     return DEFAULTS;
   }
@@ -48,6 +58,8 @@ function writePreferences(prefs: AppPreferences): void {
 interface PreferencesStore extends AppPreferences {
   /** Sets the rename-on-add toggle (UX-8) and persists it. */
   setRenameOnAdd: (enabled: boolean) => void;
+  /** Sets whether the Recent strip is collapsed and persists it. */
+  setRecentSectionCollapsed: (collapsed: boolean) => void;
 }
 
 /** App-wide UI preference store (persisted). */
@@ -55,6 +67,10 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => ({
   ...readPreferences(),
   setRenameOnAdd: (renameOnAdd): void => {
     set({ renameOnAdd });
-    writePreferences({ renameOnAdd: get().renameOnAdd });
+    writePreferences({ renameOnAdd: get().renameOnAdd, recentSectionCollapsed: get().recentSectionCollapsed });
+  },
+  setRecentSectionCollapsed: (recentSectionCollapsed): void => {
+    set({ recentSectionCollapsed });
+    writePreferences({ renameOnAdd: get().renameOnAdd, recentSectionCollapsed: get().recentSectionCollapsed });
   },
 }));

@@ -133,6 +133,28 @@
     "copy_failed": "Couldn't copy.",
     "more_actions": "More actions"
   },
+  "quick_notes": {
+    "title": "Quick Notes",
+    "banner": "Not locked — anyone who picks up your unlocked phone can read these. For Aadhaar, PAN, passwords, or anything sensitive, use Quick Reference instead.",
+    "empty_state": "No notes yet",
+    "empty_hint": "Save small things you want fast, no-lock access to — a Wi-Fi password, a locker combination, a reminder.",
+    "add": "Add",
+    "add_title": "Add Quick Note",
+    "edit_title": "Edit Quick Note",
+    "label_field": "Title",
+    "value_field": "Note",
+    "save": "Save",
+    "copy_value": "Copy",
+    "copy_with_label": "Copy with title",
+    "edit": "Edit",
+    "delete": "Delete",
+    "delete_confirm_title": "Delete this note?",
+    "delete_confirm_message": "This can't be undone.",
+    "cancel": "Cancel",
+    "copied": "Copied to clipboard",
+    "copy_failed": "Couldn't copy.",
+    "more_actions": "More actions"
+  },
   "details": {
     "title": "Details",
     "name": "Name",
@@ -242,7 +264,9 @@
     "skip": "Keep default"
   },
   "recent": {
-    "title": "Recent"
+    "title": "Recent",
+    "collapse": "Collapse recent documents",
+    "expand": "Expand recent documents"
   },
   "favorites": {
     "title": "Favorites",
@@ -322,6 +346,5 @@
     "empty_confirm_yes": "Delete all",
     "cancel": "Cancel"
   },
-  "pdf_tools": "Tools",
   "settings": "Settings"
 }

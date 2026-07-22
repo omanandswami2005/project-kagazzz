@@ -1,9 +1,15 @@
 /**
- * Quick Reference data hook (F-84): entries + tag assignments, and the
- * create/update/delete/tag mutations. Mirrors useTags.ts's shape exactly —
- * backed by QuickReferenceDao, refreshes its own snapshot after each
- * mutation. `label`/`value` are opaque user text; see
- * 10-security-architecture.md §3.6.
+ * Quick Reference / Quick Notes data hook (F-84 + UX pass 2026-07-23):
+ * entries + tag assignments, and the create/update/delete/tag mutations.
+ * Mirrors useTags.ts's shape exactly — backed by QuickReferenceDao,
+ * refreshes its own snapshot after each mutation. `label`/`value` are
+ * opaque user text; see 10-security-architecture.md §3.6.
+ *
+ * `isSecure` selects which board this hook instance is for: `true` is the
+ * original, biometric-gated Quick Reference; `false` is Quick Notes, the
+ * faster gate-free board for non-sensitive text. The two boards' entries
+ * never mix — every read is filtered and every write is stamped with the
+ * same fixed value a call site is instantiated with.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -55,8 +61,9 @@ function groupByEntry(
   return map;
 }
 
-/** Loads Quick Reference entries + tag assignments and exposes mutations. */
-export function useQuickReference(): UseQuickReferenceResult {
+/** Loads entries for one board (Quick Reference when `isSecure` is true,
+ * Quick Notes when false) + tag assignments, and exposes mutations. */
+export function useQuickReference(isSecure = true): UseQuickReferenceResult {
   const { db } = useDatabase();
   const dao = useMemo(() => (db ? new QuickReferenceDao(db) : null), [db]);
   const [entries, setEntries] = useState<QuickReferenceEntry[]>([]);
@@ -71,7 +78,7 @@ export function useQuickReference(): UseQuickReferenceResult {
     }
     try {
       const [all, assignments] = await Promise.all([
-        dao.findAll(),
+        dao.findAll(isSecure),
         dao.findAllTagAssignments(),
       ]);
       setEntries(all);
@@ -82,7 +89,7 @@ export function useQuickReference(): UseQuickReferenceResult {
         err: { message: String(error) },
       });
     }
-  }, [dao]);
+  }, [dao, isSecure]);
 
   // Initial load is inlined (not via refresh) so the async boundary is
   // visible to the react-hooks lint and setState never runs synchronously.
@@ -94,7 +101,7 @@ export function useQuickReference(): UseQuickReferenceResult {
     void (async (): Promise<void> => {
       try {
         const [all, assignments] = await Promise.all([
-          dao.findAll(),
+          dao.findAll(isSecure),
           dao.findAllTagAssignments(),
         ]);
         if (!cancelled) {
@@ -117,7 +124,7 @@ export function useQuickReference(): UseQuickReferenceResult {
     return (): void => {
       cancelled = true;
     };
-  }, [dao]);
+  }, [dao, isSecure]);
 
   const createEntry = useCallback(
     async (
@@ -128,12 +135,17 @@ export function useQuickReference(): UseQuickReferenceResult {
       if (!dao || !label.trim() || !value.trim()) {
         return null;
       }
-      const entry = await dao.create(label.trim(), value.trim(), linkedDocumentId);
-      logger.info({ event: 'vault.quickReference.create', entryId: entry.id });
+      const entry = await dao.create(
+        label.trim(),
+        value.trim(),
+        isSecure,
+        linkedDocumentId
+      );
+      logger.info({ event: 'vault.quickReference.create', entryId: entry.id, isSecure });
       await refresh();
       return entry;
     },
-    [dao, refresh]
+    [dao, isSecure, refresh]
   );
 
   const updateEntry = useCallback(
