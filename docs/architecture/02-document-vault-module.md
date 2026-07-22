@@ -1119,7 +1119,8 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
 | **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
 | **Resize & compress** | F-85 | same gate as Convert format (`canConvertImageFormat`) | opens a dimensions + size-target sheet → `useResizeCompress.run` |
-| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
+| **Save page as image** | F-86 | PDF document (`isPdf`) | opens a page-range sheet → `usePdfEngine().pdfToImages` |
+| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` — for PDFs (triggered elsewhere; `canExtractText` also covers them), per-page OCR fallback fixed 2026-07-21, see below |
 | Delete | — | always | soft-delete → Trash (recoverable) |
 
 ### Viewer menu (`DocumentViewerPage`)
@@ -1243,6 +1244,35 @@ Convert format never had this bug (it always appends a fresh extension for
 the target format regardless of the source name), but its own tests shared
 the same unrealistic fixture (`name: 'photo.jpg'` instead of `'photo'`),
 which had been masking exactly this class of bug — fixed in both test files.
+
+### Save Page as Image (F-86)
+
+`PdfPageImageSheet.tsx` — a quick, single-document entry point into the
+existing F-6 `pdfToImages` renderer, reached directly from the PDF
+item-menu (`isPdf(document.fileType)` gate) rather than the Tools hub's
+tool-first flow: a page-range text field (reusing `parse-ranges.ts`'s
+`parsePageRanges`, the same "1, 3-4" syntax as Split/Extract pages) defaults
+to `"1"` so the common single-page case is one tap; `flattenPageRanges` (new)
+expands the parsed ranges into the flat, deduped, ascending page-index array
+`RenderOptions.pages` needs. Running it calls `usePdfEngine().pdfToImages`
+unchanged — no new engine code, this is purely a faster UI path onto an
+already-shipped capability.
+
+**Deliberately whole-page rasterisation, not "extract the embedded
+picture"**: a scanned PDF page can carry a stamped page-number or watermark
+on top (via Stamp/Page Numbers), composited over the actual scan content.
+Only rendering the complete page (pdfjs `page.render()`, exactly what F-6's
+renderer already does) guarantees the saved image matches what the page
+visually shows; pulling out "the" embedded image object by content-stream
+inspection would risk grabbing the wrong element or missing the composited
+result entirely. Same reasoning as `useDocumentOcr`'s per-page OCR fix
+(§Extract text below) — anywhere this module decides "what's really on this
+page," it renders the page rather than trusting a single embedded object or
+text-layer fragment.
+
+No Action Registry entry beyond the existing `agentAction="vault.savePageAsImage"`
+string on the Run button (unregistered, matching F-85's `vault.resizeCompress`
+— an existing gap in this codebase's own convention, not introduced here).
 
 ### Select text & Detected numbers (F-83)
 

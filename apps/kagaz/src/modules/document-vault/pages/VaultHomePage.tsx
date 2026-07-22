@@ -49,6 +49,8 @@ import { canApplyImageFilter, useImageEnhancement } from '../hooks/useImageEnhan
 import { FILTER_PRESETS, type FilterPreset } from '@/modules/image-engine/services/image-filters';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { ResizeCompressSheet } from '../components/ResizeCompressSheet';
+import { PdfPageImageSheet } from '../components/PdfPageImageSheet';
+import { isPdf } from '../hooks/useDocumentFile';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -136,6 +138,7 @@ export function VaultHomePage(): ReactNode {
   const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
   const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
   const [resizeDoc, setResizeDoc] = useState<DocumentEntity | null>(null);
+  const [pageImageDoc, setPageImageDoc] = useState<DocumentEntity | null>(null);
   // F-9: folder options sheet (rename/change color/reorder/delete).
   const [moreFolder, setMoreFolder] = useState<FolderEntity | null>(null);
   const [colorFolder, setColorFolder] = useState<FolderEntity | null>(null);
@@ -536,6 +539,10 @@ export function VaultHomePage(): ReactNode {
         <DocumentDetailsSheet document={detailsDoc} onClose={() => setDetailsDoc(null)} />
 
         <ResizeCompressSheet document={resizeDoc} onClose={() => setResizeDoc(null)} />
+        <PdfPageImageSheet
+          document={pageImageDoc}
+          onClose={() => setPageImageDoc(null)}
+        />
 
         <ActionSheet
           isOpen={moreDoc !== null}
@@ -631,6 +638,17 @@ export function VaultHomePage(): ReactNode {
                     text: t('resize_compress.action'),
                     handler: (): void => {
                       if (moreDoc) setResizeDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
+            // F-86: save selected page(s) of a PDF as standalone images.
+            ...(moreDoc && isPdf(moreDoc.fileType)
+              ? [
+                  {
+                    text: t('page_image.action'),
+                    handler: (): void => {
+                      if (moreDoc) setPageImageDoc(moreDoc);
                     },
                   },
                 ]

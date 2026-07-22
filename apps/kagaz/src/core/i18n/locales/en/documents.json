@@ -70,6 +70,21 @@
     "failed": "Couldn't resize this image.",
     "invalid_dimensions": "Enter a width, height, and max size greater than zero."
   },
+  "page_image": {
+    "action": "Save page as image",
+    "title": "Save Page as Image",
+    "hint": "Save one or more pages as separate image files — exactly as the page looks, watermarks and all.",
+    "pages": "Pages",
+    "pages_placeholder": "e.g. 1, 3-4",
+    "invalid_pages": "Enter a page number or range within this document, e.g. 1, 3-4.",
+    "page_count_one": "{{count}} page will be saved as an image",
+    "page_count_other": "{{count}} pages will be saved as images",
+    "run": "Save as image",
+    "running": "Rendering…",
+    "done_one": "Saved {{count}} image",
+    "done_other": "Saved {{count}} images",
+    "failed": "Couldn't save this page as an image."
+  },
   "quick_reference": {
     "title": "Quick Reference",
     "empty_state": "No saved values yet",
