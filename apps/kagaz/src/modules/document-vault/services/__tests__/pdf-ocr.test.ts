@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ocrScannedPdf, type PdfOcrDeps } from '../pdf-ocr';
+import { ocrPdfPages, type PdfOcrDeps } from '../pdf-ocr';
 
 /** A tiny blob standing in for a rendered PDF page. */
 const page = (): Blob => new Blob([new Uint8Array([1, 2, 3])]);
@@ -15,22 +15,29 @@ function deps(over: Partial<PdfOcrDeps> = {}): PdfOcrDeps {
   };
 }
 
-describe('ocrScannedPdf (F-20 scanned-PDF fallback)', () => {
-  it('renders pages, OCRs each, and joins the text', async () => {
+describe('ocrPdfPages (F-20 per-page OCR)', () => {
+  it('renders exactly the given pages, OCRs each, and returns text in order', async () => {
     const d = deps({
       recognize: vi.fn(async (path: string) => (path.includes('id0') ? 'page one' : 'page two')),
     });
-    const out = await ocrScannedPdf(new Uint8Array([0]), 'en', d);
-    expect(out).toBe('page one\n\npage two');
+    const out = await ocrPdfPages(new Uint8Array([0]), [2, 5], 'en', d);
+    expect(out).toEqual(['page one', 'page two']);
+    expect(d.renderPages).toHaveBeenCalledWith(expect.any(Uint8Array), [2, 5]);
     expect(d.recognize).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns [] without rendering anything for an empty page list', async () => {
+    const d = deps();
+    const out = await ocrPdfPages(new Uint8Array([0]), [], 'en', d);
+    expect(out).toEqual([]);
+    expect(d.renderPages).not.toHaveBeenCalled();
   });
 
   it('writes each page to temp/ and deletes it afterwards', async () => {
     const d = deps();
-    await ocrScannedPdf(new Uint8Array([0]), 'en', d);
+    await ocrPdfPages(new Uint8Array([0]), [0, 1], 'en', d);
     expect(d.storage.write).toHaveBeenCalledTimes(2);
     expect(d.storage.delete).toHaveBeenCalledTimes(2);
-    // The temp path is under temp/ with a .png extension.
     const firstWrite = (d.storage.write as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(firstWrite).toMatch(/^temp\/pdf-ocr-.*\.png$/);
   });
@@ -42,18 +49,22 @@ describe('ocrScannedPdf (F-20 scanned-PDF fallback)', () => {
         throw new Error('mlkit boom');
       }),
     });
-    await expect(ocrScannedPdf(new Uint8Array([0]), 'en', d)).rejects.toThrow('mlkit boom');
+    await expect(ocrPdfPages(new Uint8Array([0]), [0], 'en', d)).rejects.toThrow('mlkit boom');
     expect(d.storage.delete).toHaveBeenCalledTimes(1);
   });
 
-  it('returns empty string when no page has text', async () => {
-    const d = deps({ recognize: vi.fn(async () => '   ') });
-    expect(await ocrScannedPdf(new Uint8Array([0]), 'en', d)).toBe('');
+  it('preserves position for a page where nothing was recognised (does not drop it)', async () => {
+    const d = deps({
+      renderPages: vi.fn(async () => [page(), page()]),
+      recognize: vi.fn(async (path: string) => (path.includes('id0') ? '   ' : 'page two')),
+    });
+    const out = await ocrPdfPages(new Uint8Array([0]), [0, 1], 'en', d);
+    expect(out).toEqual(['', 'page two']);
   });
 
   it('passes the language through to the recogniser', async () => {
     const d = deps();
-    await ocrScannedPdf(new Uint8Array([0]), 'hi', d);
+    await ocrPdfPages(new Uint8Array([0]), [0, 1], 'hi', d);
     expect(d.recognize).toHaveBeenCalledWith(expect.any(String), 'hi');
   });
 });

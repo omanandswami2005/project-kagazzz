@@ -1,7 +1,15 @@
 /**
- * Scanned-PDF OCR fallback (F-20 follow-up). A PDF with no embedded text layer
- * (a scan/photo saved as PDF) yields nothing from pdfjs `getTextContent`, so we
- * render its pages to images and run each through the native ML Kit recogniser.
+ * Per-page OCR for PDF pages whose native text layer isn't trustworthy
+ * (F-20 follow-up, 2026-07-21). A PDF with no embedded text at all (a
+ * scan/photo saved as PDF) yields nothing from pdfjs `getTextContent` — but a
+ * scanned PDF that also has a stamped page-number or watermark (real, but
+ * tiny, vector text) yields a *non-empty* string per page even though no real
+ * content was extracted, which previously fooled the whole-document
+ * empty-text check in `useDocumentOcr.ts` into skipping OCR entirely. The
+ * caller now decides per page (via `extractPdfTextPerPageImpl`) which pages
+ * are "sparse" and passes only those page indices here to be rendered + OCR'd
+ * — this file no longer decides scan-vs-text itself, only executes the OCR
+ * for the pages it's told about.
  *
  * Native-only (ML Kit + a canvas renderer); the caller gates on `isOcrSupported`.
  * The renderer, recogniser, and temp storage are injected so the orchestration
@@ -14,10 +22,11 @@
 import type { SupportedLanguage } from '@/core/i18n';
 import { STORAGE_DIRS } from '@/infrastructure/filesystem';
 
-/** Everything {@link ocrScannedPdf} needs, injected. */
+/** Everything {@link ocrPdfPages} needs, injected. */
 export interface PdfOcrDeps {
-  /** Renders every PDF page to an image blob (e.g. pdf-engine's pdfToImages). */
-  renderPages: (pdf: Uint8Array) => Promise<Blob[]>;
+  /** Renders the given 0-indexed pages of a PDF to image blobs, in order
+   * (all pages when `pages` is omitted — e.g. pdf-engine's pdfToImages). */
+  renderPages: (pdf: Uint8Array, pages?: number[]) => Promise<Blob[]>;
   /** Recognises text in a stored (app-relative) image path via ML Kit. */
   recognize: (storagePath: string, language: SupportedLanguage) => Promise<string>;
   /** Temp file I/O (write a page image, delete it after). */
@@ -30,17 +39,24 @@ export interface PdfOcrDeps {
 }
 
 /**
- * OCRs a scanned PDF page-by-page and returns the combined text (blank when
- * nothing is found). Each page image lives in temp/ only while ML Kit reads it.
+ * OCRs exactly the given 0-indexed `pageIndices` (rendered in that order) and
+ * returns their recognised text in the same order — '' for a page where
+ * nothing was recognised. Passing every page index reproduces the old
+ * "OCR the whole scanned PDF" behavior; passing a subset lets the caller mix
+ * trusted native text (for confident pages) with OCR (for sparse ones).
  */
-export async function ocrScannedPdf(
+export async function ocrPdfPages(
   pdf: Uint8Array,
+  pageIndices: number[],
   language: SupportedLanguage,
   deps: PdfOcrDeps
-): Promise<string> {
+): Promise<string[]> {
+  if (pageIndices.length === 0) {
+    return [];
+  }
   const newId = deps.uuid ?? ((): string => crypto.randomUUID());
-  const blobs = await deps.renderPages(pdf);
-  const pages: string[] = [];
+  const blobs = await deps.renderPages(pdf, pageIndices);
+  const texts: string[] = [];
 
   for (const blob of blobs) {
     const path = `${STORAGE_DIRS.temp}/pdf-ocr-${newId()}.png`;
@@ -48,13 +64,11 @@ export async function ocrScannedPdf(
     await deps.storage.write(path, bytes);
     try {
       const text = await deps.recognize(path, language);
-      if (text.trim()) {
-        pages.push(text.trim());
-      }
+      texts.push(text.trim());
     } finally {
       await deps.storage.delete(path).catch(() => undefined);
     }
   }
 
-  return pages.join('\n\n').trim();
+  return texts;
 }

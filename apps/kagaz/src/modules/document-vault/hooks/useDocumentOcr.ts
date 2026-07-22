@@ -2,9 +2,14 @@
  * Document text extraction (F-20/ADR-019 + UX-13). Pulls searchable text out of
  * a document and stores it in the encrypted `documents.ocr_text` column, which
  * the FTS index already searches — so the text becomes findable (and, later,
- * usable by on-device AI). Two paths:
+ * usable by on-device AI).
  *   - images → on-device ML Kit OCR (native only);
- *   - PDFs with a text layer → pdfjs `getTextContent` (fast, OCR-free, UX-13).
+ *   - PDFs → pdfjs `getTextContent` PER PAGE (fast, OCR-free, UX-13); any page
+ *     whose native text is too sparse to be real content (a scanned page, or
+ *     a scanned page with just a stamped page-number/watermark on top — see
+ *     MIN_CONFIDENT_PAGE_TEXT_CHARS) is rendered and OCR'd instead, page by
+ *     page, so a stamp elsewhere in the document can't hide missing OCR on
+ *     the pages that actually need it.
  *
  * [SEC] The extracted text is sensitive: it is written only to the encrypted
  * DB and never logged (only its length is).
@@ -21,13 +26,25 @@ import {
   recognizeDocumentText,
 } from '@/modules/image-engine/services/ocr.service';
 import {
-  extractPdfTextImpl,
+  extractPdfTextPerPageImpl,
   pdfToImagesImpl,
 } from '@/modules/pdf-engine/services/pdf-render-ops';
-import { ocrScannedPdf } from '../services/pdf-ocr';
+import { ocrPdfPages } from '../services/pdf-ocr';
 import { isPdf } from './useDocumentFile';
 
 const logger = log('document-vault');
+
+/**
+ * Below this many non-whitespace characters, a page's native text layer is
+ * treated as "not real content" — a stamped page number ("3") or a short
+ * watermark ("CONFIDENTIAL"), not the page's actual text — and OCR'd instead
+ * (F-20 follow-up, 2026-07-21: a scanned PDF with page numbers stamped on
+ * every page previously extracted as just those page numbers, because the
+ * whole-document text was non-empty even though no page had real content).
+ * A heuristic, not a certainty — deliberately conservative (a real page this
+ * short is rare) so it errs toward re-OCRing rather than trusting a stamp.
+ */
+const MIN_CONFIDENT_PAGE_TEXT_CHARS = 20;
 
 /**
  * Image types OCR can read (ML Kit takes a bitmap). Matched against the stored
@@ -79,19 +96,39 @@ export function useDocumentOcr(): UseDocumentOcr {
       try {
         const lang = locale === 'hi' ? 'hi' : 'en';
         let text: string;
+        let source: 'pdf-layer' | 'pdf-mixed' | 'ocr' = 'ocr';
         if (isPdf(document.fileType)) {
-          // UX-13: read the embedded text layer first (fast, no OCR).
+          // UX-13: read the embedded text layer first (fast, no OCR) — but
+          // per PAGE, not the whole document (see MIN_CONFIDENT_PAGE_TEXT_CHARS
+          // above for why a whole-document check isn't enough).
           const bytes = await createFileStorage().read(document.filePath);
-          text = await extractPdfTextImpl(bytes);
-          // Scanned/image-only PDFs have no text layer — fall back to OCR of the
-          // rendered pages (native only; degrades to '' on web).
-          if (!text.trim() && isOcrSupported()) {
-            text = await ocrScannedPdf(bytes, lang, {
-              renderPages: (pdf) => pdfToImagesImpl(pdf, { format: 'png', scale: 2 }),
+          const pageTexts = await extractPdfTextPerPageImpl(bytes);
+          const sparsePages = pageTexts
+            .map((pageText, i) => ({ i, chars: pageText.replace(/\s/g, '').length }))
+            .filter(({ chars }) => chars < MIN_CONFIDENT_PAGE_TEXT_CHARS)
+            .map(({ i }) => i);
+          // Scanned pages (whole doc, or just some pages) have no real text
+          // layer — OCR exactly those pages (native only; no-op on web).
+          if (sparsePages.length > 0 && isOcrSupported()) {
+            const ocrTexts = await ocrPdfPages(bytes, sparsePages, lang, {
+              renderPages: (pdf, pages) =>
+                pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages }),
               recognize: recognizeDocumentText,
               storage: createFileStorage(),
             });
+            sparsePages.forEach((pageIndex, k) => {
+              // Keep the native (if any) text when OCR itself found nothing —
+              // a stamped page number beats an empty string.
+              pageTexts[pageIndex] = ocrTexts[k] || pageTexts[pageIndex];
+            });
           }
+          text = pageTexts.filter((p) => p.length > 0).join('\n\n').trim();
+          source =
+            sparsePages.length === 0
+              ? 'pdf-layer'
+              : sparsePages.length === pageTexts.length
+                ? 'ocr'
+                : 'pdf-mixed';
         } else {
           // Images go straight through native ML Kit OCR.
           text = await recognizeDocumentText(document.filePath, lang);
@@ -100,7 +137,7 @@ export function useDocumentOcr(): UseDocumentOcr {
         logger.info({
           event: 'vault.text.stored',
           documentId: document.id,
-          source: isPdf(document.fileType) ? 'pdf-layer' : 'ocr',
+          source,
           chars: text.length,
         });
         return text;
