@@ -161,6 +161,13 @@ export function VaultHomePage(): ReactNode {
   const handleShareDoc = async (document: DocumentEntity): Promise<void> => {
     if (!(await intents.share(document))) setOcrMsg(t('intents.share_failed'));
   };
+  // F-65 bulk-select follow-up: share every selected document in one sheet.
+  const handleBulkShare = async (): Promise<void> => {
+    const selected = documents.filter((d) => selectedIds.includes(d.id));
+    const ok = await intents.shareMany(selected);
+    clearSelection();
+    if (!ok) setOcrMsg(t('intents.share_failed_bulk'));
+  };
   // F-68: quick-copy a document's stored OCR/extracted text to the clipboard.
   const handleCopyText = async (document: DocumentEntity): Promise<void> => {
     setOcrMsg(t((await copyText.copy(document)) ? 'copy_text.copied' : 'copy_text.failed'));
@@ -792,6 +799,7 @@ export function VaultHomePage(): ReactNode {
             onDelete={() => void bulkDelete()}
             onMove={() => setBulkMoveOpen(true)}
             onFavorite={() => void bulkFavorite()}
+            onShare={intents.supported ? (): void => void handleBulkShare() : undefined}
           />
         )}
         <MoveToFolderDialog

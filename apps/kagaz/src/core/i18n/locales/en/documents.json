@@ -24,7 +24,8 @@
     "open_with": "Open with…",
     "share": "Share…",
     "open_failed": "Couldn't open this document in another app.",
-    "share_failed": "Couldn't share this document."
+    "share_failed": "Couldn't share this document.",
+    "share_failed_bulk": "Couldn't share the selected documents."
   },
   "copy_text": {
     "action": "Copy text",

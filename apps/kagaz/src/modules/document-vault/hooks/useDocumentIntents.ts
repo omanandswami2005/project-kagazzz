@@ -11,6 +11,7 @@ import {
   isIntentSupported,
   openDocumentWith,
   shareDocument,
+  shareDocuments,
 } from '../services/document-intent.service';
 
 const logger = log('document-vault');
@@ -26,6 +27,8 @@ export interface UseDocumentIntents {
   supported: boolean;
   /** Share via the OS share sheet. Resolves false only on a real failure. */
   share: (document: DocumentEntity) => Promise<boolean>;
+  /** Share multiple documents in one share sheet (bulk-select). */
+  shareMany: (documents: DocumentEntity[]) => Promise<boolean>;
   /** Open in another app via the "Open with" chooser. False only on failure. */
   openWith: (document: DocumentEntity) => Promise<boolean>;
 }
@@ -45,6 +48,23 @@ export function useDocumentIntents(): UseDocumentIntents {
     }
   }, []);
 
+  const shareMany = useCallback(async (documents: DocumentEntity[]): Promise<boolean> => {
+    try {
+      await shareDocuments(documents);
+      return true;
+    } catch (err) {
+      if (isCancellation(err)) {
+        return true;
+      }
+      logger.warn({
+        event: 'vault.intent.share_error',
+        count: documents.length,
+        err: { message: String(err) },
+      });
+      return false;
+    }
+  }, []);
+
   const openWith = useCallback(async (document: DocumentEntity): Promise<boolean> => {
     try {
       await openDocumentWith(document);
@@ -58,5 +78,5 @@ export function useDocumentIntents(): UseDocumentIntents {
     }
   }, []);
 
-  return { supported: isIntentSupported(), share, openWith };
+  return { supported: isIntentSupported(), share, shareMany, openWith };
 }

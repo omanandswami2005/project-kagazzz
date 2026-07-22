@@ -15,6 +15,9 @@ export interface BulkActionBarProps {
   onDelete: () => void;
   onMove: () => void;
   onFavorite: () => void;
+  /** Share every selected document in one share sheet. Omit to hide the
+   * button entirely (e.g. on web, where native intents don't exist). */
+  onShare?: () => void;
 }
 
 /** Floating multi-select toolbar. Hidden when nothing is selected. */
@@ -24,6 +27,7 @@ export function BulkActionBar({
   onDelete,
   onMove,
   onFavorite,
+  onShare,
 }: BulkActionBarProps): ReactNode {
   const { t } = useTranslation('documents');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -72,6 +76,21 @@ export function BulkActionBar({
         >
           <Icon name="Move" size={20} />
         </button>
+        {onShare && (
+          // No agentAction: matches the single-document Share… button's own
+          // posture (F-64/F-65) — handing documents to another app stays a
+          // user-tap-only action, not voice/AI-triggerable.
+          <button
+            type="button"
+            className="kg-bulk-bar__action"
+            aria-label={t('intents.share')}
+            data-agent-id="vault.home.bulk-share"
+            disabled={count === 0}
+            onClick={onShare}
+          >
+            <Icon name="Share2" size={20} />
+          </button>
+        )}
         <button
           type="button"
           className="kg-bulk-bar__action kg-bulk-bar__action--danger"

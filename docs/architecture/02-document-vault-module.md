@@ -1401,7 +1401,7 @@ Multi-select mode enables batch operations on multiple documents at once.
 | **Tag** | 🏷️ | Add/remove tags from all selected | No |
 | **Merge** | 📎 | Merge selected PDFs into one (PDFs only) | No |
 | **Compress** | 📦 | Compress all selected documents | No |
-| **Export** | 📤 | Export/share selected documents | No |
+| **Share** | 📤 | Share selected documents in one OS share sheet (F-65 bulk-select follow-up, 2026-07-21) — `document-intent.service.shareDocuments`, one `files[]` share for 2+, delegates to the single-document `url` shape for exactly 1. Native-only (hidden on web); no Action Registry entry, same posture as the single-document Share… button. | No |
 | **Favorite** | ⭐ | Toggle favorite on all selected | No |
 | **Lock** | 🔒 | Toggle lock on all selected | Biometric required |
 
