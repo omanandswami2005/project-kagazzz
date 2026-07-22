@@ -225,14 +225,23 @@ export function DocumentViewerPage(): ReactNode {
             // F-64/F-65: hand the document to another app (native only).
             ...(intents.supported
               ? [
-                  { text: t('intents.open_with'), handler: () => void handleOpenWith() },
-                  { text: t('intents.share'), handler: () => void handleShare() },
+                  {
+                    text: t('intents.open_with'),
+                    icon: 'ExternalLink' as const,
+                    handler: () => void handleOpenWith(),
+                  },
+                  {
+                    text: t('intents.share'),
+                    icon: 'Share2' as const,
+                    handler: () => void handleShare(),
+                  },
                 ]
               : []),
-            { text: t('details.title'), handler: () => setDetailsOpen(true) },
+            { text: t('details.title'), icon: 'Info', handler: () => setDetailsOpen(true) },
             {
               text: t('actions.delete'),
               role: 'destructive',
+              icon: 'Trash2',
               handler: handleDelete,
             },
             { text: t('actions.cancel'), role: 'cancel' },

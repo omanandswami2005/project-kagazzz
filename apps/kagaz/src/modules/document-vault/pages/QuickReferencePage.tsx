@@ -264,18 +264,21 @@ export function QuickReferencePage(): ReactNode {
         buttons={[
           {
             text: t('quick_reference.copy_value'),
+            icon: 'Copy',
             handler: (): void => {
               if (menuEntry) void handleCopyValue(menuEntry);
             },
           },
           {
             text: t('quick_reference.copy_with_label'),
+            icon: 'Copy',
             handler: (): void => {
               if (menuEntry) void handleCopyWithLabel(menuEntry);
             },
           },
           {
             text: t('quick_reference.edit'),
+            icon: 'Pencil',
             handler: (): void => {
               setEditTarget(menuEntry);
             },
@@ -283,6 +286,7 @@ export function QuickReferencePage(): ReactNode {
           {
             text: t('quick_reference.delete'),
             role: 'destructive',
+            icon: 'Trash2',
             handler: (): void => {
               setDeleteTarget(menuEntry);
             },
@@ -300,6 +304,7 @@ export function QuickReferencePage(): ReactNode {
           {
             text: t('quick_reference.delete'),
             role: 'destructive',
+            icon: 'Trash2',
             handler: (): void => {
               if (deleteTarget) void handleDelete(deleteTarget);
             },

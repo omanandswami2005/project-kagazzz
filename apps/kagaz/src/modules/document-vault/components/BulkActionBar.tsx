@@ -113,6 +113,7 @@ export function BulkActionBar({
           {
             text: t('bulk.delete'),
             role: 'destructive',
+            icon: 'Trash2',
             handler: (): void => onDelete(),
           },
           { text: t('actions.cancel'), role: 'cancel' },

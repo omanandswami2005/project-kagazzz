@@ -14,6 +14,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { clsx } from 'clsx';
 import { agentAttrs, type AgentProps } from '../agent-props';
 import { closeDialog, openDialog, useDialogBackButton } from '../dialog-utils';
+import { Icon, type IconName } from './Icon';
 
 /** One row in an {@link ActionSheet}. */
 export interface ActionSheetButton {
@@ -21,6 +22,10 @@ export interface ActionSheetButton {
   text: string;
   /** `destructive` renders in the danger color; `cancel` is the dismiss row. */
   role?: 'destructive' | 'cancel';
+  /** Leading icon from the curated Lucide set. `cancel` rows default to `X`
+   * when omitted; every other row should set its own — a menu mixing
+   * icon and icon-less rows reads as broken, not intentional. */
+  icon?: IconName;
   /** Runs on tap, before the sheet closes. */
   handler?: () => void;
 }
@@ -93,21 +98,26 @@ export function ActionSheet({
         <div className="kg-action-sheet__handle" aria-hidden="true" />
         {header && <h2 className="kg-action-sheet__header">{header}</h2>}
         <div className="kg-action-sheet__buttons">
-          {buttons.map((button, index) => (
-            <button
-              key={index}
-              type="button"
-              className={clsx(
-                'kg-action-sheet__btn',
-                button.role === 'destructive' &&
-                  'kg-action-sheet__btn--destructive',
-                button.role === 'cancel' && 'kg-action-sheet__btn--cancel'
-              )}
-              onClick={() => handleButtonClick(button)}
-            >
-              {button.text}
-            </button>
-          ))}
+          {buttons.map((button, index) => {
+            const icon = button.icon ?? (button.role === 'cancel' ? 'X' : undefined);
+            return (
+              <button
+                key={index}
+                type="button"
+                className={clsx(
+                  'kg-action-sheet__btn',
+                  button.role === 'destructive' &&
+                    'kg-action-sheet__btn--destructive',
+                  button.role === 'cancel' && 'kg-action-sheet__btn--cancel'
+                )}
+                onClick={() => handleButtonClick(button)}
+              >
+                {/* Decorative — the row's own text is the accessible name. */}
+                {icon && <Icon name={icon} size={20} color="currentColor" />}
+                <span className="kg-action-sheet__btn-label">{button.text}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </dialog>

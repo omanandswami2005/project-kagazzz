@@ -569,24 +569,28 @@ export function VaultHomePage(): ReactNode {
           buttons={[
             {
               text: t('actions.add_tag'),
+              icon: 'Tag',
               handler: (): void => {
                 if (moreDoc) setTagDocId(moreDoc.id);
               },
             },
             {
               text: t('folders.move'),
+              icon: 'Move',
               handler: (): void => {
                 if (moreDoc) setMoveDocId(moreDoc.id);
               },
             },
             {
               text: t('bulk.select'),
+              icon: 'SquareCheck',
               handler: (): void => {
                 if (moreDoc) enterSelection(moreDoc.id);
               },
             },
             {
               text: t(moreDoc?.isLocked ? 'actions.unlock' : 'actions.lock'),
+              icon: moreDoc?.isLocked ? 'Unlock' : 'Lock',
               handler: (): void => {
                 if (moreDoc) void toggleLock(moreDoc);
               },
@@ -596,12 +600,14 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('intents.open_with'),
+                    icon: 'ExternalLink' as const,
                     handler: (): void => {
                       if (moreDoc) void handleOpenWith(moreDoc);
                     },
                   },
                   {
                     text: t('intents.share'),
+                    icon: 'Share2' as const,
                     handler: (): void => {
                       if (moreDoc) void handleShareDoc(moreDoc);
                     },
@@ -611,6 +617,7 @@ export function VaultHomePage(): ReactNode {
             // F-67: read-only document details.
             {
               text: t('details.title'),
+              icon: 'Info',
               handler: (): void => {
                 if (moreDoc) setDetailsDoc(moreDoc);
               },
@@ -620,6 +627,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('copy_text.action'),
+                    icon: 'Copy' as const,
                     handler: (): void => {
                       if (moreDoc) void handleCopyText(moreDoc);
                     },
@@ -631,6 +639,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('convert_format.action'),
+                    icon: 'FileType' as const,
                     handler: (): void => {
                       if (moreDoc) setConvertDoc(moreDoc);
                     },
@@ -642,6 +651,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('enhance.action'),
+                    icon: 'Sparkles' as const,
                     handler: (): void => {
                       if (moreDoc) setEnhanceDoc(moreDoc);
                     },
@@ -653,6 +663,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('resize_compress.action'),
+                    icon: 'Shrink' as const,
                     handler: (): void => {
                       if (moreDoc) setResizeDoc(moreDoc);
                     },
@@ -667,6 +678,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('pdf_compress.action'),
+                    icon: 'Shrink' as const,
                     handler: (): void => {
                       if (moreDoc) void handleCompressPdf(moreDoc);
                     },
@@ -680,6 +692,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('pdf_extract_pages.action'),
+                    icon: 'Scissors' as const,
                     handler: (): void => {
                       if (moreDoc) setExtractPagesDoc(moreDoc);
                     },
@@ -691,6 +704,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('page_image.action'),
+                    icon: 'Images' as const,
                     handler: (): void => {
                       if (moreDoc) setPageImageDoc(moreDoc);
                     },
@@ -702,6 +716,7 @@ export function VaultHomePage(): ReactNode {
               ? [
                   {
                     text: t('actions.extract_text'),
+                    icon: 'FileText' as const,
                     handler: (): void => {
                       if (moreDoc) void handleOcr(moreDoc);
                     },
@@ -712,6 +727,7 @@ export function VaultHomePage(): ReactNode {
             {
               text: t('actions.delete'),
               role: 'destructive',
+              icon: 'Trash2',
               handler: (): void => {
                 if (moreDoc) {
                   const doc = moreDoc;
@@ -734,6 +750,7 @@ export function VaultHomePage(): ReactNode {
             ...(convertDoc
               ? conversionTargetsFor(convertDoc).map((target) => ({
                   text: t(`convert_format.to_${target}`),
+                  icon: 'FileImage' as const,
                   handler: (): void => {
                     if (convertDoc) void handleConvertFormat(convertDoc, target);
                   },
@@ -753,6 +770,7 @@ export function VaultHomePage(): ReactNode {
             ...(enhanceDoc
               ? (Object.keys(FILTER_PRESETS) as FilterPreset[]).map((preset) => ({
                   text: t(`enhance.preset_${preset}`),
+                  icon: 'Filter' as const,
                   handler: (): void => {
                     if (enhanceDoc) void handleApplyFilter(enhanceDoc, preset);
                   },
@@ -771,24 +789,28 @@ export function VaultHomePage(): ReactNode {
           buttons={[
             {
               text: t('actions.rename'),
+              icon: 'Pencil',
               handler: (): void => {
                 if (moreFolder) setRenameFolderTarget(moreFolder);
               },
             },
             {
               text: t('folders.change_color'),
+              icon: 'Palette',
               handler: (): void => {
                 if (moreFolder) setColorFolder(moreFolder);
               },
             },
             {
               text: t('folders.move_up'),
+              icon: 'ChevronUp',
               handler: (): void => {
                 if (moreFolder) void reorderFolder(moreFolder.id, -1);
               },
             },
             {
               text: t('folders.move_down'),
+              icon: 'ChevronDown',
               handler: (): void => {
                 if (moreFolder) void reorderFolder(moreFolder.id, 1);
               },
@@ -796,6 +818,7 @@ export function VaultHomePage(): ReactNode {
             {
               text: t('actions.delete'),
               role: 'destructive' as const,
+              icon: 'Trash2',
               handler: (): void => {
                 if (moreFolder) setDeleteFolderTarget(moreFolder);
               },
