@@ -6,6 +6,7 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Icon } from '@kagaz/ui';
+import { hapticDestructive, hapticTap } from '@/core/haptics';
 
 /** Props for {@link BulkActionBar}. */
 export interface BulkActionBarProps {
@@ -62,7 +63,10 @@ export function BulkActionBar({
           data-agent-id="vault.home.bulk-favorite"
           data-agent-action="vault.bulkFavorite"
           disabled={count === 0}
-          onClick={onFavorite}
+          onClick={() => {
+            hapticTap();
+            onFavorite();
+          }}
         >
           <Icon name="Star" size={20} />
         </button>
@@ -114,7 +118,10 @@ export function BulkActionBar({
             text: t('bulk.delete'),
             role: 'destructive',
             icon: 'Trash2',
-            handler: (): void => onDelete(),
+            handler: (): void => {
+              hapticDestructive();
+              onDelete();
+            },
           },
           { text: t('actions.cancel'), role: 'cancel' },
         ]}

@@ -19,6 +19,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
+import { hapticDestructive, hapticSuccess } from '@/core/haptics';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
 import { useQuickReferenceLockStore } from '@/modules/auth/store/quick-reference-lock.store';
 import { biometricAuthenticator } from '@/modules/auth/services/biometric.service';
@@ -93,6 +94,7 @@ export function QuickReferencePage(): ReactNode {
     const ok = await copyToClipboard(entry.value, {
       autoClearMs: CLIPBOARD_AUTO_CLEAR_MS,
     });
+    if (ok) hapticSuccess();
     setToastMsg(t(ok ? 'quick_reference.copied' : 'quick_reference.copy_failed'));
   };
 
@@ -102,6 +104,7 @@ export function QuickReferencePage(): ReactNode {
     const ok = await copyToClipboard(`${entry.label}: ${entry.value}`, {
       autoClearMs: CLIPBOARD_AUTO_CLEAR_MS,
     });
+    if (ok) hapticSuccess();
     setToastMsg(t(ok ? 'quick_reference.copied' : 'quick_reference.copy_failed'));
   };
 
@@ -119,6 +122,7 @@ export function QuickReferencePage(): ReactNode {
   };
 
   const handleDelete = async (entry: QuickReferenceEntry): Promise<void> => {
+    hapticDestructive();
     await deleteEntry(entry.id);
     setDeleteTarget(null);
   };

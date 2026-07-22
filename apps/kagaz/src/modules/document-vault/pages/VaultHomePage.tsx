@@ -18,6 +18,12 @@ import { Capacitor } from '@capacitor/core';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, ProgressBar } from '@kagaz/ui';
+import {
+  hapticAction,
+  hapticDestructive,
+  hapticSuccess,
+  hapticTap,
+} from '@/core/haptics';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentListItem } from '../components/DocumentListItem';
 import { BulkActionBar } from '../components/BulkActionBar';
@@ -159,6 +165,7 @@ export function VaultHomePage(): ReactNode {
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
   const handleOcr = async (document: DocumentEntity): Promise<void> => {
     const text = await extractText(document);
+    if (text !== null && text.trim()) hapticSuccess();
     setOcrMsg(text === null ? t('ocr.failed') : text.trim() ? t('ocr.done') : t('ocr.none'));
   };
   // F-64/F-65: hand a document to another app; toast only on a real failure.
@@ -396,12 +403,12 @@ export function VaultHomePage(): ReactNode {
                         document={document}
                         tags={tagsByDocument.get(document.id) ?? []}
                         onOpen={handleOpen}
-                        onToggleFavorite={(doc) => void toggleFavorite(doc)}
+                        onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
                         onMore={(doc) => setMoreDoc(doc)}
                         selectionMode={selectionMode}
                         selected={selectedIds.includes(document.id)}
                         onToggleSelect={(doc) => toggleSelection(doc.id)}
-                        onLongPress={(doc) => enterSelection(doc.id)}
+                        onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
                       />
                     ))}
                   </ul>
@@ -485,12 +492,12 @@ export function VaultHomePage(): ReactNode {
                         document={document}
                         tags={tagsByDocument.get(document.id) ?? []}
                         onOpen={handleOpen}
-                        onToggleFavorite={(doc) => void toggleFavorite(doc)}
+                        onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
                         onMore={(doc) => setMoreDoc(doc)}
                         selectionMode={selectionMode}
                         selected={selectedIds.includes(document.id)}
                         onToggleSelect={(doc) => toggleSelection(doc.id)}
-                        onLongPress={(doc) => enterSelection(doc.id)}
+                        onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
                       />
                     ))}
                   </ul>
@@ -592,7 +599,10 @@ export function VaultHomePage(): ReactNode {
               text: t(moreDoc?.isLocked ? 'actions.unlock' : 'actions.lock'),
               icon: moreDoc?.isLocked ? 'Unlock' : 'Lock',
               handler: (): void => {
-                if (moreDoc) void toggleLock(moreDoc);
+                if (moreDoc) {
+                  hapticTap();
+                  void toggleLock(moreDoc);
+                }
               },
             },
             // F-64/F-65: open in / share with another app (native only).
@@ -731,6 +741,7 @@ export function VaultHomePage(): ReactNode {
               handler: (): void => {
                 if (moreDoc) {
                   const doc = moreDoc;
+                  hapticDestructive();
                   void softDelete(doc);
                   setDeletedDoc(doc);
                 }

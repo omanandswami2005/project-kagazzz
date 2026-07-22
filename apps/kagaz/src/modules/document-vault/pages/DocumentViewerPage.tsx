@@ -29,6 +29,7 @@ import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { copyToClipboard } from '@/core/clipboard';
+import { hapticDestructive } from '@/core/haptics';
 import { extractNumberSequences } from '../services/extract-numbers';
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { useVaultMutations } from '../hooks/useVaultMutations';
@@ -97,6 +98,7 @@ export function DocumentViewerPage(): ReactNode {
 
   const handleDelete = (): void => {
     if (document) {
+      hapticDestructive();
       void softDelete(document);
       router.goBack();
     }
