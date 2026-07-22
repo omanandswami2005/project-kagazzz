@@ -4,7 +4,7 @@
  * finish. Copy is kept at an 8th-grade reading level `[A11Y]` and localized
  * (en/hi). Renders nothing once completed.
  */
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon } from '@kagaz/ui';
 import { useOnboarding } from './useOnboarding';
@@ -21,11 +21,18 @@ const SLIDES = [
   key: string;
 }[];
 
+/** Minimum horizontal drag (px) before a pointer gesture counts as a swipe,
+ * not a tap or vertical scroll — same cancel-threshold idea as F-25's
+ * long-press tremor tolerance, just for the opposite purpose (require
+ * deliberate movement instead of tolerating accidental movement). */
+const SWIPE_THRESHOLD_PX = 50;
+
 /** The first-launch intro overlay. */
 export function OnboardingGate(): ReactNode {
   const { t } = useTranslation('common');
   const { showOnboarding, complete } = useOnboarding();
   const [index, setIndex] = useState(0);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   if (!showOnboarding) {
     return null;
@@ -33,6 +40,41 @@ export function OnboardingGate(): ReactNode {
 
   const slide = SLIDES[index];
   const isLast = index === SLIDES.length - 1;
+  const isFirst = index === 0;
+
+  const goNext = (): void => {
+    if (isLast) {
+      complete();
+    } else {
+      setIndex((i) => Math.min(SLIDES.length - 1, i + 1));
+    }
+  };
+  const goBack = (): void => {
+    if (!isFirst) {
+      setIndex((i) => Math.max(0, i - 1));
+    }
+  };
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>): void => {
+    swipeStart.current = { x: event.clientX, y: event.clientY };
+  };
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>): void => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) {
+      return;
+    }
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy)) {
+      return; // tap, or a mostly-vertical drag — not a swipe
+    }
+    if (dx < 0) {
+      goNext(); // swiped left → next
+    } else {
+      goBack(); // swiped right → back
+    }
+  };
 
   return (
     <div
@@ -54,7 +96,11 @@ export function OnboardingGate(): ReactNode {
         </Button>
       </div>
 
-      <div className="kg-onboarding__slide">
+      <div
+        className="kg-onboarding__slide"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+      >
         <span className="kg-onboarding__icon" aria-hidden>
           <Icon name={slide.icon} size={48} />
         </span>
@@ -77,8 +123,8 @@ export function OnboardingGate(): ReactNode {
         <Button
           variant="ghost"
           size="md"
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          disabled={index === 0}
+          onClick={goBack}
+          disabled={isFirst}
           agentId="app.onboarding.back"
         >
           {t('onboarding.back')}
@@ -96,7 +142,7 @@ export function OnboardingGate(): ReactNode {
           <Button
             variant="primary"
             size="md"
-            onClick={() => setIndex((i) => Math.min(SLIDES.length - 1, i + 1))}
+            onClick={goNext}
             agentId="app.onboarding.next"
           >
             {t('onboarding.next')}
