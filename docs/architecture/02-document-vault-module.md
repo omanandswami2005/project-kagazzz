@@ -1119,9 +1119,32 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
 | **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
 | **Resize & compress** | F-85 | same gate as Convert format (`canConvertImageFormat`) | opens a dimensions + size-target sheet → `useResizeCompress.run` |
+| **Compress** | F-5 UX follow-up | PDF document (`isPdf`) | one-tap, no sheet → `usePdfEngine().compressPdf(doc, 'medium')` |
+| **Extract pages** | F-66 UX follow-up | PDF document (`isPdf`) | opens a page-range sheet → `usePdfEngine().extractPages` |
 | **Save page as image** | F-86 | PDF document (`isPdf`) | opens a page-range sheet → `usePdfEngine().pdfToImages` |
 | Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` — for PDFs (triggered elsewhere; `canExtractText` also covers them), per-page OCR fallback fixed 2026-07-21, see below |
 | Delete | — | always | soft-delete → Trash (recoverable) |
+
+#### Item-menu-first PDF tools (UX follow-up, 2026-07-21)
+
+Compress, Extract pages, and Save Page as Image (F-86) are reachable directly
+from a PDF's own item-menu, not only through the Tools hub's tool-first flow
+(`/pdf-tools` → pick an op card → pick a document from an in-sheet picker —
+2 screens, 3+ taps, and the document you already tapped to get here has to be
+found again). Promoted these three specifically because they're the
+highest-frequency single-document PDF operations (shrinking a scan under a
+government-portal size limit; pulling a subset of pages out; grabbing one
+page as a shareable image) — the item-menu already has 12 entries for a PDF
+document, so promoting all 14 Tools-hub ops here instead of a deliberate
+subset would trade one kind of friction for another. The remaining ops
+(Merge, Watermark, Encrypt/Decrypt, Fill form, format exports, …) stay
+Tools-hub-only: either inherently multi-document (Merge) or infrequent
+enough that the extra hop doesn't cost most users much. Each promoted action
+calls the *same* engine method the Tools-hub card already used — no new
+pdf-engine code, only a faster door to it. Compress runs at a fixed 'medium'
+quality with no confirmation sheet at all (one tap, matching this app's
+one-primary-action design principle); a different quality still requires the
+Tools hub.
 
 ### Viewer menu (`DocumentViewerPage`)
 

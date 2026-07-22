@@ -85,6 +85,20 @@
     "done_other": "Saved {{count}} images",
     "failed": "Couldn't save this page as an image."
   },
+  "pdf_compress": {
+    "action": "Compress",
+    "done": "Compressed — saved as a new document",
+    "failed": "Couldn't compress this PDF."
+  },
+  "pdf_extract_pages": {
+    "action": "Extract pages",
+    "title": "Extract Pages",
+    "hint": "Save selected pages as a new PDF document.",
+    "run": "Extract",
+    "running": "Extracting…",
+    "done": "Extracted — saved as a new document",
+    "failed": "Couldn't extract these pages."
+  },
   "quick_reference": {
     "title": "Quick Reference",
     "empty_state": "No saved values yet",

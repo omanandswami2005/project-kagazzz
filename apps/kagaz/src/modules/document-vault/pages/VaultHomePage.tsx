@@ -50,7 +50,9 @@ import { FILTER_PRESETS, type FilterPreset } from '@/modules/image-engine/servic
 import { DocumentDetailsSheet } from '../components/DocumentDetailsSheet';
 import { ResizeCompressSheet } from '../components/ResizeCompressSheet';
 import { PdfPageImageSheet } from '../components/PdfPageImageSheet';
+import { PdfExtractPagesSheet } from '../components/PdfExtractPagesSheet';
 import { isPdf } from '../hooks/useDocumentFile';
+import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import { useDocuments } from '../hooks/useDocuments';
 import { useFolders } from '../hooks/useFolders';
 import { useRecentDocuments } from '../hooks/useRecentDocuments';
@@ -92,6 +94,7 @@ export function VaultHomePage(): ReactNode {
   const copyText = useCopyDocumentText();
   const imageConvert = useImageFormatConversion();
   const imageEnhance = useImageEnhancement();
+  const pdfEngine = usePdfEngine();
   const { mode: viewMode, setMode: setViewMode } = useViewMode();
   const recent = useRecentDocuments();
   const { tags, tagsByDocument, createTag, assignTag, removeTag } = useTags();
@@ -139,6 +142,7 @@ export function VaultHomePage(): ReactNode {
   const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
   const [resizeDoc, setResizeDoc] = useState<DocumentEntity | null>(null);
   const [pageImageDoc, setPageImageDoc] = useState<DocumentEntity | null>(null);
+  const [extractPagesDoc, setExtractPagesDoc] = useState<DocumentEntity | null>(null);
   // F-9: folder options sheet (rename/change color/reorder/delete).
   const [moreFolder, setMoreFolder] = useState<FolderEntity | null>(null);
   const [colorFolder, setColorFolder] = useState<FolderEntity | null>(null);
@@ -170,6 +174,15 @@ export function VaultHomePage(): ReactNode {
     const ok = await intents.shareMany(selected);
     clearSelection();
     if (!ok) setOcrMsg(t('intents.share_failed_bulk'));
+  };
+  // F-5 UX follow-up: one-tap compress at the recommended default quality — no sheet, no
+  // extra taps (the item-menu already IS the picker; a quality choice is a
+  // power-user path still available via the Tools hub). Same silent-until-done
+  // toast convention as handleOcr/handleCopyText below (no in-progress state
+  // shown mid-run — an existing app-wide convention, not new here).
+  const handleCompressPdf = async (document: DocumentEntity): Promise<void> => {
+    const saved = await pdfEngine.compressPdf(document, 'medium');
+    setOcrMsg(t(saved > 0 ? 'pdf_compress.done' : 'pdf_compress.failed'));
   };
   // F-68: quick-copy a document's stored OCR/extracted text to the clipboard.
   const handleCopyText = async (document: DocumentEntity): Promise<void> => {
@@ -543,6 +556,10 @@ export function VaultHomePage(): ReactNode {
           document={pageImageDoc}
           onClose={() => setPageImageDoc(null)}
         />
+        <PdfExtractPagesSheet
+          document={extractPagesDoc}
+          onClose={() => setExtractPagesDoc(null)}
+        />
 
         <ActionSheet
           isOpen={moreDoc !== null}
@@ -638,6 +655,33 @@ export function VaultHomePage(): ReactNode {
                     text: t('resize_compress.action'),
                     handler: (): void => {
                       if (moreDoc) setResizeDoc(moreDoc);
+                    },
+                  },
+                ]
+              : []),
+            // F-5 UX follow-up: one-tap compress at the recommended quality —
+            // the highest-frequency PDF tool (shrinking a scan under a
+            // government-portal upload limit), promoted from the Tools-hub
+            // tool-first flow straight onto the document it applies to.
+            ...(moreDoc && isPdf(moreDoc.fileType)
+              ? [
+                  {
+                    text: t('pdf_compress.action'),
+                    handler: (): void => {
+                      if (moreDoc) void handleCompressPdf(moreDoc);
+                    },
+                  },
+                ]
+              : []),
+            // F-66 UX follow-up: same item-menu-first promotion as Compress —
+            // extract selected pages into a new PDF, reusing F-86's page-range
+            // sheet pattern.
+            ...(moreDoc && isPdf(moreDoc.fileType)
+              ? [
+                  {
+                    text: t('pdf_extract_pages.action'),
+                    handler: (): void => {
+                      if (moreDoc) setExtractPagesDoc(moreDoc);
                     },
                   },
                 ]
