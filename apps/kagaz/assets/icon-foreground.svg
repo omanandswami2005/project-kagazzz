@@ -22,8 +22,9 @@
   <!-- Folded-corner flap (the underside of the fold). -->
   <path d="M 602,272 L 702,372 L 602,372 Z" fill="#c7d2de"/>
 
-  <!-- Heading line + body lines (suggests written content). -->
-  <rect x="372" y="372" width="200" height="28" rx="14" fill="#1e3a5f"/>
+  <!-- Heading line + body lines (suggests written content). Heading uses
+       the color-brand-mid token (violet) for continuity with the gradient background. -->
+  <rect x="372" y="372" width="200" height="28" rx="14" fill="#7c3aed"/>
   <rect x="372" y="434" width="260" height="20" rx="10" fill="#c7d2de"/>
   <rect x="372" y="478" width="260" height="20" rx="10" fill="#c7d2de"/>
   <rect x="372" y="522" width="168" height="20" rx="10" fill="#c7d2de"/>

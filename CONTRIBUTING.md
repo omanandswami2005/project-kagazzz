@@ -341,26 +341,40 @@ pnpm lint:fix
 pnpm format
 ```
 
-### **App Icon**
+### **App Icon & Splash Screen**
 
-The launcher icon is generated from SVG sources in `apps/kagaz/assets/`
-(`icon-background.svg` + `icon-foreground.svg` for Android's adaptive-icon
-layers, `icon-only.svg` as the flat composite for iOS/legacy Android/PWA)
-via `@capacitor/assets` — a build-time-only devDependency, never shipped in
+The launcher icon and splash screen are generated from SVG sources in
+`apps/kagaz/assets/` (`icon-background.svg` + `icon-foreground.svg` for
+Android's adaptive-icon layers, `icon-only.svg` as the flat composite for
+iOS/legacy Android/PWA, `splash.svg` for the launch splash) via
+`@capacitor/assets` — a build-time-only devDependency, never shipped in
 the app. Design rationale + color tokens:
-[docs/design-system/design-tokens.md#app-icon](docs/design-system/design-tokens.md#app-icon).
+[docs/design-system/design-tokens.md#brand-gradient](docs/design-system/design-tokens.md#brand-gradient)
+(icon: [#app-icon](docs/design-system/design-tokens.md#app-icon), splash:
+[#splash-screen](docs/design-system/design-tokens.md#splash-screen)).
 
-After editing a source SVG, regenerate every density for both platforms:
+After editing a source SVG, regenerate every density for both platforms
+(one command does icon **and** splash):
 
 ```bash
 pnpm --filter kagaz exec capacitor-assets generate --android \
-  --iconBackgroundColor '#1e3a5f' --iconBackgroundColorDark '#142842'
-pnpm --filter kagaz exec capacitor-assets generate --ios
+  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
+  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
+pnpm --filter kagaz exec capacitor-assets generate --ios \
+  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
+  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
 ```
 
+> Gotcha: SVG `<!-- -->` comments can't contain a literal `--` (e.g. a CSS
+> custom property name like `--color-primary` written out in prose) — it's
+> invalid XML and the loader silently skips that source file instead of
+> erroring loudly. Write "the color-primary token" instead.
+
 This overwrites every `mipmap-*/ic_launcher*.png` under
-`apps/kagaz/android/app/src/main/res/` and
-`ios/App/App/Assets.xcassets/AppIcon.appiconset/`. Rebuild
+`apps/kagaz/android/app/src/main/res/`,
+`ios/App/App/Assets.xcassets/AppIcon.appiconset/`, every
+`drawable*/splash.png` under `android/app/src/main/res/`, and
+`ios/App/App/Assets.xcassets/Splash.imageset/`. Rebuild
 (`pnpm --filter kagaz build:capacitor`) and reinstall to see the change on
 a device/emulator — Android caches launcher icons aggressively, so a fresh
 `adb install -r` (not just a hot-reloaded WebView) is required to confirm
