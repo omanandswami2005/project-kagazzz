@@ -42,8 +42,10 @@ export function PdfPageImageSheet({
   onClose,
   onDone,
 }: PdfPageImageSheetProps): ReactNode {
+  // Single hook (not a second useTranslation('tools') call) — that doubled
+  // i18next's subscription churn on mount and reopened a fought-before race
+  // with IonModal's present() in jsdom (see the test file's own comment).
   const { t } = useTranslation('documents');
-  const { t: tTools } = useTranslation('tools');
   const { state, pdfToImages } = usePdfEngine();
   const [pages, setPages] = useState('1');
   const [saved, setSaved] = useState<number | null>(null);
@@ -139,7 +141,7 @@ export function PdfPageImageSheet({
               {saved > 0
                 ? t('page_image.done', { count: saved })
                 : engineErrorKey
-                  ? tTools(engineErrorKey)
+                  ? t(engineErrorKey, { ns: 'tools' })
                   : t('page_image.failed')}
             </p>
           )}
