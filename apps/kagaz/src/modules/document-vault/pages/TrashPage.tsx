@@ -20,10 +20,19 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
+import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useTrash } from '../hooks/useTrash';
 import { TRASH_RETENTION_DAYS } from '../services/trash.service';
 import './trash.css';
+
+/** F-88: fixed swipe actions for Trash — not user-configurable, since
+ * restore/delete-forever are Trash-specific and unrelated to the vault's
+ * delete/favorite/move/tags vocabulary in Settings. Right = restore
+ * (reversible, so it's the "safe" swipe direction); left = delete forever,
+ * matching the existing per-row button's own no-confirmation behavior. */
+const RESTORE_REVEAL: SwipeReveal = { icon: 'RotateCw', colorVar: 'var(--color-primary)' };
+const DELETE_FOREVER_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--color-danger)' };
 
 /** The Trash / Recycle Bin screen. */
 export function TrashPage(): ReactNode {
@@ -99,31 +108,43 @@ export function TrashPage(): ReactNode {
 
               <ul className="kg-trash__list" data-agent-id="vault.trash.list">
                 {trash.items.map((doc: DocumentEntity) => (
-                  <li key={doc.id} className="kg-trash__item" data-agent-id={`vault.trash.item.${doc.id}`}>
-                    <div className="kg-trash__meta">
-                      <span className="kg-trash__name">{doc.name}</span>
-                      <span className="kg-trash__deleted">
-                        {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
-                      </span>
-                    </div>
-                    <div className="kg-trash__actions">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => void trash.restore(doc)}
-                        agentId={`vault.trash.restore.${doc.id}`}
-                      >
-                        {t('trash.restore')}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void trash.deleteForever(doc)}
-                        agentId={`vault.trash.delete.${doc.id}`}
-                      >
-                        {t('trash.delete_forever')}
-                      </Button>
-                    </div>
+                  <li key={doc.id} className="kg-trash__li">
+                    <SwipeableRow
+                      leftReveal={DELETE_FOREVER_REVEAL}
+                      rightReveal={RESTORE_REVEAL}
+                      onCommit={(side) => {
+                        if (side === 'right') void trash.restore(doc);
+                        else void trash.deleteForever(doc);
+                      }}
+                      agentId={`vault.trash.item.${doc.id}.swipe`}
+                    >
+                      <div className="kg-trash__item" data-agent-id={`vault.trash.item.${doc.id}`}>
+                        <div className="kg-trash__meta">
+                          <span className="kg-trash__name">{doc.name}</span>
+                          <span className="kg-trash__deleted">
+                            {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
+                          </span>
+                        </div>
+                        <div className="kg-trash__actions">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void trash.restore(doc)}
+                            agentId={`vault.trash.restore.${doc.id}`}
+                          >
+                            {t('trash.restore')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void trash.deleteForever(doc)}
+                            agentId={`vault.trash.delete.${doc.id}`}
+                          >
+                            {t('trash.delete_forever')}
+                          </Button>
+                        </div>
+                      </div>
+                    </SwipeableRow>
                   </li>
                 ))}
               </ul>

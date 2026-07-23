@@ -21,6 +21,7 @@
  */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity, TagEntity } from '@/infrastructure/database/types';
 import { useGridColumns } from '../hooks/useGridColumns';
 import { DocumentListItem } from './DocumentListItem';
@@ -65,6 +66,15 @@ export interface VirtualDocumentListProps {
   onLongPress: (document: DocumentEntity) => void;
   agentId: string;
   agentState?: string;
+  /** F-88: action fired on a committed swipe-left; omit to disable. */
+  swipeLeftAction?: SwipeActionKind;
+  /** F-88: action fired on a committed swipe-right; omit to disable. */
+  swipeRightAction?: SwipeActionKind;
+  /** Handles a committed swipe action. Required when either side is set. */
+  onSwipeAction?: (
+    document: DocumentEntity,
+    kind: Exclude<SwipeActionKind, 'none'>
+  ) => void;
 }
 
 /** Windowed replacement for a plain `documents.map(...)` list/grid. */
@@ -82,6 +92,9 @@ export function VirtualDocumentList({
   onLongPress,
   agentId,
   agentState,
+  swipeLeftAction,
+  swipeRightAction,
+  onSwipeAction,
 }: VirtualDocumentListProps): ReactNode {
   const containerRef = useRef<HTMLUListElement>(null);
   const isGrid = viewMode === 'grid';
@@ -118,6 +131,9 @@ export function VirtualDocumentList({
       selected={selectedIds.includes(document.id)}
       onToggleSelect={onToggleSelect}
       onLongPress={onLongPress}
+      swipeLeftAction={swipeLeftAction}
+      swipeRightAction={swipeRightAction}
+      onSwipeAction={onSwipeAction}
     />
   );
 

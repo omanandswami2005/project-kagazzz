@@ -306,7 +306,9 @@
     "cancel": "Cancel selection",
     "selected": "{{count}} selected",
     "delete": "Delete",
-    "delete_confirm": "Delete {{count}} document(s)?"
+    "delete_confirm": "Delete {{count}} document(s)?",
+    "deleted_one": "{{count}} document moved to Trash",
+    "deleted_other": "{{count}} documents moved to Trash"
   },
   "filters": {
     "title": "Filter",

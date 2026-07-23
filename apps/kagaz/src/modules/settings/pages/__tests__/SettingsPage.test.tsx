@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
+import { usePreferencesStore } from '@/core/preferences';
 
 // The backup hook reaches for the DB + native plugins; stub it so this page
 // test stays focused on the theme/language/security UI (covered in its own test).
@@ -22,6 +23,8 @@ afterEach(async () => {
   document.body.innerHTML = '';
   // i18n is a singleton — reset so a language switch in one test can't leak.
   await i18n.changeLanguage('en');
+  localStorage.clear();
+  usePreferencesStore.setState({ swipeLeftAction: 'delete', swipeRightAction: 'favorite' });
 });
 
 function renderPage(): void {
@@ -69,5 +72,30 @@ describe('SettingsPage', () => {
     expect(group?.getAttribute('data-agent-state')).toBe('hi');
     // The theme labels are now Hindi, proving the whole tree re-rendered.
     expect(screen.getByText('गहरी')).toBeInTheDocument();
+  });
+
+  describe('swipe actions (F-88)', () => {
+    it('defaults to delete on the left, favorite on the right', () => {
+      renderPage();
+      expect(
+        document.querySelector('[data-agent-id="settings.swipe-left"]')
+      ).toHaveAttribute('data-agent-state', 'delete');
+      expect(
+        document.querySelector('[data-agent-id="settings.swipe-right"]')
+      ).toHaveAttribute('data-agent-state', 'favorite');
+    });
+
+    it('changes the left swipe action independently of the right', async () => {
+      renderPage();
+      await userEvent.click(
+        document.querySelector('[data-agent-id="settings.swipe-left-move"]') as Element
+      );
+      expect(
+        document.querySelector('[data-agent-id="settings.swipe-left"]')
+      ).toHaveAttribute('data-agent-state', 'move');
+      expect(
+        document.querySelector('[data-agent-id="settings.swipe-right"]')
+      ).toHaveAttribute('data-agent-state', 'favorite');
+    });
   });
 });

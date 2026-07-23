@@ -25,6 +25,8 @@ import {
   hapticTap,
 } from '@/core/haptics';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
+import { UndoToast } from '@/core/components/UndoToast';
+import type { SwipeActionKind } from '@/core/gestures';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
@@ -113,6 +115,9 @@ export function VaultHomePage(): ReactNode {
     useVaultMutations();
   // UX-8: prompt to rename each just-added document (unless disabled in Settings).
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
+  // F-88: user-configured swipe-left/right actions (Settings → Swipe actions).
+  const swipeLeftAction = usePreferencesStore((s) => s.swipeLeftAction);
+  const swipeRightAction = usePreferencesStore((s) => s.swipeRightAction);
   const { toggleLock, authorizeView } = useDocLock();
   const { extractText } = useDocumentOcr();
   const intents = useDocumentIntents();
@@ -178,6 +183,11 @@ export function VaultHomePage(): ReactNode {
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
   // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
   const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
+  // F-88: the just-bulk-deleted documents, captured before bulkDelete() runs
+  // (it only reports a count), so the undo toast can restore all of them.
+  const [bulkDeletedDocs, setBulkDeletedDocs] = useState<DocumentEntity[] | null>(
+    null
+  );
   const [detailsDoc, setDetailsDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
 
@@ -245,6 +255,32 @@ export function VaultHomePage(): ReactNode {
     await deleteFolder(folder.id);
     setDeleteFolderTarget(null);
   };
+  // F-88: dispatches a swipe-committed action to the same handler the
+  // row's own menu/star button already uses — swipe is purely an
+  // accelerator over existing, individually-tested mutation paths.
+  const handleSwipeAction = (
+    document: DocumentEntity,
+    kind: Exclude<SwipeActionKind, 'none'>
+  ): void => {
+    switch (kind) {
+      case 'delete':
+        hapticDestructive();
+        void softDelete(document);
+        setDeletedDoc(document);
+        break;
+      case 'favorite':
+        hapticTap();
+        void toggleFavorite(document);
+        break;
+      case 'move':
+        setMoveDocId(document.id);
+        break;
+      case 'tags':
+        setTagDocId(document.id);
+        break;
+    }
+  };
+
   const search = useSearch();
   // While searching, results replace the folder/list view.
   const visibleDocuments = search.isActive ? search.results : documents;
@@ -423,6 +459,9 @@ export function VaultHomePage(): ReactNode {
                     selectedIds={selectedIds}
                     onToggleSelect={(doc) => toggleSelection(doc.id)}
                     onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
+                    swipeLeftAction={swipeLeftAction}
+                    swipeRightAction={swipeRightAction}
+                    onSwipeAction={handleSwipeAction}
                     agentId="vault.home.search-results"
                     agentState={search.isSearching ? 'loading' : 'success'}
                   />
@@ -507,6 +546,9 @@ export function VaultHomePage(): ReactNode {
                     selectedIds={selectedIds}
                     onToggleSelect={(doc) => toggleSelection(doc.id)}
                     onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
+                    swipeLeftAction={swipeLeftAction}
+                    swipeRightAction={swipeRightAction}
+                    onSwipeAction={handleSwipeAction}
                     agentId="vault.home.list"
                     agentState={listState}
                   />
@@ -901,7 +943,14 @@ export function VaultHomePage(): ReactNode {
           <BulkActionBar
             count={selectedIds.length}
             onCancel={clearSelection}
-            onDelete={() => void bulkDelete()}
+            onDelete={() => {
+              // F-88: capture the selected docs before bulkDelete() clears the
+              // selection — it only reports a count, not which docs, and the
+              // undo toast needs the full set to restore.
+              const targets = documents.filter((d) => selectedIds.includes(d.id));
+              hapticDestructive();
+              void bulkDelete().then(() => setBulkDeletedDocs(targets));
+            }}
             onMove={() => setBulkMoveOpen(true)}
             onFavorite={() => void bulkFavorite()}
             onShare={intents.supported ? (): void => void handleBulkShare() : undefined}
@@ -938,22 +987,27 @@ export function VaultHomePage(): ReactNode {
           onDidDismiss={() => setOcrMsg(null)}
           data-agent-id="vault.home.ocr-toast"
         />
-        <IonToast
+        <UndoToast
           isOpen={deletedDoc !== null}
-          duration={4000}
           message={t('trash.moved_to_trash')}
-          buttons={[
-            {
-              text: t('trash.undo'),
-              handler: (): void => {
-                if (deletedDoc) {
-                  void restore(deletedDoc);
-                }
-              },
-            },
-          ]}
+          onUndo={() => {
+            if (deletedDoc) void restore(deletedDoc);
+          }}
           onDidDismiss={() => setDeletedDoc(null)}
-          data-agent-id="vault.home.delete-toast"
+          agentId="vault.home.delete-toast"
+        />
+        {/* F-88: bulk delete previously had no undo — every other delete path
+           (single row, swipe) does; this closes that gap. */}
+        <UndoToast
+          isOpen={bulkDeletedDocs !== null}
+          message={t('bulk.deleted', { count: bulkDeletedDocs?.length ?? 0 })}
+          onUndo={() => {
+            if (bulkDeletedDocs) {
+              for (const doc of bulkDeletedDocs) void restore(doc);
+            }
+          }}
+          onDidDismiss={() => setBulkDeletedDocs(null)}
+          agentId="vault.home.bulk-delete-toast"
         />
         <IonToast
           isOpen={showLockedToast}

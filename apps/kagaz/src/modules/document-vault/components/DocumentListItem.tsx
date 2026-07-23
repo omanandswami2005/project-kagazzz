@@ -7,6 +7,7 @@ import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, Tag, type IconName } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
+import { SwipeableRow, swipeReveal, type SwipeActionKind } from '@/core/gestures';
 import type {
   DocumentEntity,
   TagEntity,
@@ -52,6 +53,15 @@ export interface DocumentListItemProps {
    * the item-menu's "Select" action is the keyboard/screen-reader equivalent.
    */
   onLongPress?: (document: DocumentEntity) => void;
+  /** Action fired on a committed swipe-left (F-88). Omit/`'none'` to disable. */
+  swipeLeftAction?: SwipeActionKind;
+  /** Action fired on a committed swipe-right (F-88). Omit/`'none'` to disable. */
+  swipeRightAction?: SwipeActionKind;
+  /** Handles a committed swipe action. Required when either side is set. */
+  onSwipeAction?: (
+    document: DocumentEntity,
+    kind: Exclude<SwipeActionKind, 'none'>
+  ) => void;
 }
 
 /** interaction-patterns.md "Long-press (500ms)" — enter selection mode on lists. */
@@ -77,6 +87,9 @@ export function DocumentListItem({
   selected = false,
   onToggleSelect,
   onLongPress,
+  swipeLeftAction = 'none',
+  swipeRightAction = 'none',
+  onSwipeAction,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatDate, formatFileSize } = useLocale();
@@ -252,8 +265,8 @@ export function DocumentListItem({
 
   // A real <button> when interactive (native focus + Enter/Space); a plain
   // row otherwise. Full preview/detail lands with F-24.
-  return (
-    <li className="kg-doc-item__li">
+  const rowAndActions = (
+    <>
       {rowClick ? (
         <button
           type="button"
@@ -317,6 +330,29 @@ export function DocumentListItem({
             </button>
           )}
         </span>
+      )}
+    </>
+  );
+
+  const hasSwipe = swipeLeftAction !== 'none' || swipeRightAction !== 'none';
+
+  return (
+    <li className="kg-doc-item__li">
+      {hasSwipe ? (
+        <SwipeableRow
+          leftReveal={swipeReveal(swipeLeftAction)}
+          rightReveal={swipeReveal(swipeRightAction)}
+          onCommit={(side) => {
+            const kind = side === 'left' ? swipeLeftAction : swipeRightAction;
+            if (kind !== 'none') onSwipeAction?.(document, kind);
+          }}
+          disabled={selectionMode}
+          agentId={`${agentId}.swipe`}
+        >
+          {rowAndActions}
+        </SwipeableRow>
+      ) : (
+        rowAndActions
       )}
     </li>
   );

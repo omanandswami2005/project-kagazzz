@@ -21,6 +21,17 @@ const doc = (id: string, name: string): DocumentEntity =>
 beforeAll(async () => {
   await initI18n();
   await i18n.changeLanguage('en');
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+    width: 300,
+    height: 56,
+    top: 0,
+    left: 0,
+    right: 300,
+    bottom: 56,
+    x: 0,
+    y: 0,
+    toJSON: () => ({}),
+  });
 });
 
 beforeEach(() => {
@@ -76,5 +87,33 @@ describe('TrashPage (F-57)', () => {
     expect(trash.emptyTrash).not.toHaveBeenCalled();
     // Back to the plain Empty button.
     expect(q('vault.trash.empty')).not.toBeNull();
+  });
+
+  describe('swipe actions (F-88)', () => {
+    it('restores on a committed swipe-right', () => {
+      trash.items = [doc('a', 'PAN Card')];
+      render(<TrashPage />);
+      const content = document
+        .querySelector('[data-agent-id="vault.trash.item.a.swipe"]')
+        ?.querySelector('.kg-swipe-row__content') as Element;
+      fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      expect(trash.restore).toHaveBeenCalledWith(trash.items[0]);
+      expect(trash.deleteForever).not.toHaveBeenCalled();
+    });
+
+    it('deletes forever on a committed swipe-left', () => {
+      trash.items = [doc('a', 'PAN Card')];
+      render(<TrashPage />);
+      const content = document
+        .querySelector('[data-agent-id="vault.trash.item.a.swipe"]')
+        ?.querySelector('.kg-swipe-row__content') as Element;
+      fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      expect(trash.deleteForever).toHaveBeenCalledWith(trash.items[0]);
+      expect(trash.restore).not.toHaveBeenCalled();
+    });
   });
 });

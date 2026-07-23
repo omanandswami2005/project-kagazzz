@@ -21,6 +21,17 @@
     "rename_on_add": "Ask to rename after adding",
     "rename_on_add_hint": "Show a name prompt right after you scan or add a document. Turn off to keep the default name."
   },
+  "swipe": {
+    "title": "Swipe actions",
+    "hint": "Swipe a document left or right to fire an action instantly — every action here is also reachable from the row's own menu.",
+    "left": "Swipe left",
+    "right": "Swipe right",
+    "action_delete": "Delete",
+    "action_favorite": "Favorite",
+    "action_move": "Move",
+    "action_tags": "Add tag",
+    "action_none": "None"
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",

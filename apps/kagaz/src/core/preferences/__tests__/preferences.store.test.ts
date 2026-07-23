@@ -3,7 +3,12 @@ import { readPreferences, usePreferencesStore } from '../preferences.store';
 
 beforeEach(() => {
   localStorage.clear();
-  usePreferencesStore.setState({ renameOnAdd: true, recentSectionCollapsed: false });
+  usePreferencesStore.setState({
+    renameOnAdd: true,
+    recentSectionCollapsed: false,
+    swipeLeftAction: 'delete',
+    swipeRightAction: 'favorite',
+  });
 });
 
 describe('preferences store (UX-8)', () => {
@@ -45,6 +50,35 @@ describe('preferences store — recentSectionCollapsed (UX pass)', () => {
     expect(readPreferences()).toEqual({
       renameOnAdd: false,
       recentSectionCollapsed: true,
+      swipeLeftAction: 'delete',
+      swipeRightAction: 'favorite',
     });
+  });
+});
+
+describe('preferences store — swipe actions (F-88)', () => {
+  it('defaults to delete on the left, favorite on the right', () => {
+    expect(readPreferences().swipeLeftAction).toBe('delete');
+    expect(readPreferences().swipeRightAction).toBe('favorite');
+  });
+
+  it('persists a change to either side independently', () => {
+    usePreferencesStore.getState().setSwipeAction('left', 'move');
+    expect(usePreferencesStore.getState().swipeLeftAction).toBe('move');
+    expect(readPreferences().swipeLeftAction).toBe('move');
+    expect(readPreferences().swipeRightAction).toBe('favorite');
+
+    usePreferencesStore.getState().setSwipeAction('right', 'none');
+    expect(readPreferences().swipeRightAction).toBe('none');
+    expect(readPreferences().swipeLeftAction).toBe('move');
+  });
+
+  it('falls back to the default for a missing or corrupt stored value', () => {
+    localStorage.setItem(
+      'kagaz:preferences',
+      JSON.stringify({ swipeLeftAction: 'not-a-real-action' })
+    );
+    expect(readPreferences().swipeLeftAction).toBe('delete');
+    expect(readPreferences().swipeRightAction).toBe('favorite');
   });
 });

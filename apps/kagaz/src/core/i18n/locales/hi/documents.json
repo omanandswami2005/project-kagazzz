@@ -306,7 +306,9 @@
     "cancel": "चयन रद्द करें",
     "selected": "{{count}} चयनित",
     "delete": "हटाएं",
-    "delete_confirm": "{{count}} दस्तावेज़ हटाएं?"
+    "delete_confirm": "{{count}} दस्तावेज़ हटाएं?",
+    "deleted_one": "{{count}} दस्तावेज़ ट्रैश में ले जाया गया",
+    "deleted_other": "{{count}} दस्तावेज़ ट्रैश में ले जाए गए"
   },
   "filters": {
     "title": "फ़िल्टर",
