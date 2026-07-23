@@ -299,42 +299,55 @@
 .kg-recent__row {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--space-2) var(--space-1);
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-4);
   overflow-x: auto;
+  /* UX-16: native snap-to-center carousel — the row scrolls, the browser
+     settles each card on the center, no custom fling/paging JS needed. */
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: calc(50% - 60px);
 }
 
 .kg-recent__li {
   flex: 0 0 auto;
+  scroll-snap-align: center;
+  /* Written every scroll frame by useCoverflowScroll — no CSS transition
+     here, it would lag a step behind the high-frequency JS updates. */
+  transform-origin: center;
 }
 
 .kg-recent__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  width: 88px;
-  padding: var(--space-3);
+  gap: var(--space-2);
+  width: 120px;
+  padding: var(--space-4) var(--space-3);
   background: var(--surface-1);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   color: var(--color-primary);
   cursor: pointer;
+  /* UX-16: only native-pan this element horizontally — frees vertical
+     touch input on the card for useSwipeUp (swipe-up → open Tools)
+     instead of racing the page's own vertical scroll for the gesture. */
+  touch-action: pan-x;
 }
 
 .kg-recent__thumb {
-  width: 40px;
-  height: 40px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--surface-2);
   animation: kg-fade-in var(--duration-normal) var(--ease-out);
 }
 
 .kg-recent__name {
   width: 100%;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;

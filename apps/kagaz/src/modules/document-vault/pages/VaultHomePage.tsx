@@ -474,7 +474,11 @@ export function VaultHomePage(): ReactNode {
                   />
 
                   {folderPath.length === 0 && (
-                    <RecentStrip documents={recent} onOpen={handleOpen} />
+                    <RecentStrip
+                      documents={recent}
+                      onOpen={handleOpen}
+                      onOpenTools={() => router.push('/pdf-tools', 'forward', 'push')}
+                    />
                   )}
 
                   <div className="kg-vault__folder-bar">
