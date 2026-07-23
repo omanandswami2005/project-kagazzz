@@ -45,6 +45,7 @@ const SWIPE_ACTION_OPTIONS: readonly SwipeActionKind[] = [
   'favorite',
   'move',
   'tags',
+  'archive',
   'none',
 ];
 
@@ -277,6 +278,17 @@ export function SettingsPage(): ReactNode {
                 {t('data.trash')}
               </Button>
               <p className="kg-settings__hint">{t('data.trash_hint')}</p>
+            </div>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.push('/archived')}
+                agentId="settings.open-archived"
+              >
+                {t('data.archived')}
+              </Button>
+              <p className="kg-settings__hint">{t('data.archived_hint')}</p>
             </div>
             <div className="kg-settings__row">
               <Button

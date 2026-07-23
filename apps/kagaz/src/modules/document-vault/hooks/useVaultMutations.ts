@@ -26,6 +26,10 @@ export interface UseVaultMutationsResult {
   softDelete: (document: DocumentEntity) => Promise<void>;
   /** Restores a soft-deleted document (UX-1 Undo); re-added to the list. */
   restore: (document: DocumentEntity) => Promise<void>;
+  /** Archives a document (F-89); removed from the main list/Recent. */
+  archive: (document: DocumentEntity) => Promise<void>;
+  /** Unarchives a document (F-89), e.g. from the Archived view. */
+  unarchive: (document: DocumentEntity) => Promise<void>;
 }
 
 /** Wires per-document mutations to the DAO + store. */
@@ -176,5 +180,57 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite, setLocked, markAccessed, rename, softDelete, restore };
+  const archive = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      // Optimistic: drop from the current (non-archived) list now.
+      useVaultStore.getState().removeDocument(document.id);
+      try {
+        await dao.update(document.id, { isArchived: true });
+        logger.info({ event: 'vault.archive', documentId: document.id });
+      } catch (error) {
+        useVaultStore.getState().prependDocuments([document]);
+        logger.error({
+          event: 'vault.archive.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  const unarchive = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      useVaultStore.getState().prependDocuments([document]);
+      try {
+        await dao.update(document.id, { isArchived: false });
+        logger.info({ event: 'vault.unarchive', documentId: document.id });
+      } catch (error) {
+        useVaultStore.getState().removeDocument(document.id);
+        logger.error({
+          event: 'vault.unarchive.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  return {
+    toggleFavorite,
+    setLocked,
+    markAccessed,
+    rename,
+    softDelete,
+    restore,
+    archive,
+    unarchive,
+  };
 }

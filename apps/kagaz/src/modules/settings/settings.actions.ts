@@ -26,7 +26,14 @@ export interface SettingsActionContext {
 const themeSchema = z.enum(['system', 'light', 'dark']);
 const languageSchema = z.enum(['en', 'hi']);
 const swipeSideSchema = z.enum(['left', 'right']);
-const swipeActionSchema = z.enum(['delete', 'favorite', 'move', 'tags', 'none']);
+const swipeActionSchema = z.enum([
+  'delete',
+  'favorite',
+  'move',
+  'tags',
+  'archive',
+  'none',
+]);
 
 /** All settings actions, registered by id. */
 export const settingsActions = {

@@ -32,6 +32,7 @@ export const VaultHomePageAgent = definePage({
     vaultActions.tagDocument,
     vaultActions.setSortBy,
     vaultActions.toggleSortDirection,
+    vaultActions.archiveDocument,
   ],
   observableState: {
     documentCount: () => useVaultStore.getState().documents.length,
@@ -93,5 +94,6 @@ export const VaultHomePageAgent = definePage({
     { utterance: 'sort by name', action: 'vault.setSortBy', args: { key: 'name' } },
     { utterance: 'sort by size', action: 'vault.setSortBy', args: { key: 'fileSize' } },
     { utterance: 'reverse the order', action: 'vault.toggleSortDirection' },
+    { utterance: 'archive this document', action: 'vault.archiveDocument' },
   ],
 });

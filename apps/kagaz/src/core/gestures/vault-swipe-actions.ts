@@ -9,7 +9,13 @@ import type { IconName } from '@kagaz/ui';
 import type { SwipeReveal } from './SwipeableRow';
 
 /** The set of actions a document row can bind to swipe-left / swipe-right. */
-export type SwipeActionKind = 'delete' | 'favorite' | 'move' | 'tags' | 'none';
+export type SwipeActionKind =
+  | 'delete'
+  | 'favorite'
+  | 'move'
+  | 'tags'
+  | 'archive'
+  | 'none';
 
 /** Icon + theme color for each swipe action (`none` never renders). */
 export const SWIPE_ACTION_META: Record<
@@ -20,6 +26,7 @@ export const SWIPE_ACTION_META: Record<
   favorite: { icon: 'Star', colorVar: 'var(--color-warning)' },
   move: { icon: 'FolderInput', colorVar: 'var(--color-primary)' },
   tags: { icon: 'Tag', colorVar: 'var(--color-primary)' },
+  archive: { icon: 'Archive', colorVar: 'var(--color-primary)' },
 };
 
 /** Resolves a {@link SwipeActionKind} to its reveal, or `null` for `'none'`. */

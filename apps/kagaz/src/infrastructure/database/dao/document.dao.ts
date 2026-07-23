@@ -79,14 +79,18 @@ export class DocumentDao {
   }
 
   /**
-   * Lists non-deleted documents in a folder (null = vault root),
-   * newest first.
+   * Lists non-deleted, non-archived documents in a folder (null = vault
+   * root), newest first — the main browsing list (F-89: archived
+   * documents are deliberately excluded here, the same way trashed ones
+   * already are, but stay visible via `findArchived`/Search/Favorites).
    */
   async findByFolder(folderId: string | null): Promise<DocumentEntity[]> {
     const sql = folderId
-      ? `SELECT * FROM documents WHERE folder_id = ? AND deleted_at IS NULL
+      ? `SELECT * FROM documents
+         WHERE folder_id = ? AND deleted_at IS NULL AND is_archived = 0
          ORDER BY created_at DESC`
-      : `SELECT * FROM documents WHERE folder_id IS NULL AND deleted_at IS NULL
+      : `SELECT * FROM documents
+         WHERE folder_id IS NULL AND deleted_at IS NULL AND is_archived = 0
          ORDER BY created_at DESC`;
     const rows = await this.db.query(sql, folderId ? [folderId] : []);
     return rows.map(mapRow);
@@ -159,11 +163,17 @@ export class DocumentDao {
     return { groups, wastedBytes };
   }
 
-  /** Most-recently-opened non-deleted documents (F-32). */
+  /**
+   * Most-recently-opened non-deleted, non-archived documents (F-32).
+   * Archived documents are excluded (F-89) — Recent is a shortcut back
+   * into the active working set, and a document the user just deliberately
+   * archived shouldn't immediately resurface there.
+   */
   async findRecent(limit = 10): Promise<DocumentEntity[]> {
     const rows = await this.db.query(
       `SELECT * FROM documents
        WHERE last_accessed_at IS NOT NULL AND deleted_at IS NULL
+         AND is_archived = 0
        ORDER BY last_accessed_at DESC
        LIMIT ?`,
       [limit]
@@ -317,6 +327,22 @@ export class DocumentDao {
     const rows = await this.db.query(
       `SELECT * FROM documents WHERE deleted_at IS NOT NULL
        ORDER BY deleted_at DESC`
+    );
+    return rows.map(mapRow);
+  }
+
+  /**
+   * Lists archived, non-deleted documents (F-89), most-recently-updated
+   * first. Archiving only hides a document from the main browsing list and
+   * Recent (`findByFolder`/`findRecent`) — unlike Trash, it's still fully
+   * counted in storage stats, still returned by `search()`/`findFavorites`,
+   * and still included in `findAll()`'s backup export. This is the only
+   * view that filters *to* `is_archived = 1`.
+   */
+  async findArchived(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NULL AND is_archived = 1
+       ORDER BY updated_at DESC`
     );
     return rows.map(mapRow);
   }

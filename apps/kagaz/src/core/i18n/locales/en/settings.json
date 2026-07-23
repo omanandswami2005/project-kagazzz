@@ -30,6 +30,7 @@
     "action_favorite": "Favorite",
     "action_move": "Move",
     "action_tags": "Add tag",
+    "action_archive": "Archive",
     "action_none": "None"
   },
   "security": {
@@ -49,6 +50,8 @@
     "title": "Data & Privacy",
     "trash": "Trash",
     "trash_hint": "View documents you've deleted. They're kept for 30 days, then removed for good.",
+    "archived": "Archived",
+    "archived_hint": "View documents you've archived — hidden from your main list, but still searchable and backed up.",
     "backup": "Export encrypted backup",
     "backup_hint": "Save an encrypted archive of all your documents. Only this app, on this device, can open it.",
     "backup_done_one": "Encrypted backup saved — {{count}} document.",

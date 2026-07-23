@@ -48,6 +48,8 @@ export interface VaultActionContext {
   openQuickReference: () => void;
   /** Navigates to the Quick Notes screen (UX pass, 2026-07-23). */
   openQuickNotes: () => void;
+  /** Archives a document by id — hides it from the main list/Recent (F-89). */
+  archiveDocument: (documentId: string) => Promise<void>;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files', 'scanner']);
@@ -291,6 +293,23 @@ export const vaultActions = {
       args: { documentId: string; tag: string },
       ctx: VaultActionContext
     ): Promise<{ tagId: string }> => ctx.tagDocument(args.documentId, args.tag),
+  }),
+
+  archiveDocument: defineAction({
+    id: 'vault.archiveDocument',
+    summary:
+      'Archive a document — hides it from the main list and Recent, but keeps it searchable, favoritable, and backed up (F-89).',
+    voice: ['archive this', 'archive this document', 'इसे आर्काइव करो'],
+    args: z.object({ documentId: z.string().min(1) }),
+    // Reversible from the Archived view (unarchive) — no confirmation needed.
+    requiresConfirmation: false,
+    handler: async (
+      args: { documentId: string },
+      ctx: VaultActionContext
+    ): Promise<{ ok: true }> => {
+      await ctx.archiveDocument(args.documentId);
+      return { ok: true };
+    },
   }),
 
   toggleSortDirection: defineAction({

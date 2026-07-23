@@ -26,6 +26,12 @@ shipped yet.
 | Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |
 | Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |
 | Reverse sort | `vault.toggleSortDirection` | Flips ascending ↔ descending. |
+| Archive a document | `vault.archiveDocument` | `documentId`. Hides it from the main list and Recent — still searchable, favoritable, and backed up. Reversible from the Archived view (Settings → Data → Archived), no confirmation needed. |
+
+Documents can also be moved between swipe-left/swipe-right by the user in
+Settings → Swipe actions (delete/favorite/move/add-tag/archive/none per
+side) — swiping is a direct manipulation with no dedicated action id of its
+own; it dispatches whichever of the actions above the user configured.
 
 Supported upload formats: PDF, JPG, PNG, HEIC, WEBP. Max 100 MB per
 file.

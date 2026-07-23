@@ -111,7 +111,7 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
-  const { toggleFavorite, markAccessed, rename, softDelete, restore } =
+  const { toggleFavorite, markAccessed, rename, softDelete, restore, archive } =
     useVaultMutations();
   // UX-8: prompt to rename each just-added document (unless disabled in Settings).
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
@@ -277,6 +277,10 @@ export function VaultHomePage(): ReactNode {
         break;
       case 'tags':
         setTagDocId(document.id);
+        break;
+      case 'archive':
+        hapticTap();
+        void archive(document);
         break;
     }
   };
@@ -788,6 +792,18 @@ export function VaultHomePage(): ReactNode {
                   },
                 ]
               : []),
+            // F-89: hide from the main list without deleting — the item-menu
+            // path for the same action Swipe Actions can bind to a side.
+            {
+              text: t('actions.archive'),
+              icon: 'Archive',
+              handler: (): void => {
+                if (moreDoc) {
+                  hapticTap();
+                  void archive(moreDoc);
+                }
+              },
+            },
             // UX-1: individual delete → soft-delete to Trash (recoverable via Undo).
             {
               text: t('actions.delete'),

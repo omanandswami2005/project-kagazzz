@@ -73,6 +73,13 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('findByFolder excludes archived documents (F-89)', async () => {
+    await dao.findByFolder(null);
+    expect(db.calls[0]?.sql).toContain('is_archived = 0');
+    await dao.findByFolder('f-1');
+    expect(db.calls[1]?.sql).toContain('is_archived = 0');
+  });
+
   it('getStorageTotals sums size and counts (F-26)', async () => {
     db.onQuery(/SUM\(file_size\)/, [{ total: 5000, n: 3 }]);
     const totals = await dao.getStorageTotals();
@@ -113,6 +120,7 @@ describe('DocumentDao', () => {
     expect(docs).toHaveLength(1);
     expect(docs[0]?.lastAccessedAt).toBe('2026-06-11T00:00:00.000Z');
     expect(db.calls[0]?.sql).toContain('ORDER BY last_accessed_at DESC');
+    expect(db.calls[0]?.sql).toContain('is_archived = 0');
     expect(db.calls[0]?.params).toEqual([5]);
   });
 
@@ -289,5 +297,17 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.sql).toContain('DELETE FROM documents');
     expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
     expect(db.calls[0]?.params).toEqual(['doc-1']);
+  });
+
+  it('findArchived lists archived, non-deleted rows, most-recently-updated first (F-89)', async () => {
+    db.onQuery(/is_archived = 1/, [
+      docRow({ is_archived: 1, updated_at: '2026-07-23T00:00:00.000Z' }),
+    ]);
+    const archived = await dao.findArchived();
+    expect(archived).toHaveLength(1);
+    expect(archived[0]?.isArchived).toBe(true);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NULL');
+    expect(db.calls[0]?.sql).toContain('is_archived = 1');
+    expect(db.calls[0]?.sql).toContain('ORDER BY updated_at DESC');
   });
 });

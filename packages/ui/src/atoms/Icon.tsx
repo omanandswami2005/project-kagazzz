@@ -11,6 +11,7 @@
  */
 import {
   AlertCircle,
+  Archive,
   Camera,
   Check,
   ChevronDown,
@@ -77,6 +78,7 @@ import type { ReactNode } from 'react';
 /** Curated Lucide subset (add icons as features need them). */
 const ICONS = {
   AlertCircle,
+  Archive,
   Camera,
   Check,
   ChevronDown,

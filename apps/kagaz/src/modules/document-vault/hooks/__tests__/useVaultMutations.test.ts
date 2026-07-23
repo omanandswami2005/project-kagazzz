@@ -83,3 +83,33 @@ describe('useVaultMutations softDelete/restore (UX-1)', () => {
     expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('a');
   });
 });
+
+describe('useVaultMutations archive/unarchive (F-89)', () => {
+  it('archive removes the doc from the list and persists isArchived: true', async () => {
+    const { result } = renderHook(() => useVaultMutations());
+    await act(async () => {
+      await result.current.archive(doc('a'));
+    });
+    expect(updateDao).toHaveBeenCalledWith('a', { isArchived: true });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual(['b']);
+  });
+
+  it('unarchive re-adds the doc and persists isArchived: false', async () => {
+    const { result } = renderHook(() => useVaultMutations());
+    await act(async () => {
+      await result.current.archive(doc('a'));
+      await result.current.unarchive(doc('a'));
+    });
+    expect(updateDao).toHaveBeenLastCalledWith('a', { isArchived: false });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('a');
+  });
+
+  it('rolls back the optimistic removal when the DAO archive update fails', async () => {
+    updateDao.mockRejectedValue(new Error('db'));
+    const { result } = renderHook(() => useVaultMutations());
+    await act(async () => {
+      await result.current.archive(doc('a'));
+    });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('a');
+  });
+});

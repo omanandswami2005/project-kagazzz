@@ -20,6 +20,7 @@ function makeCtx(): VaultActionContext {
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
     openQuickReference: vi.fn(),
     openQuickNotes: vi.fn(),
+    archiveDocument: vi.fn(() => Promise.resolve()),
   };
 }
 
@@ -192,6 +193,27 @@ describe('vault tag actions (F-10)', () => {
       { documentId: 'd', tag: '' },
       makeCtx()
     );
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe('vault.archiveDocument (F-89)', () => {
+  it('delegates to ctx.archiveDocument with the document id', async () => {
+    const ctx = makeCtx();
+    await expect(
+      vaultActions.archiveDocument.handler({ documentId: 'doc-9' }, ctx)
+    ).resolves.toEqual({ ok: true });
+    expect(ctx.archiveDocument).toHaveBeenCalledWith('doc-9');
+  });
+
+  it('declares no confirmation (reversible via the Archived view)', () => {
+    expect(vaultActions.archiveDocument.requiresConfirmation).toBe(false);
+  });
+
+  it('rejects a missing document id through the registry', async () => {
+    const registry = new ActionRegistry<VaultActionContext>();
+    registry.register(vaultActions.archiveDocument);
+    const result = await registry.invoke('vault.archiveDocument', {}, makeCtx());
     expect(result.ok).toBe(false);
   });
 });

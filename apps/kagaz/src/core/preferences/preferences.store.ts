@@ -41,6 +41,7 @@ const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
   'favorite',
   'move',
   'tags',
+  'archive',
   'none',
 ];
 

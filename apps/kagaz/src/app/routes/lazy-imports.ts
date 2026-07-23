@@ -21,6 +21,10 @@ export const LazyTrashPage = lazy(
   () => import('@/modules/document-vault/pages/TrashPage')
 );
 
+export const LazyArchivedPage = lazy(
+  () => import('@/modules/document-vault/pages/ArchivedPage')
+);
+
 export const LazyQuickReferencePage = lazy(
   () => import('@/modules/document-vault/pages/QuickReferencePage')
 );
