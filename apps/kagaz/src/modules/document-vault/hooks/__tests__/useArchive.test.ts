@@ -19,6 +19,7 @@ vi.mock('@/infrastructure/database/dao', () => ({
 }));
 
 import { useArchive } from '../useArchive';
+import { useVaultStore } from '../../store/vault.store';
 
 const doc = (id: string): DocumentEntity => ({ id, name: id, isArchived: true }) as DocumentEntity;
 
@@ -28,6 +29,7 @@ beforeEach(() => {
   findArchived.mockResolvedValue([doc('a'), doc('b')]);
   update.mockResolvedValue(1);
   softDelete.mockResolvedValue(1);
+  useVaultStore.setState({ documents: [], folderPath: [] });
 });
 
 describe('useArchive (F-89)', () => {
@@ -45,6 +47,29 @@ describe('useArchive (F-89)', () => {
     });
     expect(update).toHaveBeenCalledWith('a', { isArchived: false });
     expect(result.current.items.map((d) => d.id)).toEqual(['b']);
+  });
+
+  it('unarchive also reflects the document into the shared vault store (bug-audit follow-up: main list staleness)', async () => {
+    const { result } = renderHook(() => useArchive());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.unarchive(doc('a'));
+    });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('a');
+  });
+
+  it('does not leak into the vault store when the document belongs to a different folder', async () => {
+    useVaultStore.setState({
+      documents: [],
+      folderPath: [{ id: 'f1', name: 'F1', sortOrder: 0, createdAt: '', updatedAt: '' }],
+    });
+    const { result } = renderHook(() => useArchive());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      // doc('a') has no folderId (root) while the vault is viewing folder f1.
+      await result.current.unarchive(doc('a'));
+    });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).not.toContain('a');
   });
 
   it('rolls back the optimistic removal when unarchive fails', async () => {

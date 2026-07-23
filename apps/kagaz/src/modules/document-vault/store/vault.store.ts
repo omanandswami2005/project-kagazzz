@@ -107,13 +107,26 @@ export const useVaultStore = create<VaultState>((set) => ({
       documents: sortDocuments(documents, state.sortBy, state.sortDirection),
     })),
   prependDocuments: (documents): void =>
-    set((state) => ({
-      documents: sortDocuments(
-        [...documents, ...state.documents],
-        state.sortBy,
-        state.sortDirection
-      ),
-    })),
+    set((state) => {
+      // Bug-audit fix: a document restored/archived-undone/unarchived from a
+      // DIFFERENT page (or a stale toast still open after the user navigated
+      // folders) must not get injected into whatever folder happens to be
+      // showing right now — only add it back if it actually belongs in the
+      // currently-viewed folder. Anything else is picked up correctly the
+      // next time that folder is entered (findByFolder re-fetches).
+      const folderId = currentFolderId(state);
+      const inScope = documents.filter((d) => (d.folderId ?? null) === folderId);
+      if (inScope.length === 0) {
+        return {};
+      }
+      return {
+        documents: sortDocuments(
+          [...inScope, ...state.documents],
+          state.sortBy,
+          state.sortDirection
+        ),
+      };
+    }),
   patchDocument: (id, patch): void =>
     set((state) => ({
       documents: state.documents.map((d) =>

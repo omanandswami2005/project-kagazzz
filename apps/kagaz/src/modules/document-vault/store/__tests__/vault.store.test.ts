@@ -162,4 +162,30 @@ describe('vault.store', () => {
       'c',
     ]);
   });
+
+  describe('prependDocuments folder scoping (bug-audit follow-up)', () => {
+    it('does not insert a document belonging to a different folder than the one being viewed', () => {
+      useVaultStore.getState().enterFolder(folder('f1', 'F1'));
+      useVaultStore.getState().setDocuments([doc('a')]);
+      const inOtherFolder = { ...doc('b'), folderId: 'f2' };
+      useVaultStore.getState().prependDocuments([inOtherFolder]);
+      expect(useVaultStore.getState().documents.map((d) => d.id)).toEqual(['a']);
+    });
+
+    it('does insert a document that belongs to the folder currently being viewed', () => {
+      useVaultStore.getState().enterFolder(folder('f1', 'F1'));
+      useVaultStore.getState().setDocuments([doc('a')]);
+      const inSameFolder = { ...doc('b'), folderId: 'f1' };
+      useVaultStore.getState().prependDocuments([inSameFolder]);
+      expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('b');
+    });
+
+    it('is a no-op (does not throw, does not change state) when nothing in scope', () => {
+      useVaultStore.getState().enterFolder(folder('f1', 'F1'));
+      useVaultStore.getState().setDocuments([doc('a')]);
+      const before = useVaultStore.getState().documents;
+      useVaultStore.getState().prependDocuments([{ ...doc('b'), folderId: 'elsewhere' }]);
+      expect(useVaultStore.getState().documents).toBe(before);
+    });
+  });
 });
