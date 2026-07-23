@@ -482,6 +482,7 @@ export function VaultHomePage(): ReactNode {
                       documents={recent}
                       onOpen={handleOpen}
                       onOpenTools={() => router.push('/pdf-tools', 'forward', 'push')}
+                      selectionMode={selectionMode}
                     />
                   )}
 

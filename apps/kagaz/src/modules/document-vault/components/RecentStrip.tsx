@@ -12,6 +12,12 @@
  * that opens PDF Tools ({@link useSwipeUp}) — the "swipe action on screen
  * opens Tools" request, kept on the vertical axis specifically so it never
  * competes with the horizontal carousel drag for the same pointer input.
+ *
+ * [SEC] Locked documents (§3.1) get the same blurred-thumbnail + lock-icon
+ * treatment as `DocumentListItem` — this row reads straight off
+ * `DocumentDao.findRecent()`, which (deliberately, like the main list)
+ * does not filter `is_locked`, so it must not render an unblurred preview
+ * of a document the user locked.
  */
 import { useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,15 +50,20 @@ function RecentItem({
   document,
   onOpen,
   onOpenTools,
+  disabled,
 }: {
   document: DocumentEntity;
   onOpen: (document: DocumentEntity) => void;
   onOpenTools: () => void;
+  /** Multi-select mode is active on the main list (F-25) — the strip above
+   * it must not stay independently interactive while that's happening. */
+  disabled: boolean;
 }): ReactNode {
   const thumbnailUrl = useThumbnail(document.thumbnailPath);
   const { dragY, isDragging, bind } = useSwipeUp({
     onSwipeUp: onOpenTools,
     onThresholdCross: () => hapticTap(),
+    disabled,
   });
   const lift = Math.max(-MAX_LIFT_PX, dragY);
 
@@ -63,6 +74,7 @@ function RecentItem({
         className="kg-recent__item"
         data-agent-id={`vault.home.recent-${document.id}`}
         data-agent-state="idle"
+        disabled={disabled}
         onClick={() => onOpen(document)}
         style={{
           transform: dragY !== 0 ? `translateY(${lift}px)` : undefined,
@@ -70,7 +82,21 @@ function RecentItem({
         }}
         {...bind}
       >
-        {thumbnailUrl ? (
+        {document.isLocked ? (
+          // [SEC] §3.1: same blurred-thumbnail + lock-icon treatment as
+          // DocumentListItem — findRecent() doesn't filter is_locked.
+          <span className="kg-recent__locked" data-agent-id={`vault.home.recent-${document.id}.locked`}>
+            {thumbnailUrl && (
+              <img
+                className="kg-recent__thumb kg-recent__thumb--locked"
+                src={thumbnailUrl}
+                alt=""
+                loading="lazy"
+              />
+            )}
+            <Icon name="Lock" size={24} />
+          </span>
+        ) : thumbnailUrl ? (
           <img className="kg-recent__thumb" src={thumbnailUrl} alt="" loading="lazy" />
         ) : (
           <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={48} />
@@ -89,6 +115,11 @@ export interface RecentStripProps {
    * existing callers/tests that don't care about the Tools shortcut don't
    * need to wire it. */
   onOpenTools?: () => void;
+  /** Multi-select mode is active on the main list below (F-25) — disables
+   * every card's tap/swipe so the strip doesn't stay independently
+   * interactive while the user is mid-selection. Defaults to false so
+   * existing callers/tests that don't pass it are unaffected. */
+  selectionMode?: boolean;
 }
 
 /** Horizontal quick-access carousel of recently opened documents. */
@@ -96,6 +127,7 @@ export function RecentStrip({
   documents,
   onOpen,
   onOpenTools,
+  selectionMode = false,
 }: RecentStripProps): ReactNode {
   const { t } = useTranslation('documents');
   const collapsed = usePreferencesStore((s) => s.recentSectionCollapsed);
@@ -133,6 +165,7 @@ export function RecentStrip({
               document={document}
               onOpen={onOpen}
               onOpenTools={onOpenTools ?? noopOpenTools}
+              disabled={selectionMode}
             />
           ))}
         </ul>

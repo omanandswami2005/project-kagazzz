@@ -345,6 +345,26 @@
   animation: kg-fade-in var(--duration-normal) var(--ease-out);
 }
 
+/* [SEC] §3.1: same blur+lock-icon treatment as .kg-doc-item__locked, sized
+   for the Recent strip's larger 72px thumbnail. */
+.kg-recent__locked {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.kg-recent__thumb--locked {
+  filter: blur(8px);
+  opacity: 0.55;
+}
+.kg-recent__locked > :not(.kg-recent__thumb--locked) {
+  position: absolute;
+}
+
 .kg-recent__name {
   width: 100%;
   font-size: var(--text-sm);
