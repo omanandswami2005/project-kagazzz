@@ -64,10 +64,19 @@ export function MicButton({ onResult, onPartial }: MicButtonProps): ReactNode {
         onPointerDown={(e) => {
           e.preventDefault();
           held.current = true;
+          // Bug-audit fix: without capture, ordinary finger drift during a
+          // multi-second hold moves the pointer outside the button's small
+          // (icon-only) bounds and fires pointerleave, silently cutting
+          // dictation short — same reasoning DocumentListItem's long-press
+          // capture already documents for this codebase's touchscreens.
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId);
+          } catch {
+            // Best-effort only — release/stop still work without capture.
+          }
           void voice.start();
         }}
         onPointerUp={release}
-        onPointerLeave={release}
         onPointerCancel={release}
         // Keyboard activation (detail === 0) toggles; pointer clicks are already
         // handled by the press/release pair above.

@@ -53,6 +53,19 @@ describe('MicButton (F-15)', () => {
     expect(voice.stop).toHaveBeenCalledOnce();
   });
 
+  it('captures the pointer on press (bug-audit fix: finger drift must not cut dictation short)', () => {
+    render(<MicButton onResult={vi.fn()} />);
+    const setPointerCapture = vi.fn();
+    Object.defineProperty(mic()!, 'setPointerCapture', { value: setPointerCapture });
+    fireEvent.pointerDown(mic()!);
+    expect(setPointerCapture).toHaveBeenCalledOnce();
+    // No onPointerLeave handler — with the pointer captured, up/cancel are
+    // the only events that end a hold, so a leave (e.g. a jsdom event with
+    // no real capture support) must not stop listening.
+    fireEvent.pointerLeave(mic()!);
+    expect(voice.stop).not.toHaveBeenCalled();
+  });
+
   it('keyboard activation (detail 0) toggles listening', () => {
     render(<MicButton onResult={vi.fn()} />);
     fireEvent.click(mic()!, { detail: 0 });
