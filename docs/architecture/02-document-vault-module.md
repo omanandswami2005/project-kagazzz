@@ -1396,6 +1396,51 @@ way to reach an action.
 Undo → `restore()`. This closed a real gap — bulk delete previously had
 no undo at all, unlike the single-row delete path (UX-1).
 
+### Archive (F-89)
+
+`is_archived` (§4.1 of the database doc — `DEFAULT 0`, "Soft archive —
+hidden from default views") existed in the schema from V1's original
+design but was never wired to any query or UI until this item — the DAO
+already read/wrote the column via the generic `update()` patch, but
+nothing filtered on it and no screen surfaced it.
+
+**Archive vs. delete — the distinction that drives every query decision
+below**: archiving hides a document from the *active browsing surfaces*
+without treating it as gone. Concretely:
+
+| Surface | Filters out archived? |
+|---|---|
+| Main list (`findByFolder`) | **Yes** — the core "get this out of my daily view" behavior |
+| Recent (`findRecent`) | **Yes** — a document the user just archived shouldn't immediately resurface as "recent" |
+| Search (`search`) | No — still fully findable |
+| Favorites (`findFavorites`) | No — an archived-but-starred document still shows in Favorites |
+| Storage stats / duplicates | No — archived documents still occupy disk space |
+| Backup export (`findAll`) | No — archiving is not a reason to drop a document from the encrypted backup |
+
+`DocumentDao.findArchived()` is the one query that filters *to*
+`is_archived = 1` (mirrors `findTrashed()`'s shape/posture, but archiving
+has no retention window or file cleanup, so it needed no dedicated service
+file — `useArchive` calls the DAO directly).
+
+**Where it's reachable**: `archive`/`unarchive` on `useVaultMutations`
+(optimistic, same pattern as `softDelete`/`restore`) — used by (a) the
+vault item-menu's new **Archive** entry, (b) `SwipeActionKind`'s new
+`'archive'` member (`core/gestures/vault-swipe-actions.ts`, `Archive` icon
+added to `@kagaz/ui`'s curated Lucide set), selectable per-side in
+Settings → Swipe actions same as delete/favorite/move/tags. New
+**Archived** page (`ArchivedPage.tsx`, reached from Settings → Data &
+Privacy → Archived, mirroring the existing Trash entry point) lists
+archived documents with fixed (non-configurable) swipe actions — right =
+unarchive, left = delete straight to Trash — the same "Trash gets its own
+vocabulary, doesn't inherit the vault's Settings enum" posture F-88
+established. `vault.archiveDocument` is a real Action Registry entry
+(reversible, `requiresConfirmation: false`); unarchive/delete-to-trash on
+the Archived page are user-only, same posture as Trash's own
+restore/delete-forever (no registry entries).
+
+`DocumentDetailsSheet`'s status row now includes "Archived" alongside
+Locked/Favorite when `document.isArchived` is true.
+
 ---
 
 ## Quick Reference (F-84)
