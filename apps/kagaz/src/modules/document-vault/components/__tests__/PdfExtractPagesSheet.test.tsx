@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -43,5 +43,13 @@ describe('PdfExtractPagesSheet (F-66 UX follow-up)', () => {
           ?.getAttribute('data-agent-state')
       ).toBe('open')
     );
+    // See PdfPageImageSheet.test.tsx: the DOM attribute flips before
+    // Ionic's own internal present() promise chain finishes draining. A
+    // real macrotask tick gives it room to settle before this test's end
+    // triggers testing-library's auto-cleanup/unmount, avoiding a
+    // "framework delegate is missing" unhandled rejection on slow runners.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
   });
 });

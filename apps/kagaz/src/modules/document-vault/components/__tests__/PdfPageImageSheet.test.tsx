@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -52,5 +52,15 @@ describe('PdfPageImageSheet (F-86)', () => {
           ?.getAttribute('data-agent-state')
       ).toBe('open')
     );
+    // The DOM attribute above flips before Ionic's own internal present()
+    // promise chain (a separate, unobserved chain) finishes draining — on a
+    // slow CI runner that chain can still be in flight when this test ends
+    // and testing-library's auto-cleanup unmounts, so it resolves against a
+    // detached host and throws "framework delegate is missing" as an
+    // unhandled rejection. A real macrotask tick gives it room to settle
+    // before teardown.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
   });
 });
