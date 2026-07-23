@@ -3,9 +3,18 @@
  * PDF pages (via the pdf-engine's pdfjs path), and surfaces the **extracted
  * text** (OCR, F-20) so users can finally read/copy what OCR produced.
  *
- * [SEC] A per-document-locked file (§3.1) is authorized before it renders; a
- * declined prompt sends the user back. Extracted text is shown from the
- * encrypted DB and copied only on explicit user action.
+ * [SEC] A per-document-locked file (§3.1) is authorized *here*, at the route
+ * itself — not by convention at each caller. Bug-audit hardening: this used
+ * to be enforced only by VaultHomePage/FavoritesPage calling authorizeView
+ * before router.push, which worked only because those were the sole two
+ * routes in; any future addition that pushes to /doc/:id (a search-result
+ * shortcut, a notification, a restored browser-history entry) would have
+ * silently bypassed the lock, since the viewer trusted its caller
+ * unconditionally. Centralizing it here makes the gate structural instead
+ * of conventional — a declined prompt goes back before any content renders,
+ * and markAccessed (F-32) only stamps once authorization actually succeeds,
+ * same as before. Extracted text is shown from the encrypted DB and copied
+ * only on explicit user action.
  */
 import {
   IonBackButton,
@@ -19,11 +28,12 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
+import { useDocLock } from '../hooks/useDocLock';
 import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
@@ -45,18 +55,52 @@ export function DocumentViewerPage(): ReactNode {
   const { html: docxHtml, loading: docxLoading, error: docxError } = useDocxHtml(document);
   const isDocxDoc = document?.fileType.toLowerCase() === 'docx';
   const { extractText, runningId } = useDocumentOcr();
-  const { softDelete } = useVaultMutations();
+  const { softDelete, markAccessed } = useVaultMutations();
+  const { authorizeView } = useDocLock();
   const intents = useDocumentIntents();
 
   // Extracted text: the freshly-extracted override, else the stored OCR text.
   // Derived (no effect) so it stays in sync as the document loads.
-  // [SEC] the per-doc lock is enforced at the entry point
-  // (VaultHomePage/FavoritesPage authorize before navigating — the only routes
-  // into the viewer).
   const [extracted, setExtracted] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+
+  // [SEC] §3.1, bug-audit hardening: the structural gate — see the file's
+  // own doc comment above. `null` = not checked yet (or the id changed and
+  // a re-check is pending), `true`/`false` = the last check's outcome.
+  // Re-runs whenever the loaded document identity changes, not just once,
+  // so navigating from one locked document straight to another
+  // (hypothetically, via a future "next document" control) can't reuse a
+  // stale `true` from the previous one.
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const checkedForId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!document) {
+      return;
+    }
+    if (checkedForId.current === document.id) {
+      return;
+    }
+    checkedForId.current = document.id;
+    let cancelled = false;
+    void authorizeView(document).then((allowed) => {
+      if (cancelled) {
+        return;
+      }
+      setAuthorized(allowed);
+      if (allowed) {
+        void markAccessed(document);
+      } else {
+        setToast(t('lock.blocked'));
+        router.goBack();
+      }
+    });
+    return (): void => {
+      cancelled = true;
+    };
+  }, [document, authorizeView, markAccessed, router, t]);
+
   const text = extracted ?? document?.ocrText ?? null;
   // F-83: standalone number sequences (account/ID numbers, PIN codes, dates, …)
   // pulled out of the extracted text so one can be copied without drag-selecting
@@ -113,22 +157,27 @@ export function DocumentViewerPage(): ReactNode {
           </IonButtons>
           <IonTitle>{document?.name ?? ''}</IonTitle>
           <IonButtons slot="end">
-            <button
-              type="button"
-              className="kg-viewer__menu-btn"
-              aria-label={t('actions.more')}
-              data-agent-id="vault.viewer.more"
-              onClick={() => setMenuOpen(true)}
-            >
-              <Icon name="MoreVertical" size={24} />
-            </button>
+            {/* [SEC] bug-audit hardening: Delete/Share/Open-with reach real
+               document content — hide the trigger, not just the preview,
+               until the lock gate above actually clears. */}
+            {authorized === true && (
+              <button
+                type="button"
+                className="kg-viewer__menu-btn"
+                aria-label={t('actions.more')}
+                data-agent-id="vault.viewer.more"
+                onClick={() => setMenuOpen(true)}
+              >
+                <Icon name="MoreVertical" size={24} />
+              </button>
+            )}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
       <IonContent>
         <main className="kg-viewer" data-agent-id="vault.viewer.content">
-          {loading || fileLoading || (isDocxDoc && docxLoading) ? (
+          {loading || authorized !== true || fileLoading || (isDocxDoc && docxLoading) ? (
             <div className="kg-viewer__center" data-agent-state="loading">
               <IonSpinner name="crescent" />
             </div>

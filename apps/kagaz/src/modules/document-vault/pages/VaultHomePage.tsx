@@ -116,14 +116,14 @@ export function VaultHomePage(): ReactNode {
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
   const { isReady, uploadFrom } = useUpload();
-  const { toggleFavorite, markAccessed, rename, softDelete, restore, archive } =
+  const { toggleFavorite, rename, softDelete, restore, archive } =
     useVaultMutations();
   // UX-8: prompt to rename each just-added document (unless disabled in Settings).
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
   // F-88: user-configured swipe-left/right actions (Settings → Swipe actions).
   const swipeLeftAction = usePreferencesStore((s) => s.swipeLeftAction);
   const swipeRightAction = usePreferencesStore((s) => s.swipeRightAction);
-  const { toggleLock, authorizeView } = useDocLock();
+  const { toggleLock } = useDocLock();
   const { extractText } = useDocumentOcr();
   const intents = useDocumentIntents();
   const copyText = useCopyDocumentText();
@@ -306,8 +306,6 @@ export function VaultHomePage(): ReactNode {
   const openSheet = useVaultStore((state) => state.openUploadSheet);
   const closeSheet = useVaultStore((state) => state.closeUploadSheet);
   const [uploadedCount, setUploadedCount] = useState(0);
-  // Shown when opening a locked document is declined at the biometric prompt.
-  const [showLockedToast, setShowLockedToast] = useState(false);
   // UX-8: documents awaiting a rename prompt, oldest first (one alert at a time).
   const [renameQueue, setRenameQueue] = useState<DocumentEntity[]>([]);
   const renameTarget = renameQueue[0] ?? null;
@@ -353,18 +351,14 @@ export function VaultHomePage(): ReactNode {
     return (): void => document.removeEventListener('ionBackButton', onBack);
   }, []);
 
-  // Opening a document records recency (F-32) and navigates to the viewer
-  // (UX-6). [SEC] §3.1: authorize a locked document here — the entry point —
-  // before navigating; the viewer trusts that gate.
+  // Opens the viewer (UX-6). [SEC] §3.1, bug-audit hardening: the per-doc
+  // lock gate + recency stamp (F-32) used to live only here — every other
+  // way of reaching /doc/:id trusted this call site by convention, a
+  // single point of failure. DocumentViewerPage now enforces its own gate
+  // (and stamps markAccessed itself on success), so this is a plain
+  // navigate; see DocumentViewerPage's own [SEC] comment.
   const handleOpen = (document: DocumentEntity): void => {
-    void authorizeView(document).then((allowed) => {
-      if (!allowed) {
-        setShowLockedToast(true);
-        return;
-      }
-      void markAccessed(document);
-      router.push(`/doc/${document.id}`);
-    });
+    router.push(`/doc/${document.id}`);
   };
 
   const listState = isLoading
@@ -1036,13 +1030,6 @@ export function VaultHomePage(): ReactNode {
           }}
           onDidDismiss={dequeueUndo}
           agentId="vault.home.delete-toast"
-        />
-        <IonToast
-          isOpen={showLockedToast}
-          duration={2500}
-          message={t('lock.blocked')}
-          onDidDismiss={() => setShowLockedToast(false)}
-          data-agent-id="vault.home.locked-toast"
         />
         {/* UX-8: rename-on-add prompt, pre-filled with the default name. Keeping
            the default (Skip) stores it as-is. Keyed per document so each

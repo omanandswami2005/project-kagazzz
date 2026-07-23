@@ -10,7 +10,6 @@ import {
   IonTitle,
   IonToolbar,
   useIonRouter,
-  useIonToast,
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +20,6 @@ import { usePreferencesStore } from '@/core/preferences';
 import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../components/DocumentListItem';
-import { useDocLock } from '../hooks/useDocLock';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
@@ -33,10 +31,8 @@ export function FavoritesPage(): ReactNode {
   const [reloadKey, setReloadKey] = useState(0);
   const { favorites, isLoading } = useFavorites(reloadKey);
   const { tagsByDocument } = useTags();
-  const { toggleFavorite, markAccessed, softDelete, restore } = useVaultMutations();
-  const { authorizeView } = useDocLock();
+  const { toggleFavorite, softDelete, restore } = useVaultMutations();
   const router = useIonRouter();
-  const [presentToast] = useIonToast();
   // F-88: this page has no move/tag sheet, so only delete/favorite are
   // meaningful swipe targets here regardless of the global Settings choice.
   const swipeLeftAction = usePreferencesStore((s) =>
@@ -77,19 +73,13 @@ export function FavoritesPage(): ReactNode {
     [softDelete, handleToggleFavorite]
   );
 
+  // [SEC] §3.1, bug-audit hardening: DocumentViewerPage now enforces its own
+  // lock gate + markAccessed stamp — see its doc comment. Plain navigate.
   const handleOpen = useCallback(
     (doc: DocumentEntity): void => {
-      // [SEC] §3.1: authorize a locked document before opening the viewer.
-      void authorizeView(doc).then((allowed) => {
-        if (!allowed) {
-          void presentToast({ message: t('lock.blocked'), duration: 1500, position: 'bottom' });
-          return;
-        }
-        void markAccessed(doc);
-        router.push(`/doc/${doc.id}`);
-      });
+      router.push(`/doc/${doc.id}`);
     },
-    [authorizeView, markAccessed, presentToast, router, t]
+    [router]
   );
 
   const listState = isLoading
