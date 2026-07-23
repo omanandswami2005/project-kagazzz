@@ -85,6 +85,11 @@ import { usePreferencesStore } from '@/core/preferences';
 import type { UploadSource } from '../services/upload-sources';
 import './vault.css';
 
+/** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
+type PendingUndo =
+  | { kind: 'single'; document: DocumentEntity }
+  | { kind: 'bulk'; documents: DocumentEntity[] };
+
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
@@ -181,13 +186,19 @@ export function VaultHomePage(): ReactNode {
   const [deleteFolderTarget, setDeleteFolderTarget] =
     useState<FolderEntity | null>(null);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
-  // UX-1: the just-deleted document, kept so the toast can offer Undo (restore).
-  const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
-  // F-88: the just-bulk-deleted documents, captured before bulkDelete() runs
-  // (it only reports a count), so the undo toast can restore all of them.
-  const [bulkDeletedDocs, setBulkDeletedDocs] = useState<DocumentEntity[] | null>(
-    null
-  );
+  // UX-1/F-88, bug-audit follow-up: every delete (single or bulk) gets its
+  // own undo opportunity, queued rather than held in one overwritable slot.
+  // A single `deletedDoc`/`bulkDeletedDocs` pair meant a second delete
+  // within the first one's 4s toast window silently clobbered it — the
+  // toast stayed open the whole time with no visible change, but Undo only
+  // ever restored the newer batch. Also fixes the single/bulk toasts being
+  // able to render open simultaneously (each was its own unconditional
+  // `<UndoToast>`) — there is now exactly one, showing the queue's head.
+  const [undoQueue, setUndoQueue] = useState<PendingUndo[]>([]);
+  const pendingUndo = undoQueue[0] ?? null;
+  const enqueueUndo = (entry: PendingUndo): void =>
+    setUndoQueue((queue) => [...queue, entry]);
+  const dequeueUndo = (): void => setUndoQueue((queue) => queue.slice(1));
   const [detailsDoc, setDetailsDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
 
@@ -266,7 +277,7 @@ export function VaultHomePage(): ReactNode {
       case 'delete':
         hapticDestructive();
         void softDelete(document);
-        setDeletedDoc(document);
+        enqueueUndo({ kind: 'single', document });
         break;
       case 'favorite':
         hapticTap();
@@ -815,7 +826,7 @@ export function VaultHomePage(): ReactNode {
                   const doc = moreDoc;
                   hapticDestructive();
                   void softDelete(doc);
-                  setDeletedDoc(doc);
+                  enqueueUndo({ kind: 'single', document: doc });
                 }
               },
             },
@@ -970,7 +981,7 @@ export function VaultHomePage(): ReactNode {
               // undo toast needs the full set to restore.
               const targets = documents.filter((d) => selectedIds.includes(d.id));
               hapticDestructive();
-              void bulkDelete().then(() => setBulkDeletedDocs(targets));
+              void bulkDelete().then(() => enqueueUndo({ kind: 'bulk', documents: targets }));
             }}
             onMove={() => setBulkMoveOpen(true)}
             onFavorite={() => void bulkFavorite()}
@@ -1008,27 +1019,23 @@ export function VaultHomePage(): ReactNode {
           onDidDismiss={() => setOcrMsg(null)}
           data-agent-id="vault.home.ocr-toast"
         />
+        {/* UX-1/F-88, bug-audit follow-up: one toast for the undo queue's
+           head — see the `undoQueue` state comment above for why this
+           replaced two independent, clobber-prone/overlap-prone toasts. */}
         <UndoToast
-          isOpen={deletedDoc !== null}
-          message={t('trash.moved_to_trash')}
+          isOpen={pendingUndo !== null}
+          message={
+            pendingUndo?.kind === 'bulk'
+              ? t('bulk.deleted', { count: pendingUndo.documents.length })
+              : t('trash.moved_to_trash')
+          }
           onUndo={() => {
-            if (deletedDoc) void restore(deletedDoc);
+            if (!pendingUndo) return;
+            if (pendingUndo.kind === 'single') void restore(pendingUndo.document);
+            else for (const doc of pendingUndo.documents) void restore(doc);
           }}
-          onDidDismiss={() => setDeletedDoc(null)}
+          onDidDismiss={dequeueUndo}
           agentId="vault.home.delete-toast"
-        />
-        {/* F-88: bulk delete previously had no undo — every other delete path
-           (single row, swipe) does; this closes that gap. */}
-        <UndoToast
-          isOpen={bulkDeletedDocs !== null}
-          message={t('bulk.deleted', { count: bulkDeletedDocs?.length ?? 0 })}
-          onUndo={() => {
-            if (bulkDeletedDocs) {
-              for (const doc of bulkDeletedDocs) void restore(doc);
-            }
-          }}
-          onDidDismiss={() => setBulkDeletedDocs(null)}
-          agentId="vault.home.bulk-delete-toast"
         />
         <IonToast
           isOpen={showLockedToast}

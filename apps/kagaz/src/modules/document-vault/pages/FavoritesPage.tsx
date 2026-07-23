@@ -49,7 +49,12 @@ export function FavoritesPage(): ReactNode {
       ? s.swipeRightAction
       : 'none'
   );
-  const [deletedDoc, setDeletedDoc] = useState<DocumentEntity | null>(null);
+  // Bug-audit follow-up (same fix as VaultHomePage's undoQueue): a single
+  // overwritable slot let a second delete within the first one's 4s toast
+  // window silently clobber its undo. Queued instead — every delete gets
+  // its own turn.
+  const [deleteQueue, setDeleteQueue] = useState<DocumentEntity[]>([]);
+  const pendingUndo = deleteQueue[0] ?? null;
 
   const handleToggleFavorite = useCallback(
     (doc: DocumentEntity): void => {
@@ -63,7 +68,7 @@ export function FavoritesPage(): ReactNode {
       if (kind === 'delete') {
         hapticDestructive();
         void softDelete(doc).then(() => setReloadKey((k) => k + 1));
-        setDeletedDoc(doc);
+        setDeleteQueue((queue) => [...queue, doc]);
       } else if (kind === 'favorite') {
         hapticTap();
         handleToggleFavorite(doc);
@@ -135,12 +140,12 @@ export function FavoritesPage(): ReactNode {
           )}
         </main>
         <UndoToast
-          isOpen={deletedDoc !== null}
+          isOpen={pendingUndo !== null}
           message={t('trash.moved_to_trash')}
           onUndo={() => {
-            if (deletedDoc) void restore(deletedDoc).then(() => setReloadKey((k) => k + 1));
+            if (pendingUndo) void restore(pendingUndo).then(() => setReloadKey((k) => k + 1));
           }}
-          onDidDismiss={() => setDeletedDoc(null)}
+          onDidDismiss={() => setDeleteQueue((queue) => queue.slice(1))}
           agentId="vault.favorites.delete-toast"
         />
       </IonContent>

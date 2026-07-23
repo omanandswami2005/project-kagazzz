@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -6,6 +6,7 @@ import { i18n, initI18n } from '@/core/i18n';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useUpload } from '../../hooks/useUpload';
+import { useVaultMutations } from '../../hooks/useVaultMutations';
 import { useVaultStore } from '../../store/vault.store';
 import { VaultHomePage } from '../VaultHomePage';
 import { VaultHomePageAgent } from '../VaultHomePage.agent';
@@ -13,10 +14,12 @@ import { VaultHomePageAgent } from '../VaultHomePage.agent';
 vi.mock('../../hooks/useDocuments', () => ({ useDocuments: vi.fn() }));
 vi.mock('../../hooks/useUpload', () => ({ useUpload: vi.fn() }));
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
+vi.mock('../../hooks/useVaultMutations', () => ({ useVaultMutations: vi.fn() }));
 
 const useDocumentsMock = vi.mocked(useDocuments);
 const useUploadMock = vi.mocked(useUpload);
 const useDatabaseMock = vi.mocked(useDatabase);
+const useVaultMutationsMock = vi.mocked(useVaultMutations);
 
 const doc = entityFromNew({
   name: 'Aadhaar',
@@ -29,6 +32,21 @@ const doc = entityFromNew({
   language: 'en',
   sourceType: 'file_picker',
 });
+
+const docB = entityFromNew(
+  {
+    name: 'PAN Card',
+    filePath: 'documents/doc-2.pdf',
+    fileType: 'pdf',
+    fileSize: 1234,
+    isFavorite: false,
+    isLocked: false,
+    isArchived: false,
+    language: 'en',
+    sourceType: 'file_picker',
+  },
+  'doc-2'
+);
 
 beforeAll(async () => {
   await initI18n();
@@ -51,6 +69,15 @@ beforeEach(() => {
     ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
   });
   useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
+  useVaultMutationsMock.mockReturnValue({
+    toggleFavorite: vi.fn().mockResolvedValue(undefined),
+    setLocked: vi.fn().mockResolvedValue(undefined),
+    markAccessed: vi.fn().mockResolvedValue(undefined),
+    rename: vi.fn().mockResolvedValue(undefined),
+    softDelete: vi.fn().mockResolvedValue(undefined),
+    restore: vi.fn().mockResolvedValue(undefined),
+    archive: vi.fn().mockResolvedValue(undefined),
+  });
 });
 
 describe('VaultHomePage', () => {
@@ -142,6 +169,78 @@ describe('VaultHomePage', () => {
     render(<VaultHomePage />);
     expect(screen.getByText('मेरे दस्तावेज़')).toBeInTheDocument();
     await i18n.changeLanguage('en');
+  });
+
+  describe('delete undo queue (bug-audit follow-up)', () => {
+    beforeEach(() => {
+      // Swipe gesture math needs a real-ish row width; jsdom's real rect is
+      // all-zero (same stub used throughout core/gestures' own tests).
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        width: 300,
+        height: 56,
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 56,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+    });
+
+    const swipeLeftDelete = (documentId: string): void => {
+      const content = document
+        .querySelector(`[data-agent-id="vault.home.item-${documentId}.swipe"]`)
+        ?.querySelector('.kg-swipe-row__content') as Element;
+      fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+    };
+
+    it("queues a second delete instead of clobbering the first one's undo", () => {
+      const restore = vi.fn().mockResolvedValue(undefined);
+      useVaultMutationsMock.mockReturnValue({
+        toggleFavorite: vi.fn().mockResolvedValue(undefined),
+        setLocked: vi.fn().mockResolvedValue(undefined),
+        markAccessed: vi.fn().mockResolvedValue(undefined),
+        rename: vi.fn().mockResolvedValue(undefined),
+        softDelete: vi.fn().mockResolvedValue(undefined),
+        restore,
+        archive: vi.fn().mockResolvedValue(undefined),
+      });
+      useDocumentsMock.mockReturnValue({ documents: [doc, docB], isLoading: false });
+      render(<VaultHomePage />);
+
+      // IonToast is a Stencil web component that never hydrates in jsdom —
+      // its `message`/`isOpen`/`buttons` land as plain JS properties on the
+      // custom element (how @ionic/react's wrapper sets them), not as
+      // rendered light-DOM text/children, so this reads those directly
+      // rather than screen.getByText (same class of limitation this
+      // codebase already documents for IonModal-based sheets).
+      const toast = document.querySelector(
+        '[data-agent-id="vault.home.delete-toast"]'
+      ) as unknown as {
+        message?: string;
+        isOpen?: boolean;
+        buttons?: { text: string; handler?: () => void }[];
+      };
+
+      // Swipe-left deletes doc A (the default swipeLeftAction is 'delete').
+      swipeLeftDelete(doc.id);
+      expect(toast.isOpen).toBe(true);
+      expect(toast.message).toBe('Document moved to Trash');
+
+      // Swipe-left deletes doc B before A's toast has been dismissed.
+      swipeLeftDelete(docB.id);
+
+      // The toast is still showing (only one ever renders); Undo must still
+      // restore A — the queue head — not B, proving B didn't clobber A.
+      expect(toast.isOpen).toBe(true);
+      const undo = toast.buttons?.find((b) => b.text === 'Undo');
+      undo?.handler?.();
+      expect(restore).toHaveBeenCalledWith(expect.objectContaining({ id: doc.id }));
+      expect(restore).not.toHaveBeenCalledWith(expect.objectContaining({ id: docB.id }));
+    });
   });
 });
 
