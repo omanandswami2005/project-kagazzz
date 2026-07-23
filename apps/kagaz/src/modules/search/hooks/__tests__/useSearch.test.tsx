@@ -47,6 +47,63 @@ describe('useSearch (F-11)', () => {
     expect(matchCall?.params?.[0]).toBe('aadh*'); // prefix query built
   });
 
+  it('drops a stale response when an older query resolves after a newer one (bug-audit follow-up)', async () => {
+    // A custom DbConnection whose FTS-availability check resolves instantly
+    // but whose actual search query returns a manually-controlled promise
+    // per call, so the test can resolve them deliberately out of order —
+    // the exact race the generation-counter guard exists for.
+    const deferred: { resolve: (rows: unknown[]) => void }[] = [];
+    let searchCallCount = 0;
+    const db = {
+      query: vi.fn((sql: string) => {
+        if (/sqlite_master/.test(sql)) {
+          return Promise.resolve([{ 1: 1 }]);
+        }
+        searchCallCount += 1;
+        const callIndex = searchCallCount;
+        return new Promise((resolve) => {
+          deferred[callIndex] = {
+            resolve: (rows) => resolve(rows),
+          };
+        });
+      }),
+      run: vi.fn(),
+      execute: vi.fn(),
+      transaction: vi.fn(),
+    };
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: db as never });
+    const { result } = renderHook(() => useSearch());
+
+    // First query ("cat") debounces and its dao.search() call starts.
+    act(() => result.current.setQuery('cat'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+    });
+
+    // Second query ("cats") debounces and starts its own dao.search() call
+    // before the first one has resolved.
+    act(() => result.current.setQuery('cats'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+    });
+
+    expect(searchCallCount).toBe(2);
+
+    // Resolve the NEWER ("cats") call first, then the STALE ("cat") one —
+    // the stale response must not overwrite the newer results.
+    await act(async () => {
+      deferred[2]?.resolve([{ ...docRow(), name: 'cats-result' }]);
+    });
+    expect(result.current.results.map((d) => d.name)).toEqual(['cats-result']);
+
+    await act(async () => {
+      deferred[1]?.resolve([{ ...docRow(), name: 'cat-result' }]);
+    });
+    // Still the newer result — the stale one was dropped, not applied.
+    expect(result.current.results.map((d) => d.name)).toEqual(['cats-result']);
+    expect(result.current.isSearching).toBe(false);
+  });
+
   it('clears results when the query is emptied', async () => {
     const db = new FakeDb()
       .onQuery(/sqlite_master/, [{ 1: 1 }])
