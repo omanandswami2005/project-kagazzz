@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-21
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-23
 
 ---
 
@@ -958,6 +958,27 @@ interface VaultStore {
 - Every time a document is previewed/opened, `lastAccessedAt` is updated
 - "Recent" section on vault home shows the last 10 accessed documents
 - Sorted by `lastAccessedAt DESC`
+- Collapsible (persisted in `core/preferences`)
+
+#### Redesigned strip (UX-16): large cards, coverflow drag, swipe-up-to-Tools
+
+Larger cards (72px thumbnails, up from 40px) in a native horizontal
+scroll-snap carousel (`scroll-snap-type: x proximity` + `scroll-snap-align:
+center` per card — the browser handles fling/snap, no custom paging JS).
+As the row scrolls, `useCoverflowScroll`
+(`document-vault/hooks/useCoverflowScroll.ts`) reads the row's own scroll
+position on a rAF-throttled `scroll` listener and applies a `scale` +
+`opacity` falloff to each card by its distance from the row's center —
+transform/opacity only (no `rotateY` perspective coverflow), staying cheap
+on the mid-range Android performance budget (CONTRIBUTING.md).
+
+Swiping up on a card opens PDF Tools (`useSwipeUp`, `core/gestures/` — the
+vertical counterpart to F-88's horizontal swipe-to-act gesture). Kept
+strictly on the vertical axis so it never competes with the horizontal
+carousel drag for the same pointer input; each card sets `touch-action:
+pan-x` so the browser only native-scrolls it horizontally, leaving
+vertical touch input on the card free for the gesture instead of racing
+the page's own vertical scroll.
 
 ```mermaid
 graph LR
@@ -1323,6 +1344,57 @@ action (F-84, see the section below) — pre-fills a new Quick Reference entry's
 value with the tapped number and links it to the source document, so the
 common "I want to keep grabbing this one number later without reopening the
 document" case is one tap instead of a manual copy-paste round trip.
+
+---
+
+### Swipe-to-act gestures (F-88)
+
+Gmail-style swipe-left/swipe-right on a document row, revealing a colored
+action behind it (icon + `var(--color-*)` background) that fires once the
+drag passes a commit threshold (`SWIPE_COMMIT_PX = 88px`, or 40% of the
+row's own width if that's smaller). Built on `core/gestures/`:
+
+- `useSwipeGesture` — the pointer-events primitive (pointerdown/move/up,
+  axis-lock between horizontal-swipe and vertical-scroll after a 10px
+  deadzone, `setPointerCapture` once locked). No new dependency — mirrors
+  the long-press pointer-capture pattern `DocumentListItem` already used
+  for entering multi-select (F-25).
+- `SwipeableRow` — the visual wrapper (1:1 finger tracking, spring-back
+  transition on release). Deliberately **action-vocabulary-agnostic**: it
+  takes a resolved `{ icon, colorVar } | null` reveal per side, not an
+  enum. This lets Trash reuse the exact same primitive for a completely
+  different action pair (restore / delete forever) without inheriting the
+  vault's own vocabulary.
+- `SwipeActionKind` / `SWIPE_ACTION_META` (`core/gestures/vault-swipe-
+  actions.ts`) — the vault's own action vocabulary: `delete | favorite |
+  move | tags | none`. Lives in `core/` (not this module) because
+  `core/preferences` — which must stay module-agnostic — persists the
+  two Settings choices.
+
+**Configuration**: Settings → Documents → Swipe actions lets the user pick
+the action for swipe-left and swipe-right independently (`settings.
+setSwipeAction`, persisted via `usePreferencesStore.swipeLeftAction` /
+`swipeRightAction`). Defaults: left = delete, right = favorite.
+
+**Where it's wired**: the vault list, search results, and Favorites (all
+via `DocumentListItem`'s optional `swipeLeftAction`/`swipeRightAction`/
+`onSwipeAction` props — every handler delegates to the exact same mutation
+path the row's own menu/star button already uses, so swipe is purely an
+accelerator, never a second code path). Trash gets its own **fixed**,
+non-configurable swipe actions (restore / delete forever) since that
+vocabulary doesn't fit the vault's Settings enum. Multi-select mode
+disables swipe entirely (`disabled` prop) to avoid two conflicting
+gestures on the same row.
+
+**[SEC]/Accessibility**: every swipe action also has a non-swipe path (the
+row's own tap-menu or star button) — WCAG 2.1 AA has no reliable swipe
+equivalent for switch/keyboard users, so swipe must never be the *only*
+way to reach an action.
+
+**Undo**: swipe-delete and bulk-delete both show a generalized
+`UndoToast` (`core/components/UndoToast.tsx`, 4s duration) offering
+Undo → `restore()`. This closed a real gap — bulk delete previously had
+no undo at all, unlike the single-row delete path (UX-1).
 
 ---
 
