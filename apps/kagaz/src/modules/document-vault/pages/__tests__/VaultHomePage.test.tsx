@@ -120,7 +120,11 @@ describe('VaultHomePage', () => {
     useVaultStore.setState({ isUploadSheetOpen: true });
 
     render(<VaultHomePage />);
-    await userEvent.click(await screen.findByText('Take a photo'));
+    // A generous explicit timeout: this waits on the ActionSheet's real
+    // <dialog> to settle, and CI runners are meaningfully slower than a
+    // local machine — the default 1s testing-library timeout has been
+    // observed to flake there even though nothing is actually broken.
+    await userEvent.click(await screen.findByText('Take a photo', {}, { timeout: 5000 }));
     await waitFor(() => expect(uploadFrom).toHaveBeenCalledWith('camera'));
   });
 
