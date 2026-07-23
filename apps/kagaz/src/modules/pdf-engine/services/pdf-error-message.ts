@@ -11,6 +11,7 @@ export type PdfErrorMessageKey =
   | 'errors.wrong_password'
   | 'errors.invalid_pdf'
   | 'errors.no_text_layer'
+  | 'errors.page_out_of_range'
   | 'errors.failed';
 
 /**
@@ -32,6 +33,8 @@ export function pdfErrorMessageKey(
       return 'errors.invalid_pdf';
     case 'NO_TEXT_LAYER':
       return 'errors.no_text_layer';
+    case 'PAGE_OUT_OF_RANGE':
+      return 'errors.page_out_of_range';
     default:
       return 'errors.failed';
   }

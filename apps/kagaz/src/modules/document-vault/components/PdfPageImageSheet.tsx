@@ -24,6 +24,7 @@ import { Button, Icon, Input } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import { flattenPageRanges, parsePageRanges } from '@/modules/pdf-engine/services/parse-ranges';
+import { pdfErrorMessageKey } from '@/modules/pdf-engine/services/pdf-error-message';
 import './pdf-page-image-sheet.css';
 
 /** Props for {@link PdfPageImageSheet}. */
@@ -42,6 +43,7 @@ export function PdfPageImageSheet({
   onDone,
 }: PdfPageImageSheetProps): ReactNode {
   const { t } = useTranslation('documents');
+  const { t: tTools } = useTranslation('tools');
   const { state, pdfToImages } = usePdfEngine();
   const [pages, setPages] = useState('1');
   const [saved, setSaved] = useState<number | null>(null);
@@ -60,6 +62,11 @@ export function PdfPageImageSheet({
   const pageIndices = ranges ? flattenPageRanges(ranges) : [];
   const canRun = ranges !== null && pageIndices.length > 0;
   const busy = state.busy;
+  // Bug-audit fix: this used to always show the generic "failed" text on
+  // saved === 0 — a wrong-password/out-of-range/etc. failure was
+  // indistinguishable from any other. Same specific-message-over-generic
+  // pattern PdfOpSheet already uses.
+  const engineErrorKey = pdfErrorMessageKey(state.errorCode);
 
   const handleRun = (): void => {
     if (!document || !canRun) {
@@ -129,7 +136,11 @@ export function PdfPageImageSheet({
               data-agent-id="vault.home.page-image-result"
               data-agent-state={saved > 0 ? 'success' : 'error'}
             >
-              {saved > 0 ? t('page_image.done', { count: saved }) : t('page_image.failed')}
+              {saved > 0
+                ? t('page_image.done', { count: saved })
+                : engineErrorKey
+                  ? tTools(engineErrorKey)
+                  : t('page_image.failed')}
             </p>
           )}
         </div>

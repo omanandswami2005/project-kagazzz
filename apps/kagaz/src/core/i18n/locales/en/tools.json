@@ -120,6 +120,7 @@
     "wrong_password": "Incorrect password. Check it and try again.",
     "invalid_pdf": "This file isn't a valid or supported PDF.",
     "no_text_layer": "This PDF has no selectable text — it may be scanned. Try “Extract text” (OCR) instead.",
+    "page_out_of_range": "That page number is beyond the end of this document. Check the page count and try again.",
     "need_two": "Select at least 2 files.",
     "need_one": "Select a file.",
     "bad_ranges": "Enter valid page ranges, e.g. 1-3, 5.",

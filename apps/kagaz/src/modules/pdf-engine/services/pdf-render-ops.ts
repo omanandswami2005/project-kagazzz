@@ -124,9 +124,26 @@ export async function pdfToImagesImpl(
   try {
     const total = doc.numPages;
     // RenderOptions.pages are 0-indexed; pdfjs pages are 1-indexed.
+    // Bug-audit fix: this used to silently drop any out-of-range page
+    // instead of rejecting it, the one render op that didn't match
+    // splitPdf/organizePages/stampImage's PAGE_OUT_OF_RANGE convention for
+    // the same class of error — a "1,5" request on a 3-page PDF used to
+    // quietly render just page 1 and report success, or (if every
+    // requested page was out of range) return zero images with no
+    // indication why.
+    if (options.pages) {
+      const outOfRange = options.pages.filter((p) => p < 0 || p + 1 > total);
+      if (outOfRange.length > 0) {
+        throw new PdfEngineException(
+          `Page ${outOfRange[0] + 1} is out of range (1–${total})`,
+          'PAGE_OUT_OF_RANGE',
+          op
+        );
+      }
+    }
     const pageNumbers =
       options.pages && options.pages.length > 0
-        ? options.pages.map((p) => p + 1).filter((n) => n >= 1 && n <= total)
+        ? options.pages.map((p) => p + 1)
         : Array.from({ length: total }, (_, i) => i + 1);
 
     const blobs: Blob[] = [];

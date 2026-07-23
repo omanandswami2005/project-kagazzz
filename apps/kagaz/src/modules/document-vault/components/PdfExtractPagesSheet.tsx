@@ -23,6 +23,7 @@ import { Button, Icon, Input } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import { flattenPageRanges, parsePageRanges } from '@/modules/pdf-engine/services/parse-ranges';
+import { pdfErrorMessageKey } from '@/modules/pdf-engine/services/pdf-error-message';
 import './pdf-page-image-sheet.css';
 
 /** Props for {@link PdfExtractPagesSheet}. */
@@ -41,6 +42,7 @@ export function PdfExtractPagesSheet({
   onDone,
 }: PdfExtractPagesSheetProps): ReactNode {
   const { t } = useTranslation('documents');
+  const { t: tTools } = useTranslation('tools');
   const { state, extractPages } = usePdfEngine();
   const [pages, setPages] = useState('1');
   const [saved, setSaved] = useState<number | null>(null);
@@ -59,6 +61,11 @@ export function PdfExtractPagesSheet({
   const pageIndices = ranges ? flattenPageRanges(ranges) : [];
   const canRun = ranges !== null && pageIndices.length > 0;
   const busy = state.busy;
+  // Bug-audit fix: this used to always show the generic "failed" text on
+  // saved === 0 — an out-of-range/invalid-PDF/etc. failure was
+  // indistinguishable from any other. Same specific-message-over-generic
+  // pattern PdfOpSheet already uses.
+  const engineErrorKey = pdfErrorMessageKey(state.errorCode);
 
   const handleRun = (): void => {
     if (!document || !ranges || !canRun) {
@@ -126,7 +133,11 @@ export function PdfExtractPagesSheet({
               data-agent-id="vault.home.extract-pages-result"
               data-agent-state={saved > 0 ? 'success' : 'error'}
             >
-              {saved > 0 ? t('pdf_extract_pages.done') : t('pdf_extract_pages.failed')}
+              {saved > 0
+                ? t('pdf_extract_pages.done')
+                : engineErrorKey
+                  ? tTools(engineErrorKey)
+                  : t('pdf_extract_pages.failed')}
             </p>
           )}
         </div>
