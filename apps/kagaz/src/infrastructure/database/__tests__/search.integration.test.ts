@@ -6,6 +6,16 @@
  * being completely broken on-device. This file runs the actual migrations
  * and DocumentDao.search() against `node:sqlite` (real SQLite, FTS5
  * compiled in, zero new dependencies) to close that gap.
+ *
+ * Forced onto the real `node` environment (not the workspace-default
+ * `jsdom`): this file needs no DOM at all, and on CI's pinned Node 22,
+ * jsdom's environment/transform path doesn't reliably recognize `node:sqlite`
+ * as an externalizable Node builtin — Vite tries to bundle it and fails
+ * ("Cannot bundle Node.js built-in \"node:sqlite\""). The plain `node`
+ * environment runs this file directly against the real Node runtime with no
+ * such shimming, which is also the architecturally correct choice for a
+ * pure backend/DB test.
+ * @vitest-environment node
  */
 import { DatabaseSync, type StatementResultingChanges } from 'node:sqlite';
 import { describe, expect, it } from 'vitest';
