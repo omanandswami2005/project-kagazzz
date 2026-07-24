@@ -57,7 +57,7 @@ Kagaz ships as **two distinct apps in one monorepo**, not one app with a role-se
 
 ### Why two apps, not one
 
-- **App size.** The consumer app already carries the WebLLM model (~600 MB cached after first run). Adding operator dashboards, customer-management UI, and bulk-processing tools would push installs onto the edge of what 16 GB rural phones can handle.
+- **App size.** The consumer app already carries the LiteRT-LM model (~586 MB cached after first run, [ADR-021](08-tech-stack-decisions.md#adr-021-on-device-ai--litert-lm-supersedes-webllm)). Adding operator dashboards, customer-management UI, and bulk-processing tools would push installs onto the edge of what 16 GB rural phones can handle.
 - **UX divergence.** A farmer scanning his Aadhaar and a CSC operator processing 40 applications per day need fundamentally different interfaces. Bundling both creates a worst-of-both compromise.
 - **Audience confusion.** Asking a first-time user "Are you a Simple User or a CSC Operator?" hurts conversion. Most don't know what CSC means. Default everyone to the consumer app; let operators self-select by installing the Operator app.
 - **Different release cadences.** The consumer app needs to be stable for 100M+ users. The operator app evolves faster with operator feedback.
@@ -331,9 +331,8 @@ graph TB
 
 | Technology | Purpose |
 |---|---|
-| **WebLLM (@mlc-ai/web-llm)** | On-device LLM inference for AI chatbot |
-| **Transformers.js** | On-device ML models for document classification |
-| **tesseract.js** | Client-side OCR text extraction |
+| **LiteRT-LM (Google AI Edge, native)** | On-device LLM inference for AI chatbot ([ADR-021](08-tech-stack-decisions.md#adr-021-on-device-ai--litert-lm-supersedes-webllm)) |
+| **Google ML Kit Text Recognition (native, bundled)** | On-device OCR text extraction ([ADR-019](08-tech-stack-decisions.md#adr-019-ocr--bundled-native-ml-kit-text-recognition)) |
 
 ### Database & Storage
 
@@ -362,8 +361,8 @@ graph TB
     subgraph Processing["Processing Layer"]
         PDF["pdf-lib / pdfjs-dist"]
         Image["browser-image-compression"]
-        AI["WebLLM + Transformers.js"]
-        OCR["tesseract.js"]
+        AI["LiteRT-LM (native)"]
+        OCR["ML Kit Text Recognition (native)"]
     end
 
     subgraph Platform["Platform Layer"]

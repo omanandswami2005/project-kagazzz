@@ -26,6 +26,8 @@
 - [ADR-017: Offline CSP & no runtime-fetched WASM/models](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)
 - [ADR-018: Document Scanner — Google ML Kit (via Play Services)](#adr-018-document-scanner--google-ml-kit-via-play-services)
 - [ADR-019: OCR — bundled native ML Kit Text Recognition](#adr-019-ocr--bundled-native-ml-kit-text-recognition)
+- [ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only](#adr-020-client-side-office-interop-pdf--wordexcel--pure-js-permissive-libs-only)
+- [ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)](#adr-021-on-device-ai--litert-lm-supersedes-webllm)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -39,7 +41,7 @@
 | 003 | Native Runtime | **Capacitor** | React Native, Flutter | ✅ Accepted |
 | 004 | PDF Manipulation | **pdf-lib** | jsPDF, PDFKit | ✅ Accepted |
 | 005 | PDF Rendering | **pdfjs-dist** | Custom renderer, PDF.js viewer | ✅ Accepted |
-| 006 | On-Device AI | **WebLLM** | Transformers.js, Cloud API | ✅ Accepted |
+| 006 | On-Device AI | ~~WebLLM~~ | Transformers.js, Cloud API | ⚠️ Superseded → ADR-021 |
 | 007 | Local Database | **SQLite** | IndexedDB, PouchDB | ✅ Accepted |
 | 008 | State Management | **Zustand** | Redux, MobX, Jotai | ✅ Accepted |
 | 009 | Build Tool | **Vite** | Webpack, Parcel, esbuild | ✅ Accepted |
@@ -53,6 +55,8 @@
 | 017 | OpenCV scanner CSP | `wasm-unsafe-eval` weakening | — | ⚠️ Moot (scanner → ML Kit, ADR-018) |
 | 018 | Document Scanner | **Google ML Kit** (`@capacitor-mlkit/document-scanner`, native/Play Services) | jscanify + OpenCV.js (ADR-016) | ✅ Accepted |
 | 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
+| 020 | Office interop (PDF↔Word/Excel) | **`docx` + SheetJS `xlsx` + `mammoth`** (pure-JS, lazy-loaded) | LibreOffice-WASM, commercial SDKs | ✅ Accepted |
+| 021 | On-Device AI | **LiteRT-LM** (Google AI Edge, forked `@capgo/capacitor-llm` bridge, native tool calling) | WebLLM (ADR-006), Transformers.js, Cloud API | ✅ Accepted |
 
 ---
 
@@ -332,9 +336,9 @@ None of this is caught by the unit/contract test suite — jsdom and Node both s
 
 | Field | Detail |
 |---|---|
-| **Status** | ✅ Accepted |
+| **Status** | ⚠️ **SUPERSEDED by [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) (2026-07-24)** |
 | **Date** | 2026-06-07 |
-| **Decision** | Use **WebLLM** for running LLM inference on-device for the AI chatbot, instead of cloud APIs or Transformers.js. |
+| **Decision** | ~~Use **WebLLM** for running LLM inference on-device for the AI chatbot, instead of cloud APIs or Transformers.js.~~ **Reversed — see ADR-021.** A live device check found `navigator.gpu.requestAdapter()` returns `null` on a modern WebView (Pixel6_API34, Chrome/WebView 150) — no usable WebGPU adapter, consistent with Android's broad WebGPU driver-blocklisting. F-13 uses **LiteRT-LM** (native ML stack, no WebView/WebGPU involvement) instead. `@mlc-ai/web-llm` was never actually installed as a dependency (it was speculative until F-13 implementation started), so there is no package to remove. |
 
 ### Context
 
@@ -1178,6 +1182,59 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
 
 ---
 
+## ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)
+
+| Field | Detail |
+|---|---|
+| **Status** | ✅ Accepted |
+| **Date** | 2026-07-24 |
+| **Supersedes** | [ADR-006](#adr-006-webllm-for-on-device-ai) (WebLLM). |
+| **Decision** | **F-13/F-14** run the on-device LLM via **LiteRT-LM** (Google AI Edge, `com.google.ai.edge.litertlm:litertlm-android:0.10.0`) through a **forked, vendored copy of `@capgo/capacitor-llm`** (`packages/capacitor-llm-litert`, `@kagaz/capacitor-llm-litert`, MPL-2.0 — an explicit permissive-license-policy exception; MPL-2.0's file-level copyleft doesn't force disclosure of Kagaz's own source, unlike the GPL/AGPL/SSPL the policy actually forbids) instead of WebLLM. Inference runs through Android's native ML stack (NNAPI/GPU/CPU delegate) — **no WebView/WebGPU involvement at all**. Model: **Qwen3-0.6B** (`litert-community/Qwen3-0.6B`, `qwen3_0_6b_mixed_int4.litertlm`, ~586 MB, Apache-2.0). |
+
+### Context
+
+ADR-006 bet F-13 on WebGPU-in-WebView. A live device check on `Pixel6_API34`
+(Android 14, Chrome/WebView 150) found `navigator.gpu` exists but
+`requestAdapter()` returns `null` — no usable WebGPU adapter, even on a
+current WebView. Emulator GPU passthrough is known-unreliable, so this alone
+isn't proof real hardware also fails — but combined with Android's broad,
+documented WebGPU driver-blocklisting, betting a 🔴Must feature on
+WebGPU-in-WebView was too risky for the API 24+ mid-range fleet this app
+targets. This is the same class of problem [ADR-018](#adr-018-document-scanner--google-ml-kit-via-play-services)
+already solved for the scanner (WebView/WASM → native).
+
+### Options considered
+
+| Option | Verdict |
+|---|---|
+| **WebLLM** (ADR-006, `@mlc-ai/web-llm`) | ❌ Requires a real WebGPU adapter in the WebView; unproven/blocklisted on much of the API 24+ Android fleet this app targets. Never actually installed as a dependency — reversed before implementation started. |
+| **Transformers.js** (WASM, CPU) | ❌ No WebGPU dependency, but CPU-only WASM inference is too slow for a usable chat experience on mid-range hardware; was already the WebLLM fallback tier, not a real primary path. |
+| **Cloud API** (OpenAI/Gemini) | ❌ Violates the offline-first, on-device-only privacy commitment (`[SEC]` metadata-only boundary exists specifically to avoid this). |
+| **`@capgo/capacitor-llm` as-is (npm, unforked)** | ⚠️ Its native Android layer already depends on `litertlm-android` (which natively supports tool calling), but the plugin's JS bridge never threads a `tools` array through to it — no way to implement F-14 without forking. |
+| **LiteRT-LM via a forked `@capgo/capacitor-llm`** ✅ | Native ML stack, no WebView/WASM/CSP involvement (avoids re-triggering [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)). Forking adds a `JsBridgeTool implements OpenApiTool` native bridge for real tool calling (§ADR-006's tool-calling requirement, carried over) plus `sha256File()`/`deleteModel()` for the `[SEC]` §5 model-integrity/lifecycle requirements the upstream plugin lacks. MPL-2.0 is a deliberate, documented license exception (file-level copyleft on the forked plugin package only, not the app). |
+
+### Consequences
+
+- `packages/capacitor-llm-litert` (`@kagaz/capacitor-llm-litert`) is a new
+  first-party-maintained fork — its diff against upstream 8.1.3 is documented
+  in its own `README.md`; upstream updates must be merged manually, not
+  pulled via `pnpm update`.
+- Gemini Nano (`com.google.mlkit:genai-prompt`) was evaluated and dropped —
+  it requires `minSdkVersion 26`, incompatible with this app's API 24+ floor
+  (a real `assembleDebug` manifest-merger failure, not a style choice).
+- Model-lifecycle UX (download → progress → checksum → ready → delete →
+  graceful-degrade) is unchanged in spirit from ADR-006's original plan —
+  only the engine underneath changed. `isAiSupported()` gates Android-only,
+  mirroring `isScanningSupported()` (ADR-018).
+- No dynamic model-size/quality selection (unlike WebLLM's VRAM-heuristic
+  plan) — Android has no equivalent capability signal; a model picker is a
+  documented V2 follow-up.
+- Full detail: [05-ai-assistant-module.md](05-ai-assistant-module.md) §3
+  (rewritten wholesale for this switch), §4 (tool-calling bridge sequence
+  diagram).
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1192,4 +1249,4 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
 
 ---
 
-*Last updated: 2026-07-13 · Kagaz Architecture Decision Records v1.2 (ADR-020 client-side Office interop)*
+*Last updated: 2026-07-24 · Kagaz Architecture Decision Records v1.3 (ADR-021 LiteRT-LM supersedes WebLLM)*

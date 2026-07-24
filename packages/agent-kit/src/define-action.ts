@@ -1,8 +1,9 @@
 /**
  * defineAction — the single way actions enter the registry
  * (docs/design-system/agent-interface.md §Layer 2).
- * One Zod schema validates chat input, generates the WebLLM tool
- * definition, validates remote payloads (V2), and drives E2E tests.
+ * One Zod schema validates chat input, generates the on-device AI
+ * assistant's tool definition (LiteRT-LM, F-13), validates remote
+ * payloads (V2), and drives E2E tests.
  */
 import type { z } from 'zod';
 

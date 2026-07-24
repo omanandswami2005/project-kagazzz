@@ -58,7 +58,7 @@ graph TB
         direction LR
         SQLiteDB["SQLite Database"]
         FileSystem["Filesystem API"]
-        AIEngine["AI Engine (WebLLM)"]
+        AIEngine["AI Engine (LiteRT-LM)"]
         CapPlugins["Capacitor Plugins"]
         Workers["Web Workers"]
     end
@@ -141,7 +141,7 @@ graph TB
 |---|---|
 | **Database (SQLite)** | Schema, migrations, DAOs, query builders |
 | **Filesystem** | File storage abstraction over Capacitor Filesystem API |
-| **AI Engine** | WebLLM initialization, model loading, inference, tool calling |
+| **AI Engine** | LiteRT-LM initialization, model loading, inference, tool calling |
 | **Capacitor Plugins** | Wrapper services for camera, biometrics, scanner, STT/TTS |
 | **Web Workers** | Thread pool for PDF operations, image processing, OCR |
 
@@ -272,7 +272,7 @@ src/
 │   │   │   ├── VoiceButton.tsx
 │   │   │   ├── ToolCallIndicator.tsx
 │   │   │   └── SuggestedPrompts.tsx
-│   │   ├── services/              # WebLLM engine, tool registry
+│   │   ├── services/              # LiteRT-LM engine, tool registry
 │   │   │   ├── llm-engine.service.ts
 │   │   │   ├── tool-registry.service.ts
 │   │   │   ├── tool-executor.service.ts

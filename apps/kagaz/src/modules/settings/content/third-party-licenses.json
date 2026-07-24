@@ -85,11 +85,6 @@
     "license": "MIT"
   },
   {
-    "name": "@mlc-ai/web-llm",
-    "version": "0.2.84",
-    "license": "Apache-2.0"
-  },
-  {
     "name": "@pdfsmaller/pdf-decrypt",
     "version": "1.0.1",
     "license": "MIT"
@@ -102,6 +97,11 @@
   {
     "name": "@tanstack/react-query",
     "version": "5.101.0",
+    "license": "MIT"
+  },
+  {
+    "name": "@tanstack/react-virtual",
+    "version": "3.14.7",
     "license": "MIT"
   },
   {
