@@ -15,7 +15,7 @@ import {
   useIonRouter,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, ProgressBar } from '@kagaz/ui';
 import {
@@ -28,6 +28,7 @@ import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
+import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
@@ -94,6 +95,10 @@ type PendingUndo =
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  // UX pass 2026-07-24: vault search also surfaces a matching PDF Tool
+  // (e.g. typing "merge" finds the Merge PDFs tool) — needs the `tools`
+  // namespace's own t(), since PDF_OPS names/descriptions live there.
+  const { t: tTools } = useTranslation('tools');
   const router = useIonRouter();
   const ai = useAi();
   // Virtualization support (UX pass, 2026-07-23): IonContent's scroll
@@ -304,6 +309,12 @@ export function VaultHomePage(): ReactNode {
   const search = useSearch();
   // While searching, results replace the folder/list view.
   const visibleDocuments = search.isActive ? search.results : documents;
+  // UX pass 2026-07-24: surface a matching PDF Tool alongside document
+  // results (e.g. "merge" → the Merge PDFs tool), not just documents.
+  const matchingTools = useMemo<PdfOpMeta[]>(
+    () => (search.isActive ? searchPdfTools(search.query, tTools) : []),
+    [search.isActive, search.query, tTools]
+  );
   const isUploading = useVaultStore((state) => state.isUploading);
   const uploadProgress = useVaultStore((state) => state.uploadProgress);
   const isSheetOpen = useVaultStore((state) => state.isUploadSheetOpen);
@@ -464,33 +475,55 @@ export function VaultHomePage(): ReactNode {
               </div>
 
               {search.isActive ? (
-                visibleDocuments.length === 0 && !search.isSearching ? (
-                  <p
-                    className="kg-vault__no-results"
-                    data-agent-id="vault.home.no-results"
-                  >
-                    {t('search.no_results', { query: search.query })}
-                  </p>
-                ) : (
-                  <VirtualDocumentList
-                    documents={visibleDocuments}
-                    viewMode={viewMode}
-                    tagsByDocument={tagsByDocument}
-                    scrollElement={scrollElement}
-                    onOpen={handleOpen}
-                    onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
-                    onMore={(doc) => setMoreDoc(doc)}
-                    selectionMode={selectionMode}
-                    selectedIds={selectedIds}
-                    onToggleSelect={(doc) => toggleSelection(doc.id)}
-                    onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
-                    swipeLeftAction={swipeLeftAction}
-                    swipeRightAction={swipeRightAction}
-                    onSwipeAction={handleSwipeAction}
-                    agentId="vault.home.search-results"
-                    agentState={search.isSearching ? 'loading' : 'success'}
-                  />
-                )
+                <>
+                  {matchingTools.length > 0 && (
+                    <ul
+                      className="kg-vault__tool-matches"
+                      data-agent-id="vault.home.tool-matches"
+                    >
+                      {matchingTools.map((op) => (
+                        <li key={op.id}>
+                          <button
+                            type="button"
+                            className="kg-vault__tool-match"
+                            onClick={() => router.push('/pdf-tools', 'forward', 'push')}
+                            data-agent-id={`vault.home.tool-match-${op.id}`}
+                          >
+                            <Icon name={op.icon} size={20} aria-hidden />
+                            <span>{tTools(`ops.${op.id}`)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {visibleDocuments.length === 0 && matchingTools.length === 0 && !search.isSearching ? (
+                    <p
+                      className="kg-vault__no-results"
+                      data-agent-id="vault.home.no-results"
+                    >
+                      {t('search.no_results', { query: search.query })}
+                    </p>
+                  ) : visibleDocuments.length > 0 || search.isSearching ? (
+                    <VirtualDocumentList
+                      documents={visibleDocuments}
+                      viewMode={viewMode}
+                      tagsByDocument={tagsByDocument}
+                      scrollElement={scrollElement}
+                      onOpen={handleOpen}
+                      onToggleFavorite={(doc) => { hapticTap(); void toggleFavorite(doc); }}
+                      onMore={(doc) => setMoreDoc(doc)}
+                      selectionMode={selectionMode}
+                      selectedIds={selectedIds}
+                      onToggleSelect={(doc) => toggleSelection(doc.id)}
+                      onLongPress={(doc) => { hapticAction(); enterSelection(doc.id); }}
+                      swipeLeftAction={swipeLeftAction}
+                      swipeRightAction={swipeRightAction}
+                      onSwipeAction={handleSwipeAction}
+                      agentId="vault.home.search-results"
+                      agentState={search.isSearching ? 'loading' : 'success'}
+                    />
+                  ) : null}
+                </>
               ) : (
                 <>
                   <FolderBreadcrumb

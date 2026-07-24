@@ -13,16 +13,19 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/react';
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
-import { Icon } from '@kagaz/ui';
+import { Button, Icon, Search } from '@kagaz/ui';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
 import { PdfOpSheet } from '../components/PdfOpSheet';
 import { PdfOrganizeSheet } from '../components/PdfOrganizeSheet';
-import { PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
+import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
 import '../components/pdf-tools.css';
+
+/** Filter chips shown above the grid, "All" first. */
+const CATEGORIES: readonly PdfOpCategory[] = ['pdf', 'image', 'other'];
 
 /** The PDF Tools landing page. */
 export function PdfToolsPage(): ReactNode {
@@ -32,8 +35,17 @@ export function PdfToolsPage(): ReactNode {
   const [activeOp, setActiveOp] = useState<PdfOpId | null>(null);
   // Native-only ops (e.g. the ML Kit scanner) are hidden on the web build.
   const isNative = Capacitor.isNativePlatform();
-  const ops = PDF_OPS.filter((op) => !op.native || isNative);
   const [savedCount, setSavedCount] = useState(0);
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<PdfOpCategory | null>(null);
+
+  const ops = useMemo(() => {
+    const platformOps = PDF_OPS.filter((op) => !op.native || isNative);
+    const categoryOps = category
+      ? platformOps.filter((op) => op.category === category)
+      : platformOps;
+    return query.trim() ? searchPdfTools(query, t, categoryOps) : categoryOps;
+  }, [isNative, category, query, t]);
 
   return (
     <IonPage data-agent-id="pdf-tools">
@@ -48,22 +60,65 @@ export function PdfToolsPage(): ReactNode {
       <IonContent>
         <main className="kg-pdf-tools" data-agent-id="pdf-tools.content">
           <p className="kg-pdf-tools__subtitle">{t('subtitle')}</p>
-          <ul className="kg-pdf-tools__grid" data-agent-id="pdf-tools.ops">
-            {ops.map((op) => (
-              <li key={op.id}>
-                <button
-                  type="button"
-                  className="kg-pdf-tools__card"
-                  onClick={() => setActiveOp(op.id)}
-                  data-agent-id={`pdf-tools.op-${op.id}`}
-                >
-                  <Icon name={op.icon} size={32} aria-hidden />
-                  <span className="kg-pdf-tools__card-title">{t(`ops.${op.id}`)}</span>
-                  <span className="kg-pdf-tools__card-desc">{t(`desc.${op.id}`)}</span>
-                </button>
-              </li>
+
+          <Search
+            value={query}
+            placeholder={t('search_placeholder')}
+            aria-label={t('search_placeholder')}
+            agentId="pdf-tools.search"
+            onChange={setQuery}
+          />
+
+          <div
+            className="kg-pdf-tools__categories"
+            role="group"
+            aria-label={t('category_filter_label')}
+            data-agent-id="pdf-tools.categories"
+            data-agent-state={category ?? 'all'}
+          >
+            <Button
+              variant={category === null ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setCategory(null)}
+              agentId="pdf-tools.category-all"
+            >
+              {t('category_all')}
+            </Button>
+            {CATEGORIES.map((c) => (
+              <Button
+                key={c}
+                variant={category === c ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setCategory(c)}
+                agentId={`pdf-tools.category-${c}`}
+              >
+                {t(`category_${c}`)}
+              </Button>
             ))}
-          </ul>
+          </div>
+
+          {ops.length === 0 ? (
+            <p className="kg-pdf-tools__no-results" data-agent-id="pdf-tools.no-results">
+              {t('no_results', { query })}
+            </p>
+          ) : (
+            <ul className="kg-pdf-tools__grid" data-agent-id="pdf-tools.ops">
+              {ops.map((op) => (
+                <li key={op.id}>
+                  <button
+                    type="button"
+                    className="kg-pdf-tools__card"
+                    onClick={() => setActiveOp(op.id)}
+                    data-agent-id={`pdf-tools.op-${op.id}`}
+                  >
+                    <Icon name={op.icon} size={32} aria-hidden />
+                    <span className="kg-pdf-tools__card-title">{t(`ops.${op.id}`)}</span>
+                    <span className="kg-pdf-tools__card-desc">{t(`desc.${op.id}`)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </main>
 
         {/* F-35's organiser is its own thumbnail-grid modal; every other op

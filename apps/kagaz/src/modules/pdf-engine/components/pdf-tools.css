@@ -13,9 +13,24 @@
   margin: 0 0 var(--space-4);
 }
 
+.kg-pdf-tools__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.kg-pdf-tools__no-results {
+  color: var(--text-secondary);
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  text-align: center;
+  padding: var(--space-6) 0;
+}
+
 .kg-pdf-tools__grid {
   list-style: none;
-  margin: 0;
+  margin: var(--space-3) 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);

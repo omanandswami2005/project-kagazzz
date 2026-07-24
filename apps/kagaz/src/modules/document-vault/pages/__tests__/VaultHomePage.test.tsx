@@ -239,6 +239,36 @@ describe('VaultHomePage', () => {
     await i18n.changeLanguage('en');
   });
 
+  describe('search surfaces matching PDF Tools (UX pass 2026-07-24)', () => {
+    // The search row only renders once the vault has something in it
+    // (an empty vault shows EmptyVaultState instead) — same as every
+    // other search test in this file needing at least one document.
+    beforeEach(() => {
+      useDocumentsMock.mockReturnValue({ documents: [doc], isLoading: false });
+    });
+
+    it('shows a matching tool alongside document search', async () => {
+      render(<VaultHomePage />);
+      const search = document.querySelector('[data-agent-id="vault.home.search"]') as Element;
+      await userEvent.type(search, 'merge');
+
+      expect(
+        document.querySelector('[data-agent-id="vault.home.tool-match-merge"]')
+      ).toBeInTheDocument();
+      expect(screen.getByText('Merge PDFs')).toBeInTheDocument();
+    });
+
+    it('shows no tool matches for a query matching no tool', async () => {
+      render(<VaultHomePage />);
+      const search = document.querySelector('[data-agent-id="vault.home.search"]') as Element;
+      await userEvent.type(search, 'zzznotarealtool');
+
+      expect(
+        document.querySelector('[data-agent-id="vault.home.tool-matches"]')
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe('delete undo queue (bug-audit follow-up)', () => {
     beforeEach(() => {
       // Swipe gesture math needs a real-ish row width; jsdom's real rect is

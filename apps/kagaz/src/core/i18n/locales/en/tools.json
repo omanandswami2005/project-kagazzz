@@ -1,6 +1,13 @@
 {
   "title": "PDF Tools",
   "subtitle": "Merge, split, compress, convert, protect — all on your device",
+  "search_placeholder": "Search tools",
+  "no_results": "No tools match \"{{query}}\"",
+  "category_filter_label": "Filter by category",
+  "category_all": "All",
+  "category_pdf": "PDF tools",
+  "category_image": "Image tools",
+  "category_other": "Other tools",
   "ops": {
     "merge": "Merge PDFs",
     "split": "Split PDF",

@@ -1,6 +1,13 @@
 {
   "title": "PDF उपकरण",
   "subtitle": "मिलाएँ, विभाजित करें, संपीड़ित करें, बदलें, सुरक्षित करें — सब आपके डिवाइस पर",
+  "search_placeholder": "उपकरण खोजें",
+  "no_results": "\"{{query}}\" से कोई उपकरण मेल नहीं खाता",
+  "category_filter_label": "श्रेणी के अनुसार फ़िल्टर करें",
+  "category_all": "सभी",
+  "category_pdf": "PDF उपकरण",
+  "category_image": "छवि उपकरण",
+  "category_other": "अन्य उपकरण",
   "ops": {
     "merge": "PDF मिलाएँ",
     "split": "PDF विभाजित करें",
