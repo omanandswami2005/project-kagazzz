@@ -23,7 +23,7 @@ describe('i18n configuration (12-i18n §3.3)', () => {
   it('switches to Hindi at runtime', async () => {
     await i18n.changeLanguage('hi');
     expect(i18n.t('buttons.save')).toBe('सहेजें');
-    expect(i18n.t('title', { ns: 'documents' })).toBe('मेरे दस्तावेज़');
+    expect(i18n.t('title', { ns: 'documents' })).toBe('मेरा Kagazzz');
     await i18n.changeLanguage('en');
   });
 
