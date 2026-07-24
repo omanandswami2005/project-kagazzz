@@ -70,9 +70,8 @@
 
 .kg-quickref__row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-2);
   flex: 1;
   /* Lets this shrink below its content width in the flex row — see
      SortControl/vault.css's identical fix for the same min-width:auto trap. */
@@ -83,6 +82,20 @@
   text-align: left;
   font-family: var(--font-primary);
   cursor: pointer;
+}
+
+.kg-quickref__row-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.kg-quickref__check {
+  flex-shrink: 0;
+  display: inline-flex;
 }
 
 .kg-quickref__label {

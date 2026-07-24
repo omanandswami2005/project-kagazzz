@@ -156,7 +156,11 @@
     "cancel": "Cancel",
     "copied": "Copied to clipboard",
     "copy_failed": "Couldn't copy.",
-    "more_actions": "More actions"
+    "more_actions": "More actions",
+    "selected": "{{count}} selected",
+    "cancel_selection": "Cancel selection",
+    "delete_selected_title": "Delete {{count}} note(s)?",
+    "copied_selected": "Copied {{count}} note(s)"
   },
   "details": {
     "title": "Details",

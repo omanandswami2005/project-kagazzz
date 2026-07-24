@@ -156,7 +156,11 @@
     "cancel": "रद्द करें",
     "copied": "क्लिपबोर्ड पर कॉपी हो गया",
     "copy_failed": "कॉपी नहीं हो सका।",
-    "more_actions": "अधिक कार्य"
+    "more_actions": "अधिक कार्य",
+    "selected": "{{count}} चयनित",
+    "cancel_selection": "चयन रद्द करें",
+    "delete_selected_title": "{{count}} नोट हटाएं?",
+    "copied_selected": "{{count}} नोट कॉपी किए गए"
   },
   "details": {
     "title": "विवरण",

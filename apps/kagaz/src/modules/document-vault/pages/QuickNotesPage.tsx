@@ -23,8 +23,9 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
-import { hapticDestructive, hapticSuccess } from '@/core/haptics';
+import { hapticAction, hapticDestructive, hapticSuccess, hapticTap } from '@/core/haptics';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
+import { QuickNoteRow } from '../components/QuickNoteRow';
 import { QuickNotesEditSheet } from '../components/QuickNotesEditSheet';
 import { useQuickReference } from '../hooks/useQuickReference';
 import './quick-reference.css';
@@ -46,6 +47,13 @@ export function QuickNotesPage(): ReactNode {
     null
   );
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // Long-press-to-select (UX pass 2026-07-24) — mirrors the vault list's
+  // selectionMode/selectedIds shape (vault.store.ts), kept page-local since
+  // Quick Notes has no store of its own and no other screen shares it.
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const selectionMode = selectedIds.length > 0;
+  const selectedEntries = entries.filter((entry) => selectedIds.includes(entry.id));
 
   const handleCopyValue = async (entry: QuickReferenceEntry): Promise<void> => {
     const ok = await copyToClipboard(entry.value, {
@@ -84,28 +92,101 @@ export function QuickNotesPage(): ReactNode {
     setDeleteTarget(null);
   };
 
+  const toggleSelect = (entry: QuickReferenceEntry): void => {
+    hapticTap();
+    setSelectedIds((ids) =>
+      ids.includes(entry.id)
+        ? ids.filter((id) => id !== entry.id)
+        : [...ids, entry.id]
+    );
+  };
+
+  const handleLongPress = (entry: QuickReferenceEntry): void => {
+    hapticAction();
+    setSelectedIds((ids) => (ids.includes(entry.id) ? ids : [...ids, entry.id]));
+  };
+
+  const handleBulkCopy = async (): Promise<void> => {
+    const text = selectedEntries
+      .map((entry) => `${entry.label}: ${entry.value}`)
+      .join('\n');
+    const ok = await copyToClipboard(text, { autoClearMs: CLIPBOARD_AUTO_CLEAR_MS });
+    if (ok) hapticSuccess();
+    setToastMsg(
+      ok
+        ? t('quick_notes.copied_selected', { count: selectedEntries.length })
+        : t('quick_notes.copy_failed')
+    );
+    setSelectedIds([]);
+  };
+
+  const handleBulkDelete = async (): Promise<void> => {
+    hapticDestructive();
+    await Promise.all(selectedIds.map((id) => deleteEntry(id)));
+    setBulkDeleteOpen(false);
+    setSelectedIds([]);
+  };
+
   return (
     <IonPage data-agent-id="vault.quick-notes">
       <IonHeader>
         <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton
-              defaultHref="/vault"
-              data-agent-id="vault.quick-notes.back"
-            />
-          </IonButtons>
-          <IonTitle>{t('quick_notes.title')}</IonTitle>
-          <IonButtons slot="end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditTarget(null)}
-              agentId="vault.quick-notes.add"
-              agentAction="quicknotes.createEntry"
-            >
-              <Icon name="Plus" size={24} aria-label={t('quick_notes.add')} />
-            </Button>
-          </IonButtons>
+          {selectionMode ? (
+            <>
+              <IonButtons slot="start">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds([])}
+                  agentId="vault.quick-notes.selection-cancel"
+                >
+                  <Icon name="X" size={24} aria-label={t('quick_notes.cancel_selection')} />
+                </Button>
+              </IonButtons>
+              <IonTitle data-agent-id="vault.quick-notes.selection-count">
+                {t('quick_notes.selected', { count: selectedIds.length })}
+              </IonTitle>
+              <IonButtons slot="end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void handleBulkCopy()}
+                  agentId="vault.quick-notes.selection-copy"
+                >
+                  <Icon name="Copy" size={24} aria-label={t('quick_notes.copy_value')} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setBulkDeleteOpen(true)}
+                  agentId="vault.quick-notes.selection-delete"
+                >
+                  <Icon name="Trash2" size={24} aria-label={t('quick_notes.delete')} />
+                </Button>
+              </IonButtons>
+            </>
+          ) : (
+            <>
+              <IonButtons slot="start">
+                <IonBackButton
+                  defaultHref="/vault"
+                  data-agent-id="vault.quick-notes.back"
+                />
+              </IonButtons>
+              <IonTitle>{t('quick_notes.title')}</IonTitle>
+              <IonButtons slot="end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditTarget(null)}
+                  agentId="vault.quick-notes.add"
+                  agentAction="quicknotes.createEntry"
+                >
+                  <Icon name="Plus" size={24} aria-label={t('quick_notes.add')} />
+                </Button>
+              </IonButtons>
+            </>
+          )}
         </IonToolbar>
       </IonHeader>
 
@@ -143,40 +224,16 @@ export function QuickNotesPage(): ReactNode {
           ) : (
             <ul className="kg-quickref__list" data-agent-id="vault.quick-notes.list">
               {entries.map((entry) => (
-                <li key={entry.id} className="kg-quickref__item">
-                  <button
-                    type="button"
-                    className="kg-quickref__row"
-                    onClick={() => setEditTarget(entry)}
-                    data-agent-id={`vault.quick-notes.item-${entry.id}`}
-                  >
-                    <span className="kg-quickref__label">{entry.label}</span>
-                    {/* No mask/reveal — Quick Notes is for data that doesn't
-                        need it; shown plainly for the fastest possible read. */}
-                    <span className="kg-quickref__value">{entry.value}</span>
-                  </button>
-                  <div className="kg-quickref__actions">
-                    <button
-                      type="button"
-                      className="kg-quickref__action"
-                      aria-label={t('quick_notes.copy_value')}
-                      onClick={() => void handleCopyValue(entry)}
-                      data-agent-id={`vault.quick-notes.item-${entry.id}.copy`}
-                      data-agent-action="quicknotes.copyValue"
-                    >
-                      <Icon name="Copy" size={20} color="var(--text-muted)" />
-                    </button>
-                    <button
-                      type="button"
-                      className="kg-quickref__action"
-                      aria-label={t('quick_notes.more_actions')}
-                      onClick={() => setMenuEntry(entry)}
-                      data-agent-id={`vault.quick-notes.item-${entry.id}.more`}
-                    >
-                      <Icon name="MoreVertical" size={20} color="var(--text-muted)" />
-                    </button>
-                  </div>
-                </li>
+                <QuickNoteRow
+                  key={entry.id}
+                  entry={entry}
+                  selectionMode={selectionMode}
+                  selected={selectedIds.includes(entry.id)}
+                  onCopy={(e) => void handleCopyValue(e)}
+                  onToggleSelect={toggleSelect}
+                  onLongPress={handleLongPress}
+                  onMore={setMenuEntry}
+                />
               ))}
             </ul>
           )}
@@ -244,6 +301,24 @@ export function QuickNotesPage(): ReactNode {
             role: 'destructive',
             handler: (): void => {
               if (deleteTarget) void handleDelete(deleteTarget);
+            },
+          },
+          { text: t('quick_notes.cancel'), role: 'cancel' },
+        ]}
+      />
+
+      <Alert
+        isOpen={bulkDeleteOpen}
+        header={t('quick_notes.delete_selected_title', { count: selectedIds.length })}
+        message={t('quick_notes.delete_confirm_message')}
+        agentId="vault.quick-notes.selection-delete-confirm"
+        onDidDismiss={() => setBulkDeleteOpen(false)}
+        buttons={[
+          {
+            text: t('quick_notes.delete'),
+            role: 'destructive',
+            handler: (): void => {
+              void handleBulkDelete();
             },
           },
           { text: t('quick_notes.cancel'), role: 'cancel' },
