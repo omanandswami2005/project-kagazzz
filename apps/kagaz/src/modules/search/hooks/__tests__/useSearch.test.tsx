@@ -89,15 +89,29 @@ describe('useSearch (F-11)', () => {
 
     expect(searchCallCount).toBe(2);
 
-    // Resolve the NEWER ("cats") call first, then the STALE ("cat") one —
-    // the stale response must not overwrite the newer results.
+    // Resolve the NEWER ("cats") call's FTS query first. DocumentDao.search()
+    // also runs a LIKE completeness scan whenever FTS alone doesn't fill the
+    // limit (see document.dao.ts's search() doc comment) — that's a 3rd
+    // query this deferred-promise mock must resolve too before the hook's
+    // dao.search() promise settles.
     await act(async () => {
       deferred[2]?.resolve([{ ...docRow(), name: 'cats-result' }]);
     });
+    expect(searchCallCount).toBe(3);
+    await act(async () => {
+      deferred[3]?.resolve([]); // no extra substring-only matches
+    });
     expect(result.current.results.map((d) => d.name)).toEqual(['cats-result']);
 
+    // Resolve the STALE ("cat") call's FTS query, then its own completeness
+    // scan (4th query) — the stale response must not overwrite the newer
+    // results either way.
     await act(async () => {
       deferred[1]?.resolve([{ ...docRow(), name: 'cat-result' }]);
+    });
+    expect(searchCallCount).toBe(4);
+    await act(async () => {
+      deferred[4]?.resolve([]);
     });
     // Still the newer result — the stale one was dropped, not applied.
     expect(result.current.results.map((d) => d.name)).toEqual(['cats-result']);

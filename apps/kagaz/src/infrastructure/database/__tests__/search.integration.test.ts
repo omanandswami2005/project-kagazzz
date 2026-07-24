@@ -88,6 +88,22 @@ describe('document search against real SQLite (F-11)', () => {
     expect(results[0]?.name).toBe('Passport Copy');
   });
 
+  it('finds a substring match FTS5 prefix-matching alone would miss (real bug: "card" in "AadharCard")', async () => {
+    const db = connect();
+    await runMigrations(db, migrations);
+    const dao = new DocumentDao(db);
+    // A compound filename with no word boundary — FTS5's unicode61
+    // tokenizer indexes this as one token "aadharcard"; a "card*" prefix
+    // query never matches a token that merely *contains* "card".
+    await seedDocument(dao, { name: 'AadharCard' });
+
+    const match = buildFtsMatchQuery('card');
+    const results = await dao.search(match as string, 10);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.name).toBe('AadharCard');
+  });
+
   it('excludes soft-deleted documents from results', async () => {
     const db = connect();
     await runMigrations(db, migrations);

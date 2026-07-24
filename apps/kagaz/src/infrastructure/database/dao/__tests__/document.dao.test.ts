@@ -284,6 +284,27 @@ describe('DocumentDao', () => {
     expect(results).toEqual([]);
   });
 
+  it('search unions FTS prefix matches with a LIKE substring scan, deduping by id', async () => {
+    // FTS5 prefix matching alone misses this: "AadharCard" tokenizes as one
+    // token, so a "card*" prefix query never matches it — real bug report,
+    // fixed by also running the substring-correct LIKE scan and merging.
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
+    db.onQuery(/documents_fts MATCH/, [docRow({ id: 'doc-1', name: 'PAN Card' })]);
+    db.onQuery(/FROM documents\s+WHERE deleted_at IS NULL\s+AND/, [
+      docRow({ id: 'doc-1', name: 'PAN Card' }), // same doc — must be deduped
+      docRow({ id: 'doc-2', name: 'AadharCard' }),
+    ]);
+    const results = await dao.search('card*', 5);
+    expect(results.map((d) => d.id)).toEqual(['doc-1', 'doc-2']);
+  });
+
+  it('search skips the LIKE completeness scan once FTS alone fills the limit', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
+    db.onQuery(/documents_fts MATCH/, [docRow()]);
+    await dao.search('pan*', 1);
+    expect(db.calls).toHaveLength(2); // sqlite_master check + FTS query only
+  });
+
   it('findTrashed lists soft-deleted rows, newest-deleted first', async () => {
     db.onQuery(/deleted_at IS NOT NULL/, [docRow({ deleted_at: '2026-07-01T00:00:00.000Z' })]);
     const trashed = await dao.findTrashed();

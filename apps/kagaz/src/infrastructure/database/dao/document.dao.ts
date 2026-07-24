@@ -361,19 +361,32 @@ export class DocumentDao {
   }
 
   /**
-   * FTS5 search across name/description/ocr_text (§6), rank order. Falls
-   * back to a plain `LIKE` scan (still AND-across-tokens, OR-across-columns —
-   * same semantics as the FTS query, just unranked) when `documents_fts`
-   * doesn't exist on this device (see {@link hasFts}). `query` is the
-   * already-built FTS5 match string from `buildFtsMatchQuery` (e.g.
-   * `"aadh* card*"`); the fallback re-derives its tokens from it rather than
-   * taking raw input, so callers don't need a second code path.
+   * FTS5 search across name/description/ocr_text (§6), rank order, UNIONed
+   * with a plain `LIKE` substring scan and deduplicated.
+   *
+   * FTS5's `unicode61` tokenizer only supports *prefix* queries (`token*`
+   * matches a token starting with "token") — it cannot match a substring
+   * that starts mid-token. That silently breaks very ordinary searches: a
+   * compound filename like "AadharCard.pdf" tokenizes as one token
+   * "aadharcard", so searching "card" (real, common bug report — matches
+   * neither the filename nor a mid-word OCR hit) returns nothing via FTS5
+   * alone even though the term is plainly *in* the document. The `LIKE
+   * '%term%'` scan (already required as the no-FTS5 fallback, see
+   * {@link hasFts}) is substring-correct by construction, so running it
+   * alongside FTS5 — FTS5 results first for relevance ranking, then any
+   * additional substring-only matches — gets both correctness and (for the
+   * common prefix case) ranking, without depending on a trigram tokenizer
+   * this SQLite/SQLCipher build may not have compiled in.
+   *
+   * `query` is the already-built FTS5 match string from `buildFtsMatchQuery`
+   * (e.g. `"aadh* card*"`); the LIKE scan re-derives its tokens from it
+   * rather than taking raw input, so callers don't need a second code path.
    */
   async search(query: string, limit = 20): Promise<DocumentEntity[]> {
     if (!(await this.hasFts())) {
-      return this.searchWithoutFts(query, limit);
+      return this.searchByLike(query, limit);
     }
-    const rows = await this.db.query(
+    const ftsRows = await this.db.query(
       `SELECT d.* FROM documents d
        JOIN documents_fts fts ON d.rowid = fts.rowid
        WHERE documents_fts MATCH ?
@@ -382,10 +395,18 @@ export class DocumentDao {
        LIMIT ?`,
       [query, limit]
     );
-    return rows.map(mapRow);
+    const ftsMatches = ftsRows.map(mapRow);
+    if (ftsMatches.length >= limit) {
+      return ftsMatches;
+    }
+    const likeMatches = await this.searchByLike(query, limit);
+    const seen = new Set(ftsMatches.map((doc) => doc.id));
+    const merged = ftsMatches.concat(likeMatches.filter((doc) => !seen.has(doc.id)));
+    return merged.slice(0, limit);
   }
 
-  private async searchWithoutFts(
+  /** Substring `LIKE` scan across name/description/ocr_text — see {@link search}. */
+  private async searchByLike(
     query: string,
     limit: number
   ): Promise<DocumentEntity[]> {
