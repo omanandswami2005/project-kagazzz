@@ -18,6 +18,8 @@
     "archive": "Archive",
     "extract_text": "Extract text",
     "delete": "Delete",
+    "delete_confirm_title": "Delete \"{{name}}\"?",
+    "delete_confirm_message": "It moves to Trash and can be restored later.",
     "more": "More actions",
     "cancel": "Cancel"
   },

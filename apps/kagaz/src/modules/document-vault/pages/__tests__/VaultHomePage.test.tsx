@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAi } from '@/app/providers/AIProvider';
@@ -197,6 +197,41 @@ describe('VaultHomePage', () => {
     expect(toast).not.toBeNull();
   });
 
+  it('renames a document from its item menu', async () => {
+    const rename = vi.fn().mockResolvedValue(undefined);
+    useVaultMutationsMock.mockReturnValue({
+      toggleFavorite: vi.fn().mockResolvedValue(undefined),
+      setLocked: vi.fn().mockResolvedValue(undefined),
+      markAccessed: vi.fn().mockResolvedValue(undefined),
+      rename,
+      softDelete: vi.fn().mockResolvedValue(undefined),
+      restore: vi.fn().mockResolvedValue(undefined),
+      archive: vi.fn().mockResolvedValue(undefined),
+    });
+    useDocumentsMock.mockReturnValue({ documents: [doc], isLoading: false });
+    render(<VaultHomePage />);
+
+    // fireEvent, not userEvent: the row buttons are zero-sized under jsdom's
+    // layout (no real geometry), and userEvent's pointer-target visibility
+    // check silently no-ops a click on a zero-sized element.
+    const moreButton = document.querySelector(`[data-agent-id="vault.home.item-${doc.id}.more"]`);
+    fireEvent.click(moreButton as Element);
+    const itemMenu = document.querySelector(
+      '[data-agent-id="vault.home.item-menu"]'
+    ) as HTMLElement;
+    fireEvent.click(within(itemMenu).getByText('Rename'));
+
+    const renamePrompt = document.querySelector(
+      '[data-agent-id="vault.home.doc-rename-prompt"]'
+    ) as HTMLElement;
+    const input = within(renamePrompt).getByLabelText('Document name');
+    expect(input).toHaveValue('Aadhaar');
+    fireEvent.change(input, { target: { value: 'Aadhaar Card' } });
+    fireEvent.click(within(renamePrompt).getByText('Save'));
+
+    expect(rename).toHaveBeenCalledWith(doc, 'Aadhaar Card');
+  });
+
   it('renders in Hindi after a language switch', async () => {
     await i18n.changeLanguage('hi');
     render(<VaultHomePage />);
@@ -221,6 +256,9 @@ describe('VaultHomePage', () => {
       });
     });
 
+    // Swipe now only opens a confirm (bug-audit: swipe-to-delete needs a
+    // confirm since it's easier to trigger by accident than a menu tap) —
+    // this drives the swipe gesture AND confirms it, matching real usage.
     const swipeLeftDelete = (documentId: string): void => {
       const content = document
         .querySelector(`[data-agent-id="vault.home.item-${documentId}.swipe"]`)
@@ -228,6 +266,10 @@ describe('VaultHomePage', () => {
       fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
       fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
       fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      const confirm = document.querySelector(
+        '[data-agent-id="vault.home.swipe-delete-confirm"]'
+      ) as HTMLElement;
+      fireEvent.click(within(confirm).getByText('Delete'));
     };
 
     it("queues a second delete instead of clobbering the first one's undo", () => {
@@ -273,6 +315,38 @@ describe('VaultHomePage', () => {
       undo?.handler?.();
       expect(restore).toHaveBeenCalledWith(expect.objectContaining({ id: doc.id }));
       expect(restore).not.toHaveBeenCalledWith(expect.objectContaining({ id: docB.id }));
+    });
+
+    it('confirms before deleting, and does nothing on Cancel', () => {
+      const softDelete = vi.fn().mockResolvedValue(undefined);
+      useVaultMutationsMock.mockReturnValue({
+        toggleFavorite: vi.fn().mockResolvedValue(undefined),
+        setLocked: vi.fn().mockResolvedValue(undefined),
+        markAccessed: vi.fn().mockResolvedValue(undefined),
+        rename: vi.fn().mockResolvedValue(undefined),
+        softDelete,
+        restore: vi.fn().mockResolvedValue(undefined),
+        archive: vi.fn().mockResolvedValue(undefined),
+      });
+      useDocumentsMock.mockReturnValue({ documents: [doc], isLoading: false });
+      render(<VaultHomePage />);
+
+      const content = document
+        .querySelector(`[data-agent-id="vault.home.item-${doc.id}.swipe"]`)
+        ?.querySelector('.kg-swipe-row__content') as Element;
+      fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+
+      // The swipe alone must not have deleted anything yet.
+      expect(softDelete).not.toHaveBeenCalled();
+      const confirm = document.querySelector(
+        '[data-agent-id="vault.home.swipe-delete-confirm"]'
+      ) as HTMLElement;
+      expect(within(confirm).getByText('Delete "Aadhaar"?')).toBeInTheDocument();
+
+      fireEvent.click(within(confirm).getByText('Cancel'));
+      expect(softDelete).not.toHaveBeenCalled();
     });
   });
 });

@@ -13,7 +13,7 @@ import {
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@kagaz/ui';
+import { Alert, Icon } from '@kagaz/ui';
 import { UndoToast } from '@/core/components/UndoToast';
 import { hapticDestructive, hapticTap } from '@/core/haptics';
 import { usePreferencesStore } from '@/core/preferences';
@@ -51,6 +51,10 @@ export function FavoritesPage(): ReactNode {
   // its own turn.
   const [deleteQueue, setDeleteQueue] = useState<DocumentEntity[]>([]);
   const pendingUndo = deleteQueue[0] ?? null;
+  // Swipe-to-delete confirms first — same reasoning as VaultHomePage's
+  // swipeDeleteTarget: a swipe is easier to trigger by accident than a
+  // deliberate menu tap.
+  const [swipeDeleteTarget, setSwipeDeleteTarget] = useState<DocumentEntity | null>(null);
 
   const handleToggleFavorite = useCallback(
     (doc: DocumentEntity): void => {
@@ -62,15 +66,13 @@ export function FavoritesPage(): ReactNode {
   const handleSwipeAction = useCallback(
     (doc: DocumentEntity, kind: Exclude<SwipeActionKind, 'none'>): void => {
       if (kind === 'delete') {
-        hapticDestructive();
-        void softDelete(doc).then(() => setReloadKey((k) => k + 1));
-        setDeleteQueue((queue) => [...queue, doc]);
+        setSwipeDeleteTarget(doc);
       } else if (kind === 'favorite') {
         hapticTap();
         handleToggleFavorite(doc);
       }
     },
-    [softDelete, handleToggleFavorite]
+    [handleToggleFavorite]
   );
 
   // [SEC] §3.1, bug-audit hardening: DocumentViewerPage now enforces its own
@@ -137,6 +139,28 @@ export function FavoritesPage(): ReactNode {
           }}
           onDidDismiss={() => setDeleteQueue((queue) => queue.slice(1))}
           agentId="vault.favorites.delete-toast"
+        />
+        <Alert
+          key={swipeDeleteTarget?.id ?? 'swipe-delete-none'}
+          isOpen={swipeDeleteTarget !== null}
+          header={t('actions.delete_confirm_title', { name: swipeDeleteTarget?.name ?? '' })}
+          message={t('actions.delete_confirm_message')}
+          agentId="vault.favorites.swipe-delete-confirm"
+          buttons={[
+            {
+              text: t('actions.delete'),
+              role: 'destructive',
+              handler: (): void => {
+                if (swipeDeleteTarget) {
+                  hapticDestructive();
+                  void softDelete(swipeDeleteTarget).then(() => setReloadKey((k) => k + 1));
+                  setDeleteQueue((queue) => [...queue, swipeDeleteTarget]);
+                }
+              },
+            },
+            { text: t('actions.cancel'), role: 'cancel' },
+          ]}
+          onDidDismiss={() => setSwipeDeleteTarget(null)}
         />
       </IonContent>
     </IonPage>

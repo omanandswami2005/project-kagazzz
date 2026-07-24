@@ -18,6 +18,8 @@
     "archive": "आर्काइव करें",
     "extract_text": "पाठ निकालें",
     "delete": "हटाएं",
+    "delete_confirm_title": "\"{{name}}\" हटाएं?",
+    "delete_confirm_message": "यह ट्रैश में चला जाएगा और बाद में पुनर्स्थापित किया जा सकता है।",
     "more": "और विकल्प",
     "cancel": "रद्द करें"
   },

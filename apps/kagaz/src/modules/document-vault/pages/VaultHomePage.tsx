@@ -175,6 +175,11 @@ export function VaultHomePage(): ReactNode {
   const [tagDocId, setTagDocId] = useState<string | null>(null);
   const [moveDocId, setMoveDocId] = useState<string | null>(null);
   const [moreDoc, setMoreDoc] = useState<DocumentEntity | null>(null);
+  const [renameDocTarget, setRenameDocTarget] = useState<DocumentEntity | null>(null);
+  // Swipe-to-delete confirms first — unlike the item-menu's delete (a
+  // deliberate two-tap flow already safety-netted by the undo toast), a
+  // swipe is easy to trigger by accident, so it gets an extra confirm step.
+  const [swipeDeleteTarget, setSwipeDeleteTarget] = useState<DocumentEntity | null>(null);
   const [convertDoc, setConvertDoc] = useState<DocumentEntity | null>(null);
   const [enhanceDoc, setEnhanceDoc] = useState<DocumentEntity | null>(null);
   const [resizeDoc, setResizeDoc] = useState<DocumentEntity | null>(null);
@@ -277,9 +282,7 @@ export function VaultHomePage(): ReactNode {
   ): void => {
     switch (kind) {
       case 'delete':
-        hapticDestructive();
-        void softDelete(document);
-        enqueueUndo({ kind: 'single', document });
+        setSwipeDeleteTarget(document);
         break;
       case 'favorite':
         hapticTap();
@@ -652,6 +655,13 @@ export function VaultHomePage(): ReactNode {
           agentId="vault.home.item-menu"
           onDidDismiss={() => setMoreDoc(null)}
           buttons={[
+            {
+              text: t('actions.rename'),
+              icon: 'Pencil',
+              handler: (): void => {
+                if (moreDoc) setRenameDocTarget(moreDoc);
+              },
+            },
             {
               text: t('actions.add_tag'),
               icon: 'Tag',
@@ -1043,6 +1053,56 @@ export function VaultHomePage(): ReactNode {
           }}
           onDidDismiss={dequeueUndo}
           agentId="vault.home.delete-toast"
+        />
+        {/* F-88 bug-audit: swipe-to-delete now confirms first — see the
+           swipeDeleteTarget state doc comment. Reuses the same Alert
+           primitive as every other delete confirm in this app. */}
+        <Alert
+          key={swipeDeleteTarget?.id ?? 'swipe-delete-none'}
+          isOpen={swipeDeleteTarget !== null}
+          header={t('actions.delete_confirm_title', { name: swipeDeleteTarget?.name ?? '' })}
+          message={t('actions.delete_confirm_message')}
+          agentId="vault.home.swipe-delete-confirm"
+          buttons={[
+            {
+              text: t('actions.delete'),
+              role: 'destructive',
+              handler: (): void => {
+                if (swipeDeleteTarget) {
+                  hapticDestructive();
+                  void softDelete(swipeDeleteTarget);
+                  enqueueUndo({ kind: 'single', document: swipeDeleteTarget });
+                }
+              },
+            },
+            { text: t('actions.cancel'), role: 'cancel' },
+          ]}
+          onDidDismiss={() => setSwipeDeleteTarget(null)}
+        />
+        {/* Rename a document from its item menu, any time (distinct from
+           UX-8's rename-on-add queue below — "Cancel" not "Skip", and not
+           gated behind renameOnAdd). Mirrors the folder-rename Alert above. */}
+        <Alert
+          key={renameDocTarget?.id ?? 'doc-rename-none'}
+          isOpen={renameDocTarget !== null}
+          header={t('rename.title')}
+          agentId="vault.home.doc-rename-prompt"
+          input={{
+            label: t('rename.label'),
+            defaultValue: renameDocTarget?.name ?? '',
+          }}
+          buttons={[
+            { text: t('actions.cancel'), role: 'cancel' },
+            {
+              text: t('rename.save'),
+              handler: (name?: string): void => {
+                if (renameDocTarget && name) {
+                  void rename(renameDocTarget, name);
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setRenameDocTarget(null)}
         />
         {/* UX-8: rename-on-add prompt, pre-filled with the default name. Keeping
            the default (Skip) stores it as-is. Keyed per document so each

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
@@ -71,5 +71,48 @@ describe('BulkActionBar (F-25 + F-65 bulk share)', () => {
       />
     );
     expect(screen.getByText('3 selected')).toBeInTheDocument();
+  });
+
+  describe('delete confirmation (a Modal, not a bottom sheet — interaction-patterns.md)', () => {
+    it('asks for confirmation before calling onDelete', async () => {
+      const onDelete = vi.fn();
+      render(
+        <BulkActionBar
+          count={2}
+          onCancel={vi.fn()}
+          onDelete={onDelete}
+          onMove={vi.fn()}
+          onFavorite={vi.fn()}
+        />
+      );
+      await userEvent.click(
+        document.querySelector('[data-agent-id="vault.home.bulk-delete"]') as HTMLElement
+      );
+      expect(onDelete).not.toHaveBeenCalled();
+      expect(screen.getByText('Delete 2 document(s)?')).toBeInTheDocument();
+      await userEvent.click(screen.getByText('Delete'));
+      expect(onDelete).toHaveBeenCalledOnce();
+    });
+
+    it('does nothing when Cancel is tapped', async () => {
+      const onDelete = vi.fn();
+      render(
+        <BulkActionBar
+          count={2}
+          onCancel={vi.fn()}
+          onDelete={onDelete}
+          onMove={vi.fn()}
+          onFavorite={vi.fn()}
+        />
+      );
+      await userEvent.click(
+        document.querySelector('[data-agent-id="vault.home.bulk-delete"]') as HTMLElement
+      );
+      const confirm = document.querySelector(
+        '[data-agent-id="vault.home.bulk-delete-confirm"]'
+      ) as HTMLElement;
+      await userEvent.click(within(confirm).getByText('Cancel'));
+      expect(onDelete).not.toHaveBeenCalled();
+    });
   });
 });

@@ -17,7 +17,7 @@ import {
 } from '@ionic/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Button, Icon, Spinner } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive, hapticSuccess } from '@/core/haptics';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
@@ -299,16 +299,20 @@ export function QuickReferencePage(): ReactNode {
         ]}
       />
 
-      <ActionSheet
+      {/* interaction-patterns.md §Bottom sheets vs modals: delete
+         confirmation is a Modal, not a bottom sheet — also picks up
+         delete_confirm_message, previously translated but never rendered
+         (ActionSheet has no message slot). */}
+      <Alert
         isOpen={deleteTarget !== null}
         header={t('quick_reference.delete_confirm_title')}
+        message={t('quick_reference.delete_confirm_message')}
         agentId="vault.quick-reference.delete-confirm"
         onDidDismiss={() => setDeleteTarget(null)}
         buttons={[
           {
             text: t('quick_reference.delete'),
             role: 'destructive',
-            icon: 'Trash2',
             handler: (): void => {
               if (deleteTarget) void handleDelete(deleteTarget);
             },

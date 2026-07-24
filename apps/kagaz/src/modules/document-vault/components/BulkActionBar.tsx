@@ -5,7 +5,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Icon } from '@kagaz/ui';
+import { Alert, Icon } from '@kagaz/ui';
 import { hapticDestructive, hapticTap } from '@/core/haptics';
 
 /** Props for {@link BulkActionBar}. */
@@ -108,7 +108,11 @@ export function BulkActionBar({
         </button>
       </span>
 
-      <ActionSheet
+      {/* interaction-patterns.md §Bottom sheets vs modals: "delete
+         confirmation" is a Modal (Alert), not a bottom-sheet picker — a
+         2-button ActionSheet here rendered "Delete" list-style left-aligned
+         next to a centered "Cancel" pill, a real reported layout bug. */}
+      <Alert
         isOpen={confirmOpen}
         header={t('bulk.delete_confirm', { count })}
         agentId="vault.home.bulk-delete-confirm"
@@ -117,7 +121,6 @@ export function BulkActionBar({
           {
             text: t('bulk.delete'),
             role: 'destructive',
-            icon: 'Trash2',
             handler: (): void => {
               hapticDestructive();
               onDelete();
