@@ -208,7 +208,53 @@ describe('useChat (F-13)', () => {
     expect(plugin.createChat).not.toHaveBeenCalled();
   });
 
-  it('auto-resolves an unhandled toolCallRequested (no ToolCallingEngine wired yet)', async () => {
+  it('dispatches a toolCallRequested through the real ActionRegistry (F-14)', async () => {
+    const documentRow = {
+      id: 'd-1',
+      name: 'Passport Copy',
+      file_path: '/vault/doc.pdf',
+      file_type: 'pdf',
+      file_size: 1024,
+      is_favorite: 0,
+      is_locked: 0,
+      is_archived: 0,
+      language: 'en',
+      source_type: 'file_picker',
+      created_at: '2026-07-24T00:00:00.000Z',
+      updated_at: '2026-07-24T00:00:00.000Z',
+      synced: 0,
+      version: 1,
+    };
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM documents/, [documentRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    listeners.toolCallRequested?.({ requestId: 'req-1', name: 'ai.listDocuments', argumentsJson: '{}' });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    expect(call?.[0]).toMatchObject({ requestId: 'req-1' });
+    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as {
+      ok: boolean;
+      data: { documents: { id: string; name: string }[] };
+    };
+    expect(result.ok).toBe(true);
+    expect(result.data.documents).toEqual([{
+      id: 'd-1',
+      name: 'Passport Copy',
+      fileType: 'pdf',
+      fileSizeBytes: 1024,
+      isFavorite: false,
+      isLocked: false,
+      createdAt: '2026-07-24T00:00:00.000Z',
+    }]);
+  });
+
+  it('rejects an unknown tool name with an ActionResult error, not a thrown exception', async () => {
     const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     plugin.resolveToolCall.mockResolvedValue(undefined);
@@ -216,10 +262,11 @@ describe('useChat (F-13)', () => {
     renderHook(() => useChat());
     await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
 
-    listeners.toolCallRequested?.({ requestId: 'req-1', name: 'list_documents', argumentsJson: '{}' });
+    listeners.toolCallRequested?.({ requestId: 'req-2', name: 'ai.doesNotExist', argumentsJson: '{}' });
     await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
     const [call] = plugin.resolveToolCall.mock.calls;
-    expect(call?.[0]).toMatchObject({ requestId: 'req-1' });
-    expect(call?.[0]?.resultJson).toContain('No tools are registered');
+    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
+    expect(result.ok).toBe(false);
+    expect(result.code).toBe('AGENT_E_UNKNOWN_ACTION');
   });
 });

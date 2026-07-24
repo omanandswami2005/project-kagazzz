@@ -13,8 +13,12 @@ import { CapacitorLlmLiteRT, type ToolCallRequestedEvent } from '@kagaz/capacito
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { log } from '@/core/logging';
-import { AiConversationDao } from '@/infrastructure/database/dao';
+import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
 import type { AiMessageEntity } from '@/infrastructure/database/types';
+import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
+import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
+import { toDocumentSummary } from '../ai-tools.actions';
+import { aiToolRegistry } from '../services/ai-tool-registry';
 
 const logger = log('ai-assistant');
 
@@ -35,7 +39,27 @@ export interface UseChatResult {
 export function useChat(): UseChatResult {
   const { db } = useDatabase();
   const dao = useMemo(() => (db ? new AiConversationDao(db) : null), [db]);
+  const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
+
+  // F-14: the context ai-tools.actions.ts's handlers run against — built
+  // fresh whenever documentDao changes, never persisted past a re-render.
+  const toolContext = useMemo<AiToolContext | null>(() => {
+    if (!documentDao) {
+      return null;
+    }
+    return {
+      listDocuments: async (limit): Promise<DocumentSummary[]> =>
+        (await documentDao.findAll()).slice(0, limit).map(toDocumentSummary),
+      searchDocuments: async (query, limit): Promise<DocumentSummary[]> => {
+        const match = buildFtsMatchQuery(query);
+        if (!match) {
+          return [];
+        }
+        return (await documentDao.search(match, limit)).map(toDocumentSummary);
+      },
+    };
+  }, [documentDao]);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessageEntity[]>([]);
@@ -139,20 +163,44 @@ export function useChat(): UseChatResult {
         setIsStreaming(false);
         setError(event.error);
       }),
-      // Placeholder listener until F-14 wires a real ToolCallingEngine —
-      // without this, an untended tool call blocks the native side for the
-      // full 30s bridge timeout on every turn that happens to trigger one.
+      // F-14: dispatches through the same real ActionRegistry the rest of
+      // the agent-interface contract uses — args validation, confirmation
+      // gating, and exception-to-ActionResult mapping all happen in
+      // aiToolRegistry.invoke(), not here.
       CapacitorLlmLiteRT.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
-        void CapacitorLlmLiteRT.resolveToolCall({
-          requestId: event.requestId,
-          resultJson: '{"error":"No tools are registered yet"}',
-        });
+        void (async (): Promise<string> => {
+          if (!toolContext) {
+            return JSON.stringify({ ok: false, error: 'AI tools are not available yet' });
+          }
+          let args: unknown;
+          try {
+            args = JSON.parse(event.argumentsJson) as unknown;
+          } catch {
+            return JSON.stringify({ ok: false, error: 'Malformed tool arguments' });
+          }
+          const action = aiToolRegistry.get(event.name);
+          if (action?.requiresConfirmation) {
+            // No confirmation UI exists yet — refuse rather than silently
+            // running a destructive action the user never approved.
+            return JSON.stringify({ ok: false, error: 'This action requires user confirmation, which is not yet supported' });
+          }
+          const result = await aiToolRegistry.invoke(event.name, args, toolContext);
+          return JSON.stringify(result);
+        })()
+          .then((resultJson) => CapacitorLlmLiteRT.resolveToolCall({ requestId: event.requestId, resultJson }))
+          .catch((toolError: unknown) => {
+            logger.warn({ event: 'ai.chat.tool_call_failed', err: { message: String(toolError) } });
+            void CapacitorLlmLiteRT.resolveToolCall({
+              requestId: event.requestId,
+              resultJson: JSON.stringify({ ok: false, error: 'Tool call failed' }),
+            });
+          });
       }),
     ];
     return (): void => {
       subscriptions.forEach((subscription) => void subscription.then((s) => s.remove()));
     };
-  }, [ai.status, finishStreaming]);
+  }, [ai.status, finishStreaming, toolContext]);
 
   const sendMessage = useCallback(
     async (text: string): Promise<void> => {

@@ -19,6 +19,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, ProgressBar, Spinner } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
+import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './ai-assistant.css';
 
 function formatMb(bytes: number): string {
@@ -56,7 +57,7 @@ export function AiAssistantPage(): ReactNode {
               <p>{t('lifecycle.intro')}</p>
               <Button
                 variant="primary"
-                onClick={() => void ai.activate([])}
+                onClick={() => void ai.activate(AI_TOOL_DESCRIPTORS)}
                 agentId="ai.settings.download-button"
               >
                 {t('lifecycle.download_button', { size: formatMb(ai.modelSizeBytes) })}
@@ -110,7 +111,7 @@ export function AiAssistantPage(): ReactNode {
               <p role="alert">{ai.errorMessage ?? t('errors.model_failed')}</p>
               <Button
                 variant="primary"
-                onClick={() => void ai.activate([])}
+                onClick={() => void ai.activate(AI_TOOL_DESCRIPTORS)}
                 agentId="ai.settings.retry-button"
               >
                 {t('lifecycle.retry_button')}
