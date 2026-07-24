@@ -1,6 +1,6 @@
 # Google Play — Data Safety declaration (Kagaz V1)
 
-> **Launch gate G1-6.** · Last updated: 2026-07-14 · Scope: **V1 (offline vault)** only.
+> **Launch gate G1-6** (see also **G1.5-4**) · Last updated: 2026-07-24 · Scope: **V1 (offline vault)**, with a **V1.5 addendum** below for the on-device AI model download.
 >
 > This maps Kagaz V1's *actual* data behaviour to the fields of the Play Console
 > **Data safety** form. V1 collects and shares **no user data** — everything
@@ -60,6 +60,52 @@ data-type matrix, the correct entries are:
       on-device" facts as this declaration (they must match exactly).
 - [ ] If the Data safety form asks about the ML Kit scanner specifically,
       reference Google Play Services' own data handling for on-device ML Kit.
+
+## V1.5 addendum — the on-device AI model download (F-13, G1.5-4)
+
+> Added 2026-07-24. Scope: **V1.5 (on-device AI chatbot)**. This is a genuine
+> addition to the "no app-initiated network calls" ground truth above — unlike
+> the scanner's transitive-only `INTERNET` permission, the AI model download
+> **is** an app-initiated network request. It does not change the "Data
+> collected: None" / "Data shared: None" answers (below), but it must be
+> disclosed as a network operation.
+
+- **What happens:** the user explicitly taps "Download" on the Settings → AI
+  Assistant screen (never automatic/background). The app performs a single
+  HTTPS GET to Hugging Face
+  (`huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm`,
+  ~586 MB, one host) for a **public, pre-trained model file** — LiteRT-LM's
+  Qwen3-0.6B, Apache-2.0. The response is verified against a hardcoded SHA-256
+  before use ([ADR-021](../architecture/08-tech-stack-decisions.md#adr-021-on-device-ai--litert-lm-supersedes-webllm),
+  `[SEC]` §5).
+- **No user data leaves the device for this request.** The GET carries no
+  auth token, no user/device identifier, no document content, no query
+  string beyond the static file path — it is indistinguishable from any
+  anonymous visitor fetching a public file from Hugging Face's CDN. This is
+  the *inverse* direction of "data collection" (Play's definition is data
+  transmitted *from* the device); nothing about the user is sent.
+- **Once downloaded, F-13/F-14 run entirely on-device** — no further network
+  calls for chat, tool calling, or inference. Deleting the model (Settings →
+  AI Assistant → Delete, or the Storage screen's "Manage" link) removes the
+  only network-capable AI surface.
+- **Console answers are unchanged** (V1.5 still collects/shares no user
+  data), but the **manifest/runtime-behavior nuance changes**: V1.5 is no
+  longer "zero app-initiated network calls" — it is "zero app-initiated
+  network calls **except one explicit, user-triggered, checksum-verified
+  model download**." Reflect this distinction in the reviewer notes if V1.5
+  ships before a V2 re-declaration; do not claim "fully offline" without the
+  same caveat CLAUDE.md already carries for the ML Kit scanner permission.
+
+**Reviewer notes addendum (append to the V1 paragraph above once V1.5 ships):**
+
+> Kagaz's optional on-device AI assistant (Settings → AI Assistant) requires a
+> one-time, user-initiated download (~586 MB) of a public, open-weights model
+> file (LiteRT-LM Qwen3-0.6B, Apache-2.0) from Hugging Face, verified by
+> SHA-256 checksum before use. This is the only network request the app
+> performs, and it carries no user data — no identifiers, no document
+> content, no analytics. After download, the AI assistant runs fully
+> on-device with no further network activity. Users can delete the model at
+> any time from Settings → AI Assistant or the Storage screen.
 
 ## When this must change (V2)
 

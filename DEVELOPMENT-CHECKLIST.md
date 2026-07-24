@@ -273,7 +273,7 @@
 - [ ] G1.5-1 One-time model download + progress + checksum verified on a real device (Wi-Fi + resume/cancel)
 - [ ] G1.5-2 `[SEC]` metadata-only boundary (§5) enforced — model never sees document content; destructive tool calls require explicit user confirmation (§5.3)
 - [ ] G1.5-3 Graceful-degrade proven: delete the model → F-13/F-14/F-23 hide, all V1 features keep working, nothing throws
-- [ ] G1.5-4 Play data-safety declaration updated for the one-time model download (INTERNET permission) `[LEGAL]`
+- [x] G1.5-4 Play data-safety declaration updated for the one-time model download (INTERNET permission) `[LEGAL]` ✅ (2026-07-24) — added a V1.5 addendum to [play-data-safety.md](docs/compliance/play-data-safety.md): the model download is a genuine app-initiated network request (unlike the scanner's transitive-only permission), but carries no user data (public model file, SHA-256-verified, no identifiers) — Console answers stay "None collected/shared," reviewer notes get an appended paragraph disclosing the download when V1.5 ships.
 
 ---
 
