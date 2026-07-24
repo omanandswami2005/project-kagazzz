@@ -2,6 +2,10 @@
   "title": "Kagaz AI",
   "input_placeholder": "Ask me anything about your documents...",
   "listening": "Listening...",
+  "voice_modal": {
+    "hint": "Say something...",
+    "stop": "Stop listening"
+  },
   "model_loading": "Setting up the assistant (first time takes a moment)...",
   "thinking": "Thinking...",
   "confirm_action": {

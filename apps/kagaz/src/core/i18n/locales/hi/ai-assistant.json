@@ -2,6 +2,10 @@
   "title": "Kagaz AI",
   "input_placeholder": "अपने दस्तावेज़ों के बारे में कुछ भी पूछें...",
   "listening": "सुन रहा हूँ...",
+  "voice_modal": {
+    "hint": "कुछ बोलें...",
+    "stop": "सुनना बंद करें"
+  },
   "model_loading": "सहायक तैयार हो रहा है (पहली बार थोड़ा समय लगता है)...",
   "thinking": "सोच रहा हूँ...",
   "confirm_action": {

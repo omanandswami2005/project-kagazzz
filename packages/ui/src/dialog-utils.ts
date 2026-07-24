@@ -1,7 +1,8 @@
 /**
  * Shared helpers for native `<dialog>`-based overlays (ActionSheet, Alert —
- * part of the G1-4 Ionic-overlay refactor). Not exported from the package
- * root; internal to the atoms that need it.
+ * part of the G1-4 Ionic-overlay refactor). Exported from the package root
+ * so app-level modals (e.g. ai-assistant's VoiceListeningModal) can reuse
+ * the same open/close/hardware-back logic instead of reinventing it.
  *
  * jsdom (unit-test env) doesn't implement HTMLDialogElement.showModal/close
  * (as of jsdom 29) — fall back to plain attribute + a manually dispatched

@@ -6,12 +6,15 @@
  * Interaction: press-and-hold to speak (pointer), release to commit — plus a
  * keyboard toggle (Enter/Space) so it's operable without a pointer `[A11Y]`.
  * Partial transcripts stream to `onPartial` for a live preview; the final
- * transcript goes to `onResult`.
+ * transcript goes to `onResult`. While listening, a big
+ * {@link VoiceListeningModal} layers over the small inline pulse below —
+ * see that component for the visualization's honesty note.
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@kagaz/ui';
 import { useVoiceInput } from '../hooks/useVoiceInput';
+import { VoiceListeningModal } from './VoiceListeningModal';
 import './voice-input.css';
 
 /** Props for {@link MicButton}. */
@@ -38,10 +41,14 @@ export function MicButton({ onResult, onPartial }: MicButtonProps): ReactNode {
     return null;
   }
 
+  const stopListening = (): void => {
+    held.current = false;
+    void voice.stop();
+  };
+
   const release = (): void => {
     if (held.current) {
-      held.current = false;
-      void voice.stop();
+      stopListening();
     }
   };
 
@@ -93,6 +100,11 @@ export function MicButton({ onResult, onPartial }: MicButtonProps): ReactNode {
           {t('search.voice.permission_denied')}
         </span>
       )}
+      <VoiceListeningModal
+        isOpen={voice.listening}
+        partial={voice.partial}
+        onCancel={stopListening}
+      />
     </>
   );
 }
