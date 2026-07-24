@@ -8,7 +8,7 @@ import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import type { DocumentEntity } from '@/infrastructure/database/types';
-import { buildFtsMatchQuery, isSearchable } from '../services/search.service';
+import { buildFtsMatchQuery, isSearchable } from '@/infrastructure/database/fts-query';
 
 const logger = log('search');
 

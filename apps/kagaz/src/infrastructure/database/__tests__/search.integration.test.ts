@@ -23,7 +23,7 @@ import type { DbConnection, SqlValue } from '../connection';
 import { DocumentDao } from '../dao/document.dao';
 import { migrations } from '../migrations';
 import { runMigrations } from '../migration-runner';
-import { buildFtsMatchQuery } from '@/modules/search/services/search.service';
+import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
 
 /** Minimal DbConnection over node:sqlite's synchronous driver. */
 function connect(): DbConnection {

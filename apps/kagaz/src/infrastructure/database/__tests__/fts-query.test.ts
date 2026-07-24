@@ -3,7 +3,7 @@ import {
   buildFtsMatchQuery,
   isSearchable,
   MIN_SEARCH_LENGTH,
-} from '../search.service';
+} from '../fts-query';
 
 describe('buildFtsMatchQuery', () => {
   it('builds prefix tokens combined with implicit AND', () => {

@@ -1,8 +1,16 @@
 /**
- * Search query builder (02-document-vault-module.md §Search Engine,
- * 09-database-design.md FTS5). Turns free-text user input into a safe
- * FTS5 MATCH expression — raw input can contain FTS5 operators (", *,
- * (), :, ^, NEAR) that would throw a syntax error if passed through.
+ * FTS5 query builder (02-document-vault-module.md §Search Engine,
+ * 09-database-design.md FTS5). Turns free-text input into a safe FTS5
+ * MATCH expression — raw input can contain FTS5 operators (", *, (), :,
+ * ^, NEAR) that would throw a syntax error if passed through.
+ *
+ * Lives in infrastructure/database/ (not the search module) because it's
+ * pure SQLite-FTS5-syntax logic with two consumers in different modules
+ * (search's own useSearch.ts, and ai-assistant's search_documents tool) —
+ * moved here from search/services/search.service.ts the moment the
+ * second consumer appeared, per the protocol-based design rule (modules
+ * never import another module's concrete implementation; shared code
+ * comes from core/ or infrastructure/).
  */
 
 /**
