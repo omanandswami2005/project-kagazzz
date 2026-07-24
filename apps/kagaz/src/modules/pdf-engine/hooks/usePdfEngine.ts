@@ -90,6 +90,12 @@ export interface UsePdfEngineResult {
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
+  /**
+   * Combines freshly-picked images (not yet vault documents) into one PDF
+   * (UX pass 2026-07-24: multi-select gallery photos straight to a single
+   * PDF, instead of N separate image documents).
+   */
+  imagesToPdfFromFiles: (files: IncomingFile[]) => Promise<number>;
   /** Scan pages natively and append them to an existing PDF (F-44). 0 if cancelled. */
   appendScan: (doc: DocumentEntity) => Promise<number>;
   stampImage: (
@@ -321,6 +327,27 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const imagesToPdfFromFiles = useCallback(
+    (files: IncomingFile[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const inputs = await Promise.all(
+          files.map(async (file) => ({
+            data: new Uint8Array(await file.blob.arrayBuffer()),
+            mimeType: file.blob.type || 'image/jpeg',
+          }))
+        );
+        const pdf = await engine.imagesToPdf(inputs, onProgress);
+        return save([
+          {
+            name: `Photos_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`,
+            blob: blobOf(pdf, 'pdf'),
+            source: 'gallery',
+          },
+        ]);
+      }),
+    [run, save]
+  );
+
   const appendScan = useCallback(
     (doc: DocumentEntity): Promise<number> =>
       run(async (engine, onProgress) => {
@@ -523,6 +550,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     addPageNumbers,
     compressPdf,
     imagesToPdf,
+    imagesToPdfFromFiles,
     appendScan,
     stampImage,
     pdfToImages,
