@@ -10,8 +10,14 @@
  * perspective transform is meaningfully more expensive to composite and
  * buys little on a document-thumbnail strip, which this app's mid-range
  * Android performance budget (CONTRIBUTING.md) doesn't have room for.
+ *
+ * Also fires a light haptic tick each time a new card becomes the centered
+ * one (UX pass 2026-07-24) — a picker-wheel-style "tick" per card, not per
+ * scroll frame. Skips the tick on mount (the initial centered card isn't a
+ * user gesture) and on any single-card strip (nothing to tick between).
  */
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
+import { hapticTap } from '@/core/haptics';
 
 /** How much a fully-off-center card shrinks (1 → 1 - this). */
 const MAX_SCALE_DROP = 0.12;
@@ -24,6 +30,14 @@ export function useCoverflowScroll(
   /** Re-runs the initial measurement when the visible card set changes. */
   deps: readonly unknown[]
 ): void {
+  const nearestIndex = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Reset per mount/re-measure so a re-render never replays a stale tick.
+    nearestIndex.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps is the caller's explicit re-measure trigger
+  }, [containerRef, ...deps]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return undefined;
@@ -34,14 +48,31 @@ export function useCoverflowScroll(
       const rect = container.getBoundingClientRect();
       const center = rect.left + rect.width / 2;
       const half = rect.width / 2 || 1;
-      for (const child of Array.from(container.children)) {
-        if (!(child instanceof HTMLElement)) continue;
+      let closestIndex = -1;
+      let closestDistance = Infinity;
+      const children = Array.from(container.children);
+      children.forEach((child, index) => {
+        if (!(child instanceof HTMLElement)) return;
         const childRect = child.getBoundingClientRect();
         const childCenter = childRect.left + childRect.width / 2;
-        const distance = Math.min(1, Math.abs(childCenter - center) / half);
+        const rawDistance = Math.abs(childCenter - center);
+        const distance = Math.min(1, rawDistance / half);
         child.style.transform = `scale(${(1 - distance * MAX_SCALE_DROP).toFixed(3)})`;
         child.style.opacity = (1 - distance * MAX_OPACITY_DROP).toFixed(3);
+        if (rawDistance < closestDistance) {
+          closestDistance = rawDistance;
+          closestIndex = index;
+        }
+      });
+      if (
+        children.length > 1 &&
+        closestIndex !== -1 &&
+        nearestIndex.current !== null &&
+        nearestIndex.current !== closestIndex
+      ) {
+        hapticTap();
       }
+      nearestIndex.current = closestIndex;
     };
     const onScroll = (): void => {
       if (rafId) return;

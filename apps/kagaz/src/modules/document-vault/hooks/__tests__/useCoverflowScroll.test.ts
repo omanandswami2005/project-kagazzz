@@ -1,6 +1,10 @@
 import { fireEvent, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { hapticTap } from '@/core/haptics';
 import { useCoverflowScroll } from '../useCoverflowScroll';
+
+vi.mock('@/core/haptics', () => ({ hapticTap: vi.fn() }));
+const hapticTapMock = vi.mocked(hapticTap);
 
 type Rect = { left: number; width: number };
 
@@ -25,6 +29,7 @@ function stubRects(rects: Record<string, Rect>): void {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  hapticTapMock.mockClear();
   document.body.innerHTML = '';
 });
 
@@ -106,5 +111,60 @@ describe('useCoverflowScroll', () => {
   it('does nothing when the container ref is not yet attached', () => {
     const ref = { current: null };
     expect(() => renderHook(() => useCoverflowScroll(ref, []))).not.toThrow();
+  });
+
+  describe('haptic tick on card change (UX pass 2026-07-24)', () => {
+    it('does not tick on the initial mount measurement', () => {
+      const ul = buildRow();
+      stubRects({
+        row: { left: 0, width: 300 },
+        centered: { left: 100, width: 100 },
+        'off-center': { left: 0, width: 0 },
+      });
+      const ref = { current: ul };
+      renderHook(() => useCoverflowScroll(ref, []));
+      expect(hapticTapMock).not.toHaveBeenCalled();
+    });
+
+    it('ticks once when scrolling changes which card is nearest center', async () => {
+      const ul = buildRow();
+      stubRects({
+        row: { left: 0, width: 300 },
+        centered: { left: 100, width: 100 },
+        'off-center': { left: 0, width: 0 },
+      });
+      const ref = { current: ul };
+      renderHook(() => useCoverflowScroll(ref, []));
+
+      // Scroll so "off-center" is now the nearest-to-center card.
+      stubRects({
+        row: { left: 0, width: 300 },
+        centered: { left: 0, width: 0 },
+        'off-center': { left: 100, width: 100 },
+      });
+      fireEvent.scroll(ul);
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      expect(hapticTapMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not tick when the nearest card stays the same across a scroll event', async () => {
+      const ul = buildRow();
+      const rects = {
+        row: { left: 0, width: 300 },
+        centered: { left: 100, width: 100 },
+        'off-center': { left: 0, width: 0 },
+      };
+      stubRects(rects);
+      const ref = { current: ul };
+      renderHook(() => useCoverflowScroll(ref, []));
+
+      // Same layout, no actual change in the nearest card.
+      stubRects(rects);
+      fireEvent.scroll(ul);
+
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      expect(hapticTapMock).not.toHaveBeenCalled();
+    });
   });
 });

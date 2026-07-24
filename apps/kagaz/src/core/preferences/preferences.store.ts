@@ -23,6 +23,9 @@ export interface AppPreferences {
   swipeLeftAction: SwipeActionKind;
   /** F-88: action fired when a document row is swiped right. */
   swipeRightAction: SwipeActionKind;
+  /** UX pass (2026-07-24): whether `core/haptics` fires at all. On by
+   * default (native only regardless — haptics is already a no-op on web). */
+  hapticsEnabled: boolean;
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
@@ -34,6 +37,7 @@ const DEFAULTS: AppPreferences = {
   // menu/star button — swipe is only ever an accelerator (F-88).
   swipeLeftAction: 'delete',
   swipeRightAction: 'favorite',
+  hapticsEnabled: true,
 };
 
 const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
@@ -74,6 +78,7 @@ export function readPreferences(): AppPreferences {
         parsed.swipeRightAction,
         DEFAULTS.swipeRightAction
       ),
+      hapticsEnabled: parsed.hapticsEnabled !== false,
     };
   } catch {
     return DEFAULTS;
@@ -96,18 +101,26 @@ interface PreferencesStore extends AppPreferences {
   setRecentSectionCollapsed: (collapsed: boolean) => void;
   /** Sets which action fires on swipe-left/right (F-88) and persists it. */
   setSwipeAction: (side: 'left' | 'right', action: SwipeActionKind) => void;
+  /** Sets whether haptic feedback fires app-wide and persists it. */
+  setHapticsEnabled: (enabled: boolean) => void;
 }
 
 /** App-wide UI preference store (persisted). */
 export const usePreferencesStore = create<PreferencesStore>((set, get) => {
   const persist = (): void => {
-    const { renameOnAdd, recentSectionCollapsed, swipeLeftAction, swipeRightAction } =
-      get();
+    const {
+      renameOnAdd,
+      recentSectionCollapsed,
+      swipeLeftAction,
+      swipeRightAction,
+      hapticsEnabled,
+    } = get();
     writePreferences({
       renameOnAdd,
       recentSectionCollapsed,
       swipeLeftAction,
       swipeRightAction,
+      hapticsEnabled,
     });
   };
   return {
@@ -122,6 +135,10 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
     },
     setSwipeAction: (side, action): void => {
       set(side === 'left' ? { swipeLeftAction: action } : { swipeRightAction: action });
+      persist();
+    },
+    setHapticsEnabled: (hapticsEnabled): void => {
+      set({ hapticsEnabled });
       persist();
     },
   };

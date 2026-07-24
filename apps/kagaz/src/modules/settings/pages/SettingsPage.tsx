@@ -64,6 +64,8 @@ export function SettingsPage(): ReactNode {
   const swipeLeftAction = usePreferencesStore((s) => s.swipeLeftAction);
   const swipeRightAction = usePreferencesStore((s) => s.swipeRightAction);
   const setSwipeAction = usePreferencesStore((s) => s.setSwipeAction);
+  const hapticsEnabled = usePreferencesStore((s) => s.hapticsEnabled);
+  const setHapticsEnabled = usePreferencesStore((s) => s.setHapticsEnabled);
 
   return (
     <IonPage data-agent-id="settings">
@@ -206,6 +208,21 @@ export function SettingsPage(): ReactNode {
                   </Button>
                 ))}
               </div>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-haptics">
+              {t('haptics.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={hapticsEnabled}
+                label={t('haptics.enabled')}
+                onChange={setHapticsEnabled}
+                agentId="settings.haptics-enabled"
+              />
+              <p className="kg-settings__hint">{t('haptics.enabled_hint')}</p>
             </div>
           </section>
 

@@ -8,6 +8,7 @@ beforeEach(() => {
     recentSectionCollapsed: false,
     swipeLeftAction: 'delete',
     swipeRightAction: 'favorite',
+    hapticsEnabled: true,
   });
 });
 
@@ -52,6 +53,7 @@ describe('preferences store — recentSectionCollapsed (UX pass)', () => {
       recentSectionCollapsed: true,
       swipeLeftAction: 'delete',
       swipeRightAction: 'favorite',
+      hapticsEnabled: true,
     });
   });
 });
@@ -80,5 +82,22 @@ describe('preferences store — swipe actions (F-88)', () => {
     );
     expect(readPreferences().swipeLeftAction).toBe('delete');
     expect(readPreferences().swipeRightAction).toBe('favorite');
+  });
+});
+
+describe('preferences store — hapticsEnabled (UX pass 2026-07-24)', () => {
+  it('defaults to enabled', () => {
+    expect(readPreferences().hapticsEnabled).toBe(true);
+  });
+
+  it('persists a change to localStorage', () => {
+    usePreferencesStore.getState().setHapticsEnabled(false);
+    expect(usePreferencesStore.getState().hapticsEnabled).toBe(false);
+    expect(readPreferences().hapticsEnabled).toBe(false);
+  });
+
+  it('treats only an explicit false as disabled', () => {
+    localStorage.setItem('kagaz:preferences', JSON.stringify({}));
+    expect(readPreferences().hapticsEnabled).toBe(true);
   });
 });

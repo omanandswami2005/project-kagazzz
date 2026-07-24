@@ -15,6 +15,7 @@ vi.mock('@capacitor/haptics', () => ({
   NotificationType: { Success: 'SUCCESS', Warning: 'WARNING', Error: 'ERROR' },
 }));
 
+import { usePreferencesStore } from '@/core/preferences';
 import {
   hapticAction,
   hapticDestructive,
@@ -65,5 +66,14 @@ describe('haptics (native-only, silent on web and on plugin failure)', () => {
   it('never throws when the plugin rejects', () => {
     impact.mockRejectedValueOnce(new Error('no vibrator'));
     expect(() => hapticTap()).not.toThrow();
+  });
+
+  it('is a no-op when disabled via the Settings toggle', () => {
+    usePreferencesStore.getState().setHapticsEnabled(false);
+    hapticTap();
+    hapticSuccess();
+    expect(impact).not.toHaveBeenCalled();
+    expect(notification).not.toHaveBeenCalled();
+    usePreferencesStore.getState().setHapticsEnabled(true);
   });
 });

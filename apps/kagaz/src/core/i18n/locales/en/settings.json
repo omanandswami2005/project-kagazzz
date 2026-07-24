@@ -33,6 +33,11 @@
     "action_archive": "Archive",
     "action_none": "None"
   },
+  "haptics": {
+    "title": "Haptic feedback",
+    "enabled": "Vibrate on touch",
+    "enabled_hint": "Feel a light vibration on taps, swipe actions, and scrolling through Recent. Turn off to keep the app silent."
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",

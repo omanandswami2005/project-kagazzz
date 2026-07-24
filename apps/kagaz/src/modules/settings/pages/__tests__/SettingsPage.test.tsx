@@ -24,7 +24,11 @@ afterEach(async () => {
   // i18n is a singleton — reset so a language switch in one test can't leak.
   await i18n.changeLanguage('en');
   localStorage.clear();
-  usePreferencesStore.setState({ swipeLeftAction: 'delete', swipeRightAction: 'favorite' });
+  usePreferencesStore.setState({
+    swipeLeftAction: 'delete',
+    swipeRightAction: 'favorite',
+    hapticsEnabled: true,
+  });
 });
 
 function renderPage(): void {
@@ -101,6 +105,17 @@ describe('SettingsPage', () => {
       expect(
         document.querySelector('[data-agent-id="settings.swipe-right"]')
       ).toHaveAttribute('data-agent-state', 'favorite');
+    });
+  });
+
+  describe('haptic feedback toggle (UX pass 2026-07-24)', () => {
+    it('defaults to enabled and can be turned off', async () => {
+      renderPage();
+      const toggle = document.querySelector('[data-agent-id="settings.haptics-enabled"]');
+      expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+      await userEvent.click(toggle as Element);
+      expect(toggle).toHaveAttribute('aria-checked', 'false');
     });
   });
 });
