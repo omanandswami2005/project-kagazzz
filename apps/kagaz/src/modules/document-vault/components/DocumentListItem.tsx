@@ -3,11 +3,11 @@
  * Structure). Display-only in F-1 — preview/detail interactions land
  * with F-24/F-25.
  */
-import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, Tag, type IconName } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
-import { SwipeableRow, swipeReveal, type SwipeActionKind } from '@/core/gestures';
+import { SwipeableRow, swipeReveal, useLongPress, type SwipeActionKind } from '@/core/gestures';
 import type {
   DocumentEntity,
   TagEntity,
@@ -64,18 +64,6 @@ export interface DocumentListItemProps {
   ) => void;
 }
 
-/** interaction-patterns.md "Long-press (500ms)" — enter selection mode on lists. */
-const LONG_PRESS_MS = 500;
-
-/**
- * Finger-drift tolerance before a hold is treated as a scroll instead of a
- * long-press. Real touchscreens can't hold perfectly still — without this,
- * ordinary hand tremor during the 500ms hold gets misread by the browser as
- * the start of a scroll gesture, which fires `pointercancel` and silently
- * drops the long-press — the "sometimes it just doesn't select" symptom.
- */
-const MOVE_CANCEL_THRESHOLD_PX = 12;
-
 /** Name, type badge, size, and created date for one vault document. */
 export function DocumentListItem({
   document,
@@ -95,82 +83,10 @@ export function DocumentListItem({
   const { formatDate, formatFileSize } = useLocale();
   const thumbnailUrl = useThumbnail(document.thumbnailPath);
 
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressFired = useRef(false);
-  const pointerStart = useRef<{ x: number; y: number; id: number } | null>(
-    null
+  const longPress = useLongPress(
+    onLongPress ? (): void => onLongPress(document) : undefined,
+    !selectionMode
   );
-
-  const clearLongPressTimer = (): void => {
-    if (longPressTimer.current !== null) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  };
-
-  // A row can unmount mid-press (the list re-sorts/re-filters, a background
-  // refresh swaps in a new documents array, etc.) without ever getting a
-  // pointerup/cancel on this instance. Without this cleanup the timer keeps
-  // running in the background and fires later on a stale `document` closure
-  // — a phantom selection-mode entry with no visible press behind it, which
-  // reads as "long-press got stuck" since the UI state changes with no
-  // corresponding gesture.
-  useEffect(() => clearLongPressTimer, []);
-
-  const releaseCapture = (event: PointerEvent<HTMLElement>): void => {
-    // Some WebView versions throw releasing a pointer that was never
-    // captured (e.g. this handler firing for a plain tap); never let that
-    // escape and interrupt the rest of the touch/click sequence.
-    try {
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-        event.currentTarget.releasePointerCapture(event.pointerId);
-      }
-    } catch {
-      // Best-effort only.
-    }
-  };
-
-  const handlePointerDown = (event: PointerEvent<HTMLElement>): void => {
-    if (!onLongPress || selectionMode || event.pointerType === 'mouse') return;
-    longPressFired.current = false;
-    pointerStart.current = {
-      x: event.clientX,
-      y: event.clientY,
-      id: event.pointerId,
-    };
-    // Keep move/up/cancel routed to this element for the held pointer even
-    // if the finger drifts a little — without capture, drift can hand the
-    // gesture to the scroll container mid-hold, which is what makes
-    // long-press feel inconsistent on a real touchscreen (a mouse/emulator
-    // press has none of this jitter, so it never surfaces there).
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // Best-effort only — the timer/threshold logic below still works
-      // without capture, just with less drift tolerance.
-    }
-    longPressTimer.current = setTimeout(() => {
-      longPressFired.current = true;
-      longPressTimer.current = null;
-      onLongPress(document);
-    }, LONG_PRESS_MS);
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLElement>): void => {
-    const start = pointerStart.current;
-    if (!start || start.id !== event.pointerId) return;
-    const dx = event.clientX - start.x;
-    const dy = event.clientY - start.y;
-    if (Math.hypot(dx, dy) > MOVE_CANCEL_THRESHOLD_PX) {
-      clearLongPressTimer();
-    }
-  };
-
-  const handlePointerUpOrCancel = (event: PointerEvent<HTMLElement>): void => {
-    clearLongPressTimer();
-    pointerStart.current = null;
-    releaseCapture(event);
-  };
 
   const body = (
     <>
@@ -256,10 +172,7 @@ export function DocumentListItem({
   // Long-press already entered selection mode — swallow the trailing click
   // (pointerup fires a click right after) so it doesn't also toggle a row.
   const handleClick = (): void => {
-    if (longPressFired.current) {
-      longPressFired.current = false;
-      return;
-    }
+    if (longPress.consumeTrailingClick()) return;
     rowClick?.();
   };
 
@@ -275,10 +188,7 @@ export function DocumentListItem({
           data-agent-state={rowState}
           aria-pressed={selectionMode ? selected : undefined}
           onClick={handleClick}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUpOrCancel}
-          onPointerCancel={handlePointerUpOrCancel}
+          {...longPress.bind}
         >
           {body}
         </button>

@@ -11,3 +11,5 @@ export { SwipeableRow } from './SwipeableRow';
 export type { SwipeReveal, SwipeableRowProps } from './SwipeableRow';
 export { SWIPE_ACTION_META, swipeReveal } from './vault-swipe-actions';
 export type { SwipeActionKind } from './vault-swipe-actions';
+export { useLongPress } from './useLongPress';
+export type { LongPressBind, UseLongPressResult } from './useLongPress';
