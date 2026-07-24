@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { Redirect, Route } from 'react-router-dom';
 import { Icon, Spinner } from '@kagaz/ui';
 import {
+  LazyAiAssistantPage,
   LazyArchivedPage,
   LazyFavoritesPage,
   LazyLegalPage,
@@ -121,6 +122,7 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/legal/:doc" component={LazyLegalPage} />
           <Route exact path="/trash" component={LazyTrashPage} />
           <Route exact path="/archived" component={LazyArchivedPage} />
+          <Route exact path="/ai-assistant" component={LazyAiAssistantPage} />
           <Route
             exact
             path="/quick-reference"

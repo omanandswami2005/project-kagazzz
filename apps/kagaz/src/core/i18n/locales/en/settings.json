@@ -46,6 +46,11 @@
     "quickref_lock": "Lock Quick Reference",
     "quickref_lock_hint": "Require your fingerprint, face, or device PIN every time you open Quick Reference (your saved PAN, bank, and other personal values). On by default."
   },
+  "ai": {
+    "title": "AI Assistant",
+    "manage": "Manage AI Assistant",
+    "manage_hint": "Download, check the status of, or remove the on-device AI model."
+  },
   "data": {
     "title": "Data & Privacy",
     "trash": "Trash",

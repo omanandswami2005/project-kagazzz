@@ -1,0 +1,25 @@
+/* AI Assistant settings screen (F-13). Mirrors the centered-state layout
+   already used by DocumentViewerPage's loading/error states. */
+
+.kg-ai-settings {
+  padding: var(--space-4);
+}
+
+.kg-ai-settings__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding-block: var(--space-8);
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.kg-ai-settings__center p {
+  max-width: 36ch;
+}
+
+.kg-ai-settings__hint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

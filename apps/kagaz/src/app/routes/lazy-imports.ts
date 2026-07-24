@@ -48,3 +48,7 @@ export const LazySettingsPage = lazy(
 export const LazyLegalPage = lazy(
   () => import('@/modules/settings/pages/LegalPage')
 );
+
+export const LazyAiAssistantPage = lazy(
+  () => import('@/modules/ai-assistant/pages/AiAssistantPage')
+);

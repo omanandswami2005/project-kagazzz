@@ -265,6 +265,23 @@ export function SettingsPage(): ReactNode {
           </section>
 
           <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-ai">
+              {t('ai.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.push('/ai-assistant')}
+                agentId="settings.open-ai-assistant"
+              >
+                {t('ai.manage')}
+              </Button>
+              <p className="kg-settings__hint">{t('ai.manage_hint')}</p>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
             <h2 className="kg-settings__section-title" id="settings-data">
               {t('data.title')}
             </h2>

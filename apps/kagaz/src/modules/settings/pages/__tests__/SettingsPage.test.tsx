@@ -74,6 +74,11 @@ describe('SettingsPage', () => {
     expect(screen.getByText('गहरी')).toBeInTheDocument();
   });
 
+  it('offers a link to the AI Assistant settings screen (F-13)', () => {
+    renderPage();
+    expect(document.querySelector('[data-agent-id="settings.open-ai-assistant"]')).toBeInTheDocument();
+  });
+
   describe('swipe actions (F-88)', () => {
     it('defaults to delete on the left, favorite on the right', () => {
       renderPage();

@@ -14,6 +14,17 @@
     "merge": "Merge PDFs",
     "scan": "Scan something new"
   },
+  "lifecycle": {
+    "unsupported": "The AI Assistant needs on-device AI support, which isn't available on this platform.",
+    "intro": "Kagaz AI runs entirely on your device — nothing you type or ask ever leaves your phone.",
+    "download_button": "Download AI Assistant ({{size}})",
+    "wifi_hint": "One-time download. Wi-Fi recommended.",
+    "downloading": "Downloading the AI model...",
+    "ready": "The AI Assistant is ready.",
+    "capabilities": "Running on {{backend}} · loaded in {{seconds}}s",
+    "delete_button": "Delete AI model",
+    "retry_button": "Try again"
+  },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."
   }
