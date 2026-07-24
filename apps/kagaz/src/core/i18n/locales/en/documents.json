@@ -300,7 +300,10 @@
     "used": "{{count}} document(s)",
     "by_type": "By file type",
     "largest": "Largest documents",
-    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed"
+    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed",
+    "ai_model": "AI model",
+    "ai_model_size": "{{size}} on device",
+    "ai_model_manage": "Manage"
   },
   "bulk": {
     "select": "Select",

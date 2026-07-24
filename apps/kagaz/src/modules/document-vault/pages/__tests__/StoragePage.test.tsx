@@ -1,17 +1,32 @@
 import { render, screen } from '@testing-library/react';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
+import { useAi } from '@/app/providers/AIProvider';
 import { useStorageStats } from '../../hooks/useStorageStats';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import { StoragePage } from '../StoragePage';
 import { StoragePageAgent } from '../StoragePage.agent';
 
 vi.mock('../../hooks/useStorageStats', () => ({ useStorageStats: vi.fn() }));
+vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 const useStorageStatsMock = vi.mocked(useStorageStats);
+const useAiMock = vi.mocked(useAi);
 
 beforeAll(async () => {
   await initI18n();
   await i18n.changeLanguage('en');
+});
+
+beforeEach(() => {
+  useAiMock.mockReturnValue({
+    status: 'not-downloaded',
+    downloadProgress: 0,
+    errorMessage: null,
+    capabilities: null,
+    modelSizeBytes: 497_664_000,
+    activate: vi.fn(),
+    remove: vi.fn(),
+  });
 });
 
 describe('StoragePage (F-26)', () => {
@@ -61,5 +76,43 @@ describe('StoragePage (F-26)', () => {
     expect(StoragePageAgent.id).toBe('vault.storage');
     expect(StoragePageAgent.route).toBe('/storage');
     expect(StoragePageAgent.availableActions).toEqual([]);
+  });
+
+  describe('AI model row (F-13/F-26)', () => {
+    beforeEach(() => {
+      useStorageStatsMock.mockReturnValue({
+        stats: {
+          totalBytes: 10 * 1024 * 1024,
+          documentCount: 5,
+          byType: [],
+          largest: [],
+          duplicateGroups: 0,
+          reclaimableBytes: 0,
+        },
+      });
+    });
+
+    it('hides the AI model row when no model is loaded', () => {
+      render(<StoragePage />);
+      expect(document.querySelector('[data-agent-id="vault.storage.ai-model"]')).toBeNull();
+    });
+
+    it('shows the model size and a manage link once the model is ready', () => {
+      useAiMock.mockReturnValue({
+        status: 'ready',
+        downloadProgress: 100,
+        errorMessage: null,
+        capabilities: { backend: 'gpu', loadTimeMs: 900 },
+        modelSizeBytes: 497_664_000,
+        activate: vi.fn(),
+        remove: vi.fn(),
+      });
+      render(<StoragePage />);
+      expect(document.querySelector('[data-agent-id="vault.storage.ai-model"]')).not.toBeNull();
+      expect(screen.getByText('AI model')).toBeInTheDocument();
+      expect(
+        document.querySelector('[data-agent-id="vault.storage.ai-model.manage"]')
+      ).not.toBeNull();
+    });
   });
 });

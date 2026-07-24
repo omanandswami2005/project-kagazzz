@@ -3,7 +3,9 @@
 ## Purpose
 The user is viewing how much on-device storage their vault uses. This
 screen is read-only: a total, a per-file-type breakdown, the largest
-documents, and a hint about duplicate files that could be reclaimed.
+documents, a hint about duplicate files that could be reclaimed, and —
+when the on-device AI model is downloaded (F-13) — how much space it
+occupies, with a link to manage/delete it.
 
 ## What I (the AI) can do here
 Nothing mutating — there are no actions on this screen. I can read the
@@ -22,3 +24,5 @@ duplicate groups wasting ~12 MB").
 ## Cross-page handoffs
 - To remove documents, go back to the vault list (`vault.home`) and use
   multi-select delete.
+- To delete or inspect the AI model, follow the "Manage" link to
+  `vault.storage.ai-model.manage` → Settings → AI Assistant (`ai.settings`).
