@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { i18n, initI18n } from '@/core/i18n';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
@@ -14,11 +15,13 @@ import { VaultHomePageAgent } from '../VaultHomePage.agent';
 vi.mock('../../hooks/useDocuments', () => ({ useDocuments: vi.fn() }));
 vi.mock('../../hooks/useUpload', () => ({ useUpload: vi.fn() }));
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
+vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 vi.mock('../../hooks/useVaultMutations', () => ({ useVaultMutations: vi.fn() }));
 
 const useDocumentsMock = vi.mocked(useDocuments);
 const useUploadMock = vi.mocked(useUpload);
 const useDatabaseMock = vi.mocked(useDatabase);
+const useAiMock = vi.mocked(useAi);
 const useVaultMutationsMock = vi.mocked(useVaultMutations);
 
 const doc = entityFromNew({
@@ -69,6 +72,15 @@ beforeEach(() => {
     ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
   });
   useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
+  useAiMock.mockReturnValue({
+    status: 'not-downloaded',
+    downloadProgress: 0,
+    errorMessage: null,
+    capabilities: null,
+    modelSizeBytes: 497_664_000,
+    activate: vi.fn(),
+    remove: vi.fn(),
+  });
   useVaultMutationsMock.mockReturnValue({
     toggleFavorite: vi.fn().mockResolvedValue(undefined),
     setLocked: vi.fn().mockResolvedValue(undefined),
@@ -89,6 +101,23 @@ describe('VaultHomePage', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home"]')
     ).not.toBeNull();
+  });
+
+  it('shows the AI chat entry point unless the platform is unsupported (F-13)', () => {
+    render(<VaultHomePage />);
+    expect(document.querySelector('[data-agent-id="vault.home.ai-chat"]')).toBeInTheDocument();
+
+    useAiMock.mockReturnValue({
+      status: 'unsupported',
+      downloadProgress: 0,
+      errorMessage: null,
+      capabilities: null,
+      modelSizeBytes: 497_664_000,
+      activate: vi.fn(),
+      remove: vi.fn(),
+    });
+    const { container } = render(<VaultHomePage />);
+    expect(container.querySelector('[data-agent-id="vault.home.ai-chat"]')).toBeNull();
   });
 
   it('lists documents when present', () => {

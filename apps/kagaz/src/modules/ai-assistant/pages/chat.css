@@ -1,0 +1,64 @@
+/* AI chat screen (F-13). */
+
+.kg-chat__gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  min-height: 60vh;
+  text-align: center;
+}
+
+.kg-chat {
+  padding: var(--space-4);
+}
+
+.kg-chat__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kg-chat__bubble {
+  max-width: 80%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.kg-chat__bubble--user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}
+
+.kg-chat__bubble--assistant,
+.kg-chat__bubble--system,
+.kg-chat__bubble--tool {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.kg-chat__error {
+  align-self: center;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.kg-chat__composer {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.kg-chat__composer > :first-child {
+  flex: 1;
+}

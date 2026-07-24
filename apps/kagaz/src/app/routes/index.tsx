@@ -27,6 +27,7 @@ import { Icon, Spinner } from '@kagaz/ui';
 import {
   LazyAiAssistantPage,
   LazyArchivedPage,
+  LazyChatPage,
   LazyFavoritesPage,
   LazyLegalPage,
   LazyPdfToolsPage,
@@ -123,6 +124,7 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/trash" component={LazyTrashPage} />
           <Route exact path="/archived" component={LazyArchivedPage} />
           <Route exact path="/ai-assistant" component={LazyAiAssistantPage} />
+          <Route exact path="/ai-chat" component={LazyChatPage} />
           <Route
             exact
             path="/quick-reference"

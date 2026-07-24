@@ -1,6 +1,18 @@
 {
   "$schema": "docs/design-system/agent-interface.md#the-agentsitemap",
   "pages": {
+    "ai.settings": {
+      "route": "/ai-assistant",
+      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~475 MB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
+      "primary": null,
+      "actions": []
+    },
+    "ai.chat": {
+      "route": "/ai-chat",
+      "intent": "Have a conversation with the on-device AI Assistant. Requires the AI model to be downloaded and ready first (see ai.settings) — otherwise this screen gates to a setup prompt instead of a conversation.",
+      "primary": null,
+      "actions": []
+    },
     "vault.archived": {
       "route": "/archived",
       "intent": "Show documents the user has archived — hidden from the main vault list and Recent, but still searchable, favoritable, and included in backups. From here they can unarchive a document (back to the main list) or delete it to Trash. Both are user-only actions.",

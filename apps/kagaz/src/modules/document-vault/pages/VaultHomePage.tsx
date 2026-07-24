@@ -24,6 +24,7 @@ import {
   hapticSuccess,
   hapticTap,
 } from '@/core/haptics';
+import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
@@ -94,6 +95,7 @@ type PendingUndo =
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
   const router = useIonRouter();
+  const ai = useAi();
   // Virtualization support (UX pass, 2026-07-23): IonContent's scroll
   // element isn't a plain DOM ref, it's resolved async through its own API
   // — Ionic's documented pattern for wiring a scroll-position-dependent
@@ -373,6 +375,17 @@ export function VaultHomePage(): ReactNode {
         <IonToolbar>
           <IonTitle>{t('title')}</IonTitle>
           <IonButtons slot="end">
+            {ai.status !== 'unsupported' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon={<Icon name="Sparkles" size={24} />}
+                aria-label={t('title', { ns: 'ai-assistant' })}
+                onClick={() => router.push('/ai-chat', 'forward', 'push')}
+                agentId="vault.home.ai-chat"
+              />
+            )}
             <Button
               variant="ghost"
               size="sm"

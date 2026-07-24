@@ -17,49 +17,53 @@ import type {
  * (`cdn.jsdelivr.net`) at call time; that's exactly the "runtime network
  * dependency" CLAUDE.md's media-library rule warns about, so it's removed
  * here rather than kept as unreachable-but-present dead weight.
+ *
+ * No method here actually awaits anything (each either throws
+ * synchronously or returns a fixed value), so none are declared `async` —
+ * they return an already-settled Promise directly instead.
  */
 export class CapgoLLMWeb extends WebPlugin implements LLMPlugin {
-  private notSupported(): never {
-    throw this.unavailable('AI Assistant is Android-only in this app; see isAiSupported().');
+  private notSupported<T>(): Promise<T> {
+    return Promise.reject(this.unavailable('AI Assistant is Android-only in this app; see isAiSupported().'));
   }
 
-  async createChat(): ReturnType<LLMPlugin['createChat']> {
-    this.notSupported();
+  createChat(): ReturnType<LLMPlugin['createChat']> {
+    return this.notSupported();
   }
 
-  async sendMessage(): ReturnType<LLMPlugin['sendMessage']> {
-    this.notSupported();
+  sendMessage(): ReturnType<LLMPlugin['sendMessage']> {
+    return this.notSupported();
   }
 
-  async getReadiness(): ReturnType<LLMPlugin['getReadiness']> {
-    return { readiness: 'not-loaded' };
+  getReadiness(): ReturnType<LLMPlugin['getReadiness']> {
+    return Promise.resolve({ readiness: 'not-loaded' });
   }
 
-  async setModel(_options: ModelOptions): ReturnType<LLMPlugin['setModel']> {
-    this.notSupported();
+  setModel(_options: ModelOptions): ReturnType<LLMPlugin['setModel']> {
+    return this.notSupported();
   }
 
-  async downloadModel(_options: DownloadModelOptions): Promise<DownloadModelResult> {
-    this.notSupported();
+  downloadModel(_options: DownloadModelOptions): Promise<DownloadModelResult> {
+    return this.notSupported();
   }
 
-  async getPluginVersion(): ReturnType<LLMPlugin['getPluginVersion']> {
-    return { version: 'web-unsupported' };
+  getPluginVersion(): ReturnType<LLMPlugin['getPluginVersion']> {
+    return Promise.resolve({ version: 'web-unsupported' });
   }
 
-  async sha256File(): ReturnType<LLMPlugin['sha256File']> {
-    this.notSupported();
+  sha256File(): ReturnType<LLMPlugin['sha256File']> {
+    return this.notSupported();
   }
 
-  async deleteModel(): ReturnType<LLMPlugin['deleteModel']> {
-    this.notSupported();
+  deleteModel(): ReturnType<LLMPlugin['deleteModel']> {
+    return this.notSupported();
   }
 
-  async resolveToolCall(): ReturnType<LLMPlugin['resolveToolCall']> {
-    this.notSupported();
+  resolveToolCall(): ReturnType<LLMPlugin['resolveToolCall']> {
+    return this.notSupported();
   }
 
-  async getCapabilities(): Promise<AiCapabilities> {
-    this.notSupported();
+  getCapabilities(): Promise<AiCapabilities> {
+    return this.notSupported();
   }
 }
