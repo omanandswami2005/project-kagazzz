@@ -96,7 +96,7 @@ describe('VaultHomePage', () => {
   it('shows the empty state when the vault has no documents', () => {
     render(<VaultHomePage />);
     // Title now lives in an IonTitle (toolbar), not a semantic <h1>.
-    expect(screen.getByText('My Documents')).toBeInTheDocument();
+    expect(screen.getByText('My Kagazzz')).toBeInTheDocument();
     expect(screen.getByText('No documents yet')).toBeInTheDocument();
     expect(
       document.querySelector('[data-agent-id="vault.home"]')
@@ -235,7 +235,7 @@ describe('VaultHomePage', () => {
   it('renders in Hindi after a language switch', async () => {
     await i18n.changeLanguage('hi');
     render(<VaultHomePage />);
-    expect(screen.getByText('मेरे दस्तावेज़')).toBeInTheDocument();
+    expect(screen.getByText('मेरा Kagazzz')).toBeInTheDocument();
     await i18n.changeLanguage('en');
   });
 
