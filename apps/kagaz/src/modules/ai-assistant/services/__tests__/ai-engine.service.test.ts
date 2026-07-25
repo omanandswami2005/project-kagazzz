@@ -118,37 +118,32 @@ describe('downloadAndVerify (F-13)', () => {
 });
 
 describe('loadModel (F-13)', () => {
-  it('loads on gpu when it succeeds', async () => {
+  // CPU-only: a real device crashed the whole app process partway through
+  // a GPU-first load — a native GPU-delegate fault kills the process
+  // before any JS catch can run a CPU fallback, so there's no safe way to
+  // "try GPU, fall back to CPU" from JS. See the function's own doc
+  // comment for the full incident.
+  it('loads on cpu', async () => {
     plugin.setModel.mockResolvedValue(undefined);
-    plugin.getCapabilities.mockResolvedValue({ backend: 'gpu', loadTimeMs: 900 });
-
-    const result = await loadModel('/data/model.litertlm', []);
-
-    expect(result).toEqual({ backend: 'gpu', loadTimeMs: 900 });
-    expect(plugin.setModel).toHaveBeenCalledWith({
-      path: '/data/model.litertlm',
-      modelType: 'litertlm',
-      backend: 'gpu',
-      tools: [],
-    });
-  });
-
-  it('retries on cpu when the gpu load fails', async () => {
-    plugin.setModel.mockRejectedValueOnce(new Error('gpu delegate unavailable')).mockResolvedValueOnce(undefined);
     plugin.getCapabilities.mockResolvedValue({ backend: 'cpu', loadTimeMs: 2100 });
 
     const result = await loadModel('/data/model.litertlm', []);
 
-    expect(result.backend).toBe('cpu');
-    expect(plugin.setModel).toHaveBeenCalledTimes(2);
-    expect(plugin.setModel).toHaveBeenLastCalledWith(
-      expect.objectContaining({ backend: 'cpu' })
-    );
+    expect(result).toEqual({ backend: 'cpu', loadTimeMs: 2100 });
+    expect(plugin.setModel).toHaveBeenCalledOnce();
+    expect(plugin.setModel).toHaveBeenCalledWith({
+      path: '/data/model.litertlm',
+      modelType: 'litertlm',
+      backend: 'cpu',
+      tools: [],
+    });
   });
 
-  it('throws AiError when both gpu and cpu loads fail', async () => {
+  it('throws AiError when the cpu load fails, without ever trying gpu', async () => {
     plugin.setModel.mockRejectedValue(new Error('out of memory'));
     await expect(loadModel('/data/model.litertlm', [])).rejects.toThrow(AiError);
+    expect(plugin.setModel).toHaveBeenCalledOnce();
+    expect(plugin.setModel).toHaveBeenCalledWith(expect.objectContaining({ backend: 'cpu' }));
   });
 });
 

@@ -118,22 +118,26 @@ export interface LoadResult {
 }
 
 /**
- * Loads the model, preferring GPU. LiteRT-LM's Android API gives no way to
- * ask in advance whether a GPU delegate will actually engage, so on a GPU
- * load failure this retries once on CPU before surfacing MODEL_LOAD_FAILED
- * — a slower ready state beats a device that simply can't use the feature.
+ * Loads the model on the CPU delegate — NOT GPU-first. This used to try
+ * GPU first and catch a failure down to CPU, reasoning that a slower ready
+ * state beats a device that can't use the feature. That reasoning assumed
+ * a GPU load failure surfaces as a catchable JS rejection; on-device
+ * testing showed a real device instead **crashing the whole app process**
+ * partway through "loading" — a native GPU-delegate OOM/driver fault kills
+ * the process before any JS `try/catch` ever runs, so the CPU fallback
+ * never gets a chance to execute. The plugin's own `ModelOptions.backend`
+ * doc comment already says "Use `cpu` for stable long generations" and
+ * that iOS's own default is "CPU then falls back to GPU" — Android's
+ * default should be no less conservative. CPU-only until this fork gains a
+ * real pre-flight GPU-capability check (e.g. device RAM headroom) that can
+ * decide *before* calling into native code, not by reacting to its crash.
  */
 export async function loadModel(path: string, tools: ToolDescriptor[]): Promise<LoadResult> {
   try {
-    await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'gpu', tools });
-  } catch (gpuError) {
-    logger.info({ event: 'ai.model.gpu_load_failed', err: { message: String(gpuError) } });
-    try {
-      await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
-    } catch (cpuError) {
-      logger.warn({ event: 'ai.model.load_failed', err: { message: String(cpuError) } });
-      throw new AiError('MODEL_LOAD_FAILED', 'Failed to load the AI model on this device');
-    }
+    await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
+  } catch (cpuError) {
+    logger.warn({ event: 'ai.model.load_failed', err: { message: String(cpuError) } });
+    throw new AiError('MODEL_LOAD_FAILED', 'Failed to load the AI model on this device');
   }
 
   const capabilities = await CapacitorLlmLiteRT.getCapabilities();

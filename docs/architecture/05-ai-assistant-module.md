@@ -167,18 +167,20 @@ class AiEngineManager {
     await CapacitorLlmLiteRT.setModel({
       path,
       modelType: 'litertlm',
-      backend: 'gpu', // falls back to cpu internally if unavailable
+      backend: 'cpu', // see the CPU-only note below — this is NOT the original plan
       tools, // added in the fork — see §4
     });
   }
 }
 ```
 
+**⚠️ CPU-only, not GPU-first (discovered 2026-07-25, on-device):** the original plan here was `backend: 'gpu'` with the assumption that the native side "falls back to cpu internally if unavailable" — i.e. no app-level fallback logic needed. A real-device test instead showed a GPU-delegate load **crashing the whole app process** partway through the "loading" state. That is a fatal flaw in the original assumption: a native process crash is not a catchable JS exception, so `ai-engine.service.ts`'s own `loadModel()` (which originally tried `gpu` first and caught a failure down to `cpu`) could never actually run its fallback — the process was already dead before any `catch` block executed. `ai-engine.service.ts` now requests `backend: 'cpu'` directly and never attempts `gpu` at all, matching the plugin's own `ModelOptions.backend` doc comment ("Use `cpu` for stable long generations") and iOS's own documented default (CPU first, GPU as a fallback). Re-enabling GPU needs a real pre-flight capability check (e.g. device RAM headroom) that decides *before* calling into native code — not a reactive JS `try/catch`, which cannot save a crashed process.
+
 **What the fork adds over upstream `@capgo/capacitor-llm`** (full list, kept current as work lands):
 - `sha256File({ path })` — the plugin has no built-in integrity verification; §11 requires it, so it's ours to add (`MessageDigest.getInstance("SHA-256")` over the cached file, off the main thread).
 - `deleteModel({ path })` — upstream has no explicit delete; needed for the Storage-screen "AI model: N MB → Manage" entry the design note requires.
 - `tools` param on `setModel`/`createChat` + `toolCallRequested`/`resolveToolCall` — the actual tool-calling bridge, §4.
-- `getCapabilities()` — reports which backend actually loaded (`cpu`/`gpu`) and total load time, for the Settings screen's "AI model ready · GPU accelerated" line.
+- `getCapabilities()` — reports which backend actually loaded (`cpu`/`gpu`, in practice always `cpu` until the pre-flight check above lands) and total load time, for the Settings screen's "AI model ready" line.
 
 ### 3.5 Model Caching
 
@@ -1089,8 +1091,8 @@ type AiErrorCode =
 
 | Model | Backend | Notes |
 |---|---|---|
-| Qwen3-0.6B | GPU delegate (when available) | Fork requests `backend: 'gpu'`; native code falls back to CPU internally if the delegate is unavailable — no app-level fallback logic needed |
-| Qwen3-0.6B | CPU | Slower first-token latency; still viable on API 24+ mid-range hardware for short responses |
+| Qwen3-0.6B | CPU (current default) | `loadModel()` requests `backend: 'cpu'` directly — see §3.4's CPU-only note. GPU was found to crash the whole process on-device rather than gracefully falling back, so it's not attempted at all right now |
+| Qwen3-0.6B | GPU delegate | Not currently used — would need a pre-flight capability check before this is safe to re-enable (§3.4) |
 
 No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Qwen3-0.6B on the specific mid-range Android range this app targets — unlike the old WebLLM table (which quoted MLC's own desktop/mobile benchmarks), this needs a real device measurement pass once F-13 is implemented, not an assumed number.
 
