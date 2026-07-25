@@ -36,6 +36,8 @@ function aiValue(overrides: Partial<ReturnType<typeof useAi>> = {}): ReturnType<
     errorMessage: null,
     capabilities: null,
     modelSizeBytes: 497_664_000,
+    preferGpu: false,
+    setPreferGpu: vi.fn(),
     activate: vi.fn(),
     remove: vi.fn(),
     ...overrides,

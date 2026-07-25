@@ -17,7 +17,7 @@ import {
 } from '@ionic/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, ProgressBar, Spinner } from '@kagaz/ui';
+import { Button, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './ai-assistant.css';
@@ -44,6 +44,18 @@ export function AiAssistantPage(): ReactNode {
 
       <IonContent>
         <main className="kg-ai-settings" data-agent-id="ai.settings.content" data-agent-state={ai.status}>
+          {ai.status !== 'unsupported' && (
+            <div className="kg-ai-settings__gpu-toggle" data-agent-id="ai.settings.gpu-toggle">
+              <Toggle
+                enabled={ai.preferGpu}
+                onChange={ai.setPreferGpu}
+                label={t('lifecycle.gpu_toggle_label')}
+                agentId="ai.settings.gpu-toggle-switch"
+              />
+              <p className="kg-ai-settings__hint">{t('lifecycle.gpu_toggle_warning')}</p>
+            </div>
+          )}
+
           {ai.status === 'unsupported' && (
             <div className="kg-ai-settings__center" data-agent-id="ai.settings.unsupported">
               <Icon name="AlertCircle" size={32} aria-hidden />

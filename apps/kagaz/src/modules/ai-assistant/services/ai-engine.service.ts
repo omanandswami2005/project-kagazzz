@@ -118,28 +118,53 @@ export interface LoadResult {
 }
 
 /**
- * Loads the model on the CPU delegate — NOT GPU-first. This used to try
- * GPU first and catch a failure down to CPU, reasoning that a slower ready
- * state beats a device that can't use the feature. That reasoning assumed
- * a GPU load failure surfaces as a catchable JS rejection; on-device
- * testing showed a real device instead **crashing the whole app process**
- * partway through "loading" — a native GPU-delegate OOM/driver fault kills
- * the process before any JS `try/catch` ever runs, so the CPU fallback
- * never gets a chance to execute. The plugin's own `ModelOptions.backend`
- * doc comment already says "Use `cpu` for stable long generations" and
- * that iOS's own default is "CPU then falls back to GPU" — Android's
- * default should be no less conservative. CPU-only until this fork gains a
- * real pre-flight GPU-capability check (e.g. device RAM headroom) that can
- * decide *before* calling into native code, not by reacting to its crash.
+ * Loads the model. Defaults to the CPU delegate — NOT GPU-first. This used
+ * to try GPU first and catch a failure down to CPU, reasoning that a
+ * slower ready state beats a device that can't use the feature. That
+ * reasoning assumed a GPU load failure surfaces as a catchable JS
+ * rejection; on-device testing showed a real device instead **crashing the
+ * whole app process** partway through "loading" — a native GPU-delegate
+ * OOM/driver fault kills the process before any JS `try/catch` ever runs,
+ * so the CPU fallback never gets a chance to execute. The plugin's own
+ * `ModelOptions.backend` doc comment already says "Use `cpu` for stable
+ * long generations" and that iOS's own default is "CPU then falls back to
+ * GPU" — Android's default should be no less conservative.
+ *
+ * `preferGpu` (default false) is a user-driven, explicit opt-in — Settings
+ * → AI Assistant's "Experimental GPU acceleration" toggle
+ * (`AIProvider.preferGpu`) — for anyone who wants to try it despite the
+ * risk above. When set, this restores the old try-GPU-then-CPU-fallback
+ * behavior; when unset, GPU is never attempted at all. There is still no
+ * real pre-flight GPU-capability check (e.g. device RAM headroom) — the
+ * toggle exists precisely because that check doesn't exist yet, so the
+ * risk is disclosed to the user instead of silently applied to everyone.
  */
-export async function loadModel(path: string, tools: ToolDescriptor[]): Promise<LoadResult> {
+export async function loadModel(
+  path: string,
+  tools: ToolDescriptor[],
+  preferGpu = false
+): Promise<LoadResult> {
+  if (preferGpu) {
+    try {
+      await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'gpu', tools });
+      return logLoaded();
+    } catch (gpuError) {
+      // A genuine native crash never reaches this catch — see the doc
+      // comment above. This only catches a *graceful* GPU rejection.
+      logger.info({ event: 'ai.model.gpu_load_failed', err: { message: String(gpuError) } });
+    }
+  }
+
   try {
     await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
   } catch (cpuError) {
     logger.warn({ event: 'ai.model.load_failed', err: { message: String(cpuError) } });
     throw new AiError('MODEL_LOAD_FAILED', 'Failed to load the AI model on this device');
   }
+  return logLoaded();
+}
 
+async function logLoaded(): Promise<LoadResult> {
   const capabilities = await CapacitorLlmLiteRT.getCapabilities();
   logger.info({
     event: 'ai.model.loaded',

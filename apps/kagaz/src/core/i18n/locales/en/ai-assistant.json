@@ -29,7 +29,9 @@
     "ready": "The AI Assistant is ready.",
     "capabilities": "Running on {{backend}} · loaded in {{seconds}}s",
     "delete_button": "Delete AI model",
-    "retry_button": "Try again"
+    "retry_button": "Try again",
+    "gpu_toggle_label": "Experimental GPU acceleration",
+    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads."
   },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."

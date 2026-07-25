@@ -33,6 +33,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   engine.isAiSupported.mockReturnValue(true);
   engine.hasDownloadedModel.mockResolvedValue(false);
   engine.downloadAndVerify.mockResolvedValue('/data/model.litertlm');
@@ -100,5 +101,40 @@ describe('AiAssistantPage (F-13)', () => {
 
     expect(engine.deleteDownloadedModel).toHaveBeenCalledOnce();
     expect(await screen.findByText(/download ai assistant/i)).toBeInTheDocument();
+  });
+
+  it('shows the GPU toggle off by default and forwards preferGpu=false on activate', async () => {
+    renderPage();
+    const toggle = document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]');
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+
+    await userEvent.click(
+      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
+    );
+    await screen.findByText(/ready/i);
+    expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', expect.anything(), false);
+  });
+
+  it('enabling the GPU toggle persists it and forwards preferGpu=true on the next activate', async () => {
+    renderPage();
+    await userEvent.click(
+      document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]') as Element
+    );
+    expect(
+      document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]')
+    ).toHaveAttribute('aria-checked', 'true');
+    expect(localStorage.getItem('kagaz:ai-gpu-experimental')).toBe('true');
+
+    await userEvent.click(
+      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
+    );
+    await screen.findByText(/ready/i);
+    expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', expect.anything(), true);
+  });
+
+  it('hides the GPU toggle when the platform is unsupported', () => {
+    engine.isAiSupported.mockReturnValue(false);
+    renderPage();
+    expect(document.querySelector('[data-agent-id="ai.settings.gpu-toggle"]')).not.toBeInTheDocument();
   });
 });

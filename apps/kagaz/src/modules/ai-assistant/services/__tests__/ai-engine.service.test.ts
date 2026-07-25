@@ -118,12 +118,12 @@ describe('downloadAndVerify (F-13)', () => {
 });
 
 describe('loadModel (F-13)', () => {
-  // CPU-only: a real device crashed the whole app process partway through
-  // a GPU-first load — a native GPU-delegate fault kills the process
-  // before any JS catch can run a CPU fallback, so there's no safe way to
-  // "try GPU, fall back to CPU" from JS. See the function's own doc
-  // comment for the full incident.
-  it('loads on cpu', async () => {
+  // Defaults (preferGpu omitted/false): CPU-only. A real device crashed the
+  // whole app process partway through a GPU-first load — a native
+  // GPU-delegate fault kills the process before any JS catch can run a CPU
+  // fallback, so GPU is never attempted unless the user explicitly opts in.
+  // See the function's own doc comment for the full incident.
+  it('loads on cpu by default, never attempting gpu', async () => {
     plugin.setModel.mockResolvedValue(undefined);
     plugin.getCapabilities.mockResolvedValue({ backend: 'cpu', loadTimeMs: 2100 });
 
@@ -144,6 +144,38 @@ describe('loadModel (F-13)', () => {
     await expect(loadModel('/data/model.litertlm', [])).rejects.toThrow(AiError);
     expect(plugin.setModel).toHaveBeenCalledOnce();
     expect(plugin.setModel).toHaveBeenCalledWith(expect.objectContaining({ backend: 'cpu' }));
+  });
+
+  describe('preferGpu: true (Settings → AI Assistant experimental toggle)', () => {
+    it('tries gpu first and never touches cpu when it succeeds', async () => {
+      plugin.setModel.mockResolvedValue(undefined);
+      plugin.getCapabilities.mockResolvedValue({ backend: 'gpu', loadTimeMs: 900 });
+
+      const result = await loadModel('/data/model.litertlm', [], true);
+
+      expect(result).toEqual({ backend: 'gpu', loadTimeMs: 900 });
+      expect(plugin.setModel).toHaveBeenCalledOnce();
+      expect(plugin.setModel).toHaveBeenCalledWith(expect.objectContaining({ backend: 'gpu' }));
+    });
+
+    it('falls back to cpu when the gpu attempt fails gracefully', async () => {
+      plugin.setModel
+        .mockRejectedValueOnce(new Error('gpu delegate unavailable'))
+        .mockResolvedValueOnce(undefined);
+      plugin.getCapabilities.mockResolvedValue({ backend: 'cpu', loadTimeMs: 2100 });
+
+      const result = await loadModel('/data/model.litertlm', [], true);
+
+      expect(result.backend).toBe('cpu');
+      expect(plugin.setModel).toHaveBeenCalledTimes(2);
+      expect(plugin.setModel).toHaveBeenLastCalledWith(expect.objectContaining({ backend: 'cpu' }));
+    });
+
+    it('throws AiError when both gpu and cpu loads fail', async () => {
+      plugin.setModel.mockRejectedValue(new Error('out of memory'));
+      await expect(loadModel('/data/model.litertlm', [], true)).rejects.toThrow(AiError);
+      expect(plugin.setModel).toHaveBeenCalledTimes(2);
+    });
   });
 });
 

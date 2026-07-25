@@ -30,13 +30,17 @@ function wrapper({ children }: { children: React.ReactNode }): React.ReactNode {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   engine.isAiSupported.mockReturnValue(true);
   engine.hasDownloadedModel.mockResolvedValue(false);
   engine.downloadAndVerify.mockResolvedValue('/data/model.litertlm');
   engine.loadModel.mockResolvedValue({ backend: 'gpu', loadTimeMs: 1200 });
   engine.deleteDownloadedModel.mockResolvedValue(undefined);
 });
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+});
 
 describe('AIProvider (F-13)', () => {
   it('starts as unsupported on a platform isAiSupported() rejects', () => {
@@ -66,9 +70,11 @@ describe('AIProvider (F-13)', () => {
     });
 
     expect(engine.downloadAndVerify).toHaveBeenCalledOnce();
-    expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', [
-      { name: 'list_documents', descriptionJson: '{}' },
-    ]);
+    expect(engine.loadModel).toHaveBeenCalledWith(
+      '/data/model.litertlm',
+      [{ name: 'list_documents', descriptionJson: '{}' }],
+      false
+    );
     expect(result.current.status).toBe('ready');
     expect(result.current.capabilities).toEqual({ backend: 'gpu', loadTimeMs: 1200 });
   });
@@ -119,5 +125,36 @@ describe('AIProvider (F-13)', () => {
     expect(engine.deleteDownloadedModel).toHaveBeenCalledOnce();
     expect(result.current.status).toBe('not-downloaded');
     expect(result.current.capabilities).toBeNull();
+  });
+
+  it('preferGpu defaults to false and is off by default in loadModel calls', async () => {
+    const { result } = renderHook(() => useAi(), { wrapper });
+    expect(result.current.preferGpu).toBe(false);
+
+    await act(async () => {
+      await result.current.activate([]);
+    });
+    expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', [], false);
+  });
+
+  it('setPreferGpu(true) persists and is forwarded to loadModel on the next activate()', async () => {
+    const { result } = renderHook(() => useAi(), { wrapper });
+
+    act(() => {
+      result.current.setPreferGpu(true);
+    });
+    expect(result.current.preferGpu).toBe(true);
+    expect(localStorage.getItem('kagaz:ai-gpu-experimental')).toBe('true');
+
+    await act(async () => {
+      await result.current.activate([]);
+    });
+    expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', [], true);
+  });
+
+  it('reads a previously-persisted preferGpu=true on mount', () => {
+    localStorage.setItem('kagaz:ai-gpu-experimental', 'true');
+    const { result } = renderHook(() => useAi(), { wrapper });
+    expect(result.current.preferGpu).toBe(true);
   });
 });

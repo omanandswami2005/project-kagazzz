@@ -63,6 +63,8 @@ function readyAiValue(): ReturnType<typeof useAi> {
     errorMessage: null,
     capabilities: { backend: 'gpu', loadTimeMs: 900 },
     modelSizeBytes: 497_664_000,
+    preferGpu: false,
+    setPreferGpu: vi.fn(),
     activate: vi.fn(),
     remove: vi.fn(),
   };

@@ -39,6 +39,13 @@ export interface AiContextValue {
   capabilities: LoadResult | null;
   /** Size of the shipped model — for the Settings "Download (~N MB)" label before download starts. */
   modelSizeBytes: number;
+  /**
+   * User opt-in for the experimental GPU delegate (persisted). Off by
+   * default — see ai-engine.service.ts's `loadModel()` doc comment for why
+   * GPU isn't attempted unless the user explicitly asks for it.
+   */
+  preferGpu: boolean;
+  setPreferGpu: (next: boolean) => void;
   /** Downloads-if-needed, verifies, and loads the model. Registers `tools` for this session's chat. */
   activate: (tools: ToolDescriptor[]) => Promise<void>;
   /** Deletes the cached model file. Resets status to 'not-downloaded'. */
@@ -47,6 +54,28 @@ export interface AiContextValue {
 
 const AiContext = createContext<AiContextValue | null>(null);
 
+/**
+ * Non-sensitive UI preference — same lightweight localStorage pattern as
+ * ThemeProvider's THEME_STORAGE_KEY, not the SQLCipher DB (no need for
+ * DB-at-rest protection for "did the user opt into experimental GPU").
+ */
+const PREFER_GPU_STORAGE_KEY = 'kagaz:ai-gpu-experimental';
+
+function readPreferGpu(): boolean {
+  if (typeof localStorage === 'undefined') {
+    return false;
+  }
+  return localStorage.getItem(PREFER_GPU_STORAGE_KEY) === 'true';
+}
+
+function storePreferGpu(value: boolean): void {
+  try {
+    localStorage.setItem(PREFER_GPU_STORAGE_KEY, String(value));
+  } catch {
+    // Private mode / quota — persistence is best-effort, not fatal.
+  }
+}
+
 /** Provides AI engine status app-wide. */
 export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   const supported = useMemo(() => isAiSupported(), []);
@@ -54,6 +83,12 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<LoadResult | null>(null);
+  const [preferGpu, setPreferGpuState] = useState<boolean>(readPreferGpu);
+
+  const setPreferGpu = useCallback((next: boolean): void => {
+    setPreferGpuState(next);
+    storePreferGpu(next);
+  }, []);
 
   // One-time check for a model left over from a previous session — cheap
   // (a file stat), not a load. Still 'not-downloaded' either way until
@@ -74,22 +109,25 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
     };
   }, [supported]);
 
-  const activate = useCallback(async (tools: ToolDescriptor[]): Promise<void> => {
-    setErrorMessage(null);
-    setStatus('downloading');
-    setDownloadProgress(0);
-    try {
-      const path = await downloadAndVerify((percent) => setDownloadProgress(percent));
-      setStatus('loading');
-      const loaded = await loadModel(path, tools);
-      setCapabilities(loaded);
-      setStatus('ready');
-    } catch (error) {
-      const message = error instanceof AiError ? error.message : 'AI Assistant failed to start';
-      setErrorMessage(message);
-      setStatus('error');
-    }
-  }, []);
+  const activate = useCallback(
+    async (tools: ToolDescriptor[]): Promise<void> => {
+      setErrorMessage(null);
+      setStatus('downloading');
+      setDownloadProgress(0);
+      try {
+        const path = await downloadAndVerify((percent) => setDownloadProgress(percent));
+        setStatus('loading');
+        const loaded = await loadModel(path, tools, preferGpu);
+        setCapabilities(loaded);
+        setStatus('ready');
+      } catch (error) {
+        const message = error instanceof AiError ? error.message : 'AI Assistant failed to start';
+        setErrorMessage(message);
+        setStatus('error');
+      }
+    },
+    [preferGpu]
+  );
 
   const remove = useCallback(async (): Promise<void> => {
     await deleteDownloadedModel();
@@ -105,10 +143,12 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
       errorMessage,
       capabilities,
       modelSizeBytes: MODEL_SIZE_BYTES,
+      preferGpu,
+      setPreferGpu,
       activate,
       remove,
     }),
-    [status, downloadProgress, errorMessage, capabilities, activate, remove]
+    [status, downloadProgress, errorMessage, capabilities, preferGpu, setPreferGpu, activate, remove]
   );
 
   return <AiContext.Provider value={value}>{children}</AiContext.Provider>;
