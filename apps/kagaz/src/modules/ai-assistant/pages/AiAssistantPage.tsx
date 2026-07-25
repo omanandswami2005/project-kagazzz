@@ -68,6 +68,7 @@ export function AiAssistantPage(): ReactNode {
 
           {ai.status === 'downloading' && (
             <div className="kg-ai-settings__center" data-agent-id="ai.settings.downloading">
+              <Spinner size="lg" label={t('lifecycle.downloading')} />
               <p>{t('lifecycle.downloading')}</p>
               <div data-agent-id="ai.settings.progress" data-agent-state={ai.downloadProgress}>
                 <ProgressBar value={ai.downloadProgress} showLabel aria-label={t('lifecycle.downloading')} />
