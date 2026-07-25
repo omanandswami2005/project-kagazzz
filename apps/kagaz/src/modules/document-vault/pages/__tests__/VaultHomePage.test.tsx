@@ -4,11 +4,17 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { i18n, initI18n } from '@/core/i18n';
+import {
+  usePdfEngine,
+  type UsePdfEngineResult,
+} from '@/modules/pdf-engine/hooks/usePdfEngine';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useUpload } from '../../hooks/useUpload';
 import { useVaultMutations } from '../../hooks/useVaultMutations';
 import { useVaultStore } from '../../store/vault.store';
+import { pickFromGallery } from '../../services/upload-sources';
+import type { IncomingFile } from '../../types/document.types';
 import { VaultHomePage } from '../VaultHomePage';
 import { VaultHomePageAgent } from '../VaultHomePage.agent';
 
@@ -17,12 +23,72 @@ vi.mock('../../hooks/useUpload', () => ({ useUpload: vi.fn() }));
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 vi.mock('../../hooks/useVaultMutations', () => ({ useVaultMutations: vi.fn() }));
+// Device-testing ask (gallery multi-select -> combine into one PDF):
+// VaultHomePage now calls pickFromGallery() directly (bypassing useUpload's
+// uploadFrom) and pdfEngine.imagesToPdfFromFiles() when "Combine" is chosen —
+// both are mocked so these tests stay unit-level, not spin up the real
+// engine/scanner plumbing.
+vi.mock('../../services/upload-sources', () => ({ pickFromGallery: vi.fn() }));
+vi.mock('@/modules/pdf-engine/hooks/usePdfEngine', () => ({ usePdfEngine: vi.fn() }));
 
 const useDocumentsMock = vi.mocked(useDocuments);
 const useUploadMock = vi.mocked(useUpload);
 const useDatabaseMock = vi.mocked(useDatabase);
 const useAiMock = vi.mocked(useAi);
 const useVaultMutationsMock = vi.mocked(useVaultMutations);
+const pickFromGalleryMock = vi.mocked(pickFromGallery);
+const usePdfEngineMock = vi.mocked(usePdfEngine);
+
+/** Full {@link UsePdfEngineResult} stub — VaultHomePage isn't mocked per-method,
+ * so every method needs a callable default even though most tests never touch it. */
+function makePdfEngineMock(
+  overrides: Partial<UsePdfEngineResult> = {}
+): UsePdfEngineResult {
+  return {
+    state: {
+      busy: false,
+      percent: 0,
+      message: '',
+      saving: false,
+      error: null,
+      errorCode: null,
+    },
+    reset: vi.fn(),
+    mergePdfs: vi.fn(() => Promise.resolve(0)),
+    splitPdf: vi.fn(() => Promise.resolve(0)),
+    loadPagePreviews: vi.fn(() => Promise.resolve([])),
+    organizePages: vi.fn(() => Promise.resolve(0)),
+    extractPages: vi.fn(() => Promise.resolve(0)),
+    watermarkPdf: vi.fn(() => Promise.resolve(0)),
+    addPageNumbers: vi.fn(() => Promise.resolve(0)),
+    compressPdf: vi.fn(() => Promise.resolve(0)),
+    imagesToPdf: vi.fn(() => Promise.resolve(0)),
+    imagesToPdfFromFiles: vi.fn(() => Promise.resolve(0)),
+    appendScan: vi.fn(() => Promise.resolve(0)),
+    stampImage: vi.fn(() => Promise.resolve(0)),
+    pdfToImages: vi.fn(() => Promise.resolve(0)),
+    exportPdfText: vi.fn(() => Promise.resolve(0)),
+    exportPdfToWord: vi.fn(() => Promise.resolve(0)),
+    exportPdfToSheet: vi.fn(() => Promise.resolve(0)),
+    encryptPdf: vi.fn(() => Promise.resolve(0)),
+    decryptPdf: vi.fn(() => Promise.resolve(0)),
+    loadFormFields: vi.fn(() => Promise.resolve([])),
+    fillForm: vi.fn(() => Promise.resolve(0)),
+    loadMetadata: vi.fn(() =>
+      Promise.resolve({ title: '', author: '', subject: '', keywords: '' })
+    ),
+    setMetadata: vi.fn(() => Promise.resolve(0)),
+    ...overrides,
+  };
+}
+
+/** Two freshly-picked gallery photos, not yet uploaded (F-1's IncomingFile shape). */
+function galleryPhotos(): IncomingFile[] {
+  return [
+    { name: 'photo1.jpg', blob: new Blob(['a'], { type: 'image/jpeg' }), source: 'gallery' },
+    { name: 'photo2.jpg', blob: new Blob(['b'], { type: 'image/jpeg' }), source: 'gallery' },
+  ];
+}
 
 const doc = entityFromNew({
   name: 'Aadhaar',
@@ -71,6 +137,8 @@ beforeEach(() => {
     uploadFrom: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
     ingestFiles: vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] })),
   });
+  usePdfEngineMock.mockReturnValue(makePdfEngineMock());
+  pickFromGalleryMock.mockReset();
   useDatabaseMock.mockReturnValue({ status: 'ready', db: null });
   useAiMock.mockReturnValue({
     status: 'not-downloaded',
@@ -155,6 +223,111 @@ describe('VaultHomePage', () => {
     // observed to flake there even though nothing is actually broken.
     await userEvent.click(await screen.findByText('Take a photo', {}, { timeout: 5000 }));
     await waitFor(() => expect(uploadFrom).toHaveBeenCalledWith('camera'));
+  });
+
+  // Device-testing ask: "multi select from gallery directly to pdf" — picking
+  // 2+ gallery photos offers combining them into one PDF instead of N
+  // separate image documents; picking 0/1 keeps today's behavior.
+  describe('gallery multi-select to PDF', () => {
+    // An earlier test in this file ("opens the upload sheet from the FAB")
+    // opens UploadOptionsSheet's IonModal and never closes it; Ionic renders
+    // its content directly under document.body rather than inside RTL's
+    // per-render container, so that stale modal (with its React handlers
+    // already torn down by RTL's own cleanup) survives across test
+    // boundaries and can shadow the modal this describe block just rendered
+    // — a click on the "stale" one silently no-ops. Removing just that
+    // leaked node (not a blanket document.body.innerHTML wipe, which races
+    // Ionic's own async overlay-dismiss timers and throws an unrelated
+    // unhandled rejection) keeps `screen` queries pointed at the modal this
+    // test itself opened.
+    beforeEach(() => {
+      document
+        .querySelectorAll('[data-agent-id="vault.home.upload-sheet"]')
+        .forEach((el) => el.remove());
+    });
+
+    it('asks to combine into one PDF when multiple gallery photos are picked', async () => {
+      pickFromGalleryMock.mockResolvedValue(galleryPhotos());
+      useVaultStore.setState({ isUploadSheetOpen: true });
+
+      render(<VaultHomePage />);
+      await userEvent.click(
+        await screen.findByText('Choose from gallery', {}, { timeout: 5000 })
+      );
+      await waitFor(() => expect(pickFromGalleryMock).toHaveBeenCalled());
+
+      const confirm = (
+        await screen.findByText('Combine 2 photos into one PDF?', {}, { timeout: 5000 })
+      ).closest('[data-agent-id="vault.home.combine-photos-confirm"]');
+      expect(confirm).not.toBeNull();
+    });
+
+    it('combines the photos into one PDF when "Combine" is chosen', async () => {
+      const files = galleryPhotos();
+      pickFromGalleryMock.mockResolvedValue(files);
+      const imagesToPdfFromFiles = vi.fn(() => Promise.resolve(1));
+      usePdfEngineMock.mockReturnValue(makePdfEngineMock({ imagesToPdfFromFiles }));
+      useVaultStore.setState({ isUploadSheetOpen: true });
+
+      render(<VaultHomePage />);
+      await userEvent.click(
+        await screen.findByText('Choose from gallery', {}, { timeout: 5000 })
+      );
+      await waitFor(() => expect(pickFromGalleryMock).toHaveBeenCalled());
+      const confirm = (
+        await screen.findByText('Combine 2 photos into one PDF?', {}, { timeout: 5000 })
+      ).closest('[data-agent-id="vault.home.combine-photos-confirm"]') as HTMLElement;
+      fireEvent.click(within(confirm).getByText('Combine'));
+
+      await waitFor(() => expect(imagesToPdfFromFiles).toHaveBeenCalledWith(files));
+    });
+
+    it('uploads the photos as separate documents when "Keep separate" is chosen', async () => {
+      const files = galleryPhotos();
+      pickFromGalleryMock.mockResolvedValue(files);
+      const ingestFiles = vi.fn(() => Promise.resolve({ uploaded: 2, documents: [] }));
+      useUploadMock.mockReturnValue({
+        isReady: true,
+        uploadFrom: vi.fn(),
+        ingestFiles,
+      });
+      useVaultStore.setState({ isUploadSheetOpen: true });
+
+      render(<VaultHomePage />);
+      await userEvent.click(
+        await screen.findByText('Choose from gallery', {}, { timeout: 5000 })
+      );
+      await waitFor(() => expect(pickFromGalleryMock).toHaveBeenCalled());
+      const confirm = (
+        await screen.findByText('Combine 2 photos into one PDF?', {}, { timeout: 5000 })
+      ).closest('[data-agent-id="vault.home.combine-photos-confirm"]') as HTMLElement;
+      fireEvent.click(within(confirm).getByText('Keep separate'));
+
+      await waitFor(() => expect(ingestFiles).toHaveBeenCalledWith(files));
+    });
+
+    it('skips the confirm dialog and uploads directly when a single photo is picked', async () => {
+      const files = galleryPhotos().slice(0, 1);
+      pickFromGalleryMock.mockResolvedValue(files);
+      const ingestFiles = vi.fn(() => Promise.resolve({ uploaded: 1, documents: [] }));
+      useUploadMock.mockReturnValue({
+        isReady: true,
+        uploadFrom: vi.fn(),
+        ingestFiles,
+      });
+      useVaultStore.setState({ isUploadSheetOpen: true });
+
+      render(<VaultHomePage />);
+      await userEvent.click(
+        await screen.findByText('Choose from gallery', {}, { timeout: 5000 })
+      );
+      await waitFor(() => expect(pickFromGalleryMock).toHaveBeenCalled());
+
+      await waitFor(() => expect(ingestFiles).toHaveBeenCalledWith(files), { timeout: 5000 });
+      expect(
+        document.querySelector('[data-agent-id="vault.home.combine-photos-confirm"]')
+      ).not.toHaveAttribute('open');
+    });
   });
 
   it('shows progress while uploading and disables the FAB', () => {

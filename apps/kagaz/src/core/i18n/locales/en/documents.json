@@ -216,6 +216,9 @@
     "progress_label": "Uploading documents",
     "success_one": "{{count}} document added",
     "success_other": "{{count}} documents added",
+    "combine_photos_title": "Combine {{count}} photos into one PDF?",
+    "combine_action": "Combine",
+    "keep_separate_action": "Keep separate",
     "errors": {
       "invalid_file_type": "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP",
       "file_too_large": "File exceeds the maximum size of 100 MB",

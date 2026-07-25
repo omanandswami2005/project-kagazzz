@@ -216,6 +216,9 @@
     "progress_label": "दस्तावेज़ अपलोड हो रहे हैं",
     "success_one": "{{count}} दस्तावेज़ जोड़ा गया",
     "success_other": "{{count}} दस्तावेज़ जोड़े गए",
+    "combine_photos_title": "{{count}} तस्वीरों को एक PDF में मिलाएं?",
+    "combine_action": "मिलाएं",
+    "keep_separate_action": "अलग रखें",
     "errors": {
       "invalid_file_type": "असमर्थित फ़ाइल प्रारूप। समर्थित: PDF, JPG, PNG, HEIC, WEBP",
       "file_too_large": "फ़ाइल 100 MB की अधिकतम सीमा से बड़ी है",

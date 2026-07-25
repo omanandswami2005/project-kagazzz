@@ -84,7 +84,8 @@ import type {
 } from '@/infrastructure/database/types';
 import { useVaultStore } from '../store/vault.store';
 import { usePreferencesStore } from '@/core/preferences';
-import type { UploadSource } from '../services/upload-sources';
+import { pickFromGallery, type UploadSource } from '../services/upload-sources';
+import type { IncomingFile } from '../types/document.types';
 import './vault.css';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
@@ -122,7 +123,7 @@ export function VaultHomePage(): ReactNode {
   }, []);
   const { status: dbStatus } = useDatabase();
   const { documents, isLoading } = useDocuments();
-  const { isReady, uploadFrom } = useUpload();
+  const { isReady, uploadFrom, ingestFiles } = useUpload();
   const { toggleFavorite, rename, softDelete, restore, archive } =
     useVaultMutations();
   // UX-8: prompt to rename each just-added document (unless disabled in Settings).
@@ -325,15 +326,36 @@ export function VaultHomePage(): ReactNode {
   // UX-8: documents awaiting a rename prompt, oldest first (one alert at a time).
   const [renameQueue, setRenameQueue] = useState<DocumentEntity[]>([]);
   const renameTarget = renameQueue[0] ?? null;
+  // Device-testing ask: "multi select from gallery directly to pdf" — 2+
+  // gallery photos offer combining into one PDF instead of N separate image
+  // documents. Holds the just-picked files while that choice is pending.
+  const [galleryFiles, setGalleryFiles] = useState<IncomingFile[] | null>(null);
+
+  const finishUpload = ({ uploaded, documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
+    setUploadedCount(uploaded);
+    // UX-8: queue the new docs for a name prompt, pre-filled with the default.
+    if (renameOnAdd && documents.length > 0) {
+      setRenameQueue(documents);
+    }
+  };
 
   const handleSelectSource = (source: UploadSource): void => {
-    void uploadFrom(source).then(({ uploaded, documents }) => {
-      setUploadedCount(uploaded);
-      // UX-8: queue the new docs for a name prompt, pre-filled with the default.
-      if (renameOnAdd && documents.length > 0) {
-        setRenameQueue(documents);
-      }
-    });
+    // Gallery is special-cased: with 2+ photos picked, ask whether to
+    // combine them into one PDF (pdfEngine.imagesToPdfFromFiles) before
+    // they're ever persisted as separate documents. uploadFrom() closes the
+    // sheet itself; bypassing it here means doing that ourselves below.
+    if (source === 'gallery') {
+      useVaultStore.getState().closeUploadSheet();
+      void pickFromGallery().then((files) => {
+        if (files.length > 1) {
+          setGalleryFiles(files);
+          return;
+        }
+        void ingestFiles(files).then(finishUpload);
+      });
+      return;
+    }
+    void uploadFrom(source).then(finishUpload);
   };
 
   // Android hardware back inside a folder pops one level (folder nav is
@@ -633,6 +655,33 @@ export function VaultHomePage(): ReactNode {
           isOpen={isSheetOpen}
           onDismiss={closeSheet}
           onSelect={handleSelectSource}
+        />
+        {/* Device-testing ask: 2+ gallery photos ask whether to combine them
+           into one PDF (pdfEngine.imagesToPdfFromFiles) or keep them as
+           separate image documents (ingestFiles, today's default). */}
+        <Alert
+          isOpen={galleryFiles !== null}
+          header={t('upload.combine_photos_title', { count: galleryFiles?.length ?? 0 })}
+          agentId="vault.home.combine-photos-confirm"
+          buttons={[
+            {
+              text: t('upload.keep_separate_action'),
+              handler: (): void => {
+                if (galleryFiles) void ingestFiles(galleryFiles).then(finishUpload);
+              },
+            },
+            {
+              text: t('upload.combine_action'),
+              handler: (): void => {
+                if (galleryFiles) {
+                  void pdfEngine
+                    .imagesToPdfFromFiles(galleryFiles)
+                    .then((uploaded) => setUploadedCount(uploaded));
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setGalleryFiles(null)}
         />
         <FilterPanel
           key={isFilterOpen ? 'filter-open' : 'filter-closed'}
