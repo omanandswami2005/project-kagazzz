@@ -348,6 +348,22 @@ export class DocumentDao {
   }
 
   /**
+   * Returns a single soft-deleted document by id, or null (Trash preview,
+   * F-57 device-testing follow-up: let the user preview a trashed
+   * document's content before restoring/deleting it for good). The mirror
+   * image of {@link findById} — scoped to `deleted_at IS NOT NULL` instead
+   * of `IS NULL` — so it can only ever surface a row already in Trash, never
+   * double as a backdoor to a live document.
+   */
+  async findTrashedById(id: string): Promise<DocumentEntity | null> {
+    const rows = await this.db.query(
+      'SELECT * FROM documents WHERE id = ? AND deleted_at IS NOT NULL',
+      [id]
+    );
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  /**
    * Permanently removes a document row (F-57). Guarded to trashed rows only, so
    * a live document can never be hard-deleted without first going to Trash. The
    * caller is responsible for deleting the associated files.

@@ -15,6 +15,21 @@
  * and markAccessed (F-32) only stamps once authorization actually succeeds,
  * same as before. Extracted text is shown from the encrypted DB and copied
  * only on explicit user action.
+ *
+ * Trash preview (F-57 device-testing follow-up): `?trashed=1` on this same
+ * route lets TrashPage open a soft-deleted document read-only, without
+ * restoring it first. It loads via `useDocument(id, { trashed: true })` (→
+ * the DAO's `findTrashedById`, the one query allowed behind
+ * `deleted_at IS NULL`) and hides the actions that don't apply to a trashed
+ * row — Share/Open-with (Trash isn't the place to hand the file to another
+ * app) and the menu's Delete (Trash already owns restore/delete-forever, and
+ * `softDelete` is a no-op on an already-trashed row anyway). `markAccessed`
+ * is also skipped for a trashed preview — Recent already excludes trashed
+ * documents, so stamping it would just be a wasted write. [SEC] The lock
+ * gate below is untouched by the `trashed` branch — it reads
+ * `document.isLocked` off whatever `useDocument` loaded, live or trashed, so
+ * a document locked before being trashed still needs the same biometric
+ * prompt here as it would live.
  */
 import {
   IonBackButton,
@@ -29,7 +44,7 @@ import {
   useIonRouter,
 } from '@ionic/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
@@ -50,7 +65,14 @@ export function DocumentViewerPage(): ReactNode {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation('documents');
   const router = useIonRouter();
-  const { document, loading } = useDocument(id);
+  const location = useLocation();
+  // F-57 preview: `/doc/:id?trashed=1` from TrashPage — see the file's own
+  // doc comment above.
+  const trashed = useMemo(
+    () => new URLSearchParams(location.search).get('trashed') === '1',
+    [location.search]
+  );
+  const { document, loading } = useDocument(id, { trashed });
   const { pages, loading: fileLoading, error } = useDocumentFile(document);
   const { html: docxHtml, loading: docxLoading, error: docxError } = useDocxHtml(document);
   const isDocxDoc = document?.fileType.toLowerCase() === 'docx';
@@ -90,7 +112,12 @@ export function DocumentViewerPage(): ReactNode {
       }
       setAuthorized(allowed);
       if (allowed) {
-        void markAccessed(document);
+        // Trash preview: don't stamp last-accessed — Recent already excludes
+        // trashed documents (findRecent filters deleted_at IS NULL), so this
+        // would just be a no-op write for no observable benefit.
+        if (!trashed) {
+          void markAccessed(document);
+        }
       } else {
         setToast(t('lock.blocked'));
         router.goBack();
@@ -99,7 +126,7 @@ export function DocumentViewerPage(): ReactNode {
     return (): void => {
       cancelled = true;
     };
-  }, [document, authorizeView, markAccessed, router, t]);
+  }, [document, authorizeView, markAccessed, router, t, trashed]);
 
   const text = extracted ?? document?.ocrText ?? null;
   // F-83: standalone number sequences (account/ID numbers, PIN codes, dates, …)
@@ -153,7 +180,10 @@ export function DocumentViewerPage(): ReactNode {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/vault" data-agent-id="vault.viewer.back" />
+            <IonBackButton
+              defaultHref={trashed ? '/trash' : '/vault'}
+              data-agent-id="vault.viewer.back"
+            />
           </IonButtons>
           <IonTitle>{document?.name ?? ''}</IonTitle>
           <IonButtons slot="end">
@@ -177,6 +207,12 @@ export function DocumentViewerPage(): ReactNode {
 
       <IonContent>
         <main className="kg-viewer" data-agent-id="vault.viewer.content">
+          {trashed && authorized === true && (
+            <p className="kg-viewer__trashed-banner" data-agent-id="vault.viewer.trashed-banner">
+              <Icon name="Trash2" size={16} aria-hidden />
+              {t('viewer.trashed_banner')}
+            </p>
+          )}
           {loading || authorized !== true || fileLoading || (isDocxDoc && docxLoading) ? (
             <div className="kg-viewer__center" data-agent-state="loading">
               <IonSpinner name="crescent" />
@@ -274,7 +310,9 @@ export function DocumentViewerPage(): ReactNode {
           onDidDismiss={() => setMenuOpen(false)}
           buttons={[
             // F-64/F-65: hand the document to another app (native only).
-            ...(intents.supported
+            // Hidden for a trashed preview — Trash isn't the place to export
+            // or hand off a document pending restore/delete-forever.
+            ...(intents.supported && !trashed
               ? [
                   {
                     text: t('intents.open_with'),
@@ -289,12 +327,19 @@ export function DocumentViewerPage(): ReactNode {
                 ]
               : []),
             { text: t('details.title'), icon: 'Info', handler: () => setDetailsOpen(true) },
-            {
-              text: t('actions.delete'),
-              role: 'destructive',
-              icon: 'Trash2',
-              handler: handleDelete,
-            },
+            // Hidden for a trashed preview — restore/delete-forever already
+            // live on the Trash list itself (softDelete is also a no-op on
+            // an already-trashed row).
+            ...(trashed
+              ? []
+              : [
+                  {
+                    text: t('actions.delete'),
+                    role: 'destructive' as const,
+                    icon: 'Trash2' as const,
+                    handler: handleDelete,
+                  },
+                ]),
             { text: t('actions.cancel'), role: 'cancel' },
           ]}
         />

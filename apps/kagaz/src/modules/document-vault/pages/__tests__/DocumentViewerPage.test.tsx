@@ -11,10 +11,13 @@ const state = vi.hoisted(
     error: boolean;
     ocrText: string;
     canOcr: boolean;
+    /** `?trashed=1` or `''` — read by the mocked `useLocation`. */
+    search: string;
     extractText: ReturnType<typeof vi.fn>;
     softDelete: ReturnType<typeof vi.fn>;
     markAccessed: ReturnType<typeof vi.fn>;
     authorizeView: ReturnType<typeof vi.fn>;
+    useDocument: ReturnType<typeof vi.fn<(id: string, options?: { trashed?: boolean }) => void>>;
   } => ({
     document: null,
     loading: false,
@@ -23,16 +26,23 @@ const state = vi.hoisted(
     error: false,
     ocrText: '',
     canOcr: true,
+    search: '',
     extractText: vi.fn(),
     softDelete: vi.fn(),
     markAccessed: vi.fn(),
     authorizeView: vi.fn(),
+    useDocument: vi.fn(),
   })
 );
 
 const goBack = vi.fn();
 
-vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'd1' }) }));
+vi.mock('react-router-dom', () => ({
+  useParams: () => ({ id: 'd1' }),
+  // F-57 preview: the page reads `?trashed=1` off this to decide whether to
+  // load (and gate/render) the document as a Trash preview.
+  useLocation: () => ({ search: state.search, pathname: '/doc/d1', hash: '', state: null }),
+}));
 // [SEC] bug-audit hardening: a declined authorization now calls
 // router.goBack() directly from this page — useIonRouter() throws
 // "An Ionic Router is required" without a real IonReactRouter ancestor,
@@ -46,7 +56,12 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }
 // DocumentDetailsSheet (F-67) reads the locale via useLocale.
 vi.mock('@/core/i18n', () => ({ useLocale: () => ({ locale: 'en' }) }));
 vi.mock('../../hooks/useDocument', () => ({
-  useDocument: () => ({ document: state.document, loading: state.loading }),
+  // Records the (id, options) it was called with so tests can assert the
+  // `trashed` flag is correctly forwarded from the `?trashed=1` query param.
+  useDocument: (id: string, options?: { trashed?: boolean }) => {
+    state.useDocument(id, options);
+    return { document: state.document, loading: state.loading };
+  },
 }));
 vi.mock('../../hooks/useDocumentFile', () => ({
   useDocumentFile: () => ({ pages: state.pages, loading: state.fileLoading, error: state.error }),
@@ -91,6 +106,7 @@ beforeEach(() => {
   state.error = false;
   state.ocrText = '';
   state.canOcr = true;
+  state.search = '';
   state.document = doc({ ocrText: state.ocrText });
   state.authorizeView.mockResolvedValue(true);
 });
@@ -197,5 +213,77 @@ describe('DocumentViewerPage lock gate (bug-audit hardening)', () => {
     await renderAuthorized();
     expect(state.markAccessed).not.toHaveBeenCalled();
     expect(goBack).toHaveBeenCalledOnce();
+  });
+});
+
+describe('DocumentViewerPage Trash preview (F-57 device-testing follow-up)', () => {
+  it('loads via useDocument with trashed: true when the route has ?trashed=1', async () => {
+    state.search = '?trashed=1';
+    await renderAuthorized();
+    expect(state.useDocument).toHaveBeenCalledWith('d1', { trashed: true });
+  });
+
+  it('loads live (trashed: false) with no query param', async () => {
+    await renderAuthorized();
+    expect(state.useDocument).toHaveBeenCalledWith('d1', { trashed: false });
+  });
+
+  it('shows the trashed-preview banner once authorized, not for a live document', async () => {
+    state.search = '?trashed=1';
+    await renderAuthorized();
+    expect(q('vault.viewer.trashed-banner')).not.toBeNull();
+  });
+
+  it('shows no banner for a live (non-trashed) document', async () => {
+    await renderAuthorized();
+    expect(q('vault.viewer.trashed-banner')).toBeNull();
+  });
+
+  it('hides Delete from the menu for a trashed preview (Trash already owns restore/delete-forever)', async () => {
+    state.search = '?trashed=1';
+    await renderAuthorized();
+    fireEvent.click(q('vault.viewer.more')!);
+    expect(screen.queryByText('actions.delete')).toBeNull();
+  });
+
+  it('offers Delete from the menu for a live document', async () => {
+    await renderAuthorized();
+    fireEvent.click(q('vault.viewer.more')!);
+    expect(screen.getByText('actions.delete')).toBeInTheDocument();
+  });
+
+  it('does not stamp markAccessed for a trashed preview even when authorized', async () => {
+    state.search = '?trashed=1';
+    await renderAuthorized();
+    expect(state.authorizeView).toHaveBeenCalledWith(state.document);
+    expect(state.markAccessed).not.toHaveBeenCalled();
+  });
+
+  // [SEC] CRITICAL: a document locked before being trashed must still gate
+  // behind the same biometric prompt when previewed from Trash — the
+  // `trashed` branch must never bypass authorizeView.
+  it('[SEC] still requires authorization for a locked, trashed document, and blocks content when declined', async () => {
+    state.search = '?trashed=1';
+    state.document = doc({ isLocked: true, deletedAt: '2026-07-01T00:00:00.000Z' });
+    state.authorizeView.mockResolvedValue(false);
+    await renderAuthorized();
+    expect(state.authorizeView).toHaveBeenCalledWith(state.document);
+    expect(q('vault.viewer.pages')).toBeNull();
+    expect(q('vault.viewer.trashed-banner')).toBeNull();
+    expect(state.markAccessed).not.toHaveBeenCalled();
+    expect(goBack).toHaveBeenCalledOnce();
+  });
+
+  // [SEC] The mirror case: once the same gate is satisfied, the trashed
+  // preview renders normally — proving the gate isn't just always-false for
+  // trashed docs, it genuinely depends on authorizeView's outcome.
+  it('[SEC] shows content for a locked, trashed document once authorization succeeds', async () => {
+    state.search = '?trashed=1';
+    state.document = doc({ isLocked: true, deletedAt: '2026-07-01T00:00:00.000Z' });
+    state.authorizeView.mockResolvedValue(true);
+    await renderAuthorized();
+    expect(state.authorizeView).toHaveBeenCalledWith(state.document);
+    expect(q('vault.viewer.pages')).toBeInTheDocument();
+    expect(q('vault.viewer.trashed-banner')).not.toBeNull();
   });
 });

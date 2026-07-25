@@ -6,6 +6,14 @@
  * [SEC]/[LEGAL] The destructive actions (delete-forever, empty-trash) carry a
  * `data-agent-id` for testing but no Action Registry entry, so the AI assistant
  * cannot permanently destroy documents.
+ *
+ * Preview (F-57 device-testing follow-up): tapping a row's name/date opens it
+ * read-only in DocumentViewerPage via `/doc/:id?trashed=1`, so the user can
+ * see a trashed document's content before deciding to restore or delete it
+ * for good — without restoring it first. [SEC] That route enforces the same
+ * per-document lock gate for a trashed document as it does for a live one
+ * (see DocumentViewerPage's own [SEC] doc comment) — this page does nothing
+ * to weaken it, it's just a plain navigate.
  */
 import {
   IonBackButton,
@@ -15,6 +23,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -38,8 +47,13 @@ const DELETE_FOREVER_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--co
 export function TrashPage(): ReactNode {
   const { t } = useTranslation('documents');
   const { locale } = useLocale();
+  const router = useIonRouter();
   const trash = useTrash();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+
+  const openPreview = (doc: DocumentEntity): void => {
+    router.push(`/doc/${doc.id}?trashed=1`);
+  };
 
   const formatDate = (iso?: string): string =>
     iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(iso)) : '';
@@ -119,12 +133,18 @@ export function TrashPage(): ReactNode {
                       agentId={`vault.trash.item.${doc.id}.swipe`}
                     >
                       <div className="kg-trash__item" data-agent-id={`vault.trash.item.${doc.id}`}>
-                        <div className="kg-trash__meta">
+                        <button
+                          type="button"
+                          className="kg-trash__meta"
+                          onClick={() => openPreview(doc)}
+                          aria-label={t('trash.preview', { name: doc.name })}
+                          data-agent-id={`vault.trash.preview.${doc.id}`}
+                        >
                           <span className="kg-trash__name">{doc.name}</span>
                           <span className="kg-trash__deleted">
                             {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
                           </span>
-                        </div>
+                        </button>
                         <div className="kg-trash__actions">
                           <Button
                             variant="secondary"

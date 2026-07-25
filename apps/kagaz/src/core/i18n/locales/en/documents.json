@@ -246,7 +246,8 @@
     "copied": "Text copied",
     "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
     "detected_numbers": "Detected numbers",
-    "copy_number": "Copy {{number}}"
+    "copy_number": "Copy {{number}}",
+    "trashed_banner": "Previewing from Trash — restore it to make changes."
   },
   "detail": {
     "size": "Size",
@@ -368,6 +369,7 @@
     "deleted_on": "Deleted {{date}}",
     "restore": "Restore",
     "delete_forever": "Delete forever",
+    "preview": "Preview {{name}}",
     "empty_trash": "Empty Trash",
     "empty_confirm": "Permanently delete everything in Trash?",
     "empty_confirm_yes": "Delete all",

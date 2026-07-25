@@ -13,7 +13,16 @@ const trash: UseTrash = {
   emptyTrash: vi.fn(),
 };
 
+const push = vi.fn();
+
 vi.mock('../../hooks/useTrash', () => ({ useTrash: () => trash }));
+// useIonRouter() throws "An Ionic Router is required" without a real
+// IonReactRouter ancestor, which this lightweight page test doesn't
+// provide — same pattern as DocumentViewerPage.test.tsx.
+vi.mock('@ionic/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ionic/react')>();
+  return { ...actual, useIonRouter: () => ({ push }) };
+});
 
 const doc = (id: string, name: string): DocumentEntity =>
   ({ id, name, deletedAt: '2026-07-01T00:00:00.000Z' }) as DocumentEntity;
@@ -40,6 +49,7 @@ beforeEach(() => {
   trash.restore = vi.fn();
   trash.deleteForever = vi.fn();
   trash.emptyTrash = vi.fn();
+  push.mockClear();
 });
 
 afterEach(cleanup);
@@ -67,6 +77,17 @@ describe('TrashPage (F-57)', () => {
     render(<TrashPage />);
     fireEvent.click(q('vault.trash.restore.a')!);
     expect(trash.restore).toHaveBeenCalledWith(trash.items[0]);
+  });
+
+  it('tapping a row previews it read-only via /doc/:id?trashed=1 (F-57 device-testing follow-up)', () => {
+    trash.items = [doc('a', 'PAN Card')];
+    render(<TrashPage />);
+    expect(q('vault.trash.preview.a')).not.toBeNull();
+    fireEvent.click(q('vault.trash.preview.a')!);
+    expect(push).toHaveBeenCalledWith('/doc/a?trashed=1');
+    // Preview is non-destructive: restore/delete-forever must not fire.
+    expect(trash.restore).not.toHaveBeenCalled();
+    expect(trash.deleteForever).not.toHaveBeenCalled();
   });
 
   it('empties the trash only after an inline confirm', () => {

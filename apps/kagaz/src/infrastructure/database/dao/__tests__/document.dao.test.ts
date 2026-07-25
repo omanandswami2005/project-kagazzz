@@ -313,6 +313,21 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.sql).toContain('ORDER BY deleted_at DESC');
   });
 
+  it('findTrashedById returns a soft-deleted row by id', async () => {
+    db.onQuery(
+      /WHERE id = \? AND deleted_at IS NOT NULL/,
+      [docRow({ id: 'doc-1', deleted_at: '2026-07-01T00:00:00.000Z', is_locked: 1 })]
+    );
+    const doc = await dao.findTrashedById('doc-1');
+    expect(doc).toMatchObject({ id: 'doc-1', isLocked: true, deletedAt: '2026-07-01T00:00:00.000Z' });
+    expect(db.calls[0]?.sql).toContain('WHERE id = ? AND deleted_at IS NOT NULL');
+    expect(db.calls[0]?.params).toEqual(['doc-1']);
+  });
+
+  it('findTrashedById returns null when not found', async () => {
+    expect(await dao.findTrashedById('missing')).toBeNull();
+  });
+
   it('hardDelete removes trashed rows only', async () => {
     await dao.hardDelete('doc-1');
     expect(db.calls[0]?.sql).toContain('DELETE FROM documents');
