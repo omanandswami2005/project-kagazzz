@@ -19,7 +19,8 @@ import {
   IonToast,
   IonToolbar,
 } from '@ionic/react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
@@ -38,6 +39,8 @@ export function QuickNotesPage(): ReactNode {
   const { t } = useTranslation('documents');
   const { entries, isLoading, createEntry, updateEntry, deleteEntry } =
     useQuickReference(false);
+  const location = useLocation();
+  const history = useHistory();
 
   const [editTarget, setEditTarget] = useState<
     QuickReferenceEntry | null | undefined
@@ -54,6 +57,20 @@ export function QuickNotesPage(): ReactNode {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const selectionMode = selectedIds.length > 0;
   const selectedEntries = entries.filter((entry) => selectedIds.includes(entry.id));
+
+  // FAB quick-add (UX pass 2026-07-25): `/quick-notes?new=1` opens straight
+  // into the composer instead of the list — VaultHomePage's UploadFAB Quick
+  // Note item navigates here. Runs once on mount only; re-running on every
+  // location change would reopen the composer on back/forward navigation.
+  // The query param is stripped via history.replace so it can't fire twice.
+  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('new') === '1') {
+      setEditTarget(null);
+      history.replace('/quick-notes');
+    }
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 
   const handleCopyValue = async (entry: QuickReferenceEntry): Promise<void> => {
     const ok = await copyToClipboard(entry.value, {

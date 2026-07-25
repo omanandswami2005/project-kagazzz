@@ -142,6 +142,7 @@
     "empty_state": "No notes yet",
     "empty_hint": "Save small things you want fast, no-lock access to — a Wi-Fi password, a locker combination, a reminder.",
     "add": "Add",
+    "new_note": "New quick note",
     "add_title": "Add Quick Note",
     "edit_title": "Edit Quick Note",
     "label_field": "Title",
@@ -187,6 +188,9 @@
   "lock": {
     "reason": "Unlock this document",
     "blocked": "Unlock to open this document"
+  },
+  "fab": {
+    "label": "Add"
   },
   "folders": {
     "root": "My Vault",

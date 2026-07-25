@@ -20,6 +20,7 @@ function makeCtx(): VaultActionContext {
     tagDocument: vi.fn(() => Promise.resolve({ tagId: 'tag-1' })),
     openQuickReference: vi.fn(),
     openQuickNotes: vi.fn(),
+    startQuickNote: vi.fn(),
     archiveDocument: vi.fn(() => Promise.resolve()),
   };
 }

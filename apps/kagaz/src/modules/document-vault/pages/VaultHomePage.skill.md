@@ -13,6 +13,7 @@ shipped yet.
 | Open PDF tools | `tools.openPdfTools` | Opens the PDF Tools hub (merge, split, compress, PDF↔image, password protect/unlock, fill form). Pass `op` to jump straight to one tool. |
 | Open Quick Reference | `vault.openQuickReference` | Opens the personal saved-values screen (PAN, mobile, bank account, etc.) — behind its own biometric gate. |
 | Open Quick Notes | `vault.openQuickNotes` | Opens the fast, gate-free notes screen. For non-sensitive data only — never suggest storing an ID number, password, or anything sensitive here. |
+| Take a quick note | `vault.startQuickNote` | Opens Quick Notes with the add-note composer already open — for when the user wants to write a note immediately, not just browse the list. Same non-sensitive-data caveat as above. |
 | Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
 | Filter the list | `vault.openFilters` | Opens the filter panel (type / size / tags / favorites). |
 | Remove filters | `vault.clearFilters` | Clears every active filter. |
@@ -48,6 +49,8 @@ file.
 - "take a photo of my document" → `vault.uploadDocument({ source: 'camera' })`
 - "दस्तावेज़ अपलोड करो" → `vault.uploadDocument({})`
 - "गैलरी से फोटो जोड़ो" → `vault.uploadDocument({ source: 'gallery' })`
+- "take a quick note" → `vault.startQuickNote({})`
+- "एक क्विक नोट लिखो" → `vault.startQuickNote({})`
 
 ## Things I must NOT do
 - Read document content — I only see metadata (name, type, size, dates).

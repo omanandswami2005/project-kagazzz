@@ -48,6 +48,12 @@ export interface VaultActionContext {
   openQuickReference: () => void;
   /** Navigates to the Quick Notes screen (UX pass, 2026-07-23). */
   openQuickNotes: () => void;
+  /**
+   * Navigates to Quick Notes and opens the add-note composer directly
+   * (UX pass, 2026-07-25 — the FAB drawer's Quick Note quick-add, skipping
+   * the list that `openQuickNotes` lands on).
+   */
+  startQuickNote: () => void;
   /** Archives a document by id — hides it from the main list/Recent (F-89). */
   archiveDocument: (documentId: string) => Promise<void>;
 }
@@ -189,6 +195,19 @@ export const vaultActions = {
     requiresConfirmation: false,
     handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
       ctx.openQuickNotes();
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
+  startQuickNote: defineAction({
+    id: 'vault.startQuickNote',
+    summary:
+      'Open Quick Notes with the add-note composer already open, ready to type a title and value.',
+    voice: ['take a quick note', 'add a quick note', 'एक क्विक नोट लिखो'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.startQuickNote();
       return Promise.resolve({ ok: true });
     },
   }),

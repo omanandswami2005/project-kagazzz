@@ -20,6 +20,7 @@ export const VaultHomePageAgent = definePage({
     vaultActions.searchDocuments,
     vaultActions.openQuickReference,
     vaultActions.openQuickNotes,
+    vaultActions.startQuickNote,
     vaultActions.openFilters,
     vaultActions.clearFilters,
     vaultActions.bulkDelete,
@@ -85,6 +86,8 @@ export const VaultHomePageAgent = definePage({
       utterance: 'set up starter folders',
       action: 'vault.createStarterFolders',
     },
+    { utterance: 'take a quick note', action: 'vault.startQuickNote' },
+    { utterance: 'एक क्विक नोट लिखो', action: 'vault.startQuickNote' },
     { utterance: 'edit tags', action: 'vault.manageTags' },
     {
       utterance: 'tag this as important',

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { IonRouterContext } from '@ionic/react';
 import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { i18n, initI18n } from '@/core/i18n';
@@ -123,6 +124,21 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
+  // A test that opens UploadOptionsSheet's IonModal (e.g. "opens the upload
+  // sheet from the FAB drawer") never closes it; Ionic renders its content
+  // directly under document.body rather than inside RTL's per-render
+  // container, so that stale modal (with its React handlers already torn
+  // down by RTL's own cleanup) survives across test boundaries and can
+  // shadow the modal a later test renders — a click on the "stale" one
+  // silently no-ops. Removing just that leaked node (not a blanket
+  // document.body.innerHTML wipe, which races Ionic's own async
+  // overlay-dismiss timers and throws an unrelated unhandled rejection)
+  // keeps `screen`/`document` queries pointed at the modal each test itself
+  // opened. Runs for every test, not just ones after the offending test,
+  // since accumulation order is what actually determines which query wins.
+  document
+    .querySelectorAll('[data-agent-id="vault.home.upload-sheet"]')
+    .forEach((el) => el.remove());
   useVaultStore.setState({
     documents: [],
     isLoading: false,
@@ -197,14 +213,71 @@ describe('VaultHomePage', () => {
     ).toHaveAttribute('data-agent-state', 'success');
   });
 
-  it('opens the upload sheet from the FAB', async () => {
+  // UX pass 2026-07-25: the FAB now opens a speed-dial (Upload / New
+  // Folder / Quick Note) instead of the upload sheet directly — tapping the
+  // main button reveals the drawer, and the Upload item is what opens the
+  // sheet. See UploadFAB.tsx.
+  it('opens the upload sheet from the FAB drawer', async () => {
     render(<VaultHomePage />);
     await userEvent.click(
       document.querySelector(
         '[data-agent-id="vault.home.upload-fab"]'
       ) as Element
     );
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-upload"]'
+      ) as Element
+    );
     expect(useVaultStore.getState().isUploadSheetOpen).toBe(true);
+  });
+
+  it('opens the new-folder dialog from the FAB drawer (moved off the folder bar)', async () => {
+    render(<VaultHomePage />);
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab"]'
+      ) as Element
+    );
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-new-folder"]'
+      ) as Element
+    );
+    expect(
+      document.querySelector('[data-agent-id="vault.home.new-folder-dialog"]')
+    ).not.toBeNull();
+  });
+
+  it('navigates straight to the Quick Notes composer from the FAB drawer', async () => {
+    // useIonRouter() throws outside a real IonReactRouter — no test in this
+    // file exercises router.push before now, so this stubs the context
+    // directly rather than mocking all of @ionic/react.
+    const push = vi.fn();
+    render(
+      <IonRouterContext.Provider
+        value={{
+          push,
+          back: vi.fn(),
+          canGoBack: () => false,
+          nativeBack: vi.fn(),
+          routeInfo: { id: 'vault-home', pathname: '/vault', search: '' },
+        }}
+      >
+        <VaultHomePage />
+      </IonRouterContext.Provider>
+    );
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab"]'
+      ) as Element
+    );
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-quick-note"]'
+      ) as Element
+    );
+    expect(push).toHaveBeenCalledWith('/quick-notes?new=1', 'forward', 'push');
   });
 
   it('starts the upload when a source is chosen from the sheet', async () => {
@@ -229,22 +302,6 @@ describe('VaultHomePage', () => {
   // 2+ gallery photos offers combining them into one PDF instead of N
   // separate image documents; picking 0/1 keeps today's behavior.
   describe('gallery multi-select to PDF', () => {
-    // An earlier test in this file ("opens the upload sheet from the FAB")
-    // opens UploadOptionsSheet's IonModal and never closes it; Ionic renders
-    // its content directly under document.body rather than inside RTL's
-    // per-render container, so that stale modal (with its React handlers
-    // already torn down by RTL's own cleanup) survives across test
-    // boundaries and can shadow the modal this describe block just rendered
-    // — a click on the "stale" one silently no-ops. Removing just that
-    // leaked node (not a blanket document.body.innerHTML wipe, which races
-    // Ionic's own async overlay-dismiss timers and throws an unrelated
-    // unhandled rejection) keeps `screen` queries pointed at the modal this
-    // test itself opened.
-    beforeEach(() => {
-      document
-        .querySelectorAll('[data-agent-id="vault.home.upload-sheet"]')
-        .forEach((el) => el.remove());
-    });
 
     it('asks to combine into one PDF when multiple gallery photos are picked', async () => {
       pickFromGalleryMock.mockResolvedValue(galleryPhotos());

@@ -15,3 +15,18 @@ ion-fab-button.kg-upload-fab {
 ion-fab-button.kg-upload-fab:hover {
   --box-shadow: var(--shadow-glow-brand-lg);
 }
+
+/* UX pass 2026-07-25: the FAB now expands into a 3-item speed-dial
+   (Upload / New Folder / Quick Note) via ion-fab-list — see UploadFAB.tsx.
+   Ionic's default in-list styling is a flat --ion-color-light, which this
+   app never remaps to its own tokens (app.css only overrides
+   --ion-color-primary), so the mini buttons get the same elevated-surface
+   treatment as other circular controls in this module (folder-color-picker,
+   vault.css) instead of Ionic's unthemed default. */
+ion-fab-button.kg-upload-fab-item {
+  --background: var(--surface-2);
+  --background-hover: var(--surface-3);
+  --background-activated: var(--surface-3);
+  --color: var(--text-primary);
+  --box-shadow: var(--shadow-md);
+}

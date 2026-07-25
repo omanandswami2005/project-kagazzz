@@ -399,6 +399,14 @@ export function VaultHomePage(): ReactNode {
     router.push(`/doc/${document.id}`);
   };
 
+  // UX pass 2026-07-25: the FAB drawer's Quick Note item — jumps straight
+  // into the add-note composer instead of landing on the list (that's what
+  // the header's Quick Notes icon already does). QuickNotesPage reads the
+  // `new` query param once on mount and opens the composer for it.
+  const handleQuickNote = (): void => {
+    router.push('/quick-notes?new=1', 'forward', 'push');
+  };
+
   const listState = isLoading
     ? 'loading'
     : documents.length === 0
@@ -562,19 +570,6 @@ export function VaultHomePage(): ReactNode {
                     />
                   )}
 
-                  <div className="kg-vault__folder-bar">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={<Icon name="FolderPlus" size={20} />}
-                      onClick={() => setNewFolderOpen(true)}
-                      agentId="vault.home.new-folder"
-                      agentAction="vault.createFolder"
-                    >
-                      {t('folders.new')}
-                    </Button>
-                  </div>
-
                   {folders.length > 0 && (
                     <ul
                       className="kg-folder-grid"
@@ -649,7 +644,12 @@ export function VaultHomePage(): ReactNode {
            elements); one primary action at a time, per design-principles.md
            #1, same as the bottom nav hiding in selection mode. */}
         {!selectionMode && (
-          <UploadFAB disabled={!isReady || isUploading} onClick={openSheet} />
+          <UploadFAB
+            disabled={!isReady || isUploading}
+            onUpload={openSheet}
+            onNewFolder={() => setNewFolderOpen(true)}
+            onQuickNote={handleQuickNote}
+          />
         )}
         <UploadOptionsSheet
           isOpen={isSheetOpen}

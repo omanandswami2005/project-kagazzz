@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { copyToClipboard } from '@/core/clipboard';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
@@ -9,6 +9,18 @@ import { QuickNotesPage } from '../QuickNotesPage';
 
 vi.mock('../../hooks/useQuickReference', () => ({ useQuickReference: vi.fn() }));
 vi.mock('@/core/clipboard', () => ({ copyToClipboard: vi.fn() }));
+
+// FAB quick-add (UX pass 2026-07-25): QuickNotesPage reads `?new=1` via
+// react-router-dom's useLocation/useHistory. Mocked wholesale (as
+// DocumentViewerPage.test.tsx does for react-router-dom) rather than
+// wrapped in a real Router, since these two hooks are the only thing the
+// page needs from it.
+let mockSearch = '';
+const historyReplaceMock = vi.fn();
+vi.mock('react-router-dom', () => ({
+  useLocation: () => ({ search: mockSearch }),
+  useHistory: () => ({ replace: historyReplaceMock }),
+}));
 
 const useQuickReferenceMock = vi.mocked(useQuickReference);
 const copyToClipboardMock = vi.mocked(copyToClipboard);
@@ -35,7 +47,21 @@ beforeAll(async () => {
   await i18n.changeLanguage('en');
 });
 
+// Same fix as PdfToolsPage.test.tsx / PdfExtractPagesSheet.test.tsx: IonModal's
+// present()/dismiss() promise chain is a separate, unobserved chain from the
+// DOM state cleanup() tears down. Without a real macrotask tick after
+// cleanup, a modal left open at test end (e.g. the ?new=1 composer test)
+// unmounts mid-teardown, and its overlay-controller callback later fires
+// against a component that's already gone — an unhandled "framework
+// delegate is missing" rejection that surfaces after the offending test.
+afterEach(async () => {
+  cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 50));
+});
+
 beforeEach(() => {
+  mockSearch = '';
+  historyReplaceMock.mockClear();
   copyToClipboardMock.mockResolvedValue(true);
   useQuickReferenceMock.mockReturnValue({
     entries: [entryA, entryB],
@@ -56,6 +82,34 @@ describe('QuickNotesPage (UX pass 2026-07-24)', () => {
     expect(copyToClipboardMock).toHaveBeenCalledWith('hunter2', expect.anything());
     // Edit sheet never opened — no label/value inputs rendered.
     expect(screen.queryByDisplayValue('hunter2')).not.toBeInTheDocument();
+  });
+
+  // FAB quick-add (UX pass 2026-07-25): VaultHomePage's UploadFAB Quick Note
+  // item navigates to `/quick-notes?new=1` to skip the list and land right
+  // in the composer.
+  it('opens the add-note composer on mount when the URL carries ?new=1', async () => {
+    mockSearch = '?new=1';
+    render(<QuickNotesPage />);
+    // Awaited (not a synchronous assertion): IonModal's present() is a real
+    // custom-element lifecycle that needs a tick to register its overlay
+    // delegate — asserting synchronously right after render() can end the
+    // test, and trigger afterEach's cleanup(), before that registration
+    // finishes, which is what caused the "framework delegate is missing"
+    // unhandled rejection this test used to leave behind.
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-agent-id="vault.quick-notes.edit-sheet"]')
+      ).toHaveAttribute('data-agent-state', 'open')
+    );
+    expect(historyReplaceMock).toHaveBeenCalledWith('/quick-notes');
+  });
+
+  it('does not open the composer without the ?new=1 param', () => {
+    render(<QuickNotesPage />);
+    expect(
+      document.querySelector('[data-agent-id="vault.quick-notes.edit-sheet"]')
+    ).toHaveAttribute('data-agent-state', 'closed');
+    expect(historyReplaceMock).not.toHaveBeenCalled();
   });
 
   it('edit is still reachable from the "more" menu', async () => {
