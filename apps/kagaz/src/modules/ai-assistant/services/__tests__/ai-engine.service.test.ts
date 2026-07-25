@@ -146,6 +146,13 @@ describe('loadModel (F-13)', () => {
     expect(plugin.setModel).toHaveBeenCalledWith(expect.objectContaining({ backend: 'cpu' }));
   });
 
+  it('includes the real native error message in the thrown AiError (bug-audit: was silently discarded)', async () => {
+    plugin.setModel.mockRejectedValue(new Error('Cannot allocate memory for engine'));
+    await expect(loadModel('/data/model.litertlm', [])).rejects.toThrow(
+      /Cannot allocate memory for engine/
+    );
+  });
+
   describe('preferGpu: true (Settings → AI Assistant experimental toggle)', () => {
     it('tries gpu first and never touches cpu when it succeeds', async () => {
       plugin.setModel.mockResolvedValue(undefined);

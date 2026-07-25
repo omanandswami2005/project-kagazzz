@@ -158,8 +158,14 @@ export async function loadModel(
   try {
     await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
   } catch (cpuError) {
-    logger.warn({ event: 'ai.model.load_failed', err: { message: String(cpuError) } });
-    throw new AiError('MODEL_LOAD_FAILED', 'Failed to load the AI model on this device');
+    // Surface the native engine's real message (e.g. an out-of-memory or
+    // engine-init failure reason) instead of a generic string — it was
+    // being logged but silently discarded from the AiError the UI shows,
+    // which made a real device failure impossible to diagnose from the
+    // screen alone.
+    const detail = cpuError instanceof Error ? cpuError.message : String(cpuError);
+    logger.warn({ event: 'ai.model.load_failed', err: { message: detail } });
+    throw new AiError('MODEL_LOAD_FAILED', `Failed to load the AI model on this device: ${detail}`);
   }
   return logLoaded();
 }
