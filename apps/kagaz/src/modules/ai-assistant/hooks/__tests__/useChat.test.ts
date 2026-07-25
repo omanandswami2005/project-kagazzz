@@ -11,6 +11,20 @@ import { useChat } from '../useChat';
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 
+const pdfEngine = vi.hoisted(() => ({
+  mergePdfs: vi.fn(),
+  splitPdf: vi.fn(),
+  compressPdf: vi.fn(),
+  watermarkPdf: vi.fn(),
+  imagesToPdf: vi.fn(),
+  pdfToImages: vi.fn(),
+  exportPdfText: vi.fn(),
+}));
+// useChat now also calls usePdfEngine() for F-14's document-op tools —
+// mocked at the hook boundary (same reasoning as useIonRouter above)
+// rather than its whole native/Filesystem/upload dependency tree.
+vi.mock('@/modules/pdf-engine/hooks/usePdfEngine', () => ({ usePdfEngine: () => pdfEngine }));
+
 const routerPush = vi.hoisted(() => vi.fn());
 // useChat now calls useIonRouter() for F-23's navigation tools —
 // useIonRouter() throws "An Ionic Router is required" without a real
@@ -320,6 +334,150 @@ describe('useChat (F-13)', () => {
     const [call] = plugin.resolveToolCall.mock.calls;
     const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { opened: boolean } };
     expect(result).toEqual({ ok: true, data: { opened: true } });
+  });
+});
+
+describe('useChat document-op tools (F-14 document operations)', () => {
+  const documentRow = {
+    id: 'd-1',
+    name: 'Report.pdf',
+    file_path: '/vault/report.pdf',
+    file_type: 'pdf',
+    file_size: 2048,
+    is_favorite: 0,
+    is_locked: 0,
+    is_archived: 0,
+    language: 'en',
+    source_type: 'file_picker',
+    created_at: '2026-07-24T00:00:00.000Z',
+    updated_at: '2026-07-24T00:00:00.000Z',
+    synced: 0,
+    version: 1,
+  };
+
+  function readyDbWithDocument(): FakeDb {
+    return new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM documents/, [documentRow]);
+  }
+
+  let dispatchCounter = 0;
+
+  /** Renders once per describe-block test and waits for the chat session; call dispatch() per tool call. */
+  async function renderReady(): Promise<void> {
+    renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+  }
+
+  /** Dispatches one toolCallRequested against the already-rendered hook and returns its parsed result. */
+  async function dispatch(name: string, args: unknown): Promise<{ ok: boolean; data?: unknown }> {
+    const requestId = `req-op-${++dispatchCounter}`;
+    plugin.resolveToolCall.mockClear();
+    listeners.toolCallRequested?.({ requestId, name, argumentsJson: JSON.stringify(args) });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    return JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: unknown };
+  }
+
+  it('mergeDocuments resolves each id via DocumentDao and forwards the entities to pdfEngine.mergePdfs', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    pdfEngine.mergePdfs.mockResolvedValue(1);
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.mergeDocuments', { documentIds: ['d-1', 'd-1'] });
+
+    expect(pdfEngine.mergePdfs).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'd-1' }),
+      expect.objectContaining({ id: 'd-1' }),
+    ]);
+    expect(result).toEqual({ ok: true, data: { created: 1 } });
+  });
+
+  it('splitDocument converts 1-indexed inclusive ranges to 0-indexed before calling pdfEngine.splitPdf', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    pdfEngine.splitPdf.mockResolvedValue(2);
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.splitDocument', {
+      documentId: 'd-1',
+      ranges: [{ start: 1, end: 3 }],
+    });
+
+    expect(pdfEngine.splitPdf).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'd-1' }),
+      [{ start: 0, end: 2 }]
+    );
+    expect(result).toEqual({ ok: true, data: { created: 2 } });
+  });
+
+  it('compressDocument/watermarkDocument/convertImagesToPdf/convertPdfToImages/exportPdfText all forward correctly', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    pdfEngine.compressPdf.mockResolvedValue(1);
+    pdfEngine.watermarkPdf.mockResolvedValue(1);
+    pdfEngine.imagesToPdf.mockResolvedValue(1);
+    pdfEngine.pdfToImages.mockResolvedValue(4);
+    pdfEngine.exportPdfText.mockResolvedValue(1);
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    expect(await dispatch('ai.compressDocument', { documentId: 'd-1', quality: 'low' })).toEqual({
+      ok: true,
+      data: { created: 1 },
+    });
+    expect(pdfEngine.compressPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'low');
+
+    expect(await dispatch('ai.watermarkDocument', { documentId: 'd-1', text: 'DRAFT' })).toEqual({
+      ok: true,
+      data: { created: 1 },
+    });
+    expect(pdfEngine.watermarkPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'DRAFT');
+
+    expect(await dispatch('ai.convertImagesToPdf', { documentIds: ['d-1'] })).toEqual({
+      ok: true,
+      data: { created: 1 },
+    });
+    expect(pdfEngine.imagesToPdf).toHaveBeenCalledWith([expect.objectContaining({ id: 'd-1' })]);
+
+    expect(await dispatch('ai.convertPdfToImages', { documentId: 'd-1', format: 'png' })).toEqual({
+      ok: true,
+      data: { created: 4 },
+    });
+    expect(pdfEngine.pdfToImages).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), {
+      format: 'png',
+    });
+
+    expect(await dispatch('ai.exportPdfText', { documentId: 'd-1', format: 'md' })).toEqual({
+      ok: true,
+      data: { created: 1 },
+    });
+    expect(pdfEngine.exportPdfText).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'md');
+  });
+
+  it('fails cleanly (not a thrown exception) when the document id does not exist', async () => {
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]).onQuery(/FROM documents/, []),
+    });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.compressDocument', { documentId: 'ghost', quality: 'medium' });
+
+    expect(result.ok).toBe(false);
+    expect(pdfEngine.compressPdf).not.toHaveBeenCalled();
+  });
+
+  it('fails cleanly when pdfEngine reports 0 documents created (its own error state, not a rejection)', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    pdfEngine.watermarkPdf.mockResolvedValue(0);
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.watermarkDocument', { documentId: 'd-1', text: 'DRAFT' });
+
+    expect(result.ok).toBe(false);
   });
 });
 

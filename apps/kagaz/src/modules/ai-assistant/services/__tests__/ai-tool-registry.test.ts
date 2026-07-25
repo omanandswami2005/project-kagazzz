@@ -16,6 +16,16 @@ describe('aiToolRegistry', () => {
     expect(aiToolRegistry.has('tools.openPdfTools')).toBe(true);
   });
 
+  it('registers all seven F-14 document-operation tools', () => {
+    expect(aiToolRegistry.has('ai.mergeDocuments')).toBe(true);
+    expect(aiToolRegistry.has('ai.splitDocument')).toBe(true);
+    expect(aiToolRegistry.has('ai.compressDocument')).toBe(true);
+    expect(aiToolRegistry.has('ai.watermarkDocument')).toBe(true);
+    expect(aiToolRegistry.has('ai.convertImagesToPdf')).toBe(true);
+    expect(aiToolRegistry.has('ai.convertPdfToImages')).toBe(true);
+    expect(aiToolRegistry.has('ai.exportPdfText')).toBe(true);
+  });
+
   it('invokes a registered action end-to-end via the real ActionResult envelope', async () => {
     const ctx: AiToolContext = {
       listDocuments: async () => [],
@@ -25,6 +35,13 @@ describe('aiToolRegistry', () => {
       startQuickNote: vi.fn(),
       openSettings: vi.fn(),
       openPdfTools: vi.fn(),
+      mergeDocuments: vi.fn(),
+      splitDocument: vi.fn(),
+      compressDocument: vi.fn(),
+      watermarkDocument: vi.fn(),
+      convertImagesToPdf: vi.fn(),
+      convertPdfToImages: vi.fn(),
+      exportPdfText: vi.fn(),
     };
     const result = await aiToolRegistry.invoke('ai.listDocuments', { limit: 5 }, ctx);
     expect(result).toEqual({ ok: true, data: { documents: [] } });

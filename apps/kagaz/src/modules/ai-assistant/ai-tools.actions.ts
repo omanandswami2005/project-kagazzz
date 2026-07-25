@@ -45,11 +45,11 @@ export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
 }
 
 /**
- * What the AI tool handlers below need — built from a DocumentDao in
- * useChat, plus (F-23) the router-backed navigation methods
- * ai-navigation.actions.ts's handlers call. Kept as one interface (rather
- * than one per action file) since both are assembled into a single
- * `toolContext` object in useChat.ts.
+ * What the AI tool handlers below need — built from a DocumentDao (+
+ * usePdfEngine for the document-op tools) in useChat, plus (F-23) the
+ * router-backed navigation methods ai-navigation.actions.ts's handlers
+ * call. Kept as one interface (rather than one per action file) since all
+ * three are assembled into a single `toolContext` object in useChat.ts.
  */
 export interface AiToolContext {
   listDocuments: (limit: number) => Promise<DocumentSummary[]>;
@@ -64,6 +64,20 @@ export interface AiToolContext {
   openSettings: () => void;
   /** Navigates to the PDF Tools hub (F-23). */
   openPdfTools: () => void;
+  /** Merges the given documents (2+) into one new PDF (ai-document-ops.actions.ts). */
+  mergeDocuments: (documentIds: string[]) => Promise<number>;
+  /** Splits a PDF by 1-indexed inclusive page ranges into new documents. */
+  splitDocument: (documentId: string, ranges: { start: number; end: number }[]) => Promise<number>;
+  /** Compresses a PDF into a new, smaller copy. */
+  compressDocument: (documentId: string, quality: 'low' | 'medium' | 'high') => Promise<number>;
+  /** Adds a text watermark, creating a new copy. */
+  watermarkDocument: (documentId: string, text: string) => Promise<number>;
+  /** Combines image documents into one new PDF. */
+  convertImagesToPdf: (documentIds: string[]) => Promise<number>;
+  /** Renders every PDF page to a new image document each. */
+  convertPdfToImages: (documentId: string, format: 'jpeg' | 'png') => Promise<number>;
+  /** Extracts a PDF's text layer into a new text/Markdown document. */
+  exportPdfText: (documentId: string, format: 'txt' | 'md') => Promise<number>;
 }
 
 export const aiToolActions = {

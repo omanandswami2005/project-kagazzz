@@ -55,6 +55,13 @@ describe('aiToolActions.listDocuments', () => {
       startQuickNote: vi.fn(),
       openSettings: vi.fn(),
       openPdfTools: vi.fn(),
+      mergeDocuments: vi.fn(),
+      splitDocument: vi.fn(),
+      compressDocument: vi.fn(),
+      watermarkDocument: vi.fn(),
+      convertImagesToPdf: vi.fn(),
+      convertPdfToImages: vi.fn(),
+      exportPdfText: vi.fn(),
     };
     const result = await aiToolActions.listDocuments.handler({ limit: 20 }, ctx);
     expect(ctx.listDocuments).toHaveBeenCalledWith(20);
@@ -77,6 +84,13 @@ describe('aiToolActions.searchDocuments', () => {
       startQuickNote: vi.fn(),
       openSettings: vi.fn(),
       openPdfTools: vi.fn(),
+      mergeDocuments: vi.fn(),
+      splitDocument: vi.fn(),
+      compressDocument: vi.fn(),
+      watermarkDocument: vi.fn(),
+      convertImagesToPdf: vi.fn(),
+      convertPdfToImages: vi.fn(),
+      exportPdfText: vi.fn(),
     };
     const result = await aiToolActions.searchDocuments.handler({ query: 'passport', limit: 10 }, ctx);
     expect(ctx.searchDocuments).toHaveBeenCalledWith('passport', 10);

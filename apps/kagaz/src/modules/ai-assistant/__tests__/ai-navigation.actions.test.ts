@@ -11,6 +11,13 @@ function makeCtx(): AiToolContext {
     startQuickNote: vi.fn(),
     openSettings: vi.fn(),
     openPdfTools: vi.fn(),
+    mergeDocuments: vi.fn(),
+    splitDocument: vi.fn(),
+    compressDocument: vi.fn(),
+    watermarkDocument: vi.fn(),
+    convertImagesToPdf: vi.fn(),
+    convertPdfToImages: vi.fn(),
+    exportPdfText: vi.fn(),
   };
 }
 

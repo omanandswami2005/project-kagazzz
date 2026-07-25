@@ -490,8 +490,10 @@ AI tool calls are categorized by risk level:
 | Risk Level | Examples | Authorization Required |
 |---|---|---|
 | 🟢 **Read** | Search docs, list folders, get metadata | None — automatic |
-| 🟡 **Modify** | Rename doc, move to folder, add tag | None — automatic |
-| 🔴 **Destructive** | Delete doc, merge/split, clear conversations | **User confirmation required** |
+| 🟡 **Modify** | Rename doc, move to folder, add tag, merge/split/compress/watermark/convert a document | None — automatic |
+| 🔴 **Destructive** | Delete doc, clear conversations | **User confirmation required** |
+
+**Reclassified 2026-07-25** (F-14 document-ops tool rollout): merge/split moved from 🔴 to 🟡, joined by compress/watermark/convert. The `requiresConfirmation` policy actually implemented in code (`packages/agent-kit/src/define-action.ts`) is "true ONLY for actions without undo" — and every one of these operations, as actually built (`apps/kagaz/src/modules/pdf-engine/hooks/usePdfEngine.ts`), **creates a brand-new vault document and never mutates or removes the source**. The original table entry predated that implementation and assumed an in-place edit. Full undo is just deleting the new document; nothing about the source document ever changes. Encrypt/decrypt (password handling through the model's context) and any future in-place-mutation tool remain candidates for 🔴 and are deliberately **not** included in this AI tool-calling pass.
 
 ### Confirmation Flow
 

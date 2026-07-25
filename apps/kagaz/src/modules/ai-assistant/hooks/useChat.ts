@@ -15,13 +15,42 @@ import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { log } from '@/core/logging';
 import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
-import type { AiMessageEntity } from '@/infrastructure/database/types';
+import type { AiMessageEntity, DocumentEntity } from '@/infrastructure/database/types';
 import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
+import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
 import { toDocumentSummary } from '../ai-tools.actions';
 import { aiToolRegistry } from '../services/ai-tool-registry';
 
 const logger = log('ai-assistant');
+
+/** Resolves a model-supplied document id, throwing a clear message if it doesn't exist. */
+async function requireDocument(documentDao: DocumentDao, id: string): Promise<DocumentEntity> {
+  const doc = await documentDao.findById(id);
+  if (!doc) {
+    throw new Error(`No document found with id "${id}"`);
+  }
+  return doc;
+}
+
+async function requireDocuments(documentDao: DocumentDao, ids: string[]): Promise<DocumentEntity[]> {
+  return Promise.all(ids.map((id) => requireDocument(documentDao, id)));
+}
+
+/**
+ * `usePdfEngine`'s ops swallow their own errors (they set React state and
+ * resolve 0 rather than rejecting — see the hook's own `run()`), so a
+ * count of 0 is the only failure signal available here. Converting it to
+ * a thrown Error lets `ActionRegistry.invoke()`'s existing exception-to-
+ * ActionResult mapping produce a real failure instead of a silent
+ * `{ created: 0 }` success.
+ */
+function requireSaved(count: number, opName: string): number {
+  if (count === 0) {
+    throw new Error(`${opName} did not produce a document`);
+  }
+  return count;
+}
 
 /**
  * The native bridge itself times out a pending tool call after 30s
@@ -71,12 +100,18 @@ export function useChat(): UseChatResult {
   const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
   const router = useIonRouter();
+  const pdfEngine = usePdfEngine();
+  const { mergePdfs, splitPdf, compressPdf, watermarkPdf, imagesToPdf, pdfToImages, exportPdfText } =
+    pdfEngine;
 
   // F-14/F-23: the context ai-tools.actions.ts's + ai-navigation.actions.ts's
-  // handlers run against — built fresh whenever documentDao/router change,
-  // never persisted past a re-render. The nav methods need nothing but the
-  // router (no page-local UI state), unlike vault.actions.ts's other
-  // actions — see ai-navigation.actions.ts's doc comment.
+  // + ai-document-ops.actions.ts's handlers run against — built fresh
+  // whenever documentDao/router/pdfEngine ops change, never persisted past
+  // a re-render. The nav methods need nothing but the router (no
+  // page-local UI state), unlike vault.actions.ts's other actions — see
+  // ai-navigation.actions.ts's doc comment. The document-op methods reuse
+  // the exact same pdf-engine ops PDF Tools runs (usePdfEngine) — real
+  // file operations, resolved from a model-supplied id via DocumentDao.
   const toolContext = useMemo<AiToolContext | null>(() => {
     if (!documentDao) {
       return null;
@@ -96,8 +131,48 @@ export function useChat(): UseChatResult {
       startQuickNote: (): void => router.push('/quick-notes?new=1', 'forward', 'push'),
       openSettings: (): void => router.push('/settings', 'forward', 'push'),
       openPdfTools: (): void => router.push('/pdf-tools', 'forward', 'push'),
+      mergeDocuments: async (documentIds): Promise<number> => {
+        const docs = await requireDocuments(documentDao, documentIds);
+        return requireSaved(await mergePdfs(docs), 'Merge');
+      },
+      splitDocument: async (documentId, ranges): Promise<number> => {
+        const doc = await requireDocument(documentDao, documentId);
+        // Model-facing ranges are 1-indexed inclusive; PageRange is 0-indexed.
+        const zeroIndexed = ranges.map(({ start, end }) => ({ start: start - 1, end: end - 1 }));
+        return requireSaved(await splitPdf(doc, zeroIndexed), 'Split');
+      },
+      compressDocument: async (documentId, quality): Promise<number> => {
+        const doc = await requireDocument(documentDao, documentId);
+        return requireSaved(await compressPdf(doc, quality), 'Compress');
+      },
+      watermarkDocument: async (documentId, text): Promise<number> => {
+        const doc = await requireDocument(documentDao, documentId);
+        return requireSaved(await watermarkPdf(doc, text), 'Watermark');
+      },
+      convertImagesToPdf: async (documentIds): Promise<number> => {
+        const docs = await requireDocuments(documentDao, documentIds);
+        return requireSaved(await imagesToPdf(docs), 'Images-to-PDF');
+      },
+      convertPdfToImages: async (documentId, format): Promise<number> => {
+        const doc = await requireDocument(documentDao, documentId);
+        return requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images');
+      },
+      exportPdfText: async (documentId, format): Promise<number> => {
+        const doc = await requireDocument(documentDao, documentId);
+        return requireSaved(await exportPdfText(doc, format), 'Text export');
+      },
     };
-  }, [documentDao, router]);
+  }, [
+    documentDao,
+    router,
+    mergePdfs,
+    splitPdf,
+    compressPdf,
+    watermarkPdf,
+    imagesToPdf,
+    pdfToImages,
+    exportPdfText,
+  ]);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessageEntity[]>([]);
