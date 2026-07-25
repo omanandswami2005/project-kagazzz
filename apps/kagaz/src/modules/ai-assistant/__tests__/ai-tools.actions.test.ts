@@ -50,6 +50,11 @@ describe('aiToolActions.listDocuments', () => {
     const ctx: AiToolContext = {
       listDocuments: vi.fn().mockResolvedValue([toDocumentSummary(document)]),
       searchDocuments: vi.fn(),
+      openQuickReference: vi.fn(),
+      openQuickNotes: vi.fn(),
+      startQuickNote: vi.fn(),
+      openSettings: vi.fn(),
+      openPdfTools: vi.fn(),
     };
     const result = await aiToolActions.listDocuments.handler({ limit: 20 }, ctx);
     expect(ctx.listDocuments).toHaveBeenCalledWith(20);
@@ -67,6 +72,11 @@ describe('aiToolActions.searchDocuments', () => {
     const ctx: AiToolContext = {
       listDocuments: vi.fn(),
       searchDocuments: vi.fn().mockResolvedValue([toDocumentSummary(document)]),
+      openQuickReference: vi.fn(),
+      openQuickNotes: vi.fn(),
+      startQuickNote: vi.fn(),
+      openSettings: vi.fn(),
+      openPdfTools: vi.fn(),
     };
     const result = await aiToolActions.searchDocuments.handler({ query: 'passport', limit: 10 }, ctx);
     expect(ctx.searchDocuments).toHaveBeenCalledWith('passport', 10);

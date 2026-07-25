@@ -52,6 +52,23 @@
   font-size: var(--text-sm);
 }
 
+.kg-chat__confirm {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.kg-chat__confirm-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .kg-chat__composer {
   display: flex;
   align-items: flex-end;

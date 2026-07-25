@@ -1,17 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../ai-tool-registry';
 import type { AiToolContext } from '../../ai-tools.actions';
 
 describe('aiToolRegistry', () => {
-  it('registers both AI tool actions', () => {
+  it('registers both document AI tool actions', () => {
     expect(aiToolRegistry.has('ai.listDocuments')).toBe(true);
     expect(aiToolRegistry.has('ai.searchDocuments')).toBe(true);
+  });
+
+  it('registers all five F-23 navigation tools', () => {
+    expect(aiToolRegistry.has('vault.openQuickReference')).toBe(true);
+    expect(aiToolRegistry.has('vault.openQuickNotes')).toBe(true);
+    expect(aiToolRegistry.has('vault.startQuickNote')).toBe(true);
+    expect(aiToolRegistry.has('settings.open')).toBe(true);
+    expect(aiToolRegistry.has('tools.openPdfTools')).toBe(true);
   });
 
   it('invokes a registered action end-to-end via the real ActionResult envelope', async () => {
     const ctx: AiToolContext = {
       listDocuments: async () => [],
       searchDocuments: async () => [],
+      openQuickReference: vi.fn(),
+      openQuickNotes: vi.fn(),
+      startQuickNote: vi.fn(),
+      openSettings: vi.fn(),
+      openPdfTools: vi.fn(),
     };
     const result = await aiToolRegistry.invoke('ai.listDocuments', { limit: 5 }, ctx);
     expect(result).toEqual({ ok: true, data: { documents: [] } });

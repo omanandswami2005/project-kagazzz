@@ -11,7 +11,9 @@
   "confirm_action": {
     "title": "Confirm this action?",
     "approve": "Yes, do it",
-    "reject": "No, cancel"
+    "reject": "No, cancel",
+    "expired": "This took too long to confirm — please ask again.",
+    "dismiss": "Dismiss"
   },
   "suggestions": {
     "find": "Find a document",

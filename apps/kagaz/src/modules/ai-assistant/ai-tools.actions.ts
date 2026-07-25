@@ -44,10 +44,26 @@ export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
   };
 }
 
-/** What the AI tool handlers below need — built from a DocumentDao in useChat. */
+/**
+ * What the AI tool handlers below need — built from a DocumentDao in
+ * useChat, plus (F-23) the router-backed navigation methods
+ * ai-navigation.actions.ts's handlers call. Kept as one interface (rather
+ * than one per action file) since both are assembled into a single
+ * `toolContext` object in useChat.ts.
+ */
 export interface AiToolContext {
   listDocuments: (limit: number) => Promise<DocumentSummary[]>;
   searchDocuments: (query: string, limit: number) => Promise<DocumentSummary[]>;
+  /** Navigates to Quick Reference (F-23). */
+  openQuickReference: () => void;
+  /** Navigates to Quick Notes (F-23). */
+  openQuickNotes: () => void;
+  /** Navigates to Quick Notes with the add-note composer already open (F-23). */
+  startQuickNote: () => void;
+  /** Navigates to Settings (F-23). */
+  openSettings: () => void;
+  /** Navigates to the PDF Tools hub (F-23). */
+  openPdfTools: () => void;
 }
 
 export const aiToolActions = {

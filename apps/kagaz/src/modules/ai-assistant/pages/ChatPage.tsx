@@ -38,7 +38,7 @@ export function ChatPage(): ReactNode {
     if (typeof listEndRef.current?.scrollIntoView === 'function') {
       listEndRef.current.scrollIntoView({ block: 'end' });
     }
-  }, [chat.messages, chat.streamingText]);
+  }, [chat.messages, chat.streamingText, chat.pendingConfirmation]);
 
   const gated = ai.status !== 'ready';
 
@@ -104,6 +104,51 @@ export function ChatPage(): ReactNode {
               {chat.error && (
                 <li className="kg-chat__error" role="alert" data-agent-id="ai.chat.error">
                   {chat.error}
+                </li>
+              )}
+              {chat.pendingConfirmation && (
+                <li
+                  className="kg-chat__confirm"
+                  role="group"
+                  aria-label={t('confirm_action.title')}
+                  data-agent-id="ai.chat.confirm"
+                  data-agent-state={chat.pendingConfirmation.expired ? 'error' : 'pending'}
+                >
+                  {chat.pendingConfirmation.expired ? (
+                    <>
+                      <span>{t('confirm_action.expired')}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={chat.dismissExpiredConfirmation}
+                        agentId="ai.chat.confirm-dismiss"
+                      >
+                        {t('confirm_action.dismiss')}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{chat.pendingConfirmation.summary}</span>
+                      <div className="kg-chat__confirm-actions">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={chat.confirmPendingToolCall}
+                          agentId="ai.chat.confirm-approve"
+                        >
+                          {t('confirm_action.approve')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={chat.rejectPendingToolCall}
+                          agentId="ai.chat.confirm-reject"
+                        >
+                          {t('confirm_action.reject')}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </li>
               )}
               <div ref={listEndRef} />

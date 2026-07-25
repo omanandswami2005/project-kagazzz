@@ -21,6 +21,10 @@ function chatValue(overrides: Partial<ReturnType<typeof useChat>> = {}): ReturnT
     error: null,
     isLoading: false,
     sendMessage: vi.fn(),
+    pendingConfirmation: null,
+    confirmPendingToolCall: vi.fn(),
+    rejectPendingToolCall: vi.fn(),
+    dismissExpiredConfirmation: vi.fn(),
     ...overrides,
   };
 }
@@ -114,5 +118,84 @@ describe('ChatPage (F-13)', () => {
     useChatMock.mockReturnValue(chatValue({ error: 'Failed to reach the AI Assistant' }));
     render(<ChatPage />);
     expect(screen.getByRole('alert')).toHaveTextContent('Failed to reach the AI Assistant');
+  });
+
+  it('shows no confirmation card when nothing is pending', () => {
+    render(<ChatPage />);
+    expect(document.querySelector('[data-agent-id="ai.chat.confirm"]')).not.toBeInTheDocument();
+  });
+
+  it('renders a pending confirmation card with the action summary', () => {
+    useChatMock.mockReturnValue(
+      chatValue({
+        pendingConfirmation: {
+          requestId: 'req-1',
+          actionId: 'vault.bulkDelete',
+          summary: 'Delete the currently selected documents.',
+          expired: false,
+        },
+      })
+    );
+    render(<ChatPage />);
+    const card = document.querySelector('[data-agent-id="ai.chat.confirm"]');
+    expect(card).toHaveTextContent('Delete the currently selected documents.');
+    expect(card).toHaveAttribute('data-agent-state', 'pending');
+  });
+
+  it('approving the card calls confirmPendingToolCall', async () => {
+    const confirmPendingToolCall = vi.fn();
+    useChatMock.mockReturnValue(
+      chatValue({
+        pendingConfirmation: {
+          requestId: 'req-1',
+          actionId: 'vault.bulkDelete',
+          summary: 'Delete the currently selected documents.',
+          expired: false,
+        },
+        confirmPendingToolCall,
+      })
+    );
+    render(<ChatPage />);
+    await userEvent.click(document.querySelector('[data-agent-id="ai.chat.confirm-approve"]') as Element);
+    expect(confirmPendingToolCall).toHaveBeenCalledOnce();
+  });
+
+  it('rejecting the card calls rejectPendingToolCall', async () => {
+    const rejectPendingToolCall = vi.fn();
+    useChatMock.mockReturnValue(
+      chatValue({
+        pendingConfirmation: {
+          requestId: 'req-1',
+          actionId: 'vault.bulkDelete',
+          summary: 'Delete the currently selected documents.',
+          expired: false,
+        },
+        rejectPendingToolCall,
+      })
+    );
+    render(<ChatPage />);
+    await userEvent.click(document.querySelector('[data-agent-id="ai.chat.confirm-reject"]') as Element);
+    expect(rejectPendingToolCall).toHaveBeenCalledOnce();
+  });
+
+  it('shows the expired message and a dismiss button once the card times out', async () => {
+    const dismissExpiredConfirmation = vi.fn();
+    useChatMock.mockReturnValue(
+      chatValue({
+        pendingConfirmation: {
+          requestId: 'req-1',
+          actionId: 'vault.bulkDelete',
+          summary: 'Delete the currently selected documents.',
+          expired: true,
+        },
+        dismissExpiredConfirmation,
+      })
+    );
+    render(<ChatPage />);
+    const card = document.querySelector('[data-agent-id="ai.chat.confirm"]');
+    expect(card).toHaveAttribute('data-agent-state', 'error');
+    expect(document.querySelector('[data-agent-id="ai.chat.confirm-approve"]')).not.toBeInTheDocument();
+    await userEvent.click(document.querySelector('[data-agent-id="ai.chat.confirm-dismiss"]') as Element);
+    expect(dismissExpiredConfirmation).toHaveBeenCalledOnce();
   });
 });

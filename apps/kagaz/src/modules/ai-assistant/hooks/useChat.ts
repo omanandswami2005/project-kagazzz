@@ -9,6 +9,7 @@
  * half-written assistant turn in history.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useIonRouter } from '@ionic/react';
 import { CapacitorLlmLiteRT, type ToolCallRequestedEvent } from '@kagaz/capacitor-llm-litert';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
@@ -22,6 +23,26 @@ import { aiToolRegistry } from '../services/ai-tool-registry';
 
 const logger = log('ai-assistant');
 
+/**
+ * The native bridge itself times out a pending tool call after 30s
+ * (JsBridgeTool.java) with no way for JS to extend or observe that timer.
+ * Expiring the card client-side a little earlier means the user is never
+ * shown a card that can silently no-op — see the `expired` branch in
+ * {@link useChat}.
+ */
+const CONFIRMATION_TIMEOUT_MS = 25_000;
+
+/** A destructive tool call awaiting the user's yes/no in the chat UI. */
+export interface PendingToolConfirmation {
+  requestId: string;
+  /** The tool's own dotted action id (e.g. `vault.bulkDelete`). */
+  actionId: string;
+  /** The action's `summary`, shown as the card's question. */
+  summary: string;
+  /** True once the native 30s bridge timeout has very likely already fired. */
+  expired: boolean;
+}
+
 /** What {@link useChat} exposes. */
 export interface UseChatResult {
   /** Persisted turns, oldest first. */
@@ -33,6 +54,14 @@ export interface UseChatResult {
   /** True until the conversation + its history have loaded. */
   isLoading: boolean;
   sendMessage: (text: string) => Promise<void>;
+  /** A destructive tool call waiting on the confirmation card, if any. */
+  pendingConfirmation: PendingToolConfirmation | null;
+  /** Runs the pending tool call and resolves it back to the model. */
+  confirmPendingToolCall: () => void;
+  /** Declines the pending tool call; the model is told the user said no. */
+  rejectPendingToolCall: () => void;
+  /** Clears an expired card without touching the (already-timed-out) native call. */
+  dismissExpiredConfirmation: () => void;
 }
 
 /** True once the model is ready and a native chat session + conversation are set up. */
@@ -41,9 +70,13 @@ export function useChat(): UseChatResult {
   const dao = useMemo(() => (db ? new AiConversationDao(db) : null), [db]);
   const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
+  const router = useIonRouter();
 
-  // F-14: the context ai-tools.actions.ts's handlers run against — built
-  // fresh whenever documentDao changes, never persisted past a re-render.
+  // F-14/F-23: the context ai-tools.actions.ts's + ai-navigation.actions.ts's
+  // handlers run against — built fresh whenever documentDao/router change,
+  // never persisted past a re-render. The nav methods need nothing but the
+  // router (no page-local UI state), unlike vault.actions.ts's other
+  // actions — see ai-navigation.actions.ts's doc comment.
   const toolContext = useMemo<AiToolContext | null>(() => {
     if (!documentDao) {
       return null;
@@ -58,8 +91,13 @@ export function useChat(): UseChatResult {
         }
         return (await documentDao.search(match, limit)).map(toDocumentSummary);
       },
+      openQuickReference: (): void => router.push('/quick-reference', 'forward', 'push'),
+      openQuickNotes: (): void => router.push('/quick-notes', 'forward', 'push'),
+      startQuickNote: (): void => router.push('/quick-notes?new=1', 'forward', 'push'),
+      openSettings: (): void => router.push('/settings', 'forward', 'push'),
+      openPdfTools: (): void => router.push('/pdf-tools', 'forward', 'push'),
     };
-  }, [documentDao]);
+  }, [documentDao, router]);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<AiMessageEntity[]>([]);
@@ -67,9 +105,16 @@ export function useChat(): UseChatResult {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pendingConfirmation, setPendingConfirmation] = useState<PendingToolConfirmation | null>(
+    null
+  );
 
   const chatSessionId = useRef<string | null>(null);
   const streamingBuffer = useRef('');
+  /** The full call the card resolves on confirm/reject — not in state since it's never rendered. */
+  const pendingToolCallRef = useRef<{ requestId: string; name: string; args: unknown } | null>(
+    null
+  );
 
   // Load-or-create the conversation once the model is ready.
   useEffect(() => {
@@ -166,9 +211,13 @@ export function useChat(): UseChatResult {
       // F-14: dispatches through the same real ActionRegistry the rest of
       // the agent-interface contract uses — args validation, confirmation
       // gating, and exception-to-ActionResult mapping all happen in
-      // aiToolRegistry.invoke(), not here.
+      // aiToolRegistry.invoke(), not here. A `requiresConfirmation` action
+      // returns null (not a JSON string) to signal "don't resolve yet" —
+      // the card resolves it later via confirmPendingToolCall/
+      // rejectPendingToolCall (05-ai-assistant-module.md §4.3's
+      // `needsConfirmation` contract).
       CapacitorLlmLiteRT.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
-        void (async (): Promise<string> => {
+        void (async (): Promise<string | null> => {
           if (!toolContext) {
             return JSON.stringify({ ok: false, error: 'AI tools are not available yet' });
           }
@@ -180,14 +229,24 @@ export function useChat(): UseChatResult {
           }
           const action = aiToolRegistry.get(event.name);
           if (action?.requiresConfirmation) {
-            // No confirmation UI exists yet — refuse rather than silently
-            // running a destructive action the user never approved.
-            return JSON.stringify({ ok: false, error: 'This action requires user confirmation, which is not yet supported' });
+            pendingToolCallRef.current = { requestId: event.requestId, name: event.name, args };
+            setPendingConfirmation({
+              requestId: event.requestId,
+              actionId: event.name,
+              summary: action.summary,
+              expired: false,
+            });
+            return null;
           }
           const result = await aiToolRegistry.invoke(event.name, args, toolContext);
           return JSON.stringify(result);
         })()
-          .then((resultJson) => CapacitorLlmLiteRT.resolveToolCall({ requestId: event.requestId, resultJson }))
+          .then((resultJson) => {
+            if (resultJson === null) {
+              return;
+            }
+            return CapacitorLlmLiteRT.resolveToolCall({ requestId: event.requestId, resultJson });
+          })
           .catch((toolError: unknown) => {
             logger.warn({ event: 'ai.chat.tool_call_failed', err: { message: String(toolError) } });
             void CapacitorLlmLiteRT.resolveToolCall({
@@ -201,6 +260,73 @@ export function useChat(): UseChatResult {
       subscriptions.forEach((subscription) => void subscription.then((s) => s.remove()));
     };
   }, [ai.status, finishStreaming, toolContext]);
+
+  // Expires a pending confirmation client-side shortly before the native
+  // bridge's own 30s timeout (see CONFIRMATION_TIMEOUT_MS) so the card never
+  // keeps offering a Yes/No that would silently no-op against an
+  // already-timed-out native call.
+  useEffect(() => {
+    if (!pendingConfirmation || pendingConfirmation.expired) {
+      return;
+    }
+    const requestId = pendingConfirmation.requestId;
+    const timer = setTimeout(() => {
+      if (pendingToolCallRef.current?.requestId === requestId) {
+        pendingToolCallRef.current = null;
+        setPendingConfirmation((prev) =>
+          prev && prev.requestId === requestId ? { ...prev, expired: true } : prev
+        );
+      }
+    }, CONFIRMATION_TIMEOUT_MS);
+    return (): void => clearTimeout(timer);
+  }, [pendingConfirmation]);
+
+  const resolvePendingToolCall = useCallback(
+    async (accepted: boolean): Promise<void> => {
+      const pending = pendingToolCallRef.current;
+      if (!pending || !toolContext) {
+        return;
+      }
+      pendingToolCallRef.current = null;
+      setPendingConfirmation(null);
+      const result = accepted
+        ? await aiToolRegistry.invoke(pending.name, pending.args, toolContext)
+        : {
+            ok: false as const,
+            code: 'AGENT_E_USER_DECLINED',
+            message: 'User declined the confirmation card',
+            retryable: false,
+            userMessage: 'Okay, I will not do that.',
+          };
+      try {
+        await CapacitorLlmLiteRT.resolveToolCall({
+          requestId: pending.requestId,
+          resultJson: JSON.stringify(result),
+        });
+      } catch (resolveError) {
+        // Per the plugin's own contract, resolving a requestId the native
+        // side already timed out is a benign no-op, not a real failure —
+        // there's nothing to recover, the model has already moved on.
+        logger.warn({
+          event: 'ai.chat.tool_call_resolve_after_timeout',
+          err: { message: String(resolveError) },
+        });
+      }
+    },
+    [toolContext]
+  );
+
+  const confirmPendingToolCall = useCallback((): void => {
+    void resolvePendingToolCall(true);
+  }, [resolvePendingToolCall]);
+
+  const rejectPendingToolCall = useCallback((): void => {
+    void resolvePendingToolCall(false);
+  }, [resolvePendingToolCall]);
+
+  const dismissExpiredConfirmation = useCallback((): void => {
+    setPendingConfirmation(null);
+  }, []);
 
   const sendMessage = useCallback(
     async (text: string): Promise<void> => {
@@ -225,5 +351,16 @@ export function useChat(): UseChatResult {
     [dao, conversationId]
   );
 
-  return { messages, streamingText, isStreaming, error, isLoading, sendMessage };
+  return {
+    messages,
+    streamingText,
+    isStreaming,
+    error,
+    isLoading,
+    sendMessage,
+    pendingConfirmation,
+    confirmPendingToolCall,
+    rejectPendingToolCall,
+    dismissExpiredConfirmation,
+  };
 }

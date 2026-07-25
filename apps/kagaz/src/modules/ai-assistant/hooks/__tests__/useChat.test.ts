@@ -1,12 +1,39 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineAction } from '@kagaz/agent-kit';
+import { z } from 'zod';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { FakeDb } from '@/test/fake-db';
+import { aiToolRegistry } from '../../services/ai-tool-registry';
 import { useChat } from '../useChat';
 
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
+
+const routerPush = vi.hoisted(() => vi.fn());
+// useChat now calls useIonRouter() for F-23's navigation tools —
+// useIonRouter() throws "An Ionic Router is required" without a real
+// IonReactRouter ancestor, which this hook-only test doesn't provide (same
+// reasoning as every other Ionic hook mocked elsewhere in this codebase).
+vi.mock('@ionic/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ionic/react')>();
+  return { ...actual, useIonRouter: () => ({ push: routerPush, goBack: vi.fn() }) };
+});
+
+// Registered once for the confirmation-card tests below — a real action
+// with requiresConfirmation: true, since none of the currently-shipped AI
+// tools need one. Exercises the pending-confirmation code path for real,
+// against the actual singleton useChat.ts itself imports.
+aiToolRegistry.register(
+  defineAction({
+    id: 'test.destructiveThing',
+    summary: 'Do a destructive test thing.',
+    args: z.object({}),
+    requiresConfirmation: true,
+    handler: (): Promise<{ done: true }> => Promise.resolve({ done: true }),
+  })
+);
 
 type Listener = (event: unknown) => void;
 const listeners: Record<string, Listener> = {};
@@ -268,5 +295,131 @@ describe('useChat (F-13)', () => {
     const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
     expect(result.ok).toBe(false);
     expect(result.code).toBe('AGENT_E_UNKNOWN_ACTION');
+  });
+
+  it.each([
+    ['vault.openQuickReference', '/quick-reference'],
+    ['vault.openQuickNotes', '/quick-notes'],
+    ['vault.startQuickNote', '/quick-notes?new=1'],
+    ['settings.open', '/settings'],
+    ['tools.openPdfTools', '/pdf-tools'],
+  ])('dispatches %s through the router (F-23)', async (name, path) => {
+    const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    listeners.toolCallRequested?.({ requestId: 'req-nav', name, argumentsJson: '{}' });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+
+    expect(routerPush).toHaveBeenCalledWith(path, 'forward', 'push');
+    const [call] = plugin.resolveToolCall.mock.calls;
+    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { opened: boolean } };
+    expect(result).toEqual({ ok: true, data: { opened: true } });
+  });
+});
+
+describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function renderReadyWithPending() {
+    const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    const hook = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    act(() => {
+      listeners.toolCallRequested?.({
+        requestId: 'req-confirm',
+        name: 'test.destructiveThing',
+        argumentsJson: '{}',
+      });
+    });
+    await waitFor(() => expect(hook.result.current.pendingConfirmation).not.toBeNull());
+    return hook;
+  }
+
+  it('sets a pending confirmation instead of resolving immediately', async () => {
+    const { result } = await renderReadyWithPending();
+    expect(result.current.pendingConfirmation).toEqual({
+      requestId: 'req-confirm',
+      actionId: 'test.destructiveThing',
+      summary: 'Do a destructive test thing.',
+      expired: false,
+    });
+    expect(plugin.resolveToolCall).not.toHaveBeenCalled();
+  });
+
+  it('confirmPendingToolCall invokes the tool and resolves the native call', async () => {
+    const { result } = await renderReadyWithPending();
+
+    await act(async () => {
+      result.current.confirmPendingToolCall();
+      await Promise.resolve();
+    });
+
+    expect(result.current.pendingConfirmation).toBeNull();
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    expect(call?.[0]).toMatchObject({ requestId: 'req-confirm' });
+    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { done: boolean } };
+    expect(parsed).toEqual({ ok: true, data: { done: true } });
+  });
+
+  it('rejectPendingToolCall declines without invoking the tool', async () => {
+    const { result } = await renderReadyWithPending();
+
+    await act(async () => {
+      result.current.rejectPendingToolCall();
+      await Promise.resolve();
+    });
+
+    expect(result.current.pendingConfirmation).toBeNull();
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
+    expect(parsed.ok).toBe(false);
+    expect(parsed.code).toBe('AGENT_E_USER_DECLINED');
+  });
+
+  it('expires the card client-side before the native 30s bridge timeout, without resolving it', async () => {
+    const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    // Switch to fake timers only now — everything above is real async
+    // DB/session setup that should settle under real timers first.
+    vi.useFakeTimers();
+
+    act(() => {
+      listeners.toolCallRequested?.({
+        requestId: 'req-expire',
+        name: 'test.destructiveThing',
+        argumentsJson: '{}',
+      });
+    });
+    expect(result.current.pendingConfirmation?.expired).toBe(false);
+
+    act(() => {
+      vi.advanceTimersByTime(25_000);
+    });
+
+    expect(result.current.pendingConfirmation?.expired).toBe(true);
+    expect(plugin.resolveToolCall).not.toHaveBeenCalled();
+
+    act(() => {
+      result.current.dismissExpiredConfirmation();
+    });
+    expect(result.current.pendingConfirmation).toBeNull();
   });
 });
