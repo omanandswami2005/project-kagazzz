@@ -45,13 +45,36 @@ function compareText(a: string, b: string): number {
   return a.localeCompare(b, undefined, { sensitivity: 'base' });
 }
 
-function compareKey(a: DocumentEntity, b: DocumentEntity, key: SortKey): number {
+function compareKey(
+  a: DocumentEntity,
+  b: DocumentEntity,
+  key: SortKey,
+  direction: SortDirection
+): number {
   switch (key) {
     case 'fileSize':
       return a.fileSize - b.fileSize;
-    case 'lastAccessedAt':
-      // Never-opened documents sort last in ascending order.
-      return (a.lastAccessedAt ?? '').localeCompare(b.lastAccessedAt ?? '');
+    case 'lastAccessedAt': {
+      // Bug-audit fix: never-opened documents (no lastAccessedAt) must sort
+      // last regardless of direction — a "nulls always last" comparator,
+      // not just a plain string compare on `?? ''`. The old `(a ?? '').
+      // localeCompare(b ?? '')` put never-opened FIRST in ascending order
+      // (empty string sorts before any ISO date), contradicting this
+      // file's own doc comment and this test's own title, which the
+      // multiply-by-`factor` step below never corrected. Returning a
+      // pre-counteracted sign here keeps "last" true in both directions.
+      const never = direction === 'asc' ? 1 : -1;
+      if (!a.lastAccessedAt && !b.lastAccessedAt) {
+        return 0;
+      }
+      if (!a.lastAccessedAt) {
+        return never;
+      }
+      if (!b.lastAccessedAt) {
+        return -never;
+      }
+      return a.lastAccessedAt.localeCompare(b.lastAccessedAt);
+    }
     case 'name':
       return compareText(a.name, b.name);
     case 'fileType':
@@ -74,7 +97,7 @@ export function sortDocuments(
 ): DocumentEntity[] {
   const factor = direction === 'asc' ? 1 : -1;
   return [...documents].sort((a, b) => {
-    const primary = compareKey(a, b, key);
+    const primary = compareKey(a, b, key, direction);
     if (primary !== 0) {
       return primary * factor;
     }
