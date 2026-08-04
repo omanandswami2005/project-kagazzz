@@ -69,6 +69,19 @@ describe('redactRecord ([SEC] 14-observability §7)', () => {
     expect(() => redactRecord(a)).not.toThrow();
   });
 
+  it('bug-audit fix: censors (does not leak) content past the depth cap, even with no denylisted key names', () => {
+    // 20 levels deep, well past MAX_DEPTH (16) — no denylisted key names at
+    // all, so this used to pass straight through unredacted once traversal
+    // hit the depth cap.
+    let deep: Record<string, unknown> = { secretAtTheBottom: 'aadhaar-1234-5678-9012' };
+    for (let i = 0; i < 20; i++) {
+      deep = { child: deep };
+    }
+    const out = redactRecord({ ctx: deep }) as { ctx: unknown };
+    expect(JSON.stringify(out.ctx)).not.toContain('aadhaar-1234-5678-9012');
+    expect(JSON.stringify(out.ctx)).toContain(REDACTION_CENSOR);
+  });
+
   it('the denylist covers every spec §7 category', () => {
     const joined = REDACT_PATHS.join(' ');
     for (const required of [
