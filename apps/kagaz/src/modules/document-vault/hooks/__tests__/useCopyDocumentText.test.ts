@@ -6,6 +6,13 @@ import { documentHasCopyableText, useCopyDocumentText } from '../useCopyDocument
 const copyToClipboard = vi.hoisted(() => vi.fn());
 vi.mock('@/core/clipboard', () => ({ copyToClipboard }));
 
+// Mocked at the sibling-hook boundary (same reasoning useChat.test.ts uses
+// for usePdfEngine) rather than pulling in useDocLock's real
+// useVaultMutations/useDatabase chain for a hook whose own logic has
+// nothing to do with the database.
+const authorizeView = vi.hoisted(() => vi.fn(async () => true));
+vi.mock('../useDocLock', () => ({ useDocLock: () => ({ authorizeView }) }));
+
 function doc(overrides: Partial<DocumentEntity> = {}): DocumentEntity {
   return { id: 'd1', name: 'scan.jpg', ...overrides } as DocumentEntity;
 }

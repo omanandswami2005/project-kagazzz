@@ -12,7 +12,10 @@
  *     the pages that actually need it.
  *
  * [SEC] The extracted text is sensitive: it is written only to the encrypted
- * DB and never logged (only its length is).
+ * DB and never logged (only its length is). **Bug-audit fix**: this used to
+ * read a locked document's raw file bytes and run OCR on it with no
+ * biometric check — gated here so the vault list's item-menu can't bypass
+ * the per-document lock (§3.1) for this content-exposing action either.
  */
 import { useCallback, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -31,6 +34,7 @@ import {
 } from '@/modules/pdf-engine/services/pdf-render-ops';
 import { ocrPdfPages } from '../services/pdf-ocr';
 import { isPdf } from './useDocumentFile';
+import { useDocLock } from './useDocLock';
 
 const logger = log('document-vault');
 
@@ -85,11 +89,15 @@ export interface UseDocumentOcr {
 export function useDocumentOcr(): UseDocumentOcr {
   const { db } = useDatabase();
   const { locale } = useLocale();
+  const { authorizeView } = useDocLock();
   const [runningId, setRunningId] = useState<string | null>(null);
 
   const extractText = useCallback(
     async (document: DocumentEntity): Promise<string | null> => {
       if (!db || !canExtractText(document)) {
+        return null;
+      }
+      if (!(await authorizeView(document))) {
         return null;
       }
       setRunningId(document.id);
@@ -152,7 +160,7 @@ export function useDocumentOcr(): UseDocumentOcr {
         setRunningId(null);
       }
     },
-    [db, locale]
+    [db, locale, authorizeView]
   );
 
   return { runningId, extractText };

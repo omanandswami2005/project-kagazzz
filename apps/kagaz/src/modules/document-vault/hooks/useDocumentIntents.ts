@@ -3,6 +3,12 @@
  * Resolves the platform availability and exposes two fire-and-forget actions
  * that swallow user-cancellation (dismissing the chooser/share sheet is not an
  * error) and report only genuine failures.
+ *
+ * [SEC] **Bug-audit fix**: these used to hand a locked document's real file
+ * straight to another app (share sheet / "Open with" chooser) with no
+ * biometric check at all — the per-document lock (§3.1) was fully bypassable
+ * from the vault list's item-menu, unlike opening the document in the viewer
+ * (which gates structurally). Gated here so every caller is covered.
  */
 import { useCallback } from 'react';
 import { log } from '@/core/logging';
@@ -13,6 +19,7 @@ import {
   shareDocument,
   shareDocuments,
 } from '../services/document-intent.service';
+import { useDocLock } from './useDocLock';
 
 const logger = log('document-vault');
 
@@ -35,48 +42,68 @@ export interface UseDocumentIntents {
 
 /** Wires the document-intent service into React. */
 export function useDocumentIntents(): UseDocumentIntents {
-  const share = useCallback(async (document: DocumentEntity): Promise<boolean> => {
-    try {
-      await shareDocument(document);
-      return true;
-    } catch (err) {
-      if (isCancellation(err)) {
-        return true;
-      }
-      logger.warn({ event: 'vault.intent.share_error', err: { message: String(err) } });
-      return false;
-    }
-  }, []);
+  const { authorizeView, authorizeViewMany } = useDocLock();
 
-  const shareMany = useCallback(async (documents: DocumentEntity[]): Promise<boolean> => {
-    try {
-      await shareDocuments(documents);
-      return true;
-    } catch (err) {
-      if (isCancellation(err)) {
-        return true;
+  const share = useCallback(
+    async (document: DocumentEntity): Promise<boolean> => {
+      if (!(await authorizeView(document))) {
+        return false;
       }
-      logger.warn({
-        event: 'vault.intent.share_error',
-        count: documents.length,
-        err: { message: String(err) },
-      });
-      return false;
-    }
-  }, []);
+      try {
+        await shareDocument(document);
+        return true;
+      } catch (err) {
+        if (isCancellation(err)) {
+          return true;
+        }
+        logger.warn({ event: 'vault.intent.share_error', err: { message: String(err) } });
+        return false;
+      }
+    },
+    [authorizeView]
+  );
 
-  const openWith = useCallback(async (document: DocumentEntity): Promise<boolean> => {
-    try {
-      await openDocumentWith(document);
-      return true;
-    } catch (err) {
-      if (isCancellation(err)) {
-        return true;
+  const shareMany = useCallback(
+    async (documents: DocumentEntity[]): Promise<boolean> => {
+      if (!(await authorizeViewMany(documents))) {
+        return false;
       }
-      logger.warn({ event: 'vault.intent.open_error', err: { message: String(err) } });
-      return false;
-    }
-  }, []);
+      try {
+        await shareDocuments(documents);
+        return true;
+      } catch (err) {
+        if (isCancellation(err)) {
+          return true;
+        }
+        logger.warn({
+          event: 'vault.intent.share_error',
+          count: documents.length,
+          err: { message: String(err) },
+        });
+        return false;
+      }
+    },
+    [authorizeViewMany]
+  );
+
+  const openWith = useCallback(
+    async (document: DocumentEntity): Promise<boolean> => {
+      if (!(await authorizeView(document))) {
+        return false;
+      }
+      try {
+        await openDocumentWith(document);
+        return true;
+      } catch (err) {
+        if (isCancellation(err)) {
+          return true;
+        }
+        logger.warn({ event: 'vault.intent.open_error', err: { message: String(err) } });
+        return false;
+      }
+    },
+    [authorizeView]
+  );
 
   return { supported: isIntentSupported(), share, shareMany, openWith };
 }
