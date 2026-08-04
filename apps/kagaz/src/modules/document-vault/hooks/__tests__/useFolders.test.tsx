@@ -72,6 +72,24 @@ describe('useFolders (F-9)', () => {
     expect(useVaultStore.getState().documents).toHaveLength(0);
   });
 
+  it('moveDocument does NOT drop the doc when the destination is the folder already being viewed (bug-audit fix)', async () => {
+    const db = new FakeDb()
+      .onQuery(/parent_id IS NULL/, [])
+      .onQuery(/FROM documents WHERE id/, [docRow({ id: 'doc-1' })]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    useVaultStore.setState({
+      documents: [{ ...docRow({ id: 'doc-1' }) } as never],
+      folderPath: [{ id: 'f-1', name: 'Taxes', sortOrder: 0, createdAt: '', updatedAt: '' }],
+    });
+    const { result } = renderHook(() => useFolders());
+
+    // "Move" to the same folder the user is currently browsing — a
+    // reachable no-op via MoveToFolderDialog (e.g. picking "Root" while
+    // already at root). Used to strip the doc from the visible list anyway.
+    await result.current.moveDocument('doc-1', 'f-1');
+    expect(useVaultStore.getState().documents).toHaveLength(1);
+  });
+
   it('no-ops without a database', async () => {
     useDatabaseMock.mockReturnValue({ status: 'error', db: null });
     const { result } = renderHook(() => useFolders());

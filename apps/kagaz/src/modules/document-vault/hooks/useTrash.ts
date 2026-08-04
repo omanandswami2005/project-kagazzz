@@ -3,18 +3,31 @@
  * delete-forever / empty-trash. Purges expired items on mount so the Trash
  * view is always within the retention window, then reflects each action
  * optimistically.
+ *
+ * Bug-audit fix: `restore` now also reflects the change into the shared
+ * vault store (`prependDocuments`, folder-scoped — see `vault.store.ts`),
+ * not just this hook's own local `items` list — same fix `useArchive.
+ * unarchive` already got for the identical root cause (two independent,
+ * non-shared state sources for overlapping document lists: without this,
+ * a restored document stayed invisible on the main vault list until the
+ * user changed folders or restarted the app, since `VaultHomePage` doesn't
+ * remount on Settings → Trash → back).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
+import { log } from '@/core/logging';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { createFileStorage } from '@/infrastructure/filesystem';
+import { useVaultStore } from '../store/vault.store';
 import {
   createTrashDeps,
   deleteForever as deleteForeverSvc,
   emptyTrash as emptyTrashSvc,
   purgeExpiredTrash,
 } from '../services/trash.service';
+
+const logger = log('document-vault');
 
 /** What {@link useTrash} exposes. */
 export interface UseTrash {
@@ -62,8 +75,21 @@ export function useTrash(): UseTrash {
       if (!dao) {
         return;
       }
-      await dao.restore(doc.id);
       setItems((prev) => prev.filter((d) => d.id !== doc.id));
+      try {
+        await dao.restore(doc.id);
+        logger.info({ event: 'vault.restore', documentId: doc.id });
+        // Only actually inserted if this document belongs in whatever
+        // folder the main list currently has open — see prependDocuments.
+        useVaultStore.getState().prependDocuments([doc]);
+      } catch (error) {
+        setItems((prev) => [doc, ...prev]);
+        logger.error({
+          event: 'vault.restore.failed',
+          documentId: doc.id,
+          err: { message: String(error) },
+        });
+      }
     },
     [dao]
   );

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IncomingFile } from '../../types/document.types';
 import type { PendingShare } from '../../services/share-receive.service';
 import { useShareIntent } from '../useShareIntent';
+import { useVaultStore } from '../../store/vault.store';
 
 const nativePlatform = vi.hoisted((): { value: boolean } => ({ value: true }));
 vi.mock('@capacitor/core', () => ({
@@ -52,6 +53,7 @@ beforeEach(() => {
   shareService.getPendingShare.mockResolvedValue({ items: [], text: null });
   shareService.pendingShareToIncomingFiles.mockResolvedValue([]);
   shareService.onShareReceived.mockResolvedValue({ remove: vi.fn().mockResolvedValue(undefined) });
+  useVaultStore.setState({ lastUploadErrors: [] });
 });
 
 describe('useShareIntent', () => {
@@ -95,6 +97,22 @@ describe('useShareIntent', () => {
     renderHook(() => useShareIntent());
     await waitFor(() => expect(shareService.getPendingShare).toHaveBeenCalledOnce());
     expect(upload.ingestFiles).not.toHaveBeenCalled();
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it('bug-audit fix: shows an error toast when every shared file fails validation (uploaded: 0, no throw)', async () => {
+    shareService.pendingShareToIncomingFiles.mockResolvedValue([file('huge.pdf')]);
+    upload.ingestFiles.mockImplementation(async () => {
+      useVaultStore.setState({ lastUploadErrors: ['upload.errors.file_too_large'] });
+      return { uploaded: 0, documents: [] };
+    });
+
+    renderHook(() => useShareIntent());
+
+    await waitFor(() => expect(presentToast).toHaveBeenCalled());
+    expect(presentToast).toHaveBeenCalledWith(
+      expect.objectContaining({ color: 'danger' })
+    );
     expect(routerPush).not.toHaveBeenCalled();
   });
 

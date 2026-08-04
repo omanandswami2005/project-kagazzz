@@ -8,7 +8,7 @@ import { useCallback, useMemo } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
 import { DocumentDao } from '@/infrastructure/database/dao';
-import { useVaultStore } from '../store/vault.store';
+import { currentFolderId, useVaultStore } from '../store/vault.store';
 
 const logger = log('document-vault');
 
@@ -85,7 +85,16 @@ export function useBulkActions(): UseBulkActionsResult {
       run(
         (dao, id) => dao.update(id, { folderId }),
         'vault.bulk.move',
-        dropFromList
+        // Bug-audit fix: only drop from the visible list when the
+        // destination actually differs from the folder being viewed — see
+        // moveDocument's identical fix in useFolders.ts for the full
+        // reasoning (moving to the same folder is a reachable no-op via
+        // MoveToFolderDialog and used to make selected docs vanish).
+        (id) => {
+          if (folderId !== currentFolderId(useVaultStore.getState())) {
+            dropFromList(id);
+          }
+        }
       ),
     [run]
   );

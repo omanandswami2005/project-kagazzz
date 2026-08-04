@@ -12,6 +12,7 @@ import { useIonRouter, useIonToast } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import { log } from '@/core/logging';
 import { useUpload } from './useUpload';
+import { useVaultStore } from '../store/vault.store';
 import {
   getPendingShare,
   isShareReceiveSupported,
@@ -40,6 +41,22 @@ export function useShareIntent(): void {
       try {
         const { uploaded } = await ingestFiles(files);
         if (uploaded === 0) {
+          // Bug-audit fix: ingestFiles() never throws for a per-file
+          // validation failure (oversized/corrupt/unsupported) — it's
+          // collected into the vault store's lastUploadErrors and the
+          // promise resolves normally. This used to return silently here
+          // with no toast at all, leaving the user with no idea the share
+          // was rejected rather than quietly imported.
+          const errorKeys = useVaultStore.getState().lastUploadErrors;
+          void presentToast({
+            message:
+              errorKeys.length > 0
+                ? errorKeys.map((key) => t(key)).join('\n')
+                : t('upload.errors.file_read_error'),
+            duration: 4000,
+            color: 'danger',
+            position: 'bottom',
+          });
           return;
         }
         router.push('/vault');

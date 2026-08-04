@@ -199,8 +199,14 @@ export function useFolders(): UseFoldersResult {
         return;
       }
       await documentDao.update(documentId, { folderId });
-      // Drop it from the current list (it now lives elsewhere).
-      useVaultStore.getState().removeDocument(documentId);
+      // Bug-audit fix: only drop it from the visible list if it actually
+      // left the folder currently being viewed — "Move" to the same folder
+      // it's already in (e.g. picking "Root" while browsing Root) is a
+      // reachable no-op via MoveToFolderDialog, and used to make the
+      // document vanish from the list until a folder change/restart.
+      if (folderId !== currentFolderId(useVaultStore.getState())) {
+        useVaultStore.getState().removeDocument(documentId);
+      }
       logger.info({ event: 'vault.document.move', documentId, folderId });
     },
     [documentDao]

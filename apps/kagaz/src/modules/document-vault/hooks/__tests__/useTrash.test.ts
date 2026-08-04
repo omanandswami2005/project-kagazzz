@@ -27,6 +27,7 @@ vi.mock('../../services/trash.service', () => ({
 }));
 
 import { useTrash } from '../useTrash';
+import { useVaultStore } from '../../store/vault.store';
 
 const doc = (id: string): DocumentEntity =>
   ({ id, name: id, deletedAt: '2026-07-01T00:00:00.000Z' }) as DocumentEntity;
@@ -39,6 +40,7 @@ beforeEach(() => {
   restore.mockResolvedValue(1);
   deleteForever.mockResolvedValue(true);
   emptyTrash.mockResolvedValue({ purged: 2 });
+  useVaultStore.setState({ documents: [], folderPath: [] });
 });
 
 describe('useTrash (F-57)', () => {
@@ -57,6 +59,39 @@ describe('useTrash (F-57)', () => {
     });
     expect(restore).toHaveBeenCalledWith('a');
     expect(result.current.items.map((d) => d.id)).toEqual(['b']);
+  });
+
+  it('restore also reflects the document into the shared vault store (bug-audit fix: main list staleness)', async () => {
+    const { result } = renderHook(() => useTrash());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.restore(doc('a'));
+    });
+    expect(useVaultStore.getState().documents.map((d) => d.id)).toContain('a');
+  });
+
+  it('does not leak into the vault store when the restored document belongs to a different folder', async () => {
+    useVaultStore.setState({
+      documents: [],
+      folderPath: [{ id: 'f1', name: 'F1', sortOrder: 0, createdAt: '', updatedAt: '' }],
+    });
+    const { result } = renderHook(() => useTrash());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.restore(doc('a'));
+    });
+    expect(useVaultStore.getState().documents).toEqual([]);
+  });
+
+  it('rolls back the local list and logs when the DAO restore fails', async () => {
+    restore.mockRejectedValue(new Error('db exploded'));
+    const { result } = renderHook(() => useTrash());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.restore(doc('a'));
+    });
+    expect(result.current.items.map((d) => d.id).sort()).toEqual(['a', 'b']);
+    expect(useVaultStore.getState().documents).toEqual([]);
   });
 
   it('deleteForever purges one document and drops it from the list', async () => {
