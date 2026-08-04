@@ -127,6 +127,27 @@ describe('AIProvider (F-13)', () => {
     expect(result.current.capabilities).toBeNull();
   });
 
+  it('remove() surfaces a native delete failure as an error state (bug-audit fix: used to be an unhandled rejection)', async () => {
+    const { result } = renderHook(() => useAi(), { wrapper });
+
+    await act(async () => {
+      await result.current.activate([]);
+    });
+    expect(result.current.status).toBe('ready');
+
+    engine.deleteDownloadedModel.mockRejectedValueOnce(new Error('native delete failed'));
+    await act(async () => {
+      await result.current.remove();
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.errorMessage).toBeTruthy();
+    // Deletion genuinely failed — the model file is presumably still on
+    // disk, so capabilities correctly still reflects the old ready state
+    // rather than being cleared as if the delete had succeeded.
+    expect(result.current.capabilities).not.toBeNull();
+  });
+
   it('preferGpu defaults to false and is off by default in loadModel calls', async () => {
     const { result } = renderHook(() => useAi(), { wrapper });
     expect(result.current.preferGpu).toBe(false);

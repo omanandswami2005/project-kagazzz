@@ -130,10 +130,21 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   );
 
   const remove = useCallback(async (): Promise<void> => {
-    await deleteDownloadedModel();
-    setCapabilities(null);
-    setDownloadProgress(0);
-    setStatus('not-downloaded');
+    try {
+      await deleteDownloadedModel();
+      setCapabilities(null);
+      setDownloadProgress(0);
+      setStatus('not-downloaded');
+    } catch (error) {
+      // Bug-audit fix: this used to have no error handling at all — a
+      // failed native delete left the status stuck at 'ready' with no user
+      // feedback, and its only call site (`void ai.remove()`) turned the
+      // rejection into an unhandled promise rejection. Surface it the same
+      // way activate() surfaces a load failure.
+      logger.warn({ event: 'ai.model.delete_failed', err: { message: String(error) } });
+      setErrorMessage('Failed to delete the AI model');
+      setStatus('error');
+    }
   }, []);
 
   const value = useMemo<AiContextValue>(

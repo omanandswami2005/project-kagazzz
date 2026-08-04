@@ -582,4 +582,71 @@ describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () =>
     });
     expect(result.current.pendingConfirmation).toBeNull();
   });
+
+  it('bug-audit fix: a second requiresConfirmation call while one is pending is refused, not silently overwritten', async () => {
+    const hook = await renderReadyWithPending();
+    plugin.resolveToolCall.mockClear();
+
+    act(() => {
+      listeners.toolCallRequested?.({
+        requestId: 'req-second',
+        name: 'test.destructiveThing',
+        argumentsJson: '{}',
+      });
+    });
+
+    // The FIRST card is still the one showing — never silently replaced.
+    expect(hook.result.current.pendingConfirmation?.requestId).toBe('req-confirm');
+    // The second call gets an immediate "busy" resolve of its own requestId.
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    expect(call?.[0]).toMatchObject({ requestId: 'req-second' });
+    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean };
+    expect(parsed.ok).toBe(false);
+
+    // Confirming still resolves the FIRST (still-pending) requestId.
+    await act(async () => {
+      hook.result.current.confirmPendingToolCall();
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledTimes(2));
+    expect(plugin.resolveToolCall.mock.calls[1]?.[0]).toMatchObject({ requestId: 'req-confirm' });
+  });
+
+  it('bug-audit fix: confirming after real elapsed time exceeds the native 30s timeout does not run the tool for real', async () => {
+    const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    vi.useFakeTimers();
+    act(() => {
+      listeners.toolCallRequested?.({
+        requestId: 'req-stale',
+        name: 'test.destructiveThing',
+        argumentsJson: '{}',
+      });
+    });
+    expect(result.current.pendingConfirmation?.expired).toBe(false);
+
+    // Simulate a throttled/backgrounded WebView: real time moves past the
+    // native bridge's own 30s timeout, but the client's 25s setTimeout
+    // never actually fires (no advanceTimersByTime) — the card still looks
+    // "active" from the UI's own perspective.
+    vi.setSystemTime(Date.now() + 31_000);
+    expect(result.current.pendingConfirmation?.expired).toBe(false);
+
+    await act(async () => {
+      result.current.confirmPendingToolCall();
+      await Promise.resolve();
+    });
+
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const [call] = plugin.resolveToolCall.mock.calls;
+    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
+    expect(parsed.ok).toBe(false);
+    expect(parsed.code).toBe('AGENT_E_TIMEOUT');
+  });
 });

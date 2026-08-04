@@ -61,6 +61,18 @@ function requireSaved(count: number, opName: string): number {
  */
 const CONFIRMATION_TIMEOUT_MS = 25_000;
 
+/**
+ * The native bridge's own hard timeout (JsBridgeTool.java) — used only as a
+ * real-wall-clock safety check in `resolvePendingToolCall`, not as the
+ * primary expiry mechanism (that's `CONFIRMATION_TIMEOUT_MS`'s `setTimeout`
+ * above). Bug-audit fix: a backgrounded WebView can throttle `setTimeout`,
+ * so the 25s client timer isn't a reliable guarantee that a still-"active"
+ * card hasn't actually outlived the native call already — checking real
+ * elapsed time here prevents running a real side effect (Confirm tapped)
+ * against a request the native side has already given up on.
+ */
+const NATIVE_TIMEOUT_MS = 30_000;
+
 /** A destructive tool call awaiting the user's yes/no in the chat UI. */
 export interface PendingToolConfirmation {
   requestId: string;
@@ -117,14 +129,24 @@ export function useChat(): UseChatResult {
       return null;
     }
     return {
+      // [SEC] Bug-audit fix: locked documents must never appear in AI
+      // list/search results, same invariant useSearch.ts already enforces
+      // for the human search UI over this same DAO — the AI tools were
+      // missing the filter entirely, leaking a locked doc's name/type/size
+      // into the chat transcript with no biometric gate.
       listDocuments: async (limit): Promise<DocumentSummary[]> =>
-        (await documentDao.findAll()).slice(0, limit).map(toDocumentSummary),
+        (await documentDao.findAll())
+          .filter((doc) => !doc.isLocked)
+          .slice(0, limit)
+          .map(toDocumentSummary),
       searchDocuments: async (query, limit): Promise<DocumentSummary[]> => {
         const match = buildFtsMatchQuery(query);
         if (!match) {
           return [];
         }
-        return (await documentDao.search(match, limit)).map(toDocumentSummary);
+        return (await documentDao.search(match, limit))
+          .filter((doc) => !doc.isLocked)
+          .map(toDocumentSummary);
       },
       openQuickReference: (): void => router.push('/quick-reference', 'forward', 'push'),
       openQuickNotes: (): void => router.push('/quick-notes', 'forward', 'push'),
@@ -186,10 +208,18 @@ export function useChat(): UseChatResult {
 
   const chatSessionId = useRef<string | null>(null);
   const streamingBuffer = useRef('');
-  /** The full call the card resolves on confirm/reject — not in state since it's never rendered. */
-  const pendingToolCallRef = useRef<{ requestId: string; name: string; args: unknown } | null>(
-    null
-  );
+  /**
+   * The full call the card resolves on confirm/reject — not in state since
+   * it's never rendered. `requestedAt` is a real wall-clock timestamp (not
+   * just "the 25s JS timer fired") — bug-audit fix: a backgrounded WebView
+   * can throttle `setTimeout`, so a stale card could still show live
+   * Confirm/Reject after the native bridge's own 30s timeout already fired;
+   * resolvePendingToolCall checks elapsed real time before running a real
+   * side effect, not just whether the client timer happened to fire.
+   */
+  const pendingToolCallRef = useRef<
+    { requestId: string; name: string; args: unknown; requestedAt: number } | null
+  >(null);
 
   // Load-or-create the conversation once the model is ready.
   useEffect(() => {
@@ -304,7 +334,26 @@ export function useChat(): UseChatResult {
           }
           const action = aiToolRegistry.get(event.name);
           if (action?.requiresConfirmation) {
-            pendingToolCallRef.current = { requestId: event.requestId, name: event.name, args };
+            // Bug-audit fix: a second requiresConfirmation call arriving
+            // before the first is resolved used to silently overwrite
+            // pendingToolCallRef/pendingConfirmation — the first call's
+            // requestId was then never confirmed, rejected, or expired by
+            // the client at all, only eventually hitting the native 30s
+            // timeout with the user never having been asked. Refuse the
+            // second call outright instead; the model can retry once the
+            // first is answered.
+            if (pendingToolCallRef.current) {
+              return JSON.stringify({
+                ok: false,
+                error: 'Another confirmation is already pending — wait for the user to respond to it first.',
+              });
+            }
+            pendingToolCallRef.current = {
+              requestId: event.requestId,
+              name: event.name,
+              args,
+              requestedAt: Date.now(),
+            };
             setPendingConfirmation({
               requestId: event.requestId,
               actionId: event.name,
@@ -324,9 +373,20 @@ export function useChat(): UseChatResult {
           })
           .catch((toolError: unknown) => {
             logger.warn({ event: 'ai.chat.tool_call_failed', err: { message: String(toolError) } });
-            void CapacitorLlmLiteRT.resolveToolCall({
+            // Bug-audit fix: the most likely reason to land here is the
+            // FIRST resolveToolCall (above) rejecting because the native
+            // 30s timeout already fired for this requestId — the same
+            // benign case resolvePendingToolCall's own catch already
+            // documents. This retry can reject for the identical reason;
+            // without its own catch it was an unhandled promise rejection.
+            CapacitorLlmLiteRT.resolveToolCall({
               requestId: event.requestId,
               resultJson: JSON.stringify({ ok: false, error: 'Tool call failed' }),
+            }).catch((resolveError: unknown) => {
+              logger.warn({
+                event: 'ai.chat.tool_call_resolve_after_timeout',
+                err: { message: String(resolveError) },
+              });
             });
           });
       }),
@@ -364,15 +424,25 @@ export function useChat(): UseChatResult {
       }
       pendingToolCallRef.current = null;
       setPendingConfirmation(null);
-      const result = accepted
-        ? await aiToolRegistry.invoke(pending.name, pending.args, toolContext)
-        : {
-            ok: false as const,
-            code: 'AGENT_E_USER_DECLINED',
-            message: 'User declined the confirmation card',
-            retryable: false,
-            userMessage: 'Okay, I will not do that.',
-          };
+      const nativeLikelyTimedOut = Date.now() - pending.requestedAt >= NATIVE_TIMEOUT_MS;
+      const result =
+        accepted && !nativeLikelyTimedOut
+          ? await aiToolRegistry.invoke(pending.name, pending.args, toolContext)
+          : accepted
+            ? {
+                ok: false as const,
+                code: 'AGENT_E_TIMEOUT',
+                message: 'Confirmation arrived after the native bridge already timed out',
+                retryable: true,
+                userMessage: 'That took too long to confirm — please ask again.',
+              }
+            : {
+                ok: false as const,
+                code: 'AGENT_E_USER_DECLINED',
+                message: 'User declined the confirmation card',
+                retryable: false,
+                userMessage: 'Okay, I will not do that.',
+              };
       try {
         await CapacitorLlmLiteRT.resolveToolCall({
           requestId: pending.requestId,
