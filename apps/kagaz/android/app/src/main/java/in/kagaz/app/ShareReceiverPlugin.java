@@ -48,9 +48,10 @@ public class ShareReceiverPlugin extends Plugin {
 
     /** Called from {@link MainActivity#onNewIntent} — not a PluginMethod. */
     void handleNewIntent(Intent intent) {
-        JSObject payload = parseIntent(intent);
-        if (!payload.getJSArray("items").toList().isEmpty() || payload.getString("text") != null) {
-            notifyListeners("shareReceived", payload);
+        String action = intent == null ? null : intent.getAction();
+        boolean isShare = Intent.ACTION_SEND.equals(action) || Intent.ACTION_SEND_MULTIPLE.equals(action);
+        if (isShare) {
+            notifyListeners("shareReceived", parseIntent(intent));
         }
         consumeIntent(intent);
     }
