@@ -107,8 +107,9 @@ Nice-to-have features that polish the experience. First to be cut if timeline is
 | 34 | **Sort Options** | Sort documents by name, date, size, type in ascending/descending order. | 🟢 S | ⭐ | — |
 | F-84 | **Quick Reference** | A personal key-value vault for numbers users copy often (Aadhaar/PAN/mobile/account/IFSC/emails/URLs, user-named), optionally linked to a source document. Template suggestions, mask-by-default, biometric-gated, multi-select bulk copy. Added 2026-07-18 — see [02-document-vault-module.md](../architecture/02-document-vault-module.md) §Quick Reference. | 🟡 M | ⭐⭐ | SQLite, biometric auth (F-16) |
 | F-85 | **Resize & Compress for Forms** | Resize an image to exact target dimensions (with an aspect-ratio-lock toggle) and iteratively compress to a target file-size range — the two-constraints-at-once shape Indian government portals (SSC/UPSC/passport/university uploads) commonly require for photo/signature fields. Added 2026-07-18 — see [04-image-engine-module.md](../architecture/04-image-engine-module.md) §9. | 🟢 S | ⭐⭐ | Canvas API |
+| F-108 | **Receive Share** | Kagaz appears in Android's native share sheet from any other app (Gallery, WhatsApp, a file manager, …) and imports the shared file/image straight into the vault — the inbound counterpart to the existing outbound "Open with…"/"Share…" document intents. Custom `ShareReceiver` native plugin + `ACTION_SEND`/`ACTION_SEND_MULTIPLE` intent-filters; feeds the shared file through the existing upload pipeline (validate/hash/store/thumbnail). Text-only shares (no attached file) are out of scope. Added 2026-07-25, user-requested — see [02-document-vault-module.md](../architecture/02-document-vault-module.md) §Receive Share. | 🟡 M | ⭐⭐ | Custom Capacitor plugin |
 
-> **F-84/F-85 numbering note:** items above use the checklist's actual `F-` numbers, not the sequential `#` numbering in this table's original scope (`#1`–`#34` = `F-1`–`F-34`; the many V1-extra features shipped since, `F-35`–`F-83`, were never backfilled into this table — `DEVELOPMENT-CHECKLIST.md` is the current source of truth for the full V1 feature list and their status). `F-84`/`F-85` use the next free ID gap.
+> **F-84/F-85/F-108 numbering note:** items above use the checklist's actual `F-` numbers, not the sequential `#` numbering in this table's original scope (`#1`–`#34` = `F-1`–`F-34`; the many V1-extra features shipped since, `F-35`–`F-83`/`F-86`–`F-107`, were never backfilled into this table — `DEVELOPMENT-CHECKLIST.md` is the current source of truth for the full V1 feature list and their status). `F-84`/`F-85`/`F-108` use the next free ID gap.
 
 ---
 
@@ -354,4 +355,4 @@ gantt
 
 ---
 
-*Last updated: 2026-06-10 · Kagaz Feature Priorities v1.1*
+*Last updated: 2026-07-25 · Kagaz Feature Priorities v1.1*

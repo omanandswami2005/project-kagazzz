@@ -24,6 +24,7 @@ import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, Route } from 'react-router-dom';
 import { Icon, Spinner } from '@kagaz/ui';
+import { useShareIntent } from '@/modules/document-vault/hooks/useShareIntent';
 import {
   LazyAiAssistantPage,
   LazyArchivedPage,
@@ -112,6 +113,7 @@ function useHardwareBack(): void {
  */
 export function AppRoutes(): ReactNode {
   useHardwareBack();
+  useShareIntent();
   const { t } = useTranslation('common');
   return (
     <IonTabs>

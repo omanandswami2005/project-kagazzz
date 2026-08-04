@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-23
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-25
 
 ---
 
@@ -1206,6 +1206,41 @@ is not an error — only a genuine failure surfaces a toast).
 **[SEC]** Both are user-initiated (the user explicitly picked the action from
 the menu) and read-only from the vault's perspective — no network call is made
 by the app; the receiving app's own behaviour is outside Kagaz's boundary.
+
+### Receive Share (F-108)
+
+The inbound counterpart to F-64/F-65: Kagaz appears in Android's native
+share sheet from *any* other app (Gallery, WhatsApp, a file manager, …) and
+imports what's shared straight into the vault.
+
+Android has no equivalent of `@capacitor/share` for the *receiving* side, so
+this is a small custom plugin rather than a third-party dependency —
+`ShareReceiverPlugin.java` (`apps/kagaz/android/app/src/main/java/in/kagaz/app/`,
+same app-local pattern as `RootCheckPlugin`/`OcrPlugin`, not a standalone
+`packages/` plugin package, since this is very Kagaz-specific integration
+rather than a reusable one). `AndroidManifest.xml` declares `ACTION_SEND` /
+`ACTION_SEND_MULTIPLE` intent-filters on `MainActivity` scoped to the types
+the upload pipeline already accepts (PDF, images, txt/md/csv, doc/docx,
+xls/xlsx) — not a catch-all `*/*`, so Kagaz doesn't show up for every share on
+the device (audio, video, arbitrary APKs, …).
+
+| Layer | Piece | Responsibility |
+|---|---|---|
+| Native | `ShareReceiverPlugin.java` | Resolves the pending/incoming `Intent`'s `EXTRA_STREAM` (single or `ArrayList<Uri>`) + `EXTRA_TEXT` into a plain JS payload (`{ items: [{uri, mimeType, name}], text }`); consumes the intent after reading so backgrounding/resuming doesn't re-import the same share twice |
+| Native | `MainActivity.onNewIntent` | `launchMode="singleTask"` means a share arriving while the app is already running lands here (not a fresh `onCreate`) — forwards it to the plugin, which emits a `shareReceived` event |
+| Service | `share-receive.service.ts` | `getPendingShare()` (cold-start poll), `onShareReceived()` (warm-start event), `sharedItemToIncomingFile()` — reads the shared `content://` URI via `Capacitor.convertFileSrc` (resolves through the WebView's content-resolver bridge against the **sending app's own FileProvider** — no native copy step, no change needed to Kagaz's own `file_paths.xml`) and turns it into an `IncomingFile` |
+| Hook | `useShareIntent()` | Mounted once at the app root (`routes/index.tsx`, same posture as the hardware-back handler) — checks for a pending share on mount, subscribes to live shares, feeds every converted item through the **existing** `useUpload().ingestFiles()` pipeline (F-1's validate → hash → store → thumbnail → DB-row path — no new upload logic), then navigates to `/vault` and toasts the result |
+
+**Scope decision — text-only shares are ignored.** A share with `EXTRA_TEXT`
+but no `EXTRA_STREAM` (e.g. sharing a link or a chat message, not a file) is
+dropped silently — this is a document-import surface, not a general text
+capture one. `source_type` for a share-imported document is `file_picker`
+(no new DB enum value / migration — a shared file is, functionally, a file
+the user picked from another app rather than this app's own file picker).
+
+**[SEC]** No network call: the shared bytes come from the sending app's own
+FileProvider via an OS-granted URI permission, entirely on-device, then flow
+through the same validated/hashed upload pipeline every other source uses.
 
 ### Copy text (F-68)
 
