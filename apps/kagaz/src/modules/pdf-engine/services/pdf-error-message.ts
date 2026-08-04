@@ -9,6 +9,7 @@ import type { PdfErrorCode } from '../types/pdf-engine.types';
 /** A `tools` namespace error message key (literal so `t()` accepts it). */
 export type PdfErrorMessageKey =
   | 'errors.wrong_password'
+  | 'errors.password_required'
   | 'errors.invalid_pdf'
   | 'errors.no_text_layer'
   | 'errors.page_out_of_range'
@@ -27,6 +28,11 @@ export function pdfErrorMessageKey(
   switch (code) {
     case 'WRONG_PASSWORD':
       return 'errors.wrong_password';
+    case 'PASSWORD_REQUIRED':
+      // Bug-audit fix: this used to fall through to the generic
+      // 'errors.failed' — every non-decrypt op on a password-protected PDF
+      // now gets a message that actually says what's wrong.
+      return 'errors.password_required';
     case 'INVALID_PDF':
     case 'CORRUPTED_FILE':
     case 'UNSUPPORTED_FORMAT':

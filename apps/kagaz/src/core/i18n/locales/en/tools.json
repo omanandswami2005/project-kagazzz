@@ -125,6 +125,7 @@
   "errors": {
     "failed": "Something went wrong. Please try again.",
     "wrong_password": "Incorrect password. Check it and try again.",
+    "password_required": "This PDF is password-protected. Unlock it first, then try again.",
     "invalid_pdf": "This file isn't a valid or supported PDF.",
     "no_text_layer": "This PDF has no selectable text — it may be scanned. Try “Extract text” (OCR) instead.",
     "page_out_of_range": "That page number is beyond the end of this document. Check the page count and try again.",

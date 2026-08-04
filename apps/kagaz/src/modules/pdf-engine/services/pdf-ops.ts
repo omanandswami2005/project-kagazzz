@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, degrees, rgb } from 'pdf-lib';
+import { isEncrypted } from '@pdfsmaller/pdf-decrypt';
 import {
   type ImageInput,
   type PageNumberOptions,
@@ -12,10 +13,33 @@ import {
 
 /**
  * Validates a Uint8Array as a PDF and loads it.
+ *
+ * Bug-audit fix: a password-protected input used to fall straight into
+ * `PDFDocument.load`'s catch block and come out as a generic `INVALID_PDF`
+ * ("this isn't a valid PDF") for every op that isn't decrypt — merge, split,
+ * organize, watermark, compress, etc. — which is actively misleading: the
+ * file is a perfectly valid PDF, it's just locked, and the message gave the
+ * user no way to know they needed to decrypt it first. Pre-checking here
+ * fixes every op that funnels through this shared helper at once.
  */
 export async function loadAndValidatePdf(pdf: Uint8Array, operation: string): Promise<PDFDocument> {
   if (!pdf || pdf.length === 0) {
     throw new PdfEngineException('Empty or missing PDF data', 'INVALID_PDF', operation);
+  }
+  try {
+    if ((await isEncrypted(pdf)).encrypted) {
+      throw new PdfEngineException(
+        'This PDF is password-protected — unlock it first',
+        'PASSWORD_REQUIRED',
+        operation
+      );
+    }
+  } catch (e: unknown) {
+    if (e instanceof PdfEngineException) {
+      throw e;
+    }
+    // isEncrypted() itself couldn't read the header — fall through to the
+    // normal load attempt below, which will classify it as INVALID_PDF.
   }
   try {
     return await PDFDocument.load(pdf);

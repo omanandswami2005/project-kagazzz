@@ -19,6 +19,26 @@ import {
  * `core/polyfills/pdfjs-runtime-polyfills` (imported once in `main.tsx`) is
  * enough on its own; see that file's doc comment for the full story.
  */
+/**
+ * Bug-audit fix: a password-protected PDF's `loadingTask.promise` rejection
+ * used to be mapped to the same generic `INVALID_PDF` code as an actually
+ * corrupt file — pdfjs throws its own `PasswordException` (`name ===
+ * 'PasswordException'`, see pdfjs-dist's `shared/util.js`) for this exact
+ * case, so it's detectable without guessing from the message text.
+ */
+function classifyPdfLoadError(e: unknown, op: string): PdfEngineException {
+  const error = e instanceof Error ? e : new Error(String(e));
+  if (error.name === 'PasswordException') {
+    return new PdfEngineException(
+      'This PDF is password-protected — unlock it first',
+      'PASSWORD_REQUIRED',
+      op,
+      error
+    );
+  }
+  return new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+}
+
 let pdfjsReady: Promise<typeof import('pdfjs-dist')> | null = null;
 async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
   pdfjsReady ??= (async (): Promise<typeof import('pdfjs-dist')> => {
@@ -61,8 +81,7 @@ export async function extractPdfTextPerPageImpl(pdf: Uint8Array): Promise<string
     doc = await loadingTask.promise;
   } catch (e: unknown) {
     await loadingTask.destroy().catch(() => undefined);
-    const error = e instanceof Error ? e : new Error(String(e));
-    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+    throw classifyPdfLoadError(e, op);
   }
 
   try {
@@ -117,8 +136,7 @@ export async function pdfToImagesImpl(
     doc = await loadingTask.promise;
   } catch (e: unknown) {
     await loadingTask.destroy().catch(() => undefined);
-    const error = e instanceof Error ? e : new Error(String(e));
-    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+    throw classifyPdfLoadError(e, op);
   }
 
   try {
