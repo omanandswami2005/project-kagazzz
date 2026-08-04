@@ -100,6 +100,15 @@ export async function openDatabase(
   await db.open();
 
   const connection = new SqliteDbAdapter(db);
+  // Bug-audit fix: SQLite disables foreign-key enforcement per-connection by
+  // default — without this, the schema's ON DELETE CASCADE (folders.parent_id)
+  // and ON DELETE SET NULL (documents.folder_id) are pure documentation, never
+  // actually enforced. Deleting a folder would silently orphan its child
+  // folders and documents instead of cascading/reparenting them as the schema
+  // and DAO doc comments both claim. Must be set before any writes (a
+  // per-connection setting, re-issued on every openDatabase() call — this is
+  // the app's single long-lived connection, so once here covers its lifetime).
+  await connection.execute('PRAGMA foreign_keys = ON;');
   await runMigrations(connection, migrations, onMigrationApplied);
   return connection;
 }

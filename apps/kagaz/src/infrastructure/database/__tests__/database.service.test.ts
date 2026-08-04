@@ -134,6 +134,12 @@ describe('openDatabase', () => {
     expect(mocks.sqliteApi.initWebStore).not.toHaveBeenCalled();
   });
 
+  it('bug-audit fix: enables foreign-key enforcement before running migrations', async () => {
+    await openDatabase([]);
+    const statements = mocks.dbConn.execute.mock.calls.map((c) => c[0]);
+    expect(statements).toContain('PRAGMA foreign_keys = ON;\n');
+  });
+
   it('stores the encryption secret only when not already stored', async () => {
     await openDatabase([]);
     expect(mocks.sqliteApi.setEncryptionSecret).toHaveBeenCalledWith(
