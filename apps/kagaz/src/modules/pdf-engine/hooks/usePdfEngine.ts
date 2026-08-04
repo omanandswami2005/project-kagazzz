@@ -128,6 +128,12 @@ const MIME_FOR: Record<string, string> = {
 export function usePdfEngine(): UsePdfEngineResult {
   const { ingestFiles } = useUpload();
   const engineRef = useRef<PdfEngineServiceImpl | null>(null);
+  // Bug-audit fix: memoizes the in-flight initialize() so two getEngine()
+  // calls issued before the first resolves await the SAME engine/Worker
+  // instead of each constructing + initializing its own — the loser's
+  // Worker was never referenced again by engineRef and so never
+  // terminate()d by the unmount cleanup below, a real (if narrow) leak.
+  const engineInitRef = useRef<Promise<PdfEngineServiceImpl> | null>(null);
   const storageRef = useRef(createFileStorage());
   const [state, setState] = useState<PdfRunState>(IDLE);
 
@@ -136,16 +142,21 @@ export function usePdfEngine(): UsePdfEngineResult {
     return (): void => {
       void engineRef.current?.destroy();
       engineRef.current = null;
+      engineInitRef.current = null;
     };
   }, []);
 
   const getEngine = useCallback(async (): Promise<PdfEngineServiceImpl> => {
-    if (!engineRef.current) {
+    if (engineRef.current) {
+      return engineRef.current;
+    }
+    engineInitRef.current ??= (async (): Promise<PdfEngineServiceImpl> => {
       const engine = new PdfEngineServiceImpl();
       await engine.initialize();
       engineRef.current = engine;
-    }
-    return engineRef.current;
+      return engine;
+    })();
+    return engineInitRef.current;
   }, []);
 
   const readBytes = useCallback(
