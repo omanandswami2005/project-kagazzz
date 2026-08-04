@@ -1,13 +1,16 @@
 /**
  * Tag data hook (F-10): all tags, per-document assignments, and the
- * create/assign/remove mutations. Backed by TagDao; refreshes its own
- * snapshot after each mutation so chips and the selector stay in sync.
+ * create/assign/remove mutations. Backed by TagDao; refreshes the shared
+ * `tags.store.ts` snapshot after each mutation so every mounted page's
+ * chips/selector stay in sync with each other, not just with themselves
+ * (bug-audit fix — see that store's own doc comment for the full story).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
 import { TagDao } from '@/infrastructure/database/dao';
 import type { TagEntity } from '@/infrastructure/database/types';
+import { useTagsStore } from '../store/tags.store';
 
 const logger = log('document-vault');
 
@@ -41,10 +44,9 @@ function groupByDocument(
 export function useTags(): UseTagsResult {
   const { db } = useDatabase();
   const dao = useMemo(() => (db ? new TagDao(db) : null), [db]);
-  const [tags, setTags] = useState<TagEntity[]>([]);
-  const [tagsByDocument, setTagsByDocument] = useState<Map<string, TagEntity[]>>(
-    new Map()
-  );
+  const tags = useTagsStore((state) => state.tags);
+  const tagsByDocument = useTagsStore((state) => state.tagsByDocument);
+  const setSnapshot = useTagsStore((state) => state.setSnapshot);
 
   const refresh = useCallback(async (): Promise<void> => {
     if (!dao) {
@@ -55,18 +57,21 @@ export function useTags(): UseTagsResult {
         dao.findAll(),
         dao.findAllAssignments(),
       ]);
-      setTags(all);
-      setTagsByDocument(groupByDocument(assignments));
+      setSnapshot(all, groupByDocument(assignments));
     } catch (error) {
       logger.error({
         event: 'vault.tags.load.failed',
         err: { message: String(error) },
       });
     }
-  }, [dao]);
+  }, [dao, setSnapshot]);
 
   // Initial load is inlined (not via refresh) so the async boundary is
   // visible to the react-hooks lint and setState never runs synchronously.
+  // Still fires once per mounted page (each page's own dao instance), same
+  // as before — the fix here isn't deduping that fetch, it's that every
+  // page's fetch now converges into the one shared store instead of each
+  // page keeping its own separate, divergent copy.
   useEffect(() => {
     if (!dao) {
       return;
@@ -79,8 +84,7 @@ export function useTags(): UseTagsResult {
           dao.findAllAssignments(),
         ]);
         if (!cancelled) {
-          setTags(all);
-          setTagsByDocument(groupByDocument(assignments));
+          setSnapshot(all, groupByDocument(assignments));
         }
       } catch (error) {
         logger.error({
@@ -92,7 +96,7 @@ export function useTags(): UseTagsResult {
     return (): void => {
       cancelled = true;
     };
-  }, [dao]);
+  }, [dao, setSnapshot]);
 
   const createTag = useCallback(
     async (name: string, color?: string): Promise<TagEntity | null> => {
