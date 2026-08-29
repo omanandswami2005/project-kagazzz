@@ -10,6 +10,14 @@ import { useChat } from '../useChat';
 
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
+// useChat now also calls useTheme() for settings.setTheme (bug-audit fix) —
+// mocked at the hook boundary for the same reason as useAi/useIonRouter
+// above (throws outside its real provider, which this hook-only test
+// doesn't mount).
+const applyTheme = vi.hoisted(() => vi.fn());
+vi.mock('@/app/providers/ThemeProvider', () => ({
+  useTheme: () => ({ theme: 'system', setTheme: applyTheme }),
+}));
 
 const pdfEngine = vi.hoisted(() => ({
   mergePdfs: vi.fn(),
@@ -334,6 +342,27 @@ describe('useChat (F-13)', () => {
     const [call] = plugin.resolveToolCall.mock.calls;
     const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { opened: boolean } };
     expect(result).toEqual({ ok: true, data: { opened: true } });
+  });
+
+  it('bug-audit fix: dispatches settings.setTheme through the real ThemeProvider, not silently AGENT_E_UNKNOWN_ACTION', async () => {
+    const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+
+    renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    listeners.toolCallRequested?.({
+      requestId: 'req-theme',
+      name: 'settings.setTheme',
+      argumentsJson: JSON.stringify({ theme: 'dark' }),
+    });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+
+    expect(applyTheme).toHaveBeenCalledWith('dark');
+    const [call] = plugin.resolveToolCall.mock.calls;
+    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean };
+    expect(result.ok).toBe(true);
   });
 });
 

@@ -10,12 +10,14 @@ import type { ToolDescriptor } from '@kagaz/capacitor-llm-litert';
 import { aiToolActions, type AiToolContext } from '../ai-tools.actions';
 import { aiNavigationActions } from '../ai-navigation.actions';
 import { aiDocumentOpsActions } from '../ai-document-ops.actions';
+import { aiSettingsActions } from '../ai-settings.actions';
 
 /** Registered once — see the module doc comment for why this is a singleton. */
 export const aiToolRegistry = new ActionRegistry<AiToolContext>()
   .registerAll(aiToolActions)
   .registerAll(aiNavigationActions)
-  .registerAll(aiDocumentOpsActions);
+  .registerAll(aiDocumentOpsActions)
+  .registerAll(aiSettingsActions);
 
 /**
  * Converts a registry {@link ToolDefinition} into the native bridge's

@@ -62,6 +62,9 @@ describe('aiToolActions.listDocuments', () => {
       convertImagesToPdf: vi.fn(),
       convertPdfToImages: vi.fn(),
       exportPdfText: vi.fn(),
+      setTheme: vi.fn(),
+      setLanguage: vi.fn(),
+      setSwipeAction: vi.fn(),
     };
     const result = await aiToolActions.listDocuments.handler({ limit: 20 }, ctx);
     expect(ctx.listDocuments).toHaveBeenCalledWith(20);
@@ -91,6 +94,9 @@ describe('aiToolActions.searchDocuments', () => {
       convertImagesToPdf: vi.fn(),
       convertPdfToImages: vi.fn(),
       exportPdfText: vi.fn(),
+      setTheme: vi.fn(),
+      setLanguage: vi.fn(),
+      setSwipeAction: vi.fn(),
     };
     const result = await aiToolActions.searchDocuments.handler({ query: 'passport', limit: 10 }, ctx);
     expect(ctx.searchDocuments).toHaveBeenCalledWith('passport', 10);

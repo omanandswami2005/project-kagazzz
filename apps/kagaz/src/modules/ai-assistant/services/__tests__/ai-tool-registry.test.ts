@@ -26,6 +26,12 @@ describe('aiToolRegistry', () => {
     expect(aiToolRegistry.has('ai.exportPdfText')).toBe(true);
   });
 
+  it('registers all three settings tools (bug-audit fix — used to not be registered at all)', () => {
+    expect(aiToolRegistry.has('settings.setTheme')).toBe(true);
+    expect(aiToolRegistry.has('settings.setLanguage')).toBe(true);
+    expect(aiToolRegistry.has('settings.setSwipeAction')).toBe(true);
+  });
+
   it('invokes a registered action end-to-end via the real ActionResult envelope', async () => {
     const ctx: AiToolContext = {
       listDocuments: async () => [],
@@ -42,6 +48,9 @@ describe('aiToolRegistry', () => {
       convertImagesToPdf: vi.fn(),
       convertPdfToImages: vi.fn(),
       exportPdfText: vi.fn(),
+      setTheme: vi.fn(),
+      setLanguage: vi.fn(),
+      setSwipeAction: vi.fn(),
     };
     const result = await aiToolRegistry.invoke('ai.listDocuments', { limit: 5 }, ctx);
     expect(result).toEqual({ ok: true, data: { documents: [] } });

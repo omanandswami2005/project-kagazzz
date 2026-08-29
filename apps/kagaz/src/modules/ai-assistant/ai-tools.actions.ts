@@ -78,6 +78,15 @@ export interface AiToolContext {
   convertPdfToImages: (documentId: string, format: 'jpeg' | 'png') => Promise<number>;
   /** Extracts a PDF's text layer into a new text/Markdown document. */
   exportPdfText: (documentId: string, format: 'txt' | 'md') => Promise<number>;
+  /** Applies (and persists) the colour theme (ai-settings.actions.ts). */
+  setTheme: (theme: 'system' | 'light' | 'dark') => void;
+  /** Switches (and persists) the UI language (ai-settings.actions.ts). */
+  setLanguage: (language: 'en' | 'hi') => void;
+  /** Sets which action fires on swipe-left/right over document rows (F-88, ai-settings.actions.ts). */
+  setSwipeAction: (
+    side: 'left' | 'right',
+    action: 'delete' | 'favorite' | 'move' | 'tags' | 'archive' | 'none'
+  ) => void;
 }
 
 export const aiToolActions = {

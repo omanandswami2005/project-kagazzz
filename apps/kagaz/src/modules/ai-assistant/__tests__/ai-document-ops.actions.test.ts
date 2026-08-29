@@ -18,6 +18,9 @@ function makeCtx(overrides: Partial<AiToolContext> = {}): AiToolContext {
     convertImagesToPdf: vi.fn(),
     convertPdfToImages: vi.fn(),
     exportPdfText: vi.fn(),
+    setTheme: vi.fn(),
+    setLanguage: vi.fn(),
+    setSwipeAction: vi.fn(),
     ...overrides,
   };
 }

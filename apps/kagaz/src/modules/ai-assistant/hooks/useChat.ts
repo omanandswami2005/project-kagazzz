@@ -10,10 +10,13 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIonRouter } from '@ionic/react';
+import { useTranslation } from 'react-i18next';
 import { CapacitorLlmLiteRT, type ToolCallRequestedEvent } from '@kagaz/capacitor-llm-litert';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
+import { useTheme } from '@/app/providers/ThemeProvider';
 import { log } from '@/core/logging';
+import { usePreferencesStore } from '@/core/preferences';
 import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
 import type { AiMessageEntity, DocumentEntity } from '@/infrastructure/database/types';
 import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
@@ -112,6 +115,9 @@ export function useChat(): UseChatResult {
   const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
   const router = useIonRouter();
+  const { setTheme: applyTheme } = useTheme();
+  const { i18n } = useTranslation();
+  const setSwipeAction = usePreferencesStore((s) => s.setSwipeAction);
   const pdfEngine = usePdfEngine();
   const { mergePdfs, splitPdf, compressPdf, watermarkPdf, imagesToPdf, pdfToImages, exportPdfText } =
     pdfEngine;
@@ -183,6 +189,14 @@ export function useChat(): UseChatResult {
         const doc = await requireDocument(documentDao, documentId);
         return requireSaved(await exportPdfText(doc, format), 'Text export');
       },
+      // Bug-audit fix: settings.actions.ts's setTheme/setLanguage/
+      // setSwipeAction were never registered into aiToolRegistry at all —
+      // saying "dark mode" or "switch to hindi" to the assistant silently
+      // failed despite SettingsPage.skill.md documenting both as working.
+      // See ai-settings.actions.ts's doc comment for the full story.
+      setTheme: (theme): void => applyTheme(theme),
+      setLanguage: (language): void => void i18n.changeLanguage(language),
+      setSwipeAction: (side, action): void => setSwipeAction(side, action),
     };
   }, [
     documentDao,
@@ -194,6 +208,9 @@ export function useChat(): UseChatResult {
     imagesToPdf,
     pdfToImages,
     exportPdfText,
+    applyTheme,
+    i18n,
+    setSwipeAction,
   ]);
 
   const [conversationId, setConversationId] = useState<string | null>(null);

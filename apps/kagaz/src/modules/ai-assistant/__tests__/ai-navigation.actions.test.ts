@@ -18,6 +18,9 @@ function makeCtx(): AiToolContext {
     convertImagesToPdf: vi.fn(),
     convertPdfToImages: vi.fn(),
     exportPdfText: vi.fn(),
+    setTheme: vi.fn(),
+    setLanguage: vi.fn(),
+    setSwipeAction: vi.fn(),
   };
 }
 
