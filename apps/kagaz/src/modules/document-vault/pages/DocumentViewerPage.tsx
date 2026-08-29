@@ -46,7 +46,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Button, Icon } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocLock } from '../hooks/useDocLock';
 import { useDocumentFile } from '../hooks/useDocumentFile';
@@ -77,7 +77,7 @@ export function DocumentViewerPage(): ReactNode {
   const { html: docxHtml, loading: docxLoading, error: docxError } = useDocxHtml(document);
   const isDocxDoc = document?.fileType.toLowerCase() === 'docx';
   const { extractText, runningId } = useDocumentOcr();
-  const { softDelete, markAccessed } = useVaultMutations();
+  const { softDelete, markAccessed, rename } = useVaultMutations();
   const { authorizeView } = useDocLock();
   const intents = useDocumentIntents();
 
@@ -86,6 +86,7 @@ export function DocumentViewerPage(): ReactNode {
   const [extracted, setExtracted] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   // [SEC] §3.1, bug-audit hardening: the structural gate — see the file's
@@ -327,12 +328,19 @@ export function DocumentViewerPage(): ReactNode {
                 ]
               : []),
             { text: t('details.title'), icon: 'Info', handler: () => setDetailsOpen(true) },
-            // Hidden for a trashed preview — restore/delete-forever already
-            // live on the Trash list itself (softDelete is also a no-op on
-            // an already-trashed row).
+            // Rename/Delete hidden for a trashed preview — Trash already owns
+            // restore/delete-forever, and renaming a trashed row before its
+            // fate is decided isn't a supported flow. (Bug-audit fix: this
+            // menu was previously missing Rename entirely — VaultHomePage's
+            // item-menu already had it.)
             ...(trashed
               ? []
               : [
+                  {
+                    text: t('actions.rename'),
+                    icon: 'Pencil' as const,
+                    handler: () => setRenaming(true),
+                  },
                   {
                     text: t('actions.delete'),
                     role: 'destructive' as const,
@@ -347,6 +355,29 @@ export function DocumentViewerPage(): ReactNode {
         <DocumentDetailsSheet
           document={detailsOpen ? (document ?? null) : null}
           onClose={() => setDetailsOpen(false)}
+        />
+
+        {/* Mirrors VaultHomePage's item-menu rename Alert. */}
+        <Alert
+          isOpen={renaming}
+          header={t('rename.title')}
+          agentId="vault.viewer.rename-prompt"
+          input={{
+            label: t('rename.label'),
+            defaultValue: document?.name ?? '',
+          }}
+          buttons={[
+            { text: t('actions.cancel'), role: 'cancel' },
+            {
+              text: t('rename.save'),
+              handler: (name?: string): void => {
+                if (document && name) {
+                  void rename(document, name);
+                }
+              },
+            },
+          ]}
+          onDidDismiss={() => setRenaming(false)}
         />
         <IonToast
           isOpen={toast !== null}

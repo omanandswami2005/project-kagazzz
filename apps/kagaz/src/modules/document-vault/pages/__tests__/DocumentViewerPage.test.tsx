@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
@@ -16,6 +16,7 @@ const state = vi.hoisted(
     extractText: ReturnType<typeof vi.fn>;
     softDelete: ReturnType<typeof vi.fn>;
     markAccessed: ReturnType<typeof vi.fn>;
+    rename: ReturnType<typeof vi.fn>;
     authorizeView: ReturnType<typeof vi.fn>;
     useDocument: ReturnType<typeof vi.fn<(id: string, options?: { trashed?: boolean }) => void>>;
   } => ({
@@ -30,6 +31,7 @@ const state = vi.hoisted(
     extractText: vi.fn(),
     softDelete: vi.fn(),
     markAccessed: vi.fn(),
+    rename: vi.fn(),
     authorizeView: vi.fn(),
     useDocument: vi.fn(),
   })
@@ -71,7 +73,11 @@ vi.mock('../../hooks/useDocumentOcr', () => ({
   useDocumentOcr: () => ({ extractText: state.extractText, runningId: null }),
 }));
 vi.mock('../../hooks/useVaultMutations', () => ({
-  useVaultMutations: () => ({ softDelete: state.softDelete, markAccessed: state.markAccessed }),
+  useVaultMutations: () => ({
+    softDelete: state.softDelete,
+    markAccessed: state.markAccessed,
+    rename: state.rename,
+  }),
 }));
 // [SEC] bug-audit hardening: the viewer now gates on its own authorizeView
 // call — default it to an immediate "allowed" so every existing test's
@@ -285,5 +291,34 @@ describe('DocumentViewerPage Trash preview (F-57 device-testing follow-up)', () 
     expect(state.authorizeView).toHaveBeenCalledWith(state.document);
     expect(q('vault.viewer.pages')).toBeInTheDocument();
     expect(q('vault.viewer.trashed-banner')).not.toBeNull();
+  });
+});
+
+describe('DocumentViewerPage rename (bug-audit fix — menu was missing Rename entirely)', () => {
+  it('offers Rename from the menu for a live document, pre-filled with the current name', async () => {
+    await renderAuthorized();
+    fireEvent.click(q('vault.viewer.more')!);
+    expect(screen.getByText('actions.rename')).toBeInTheDocument();
+  });
+
+  it('renames the document through the same Alert pattern as the vault list', async () => {
+    await renderAuthorized();
+    fireEvent.click(q('vault.viewer.more')!);
+    fireEvent.click(screen.getByText('actions.rename'));
+
+    const prompt = q('vault.viewer.rename-prompt') as HTMLElement;
+    const input = within(prompt).getByLabelText('rename.label');
+    expect(input).toHaveValue('PAN Card');
+    fireEvent.change(input, { target: { value: 'PAN Card 2' } });
+    fireEvent.click(within(prompt).getByText('rename.save'));
+
+    expect(state.rename).toHaveBeenCalledWith(state.document, 'PAN Card 2');
+  });
+
+  it('hides Rename from the menu for a trashed preview', async () => {
+    state.search = '?trashed=1';
+    await renderAuthorized();
+    fireEvent.click(q('vault.viewer.more')!);
+    expect(screen.queryByText('actions.rename')).toBeNull();
   });
 });
