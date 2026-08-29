@@ -10,6 +10,17 @@ import { usePreferencesStore } from '@/core/preferences';
 vi.mock('../../hooks/useBackupExport', () => ({
   useBackupExport: () => ({ status: 'idle', result: null, exportBackup: vi.fn() }),
 }));
+vi.mock('../../hooks/useBackupRestore', () => ({
+  useBackupRestore: () => ({
+    status: 'idle',
+    preview: null,
+    result: null,
+    error: null,
+    pickBackup: vi.fn(),
+    confirmRestore: vi.fn(),
+    cancel: vi.fn(),
+  }),
+}));
 
 import { SettingsPage } from '../SettingsPage';
 

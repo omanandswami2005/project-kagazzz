@@ -16,9 +16,10 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Toggle } from '@kagaz/ui';
+import { Alert, Button, Toggle } from '@kagaz/ui';
 import { DeleteAllDataDialog } from '../components/DeleteAllDataDialog';
 import { useBackupExport } from '../hooks/useBackupExport';
+import { useBackupRestore } from '../hooks/useBackupRestore';
 import {
   useLocale,
   SUPPORTED_LANGUAGES,
@@ -57,6 +58,7 @@ export function SettingsPage(): ReactNode {
   const lock = useLockSettings();
   const quickRefLock = useQuickReferenceLockSettings();
   const backup = useBackupExport();
+  const restore = useBackupRestore();
   const router = useIonRouter();
   const [eraseOpen, setEraseOpen] = useState(false);
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
@@ -348,6 +350,30 @@ export function SettingsPage(): ReactNode {
             </div>
             <div className="kg-settings__row">
               <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void restore.pickBackup()}
+                loading={restore.status === 'reading'}
+                agentId="settings.restore-backup"
+              >
+                {t('data.restore')}
+              </Button>
+              <p
+                className="kg-settings__hint"
+                data-agent-id="settings.restore-status"
+                data-agent-state={restore.status}
+              >
+                {restore.status === 'reading'
+                  ? t('data.restore_reading')
+                  : restore.status === 'done' && restore.result
+                    ? t('data.restore_done', { count: restore.result.restoredDocuments })
+                    : restore.status === 'error'
+                      ? t('data.restore_error')
+                      : t('data.restore_hint')}
+              </p>
+            </div>
+            <div className="kg-settings__row">
+              <Button
                 variant="danger"
                 size="sm"
                 onClick={() => setEraseOpen(true)}
@@ -390,6 +416,35 @@ export function SettingsPage(): ReactNode {
         <DeleteAllDataDialog
           isOpen={eraseOpen}
           onDismiss={() => setEraseOpen(false)}
+        />
+
+        {/* Restore preview — nothing is written until the user confirms
+           (useBackupRestore's pickBackup() only decrypts + parses). */}
+        <Alert
+          isOpen={restore.status === 'confirming' && restore.preview !== null}
+          header={t('data.restore_confirm_title')}
+          message={
+            restore.preview
+              ? t('data.restore_confirm_body', {
+                  count: restore.preview.counts.documents,
+                  folders: restore.preview.counts.folders,
+                  date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+                    new Date(restore.preview.createdAt)
+                  ),
+                })
+              : ''
+          }
+          agentId="settings.restore-confirm"
+          onDidDismiss={() => restore.cancel()}
+          buttons={[
+            {
+              text: t('data.restore_confirm_button'),
+              handler: (): void => {
+                void restore.confirmRestore();
+              },
+            },
+            { text: t('data.cancel'), role: 'cancel' },
+          ]}
         />
       </IonContent>
     </IonPage>
