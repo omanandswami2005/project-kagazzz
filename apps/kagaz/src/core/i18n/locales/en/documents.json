@@ -369,6 +369,8 @@
     "deleted_on": "Deleted {{date}}",
     "restore": "Restore",
     "delete_forever": "Delete forever",
+    "delete_forever_confirm_title": "Delete \"{{name}}\" forever?",
+    "delete_forever_confirm_message": "This can't be undone — the document will be gone for good.",
     "preview": "Preview {{name}}",
     "empty_trash": "Empty Trash",
     "empty_confirm": "Permanently delete everything in Trash?",

@@ -27,7 +27,7 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Spinner } from '@kagaz/ui';
+import { Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -38,8 +38,10 @@ import './trash.css';
 /** F-88: fixed swipe actions for Trash — not user-configurable, since
  * restore/delete-forever are Trash-specific and unrelated to the vault's
  * delete/favorite/move/tags vocabulary in Settings. Right = restore
- * (reversible, so it's the "safe" swipe direction); left = delete forever,
- * matching the existing per-row button's own no-confirmation behavior. */
+ * (reversible, so it's the "safe" swipe direction, no confirm needed); left
+ * = delete forever, which is irreversible — both this swipe and the row's
+ * own button route through a confirm Alert (bug-audit fix: neither path
+ * used to confirm at all). */
 const RESTORE_REVEAL: SwipeReveal = { icon: 'RotateCw', colorVar: 'var(--color-primary)' };
 const DELETE_FOREVER_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--color-danger)' };
 
@@ -50,6 +52,7 @@ export function TrashPage(): ReactNode {
   const router = useIonRouter();
   const trash = useTrash();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [deleteForeverTarget, setDeleteForeverTarget] = useState<DocumentEntity | null>(null);
 
   const openPreview = (doc: DocumentEntity): void => {
     router.push(`/doc/${doc.id}?trashed=1`);
@@ -128,7 +131,7 @@ export function TrashPage(): ReactNode {
                       rightReveal={RESTORE_REVEAL}
                       onCommit={(side) => {
                         if (side === 'right') void trash.restore(doc);
-                        else void trash.deleteForever(doc);
+                        else setDeleteForeverTarget(doc);
                       }}
                       agentId={`vault.trash.item.${doc.id}.swipe`}
                     >
@@ -157,7 +160,7 @@ export function TrashPage(): ReactNode {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => void trash.deleteForever(doc)}
+                            onClick={() => setDeleteForeverTarget(doc)}
                             agentId={`vault.trash.delete.${doc.id}`}
                           >
                             {t('trash.delete_forever')}
@@ -172,6 +175,27 @@ export function TrashPage(): ReactNode {
           )}
         </main>
       </IonContent>
+
+      {/* bug-audit fix: delete-forever is irreversible but previously fired
+         with zero confirmation from either the swipe or the row button. */}
+      <Alert
+        key={deleteForeverTarget?.id ?? 'trash-delete-forever-none'}
+        isOpen={deleteForeverTarget !== null}
+        header={t('trash.delete_forever_confirm_title', { name: deleteForeverTarget?.name ?? '' })}
+        message={t('trash.delete_forever_confirm_message')}
+        agentId="vault.trash.delete-forever-confirm"
+        onDidDismiss={() => setDeleteForeverTarget(null)}
+        buttons={[
+          {
+            text: t('trash.delete_forever'),
+            role: 'destructive',
+            handler: (): void => {
+              if (deleteForeverTarget) void trash.deleteForever(deleteForeverTarget);
+            },
+          },
+          { text: t('trash.cancel'), role: 'cancel' },
+        ]}
+      />
     </IonPage>
   );
 }
