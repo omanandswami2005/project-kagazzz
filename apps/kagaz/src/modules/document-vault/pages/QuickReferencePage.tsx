@@ -14,8 +14,9 @@ import {
   IonTitle,
   IonToast,
   IonToolbar,
+  useIonViewWillEnter,
 } from '@ionic/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
@@ -60,22 +61,41 @@ export function QuickReferencePage(): ReactNode {
   // (F-84 follow-up — off by user choice) or when unavailable (no biometry AND
   // no device credential set, same graceful-degrade posture as the rest of the
   // app) — either way, no lock screen shows.
-  useEffect(() => {
-    let cancelled = false;
+  //
+  // [SEC] Bug-audit fix: this used to be a mount-only `useEffect`, which only
+  // ever gated the FIRST visit. This app's routes all share one
+  // `IonRouterOutlet`, and Ionic keeps a page that was left via an ordinary
+  // forward push (e.g. tapping a different bottom tab, not the hardware/
+  // IonBackButton pop) mounted and caches the instance for reuse — so a user
+  // could authenticate once, reveal a value, switch tabs, and come straight
+  // back to find this screen still `unlocked` with the same values still
+  // revealed, no re-prompt at all. `useIonViewWillEnter` fires on every
+  // entry to this view — fresh mount or a cached instance reactivating
+  // alike — which a `useEffect` keyed on `lockEnabled` cannot detect
+  // (`lockEnabled` doesn't change just because the user left and came back).
+  const checkGeneration = useRef(0);
+  useIonViewWillEnter(() => {
+    setRevealedIds(new Set());
+    setCheckingLock(true);
+    setUnlocked(false);
+    const myGeneration = ++checkGeneration.current;
     // Skip the native check entirely when the user turned the gate off.
     const check = lockEnabled
       ? biometricAuthenticator.isAvailable()
       : Promise.resolve(false);
     void check.then((available) => {
-      if (cancelled) {
+      // A newer entry (rapid leave/return) already superseded this check.
+      if (checkGeneration.current !== myGeneration) {
         return;
       }
       setUnlocked(!lockEnabled || !available);
       setCheckingLock(false);
     });
-    return (): void => {
-      cancelled = true;
-    };
+    // `deps` (2nd arg) mirrors useEffect's — without it, useIonViewWillEnter
+    // defaults to `[]` and registers this callback's closure ONCE at mount,
+    // so a later `lockEnabled` change (toggled in Settings, then navigated
+    // back here) would silently re-arm the gate using the STALE value from
+    // first mount instead of the current one.
   }, [lockEnabled]);
 
   const toggleReveal = (id: string): void => {
