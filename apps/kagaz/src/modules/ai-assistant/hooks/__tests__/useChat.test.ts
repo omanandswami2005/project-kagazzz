@@ -556,6 +556,26 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     expect(ocr).toEqual({ ok: true, data: { characters: 15 } });
   });
 
+  it('PDF tools refuse a locked document before running anything (lock gate covers every tool)', async () => {
+    const lockedRow = { ...documentRow, is_locked: 1 };
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, [lockedRow]),
+    });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const merged = await dispatch('ai.mergeDocuments', { documentIds: ['d-1', 'd-1'] });
+    const split = await dispatch('ai.splitDocument', { documentId: 'd-1', ranges: [{ start: 1, end: 1 }] });
+
+    expect(merged.ok).toBe(false);
+    expect(split.ok).toBe(false);
+    expect(pdfEngine.mergePdfs).not.toHaveBeenCalled();
+    expect(pdfEngine.splitPdf).not.toHaveBeenCalled();
+  });
+
   it('image tools refuse a locked document before running anything', async () => {
     const lockedRow = { ...documentRow, is_locked: 1 };
     useDatabaseMock.mockReturnValue({

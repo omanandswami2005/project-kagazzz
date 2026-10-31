@@ -30,22 +30,18 @@ import { aiToolRegistry } from '../services/ai-tool-registry';
 
 const logger = log('ai-assistant');
 
-/** Resolves a model-supplied document id, throwing a clear message if it doesn't exist. */
+/**
+ * Resolves a model-supplied document id, throwing a clear message if it
+ * doesn't exist or is locked. [SEC] Every tool path goes through here, so a
+ * locked document can never be processed by the model without the
+ * biometric prompt (10-security-architecture.md §3.1) — the pdf-engine and
+ * image hooks these tools reuse don't check the lock themselves.
+ */
 async function requireDocument(documentDao: DocumentDao, id: string): Promise<DocumentEntity> {
   const doc = await documentDao.findById(id);
   if (!doc) {
     throw new Error(`No document found with id "${id}"`);
   }
-  return doc;
-}
-
-/**
- * Image tools reuse vault hooks that don't gate on the per-document lock
- * (only OCR does), so refuse locked documents here — the model must never
- * process a locked file without the biometric prompt (10-security §3.1).
- */
-async function requireUnlockedDocument(documentDao: DocumentDao, id: string): Promise<DocumentEntity> {
-  const doc = await requireDocument(documentDao, id);
   if (doc.isLocked) {
     throw new Error('This document is locked; open it yourself to use it');
   }
@@ -209,7 +205,7 @@ export function useChat(): UseChatResult {
         return requireSaved(await exportPdfText(doc, format), 'Text export');
       },
       resizeImage: async (documentId, width, height, maxSizeBytes): ReturnType<AiToolContext['resizeImage']> => {
-        const doc = await requireUnlockedDocument(documentDao, documentId);
+        const doc = await requireDocument(documentDao, documentId);
         const outcome = await resizeCompressRun(doc, { width, height, maxSizeBytes });
         if (!outcome.saved) {
           throw new Error('Resize did not produce a document');
@@ -221,14 +217,14 @@ export function useChat(): UseChatResult {
         };
       },
       enhanceImage: async (documentId, preset): Promise<number> => {
-        const doc = await requireUnlockedDocument(documentDao, documentId);
+        const doc = await requireDocument(documentDao, documentId);
         if (!(await applyFilter(doc, preset))) {
           throw new Error('Enhance did not produce a document');
         }
         return 1;
       },
       runOcr: async (documentId): Promise<number> => {
-        const doc = await requireUnlockedDocument(documentDao, documentId);
+        const doc = await requireDocument(documentDao, documentId);
         const text = await extractText(doc);
         if (text === null) {
           throw new Error('No text could be read from this document');
