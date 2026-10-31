@@ -28,6 +28,7 @@
 - [ADR-019: OCR — bundled native ML Kit Text Recognition](#adr-019-ocr--bundled-native-ml-kit-text-recognition)
 - [ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only](#adr-020-client-side-office-interop-pdf--wordexcel--pure-js-permissive-libs-only)
 - [ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)](#adr-021-on-device-ai--litert-lm-supersedes-webllm)
+- [ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -57,6 +58,7 @@
 | 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
 | 020 | Office interop (PDF↔Word/Excel) | **`docx` + SheetJS `xlsx` + `mammoth`** (pure-JS, lazy-loaded) | LibreOffice-WASM, commercial SDKs | ✅ Accepted |
 | 021 | On-Device AI | **LiteRT-LM** (Google AI Edge, forked `@capgo/capacitor-llm` bridge, native tool calling) | WebLLM (ADR-006), Transformers.js, Cloud API | ✅ Accepted |
+| 022 | Demo AI engine | **Local Ollama (Gemma 4 E2B + EmbeddingGemma)** behind a `ChatEngine` seam; demo builds only | Hosted API (later, with consent), LiteRT on desktop (no Intel-Mac build) | ✅ Accepted (demo-only) |
 
 ---
 
@@ -1235,6 +1237,26 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
+## ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam
+
+| | |
+|---|---|
+| **Status** | ✅ Accepted — **demo / hackathon builds only** (2026-10-31) |
+| **Supplements** | [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) (LiteRT-LM stays the shipped engine) |
+
+**Context.** The demo has to run on an Intel Mac (i9, 16 GB, no Apple Silicon). LiteRT-LM's published Python wheels are macOS ARM64 only and its docs show no Intel-Mac build, so the native engine cannot be shown on that machine, and the Android emulator has no GPU and little RAM. Ollama ships an x86_64 macOS binary (v0.40.13 verified) and serves `gemma4:e2b` (text + vision, tool calling, structured output) and `embeddinggemma`.
+
+**Decision.** Put a `ChatEngine` interface (the native plugin's chat surface) in front of the assistant and add an `OllamaChatEngine`. LiteRT remains the default and is a pure pass-through. Ollama is selected only when `VITE_OLLAMA_URL` is set. One module, `infrastructure/ollama/`, owns the config and HTTP client for chat, vision OCR and embeddings. New `semantic-index` module: `EmbeddingProvider` and `VectorStore` ports, an Ollama adapter and an in-memory cosine store. Swapping any of these for a hosted API means adding one adapter, not changing callers.
+
+**Guardrails.** `ChatEngine.locality` is `on-device` | `local-server` | `cloud`; anything but `on-device` must be gated by a warning (user data leaves the device). `vite-plugins/demo-csp.ts` widens `connect-src` to the Ollama origin only when the URL is set and fails any `production` build that sets it, so the strict offline CSP ([ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)) is unchanged in shipped builds. Gemma terms apply to Gemma weights (EmbeddingGemma is gated on Hugging Face); this has not been cleared against the permissive-licence rule in CLAUDE.md, which is why this is demo-only.
+
+**Consequences.**
+- A hosted-API fallback is a third engine behind the same seam, with a PII consent step before it can be enabled. Not built.
+- Measured on the Intel i9: ~22 tokens/s generation, ~19 s to transcribe one image page with vision; a 2B model choosing among ~35 tools needs live testing (see `infrastructure/ollama/__tests__/ollama.live.test.ts`, run with `OLLAMA_LIVE=1`).
+- Not yet wired: the semantic index into search / the assistant.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1249,4 +1271,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-07-24 · Kagaz Architecture Decision Records v1.3 (ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.4 (ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*

@@ -3,7 +3,7 @@
 Embeds document text and finds the nearest passages by meaning.
 
 - `types.ts` — the two ports: `EmbeddingProvider` (text → vectors) and `VectorStore` (persist + nearest-neighbour). Everything else depends only on these.
-- `providers/` — adapters for `EmbeddingProvider`. Today: Ollama (`embeddinggemma`). To use a hosted API instead, add one file implementing the port.
+- `providers/` — adapters for `EmbeddingProvider`. Today: Ollama (`embeddinggemma`, adds its query/document task prefixes). Config comes from `@/infrastructure/ollama`. To use a hosted API instead, add one file implementing the port.
 - `stores/` — adapters for `VectorStore`. Today: in-memory brute-force cosine. A SQLite-backed store would implement the same port.
 - `services/` — `SemanticIndexService` (chunk → embed → store, and query).
 

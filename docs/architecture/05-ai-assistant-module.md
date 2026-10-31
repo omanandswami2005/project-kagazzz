@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/ai-assistant`
 > **Version**: 2.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-07-24 (**Engine switched from WebLLM to LiteRT-LM** — see §3.0 for why)
+> **Last Updated**: 2026-10-31 (**ChatEngine seam + demo-only local Ollama/Gemma 4 engine, image tools, lock gate** — §3.6, §4.2.4; earlier: engine switched from WebLLM to LiteRT-LM, §3.0)
 
 ---
 
@@ -208,6 +208,28 @@ flowchart TD
 
 > [!NOTE]
 > The first-time model download requires an internet connection. After that, the assistant works fully offline. Users are shown a progress bar during the initial download with estimated time remaining. Every load (not just the first) re-verifies the SHA-256 checksum before handing the file to the engine — a corrupted or tampered cache file must never be loaded silently.
+
+---
+
+### 3.6 Chat-engine seam and the demo Ollama engine (added 2026-10-31)
+
+`useChat` no longer calls the native plugin directly. It talks to a `ChatEngine` (`services/chat-engine.ts`) whose surface mirrors the plugin's chat calls and events (`createChat`, `sendMessage`, `resolveToolCall`, and the `textFromAi` / `aiFinished` / `generationError` / `toolCallRequested` listeners), so the tool-dispatch and confirmation-card flow is engine-agnostic. The engine is chosen in `services/chat-engine.registry.ts`:
+
+| Engine | `locality` | Selected when | Notes |
+|---|---|---|---|
+| `litertChatEngine` | `on-device` | default | Pure pass-through to `@kagaz/capacitor-llm-litert`; the model lifecycle stays in `ai-engine.service.ts`. |
+| `OllamaChatEngine` | `local-server` | `VITE_OLLAMA_URL` is set (demo builds only) | Gemma 4 E2B (`gemma4:e2b`) on a local Ollama server. Works on any platform, including the desktop browser demo. |
+| hosted API *(planned)* | `cloud` | explicit user opt-in | Must show a PII data-sharing warning and get consent first; not built. |
+
+`locality` exists so the UI can gate anything that is not `on-device` behind a warning.
+
+**Ollama engine behavior.** Ollama is stateless, so the engine keeps the message history per chat (system prompt from `prompts/system-prompt.ts`, trimmed to the last 40 messages and always restarting at a user turn). For each user message it streams `/api/chat` with the registered tools, emits any model tool calls as `toolCallRequested`, and waits for `resolveToolCall` before looping. Safeguards: at most 5 tool rounds per message, a 30 s timeout on an unanswered tool call (resolves to a timeout result instead of hanging; the same limit as the native bridge), one message in flight per chat, an explicit `num_ctx` of 8192 (the default silently truncates ~35 tool schemas), and failures surface as `generationError` events, never rejections. `AIProvider.activate` for this engine only checks that the server is reachable and the model is pulled; there is no download, checksum or local model load.
+
+**Config and network.** All Ollama settings are read in one place, `infrastructure/ollama/` (`VITE_OLLAMA_URL`, `VITE_OLLAMA_CHAT_MODEL`, `VITE_OLLAMA_VISION_MODEL`, `VITE_OLLAMA_EMBEDDING_MODEL`). The shipped CSP is `connect-src 'self'`; `vite-plugins/demo-csp.ts` adds only the Ollama origin when the URL is set, and **fails a production build** that sets it. See [10-security-architecture.md](10-security-architecture.md) §3.5 and [ADR-022](08-tech-stack-decisions.md#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam).
+
+**Gemma vision.** Where native ML Kit is absent (the web build), OCR falls back to Gemma's vision input (`image-engine/services/vision-ocr.service.ts`). Separately, **Transcribe with Gemma** is offered next to **Extract text** in the document viewer and the vault item menu for images and PDFs *even when text was already extracted*: it re-reads every PDF page with the vision model (not only pages lacking a text layer) and replaces the stored text. It is user-only (no Action Registry entry) and appears only when Gemma is configured. Other formats are not offered; audio input is not wired.
+
+**Semantic index (spike, not wired).** `modules/semantic-index/` defines `EmbeddingProvider` and `VectorStore` ports with an Ollama (`embeddinggemma`) adapter and an in-memory cosine store. It is not connected to the assistant or the search bar yet. Retrieving passages into prompts would cross the metadata-only boundary in §11 and needs the security docs, the DPIA and the privacy policy updated first.
 
 ---
 
@@ -685,6 +707,14 @@ interface ToolProvider {
   execute(toolName: string, args: Record<string, unknown>): Promise<ToolResult>;
 }
 ```
+
+---
+
+### 4.2.4 Image tools and the lock gate (added 2026-10-31)
+
+Three tools reuse the same document-vault hooks the UI uses (`ai-image-ops.actions.ts`): `ai.resizeImage` (exact pixel size + a size budget in KB, F-85), `ai.enhanceImage` (grayscale / bw / enhance / invert, F-29) and `ai.runOcr` (stores the text for search, F-20). All three save a new copy and leave the source untouched, so `requiresConfirmation` is `false`. `ai.runOcr` returns **only a character count**, never the text.
+
+**Lock gate.** Every tool that takes a document id resolves it through one function (`requireDocument` in `useChat.ts`), which refuses a locked document before anything runs. The pdf-engine and image hooks these tools reuse do not check the per-document lock themselves, so without this the model could process a locked file with no biometric prompt. (Before 2026-10-31 only list/search filtered locked documents; the id-based PDF tools did not.)
 
 ---
 
