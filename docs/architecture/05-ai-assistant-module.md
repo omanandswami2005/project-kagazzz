@@ -108,7 +108,7 @@ This module originally speced **WebLLM** (`@mlc-ai/web-llm`, `WebWorkerMLCEngine
 
 | Component | Source | Role |
 |---|---|---|
-| **LiteRT-LM engine** | `com.google.ai.edge.litertlm:litertlm-android:0.10.0` (Maven, transitive via the fork) | On-device LLM inference (CPU/GPU/NPU backends) |
+| **LiteRT-LM engine** | `com.google.ai.edge.litertlm:litertlm-android:0.19.0` (Maven, transitive via the fork; bumped from 0.10.0 on 2026-10-31 — see §3.4's model-load note) | On-device LLM inference (CPU/GPU/NPU backends) |
 | **Plugin fork** | `packages/capacitor-llm-litert` (vendored, forked from `@capgo/capacitor-llm` v8.1.3, MPL-2.0) | Capacitor JS↔native bridge + our added tool-calling support |
 | **Model format** | `.litertlm` | Pre-quantized model bundle, downloaded once and cached |
 | **Model source** | `litert-community` on Hugging Face | Publishes ready-to-download `.litertlm` bundles |
@@ -181,6 +181,14 @@ class AiEngineManager {
 - `deleteModel({ path })` — upstream has no explicit delete; needed for the Storage-screen "AI model: N MB → Manage" entry the design note requires.
 - `tools` param on `setModel`/`createChat` + `toolCallRequested`/`resolveToolCall` — the actual tool-calling bridge, §4.
 - `getCapabilities()` — reports which backend actually loaded (`cpu`/`gpu`, in practice always `cpu` until the pre-flight check above lands) and total load time, for the Settings screen's "AI model ready" line.
+
+**Model-load failure and download-progress bug (found on a device, 2026-10-31).** The same Gemma 4 E2B file loaded in Google AI Edge Gallery but not in Kagaz, and the download bar stayed at 0. Root causes, all in this repo:
+1. **Progress:** `downloadFile` used `int fileLength = connection.getContentLength()`, which returns **-1 for any file over 2 GiB** (Gemma 4 E2B is 2,588,147,712 bytes), and progress was only reported when the length was positive. The old 0.5 GB model never hit it. Now uses `getContentLengthLong()`, reports only when the percentage changes (it used to emit an event per 4 KB chunk), has connect/read timeouts, and takes an `expectedBytes` fallback from JS.
+2. **Engine config:** `EngineConfig` was given the CPU backend for the *vision and audio* backends too. This chat is text-only, and Gemma 4 has vision/audio sub-models that should not be initialized for it. They are now `null`.
+3. **Runtime too old for the model file:** the plugin shipped LiteRT-LM **0.10.0 (2026-04-02)**; the Gemma 4 E2B file was last re-uploaded **2026-05-04**, after it. Bumped to **0.19.0**; `EngineConfig` and `ConversationConfig.copy` changed shape and were adapted.
+4. **Diagnostics:** a failed load now reports the exception type and root cause (and checks the file exists and is non-empty) instead of a bare message.
+
+None of these was verified on a physical device from this session.
 
 ### 3.5 Model Caching
 

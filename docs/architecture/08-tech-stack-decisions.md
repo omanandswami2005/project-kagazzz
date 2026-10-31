@@ -1193,7 +1193,7 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
 | **Status** | ✅ Accepted |
 | **Date** | 2026-07-24 |
 | **Supersedes** | [ADR-006](#adr-006-webllm-for-on-device-ai) (WebLLM). |
-| **Decision** | **F-13/F-14** run the on-device LLM via **LiteRT-LM** (Google AI Edge, `com.google.ai.edge.litertlm:litertlm-android:0.10.0`) through a **forked, vendored copy of `@capgo/capacitor-llm`** (`packages/capacitor-llm-litert`, `@kagaz/capacitor-llm-litert`, MPL-2.0 — an explicit permissive-license-policy exception; MPL-2.0's file-level copyleft doesn't force disclosure of Kagaz's own source, unlike the GPL/AGPL/SSPL the policy actually forbids) instead of WebLLM. Inference runs through Android's native ML stack (NNAPI/GPU/CPU delegate) — **no WebView/WebGPU involvement at all**. Model: **Qwen3-0.6B** (`litert-community/Qwen3-0.6B`, `qwen3_0_6b_mixed_int4.litertlm`, ~586 MB, Apache-2.0). |
+| **Decision** | **F-13/F-14** run the on-device LLM via **LiteRT-LM** (Google AI Edge, `com.google.ai.edge.litertlm:litertlm-android:0.19.0` (was 0.10.0 until 2026-10-31 — too old for the current Gemma 4 E2B file)) through a **forked, vendored copy of `@capgo/capacitor-llm`** (`packages/capacitor-llm-litert`, `@kagaz/capacitor-llm-litert`, MPL-2.0 — an explicit permissive-license-policy exception; MPL-2.0's file-level copyleft doesn't force disclosure of Kagaz's own source, unlike the GPL/AGPL/SSPL the policy actually forbids) instead of WebLLM. Inference runs through Android's native ML stack (NNAPI/GPU/CPU delegate) — **no WebView/WebGPU involvement at all**. Model: **Qwen3-0.6B** (`litert-community/Qwen3-0.6B`, `qwen3_0_6b_mixed_int4.litertlm`, ~586 MB, Apache-2.0). |
 
 ### Context
 

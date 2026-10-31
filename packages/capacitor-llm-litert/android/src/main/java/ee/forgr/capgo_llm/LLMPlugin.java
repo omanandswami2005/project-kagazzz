@@ -182,6 +182,7 @@ public class LLMPlugin extends Plugin {
         String url = call.getString("url");
         String companionUrl = call.getString("companionUrl");
         String filename = call.getString("filename");
+        final long expectedBytes = call.getLong("expectedBytes", 0L);
 
         if (url == null) {
             call.reject("url is required");
@@ -202,7 +203,7 @@ public class LLMPlugin extends Plugin {
                 java.io.File filesDir = getContext().getFilesDir();
                 java.io.File modelFile = new java.io.File(filesDir, finalFilename);
 
-                downloadFile(url, modelFile, (progress) -> {
+                downloadFile(url, modelFile, expectedBytes, (progress) -> {
                     JSObject event = new JSObject();
                     event.put("progress", progress);
                     notifyListeners("downloadProgress", event);
@@ -216,7 +217,7 @@ public class LLMPlugin extends Plugin {
                     String companionFilename = companionUrl.substring(companionUrl.lastIndexOf("/") + 1);
                     java.io.File companionFile = new java.io.File(filesDir, companionFilename);
 
-                    downloadFile(companionUrl, companionFile, (progress) -> {
+                    downloadFile(companionUrl, companionFile, 0L, (progress) -> {
                         JSObject event = new JSObject();
                         event.put("progress", progress);
                         notifyListeners("downloadProgress", event);
@@ -233,30 +234,51 @@ public class LLMPlugin extends Plugin {
             .start();
     }
 
-    private void downloadFile(String urlString, java.io.File outputFile, ProgressCallback callback) throws Exception {
+    private void downloadFile(String urlString, java.io.File outputFile, long expectedBytes, ProgressCallback callback) throws Exception {
         java.net.URL url = new java.net.URL(urlString);
         java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+        // A stalled download must fail with an error instead of hanging forever.
+        connection.setConnectTimeout(30_000);
+        connection.setReadTimeout(60_000);
         connection.connect();
 
-        int fileLength = connection.getContentLength();
-        java.io.InputStream input = new java.io.BufferedInputStream(connection.getInputStream());
-        java.io.FileOutputStream output = new java.io.FileOutputStream(outputFile);
-
-        byte[] data = new byte[4096];
-        long total = 0;
-        int count;
-
-        while ((count = input.read(data)) != -1) {
-            total += count;
-            if (fileLength > 0 && callback != null) {
-                callback.onProgress((int) ((total * 100) / fileLength));
-            }
-            output.write(data, 0, count);
+        // Kagaz fix: this was `int fileLength = connection.getContentLength()`. That is an int, and for a
+        // file over 2 GiB (Gemma 4 E2B is 2,588,147,712 bytes) it returns -1, so progress was never
+        // reported and the bar sat at 0 for the whole download. Use the long variant, and fall back to
+        // the caller-supplied expected size if the server sends no length at all.
+        long fileLength = connection.getContentLengthLong();
+        if (fileLength <= 0) {
+            fileLength = expectedBytes;
         }
 
-        output.flush();
-        output.close();
-        input.close();
+        java.io.InputStream input = new java.io.BufferedInputStream(connection.getInputStream(), 64 * 1024);
+        java.io.FileOutputStream output = new java.io.FileOutputStream(outputFile);
+
+        byte[] data = new byte[64 * 1024];
+        long total = 0;
+        int count;
+        int lastPercent = -1;
+
+        try {
+            while ((count = input.read(data)) != -1) {
+                output.write(data, 0, count);
+                total += count;
+                if (fileLength > 0 && callback != null) {
+                    // Only on change: reporting after every chunk would be hundreds of thousands of bridge
+                    // messages for a multi-GB model.
+                    int percent = (int) Math.min(100L, (total * 100L) / fileLength);
+                    if (percent != lastPercent) {
+                        lastPercent = percent;
+                        callback.onProgress(percent);
+                    }
+                }
+            }
+            output.flush();
+        } finally {
+            output.close();
+            input.close();
+            connection.disconnect();
+        }
     }
 
     interface ProgressCallback {

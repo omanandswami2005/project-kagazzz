@@ -7,8 +7,8 @@ import { MAX_ACTIVE_SKILLS, SkillSession } from '../skill-session';
 const ALL_IDS = AI_TOOL_DESCRIPTORS.map((d) => d.name);
 
 describe('skill files (single source of truth invariants)', () => {
-  it('loads all four skills', () => {
-    expect(SKILLS.map((s) => s.name)).toEqual(['app-settings', 'image-tools', 'pdf-tools', 'text-extraction']);
+  it('loads all five skills', () => {
+    expect(SKILLS.map((s) => s.name)).toEqual(['app-settings', 'document-search', 'image-tools', 'pdf-tools', 'text-extraction']);
   });
 
   it('every skill tool exists in the registry', () => {

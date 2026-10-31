@@ -39,6 +39,6 @@ describe('SkillController', () => {
 
   it('load() rejects an unknown skill and lists the valid ones', () => {
     const { controller } = make(true);
-    expect(() => controller.load('nope')).toThrow('Available: app-settings, image-tools, pdf-tools, text-extraction');
+    expect(() => controller.load('nope')).toThrow('Available: app-settings, document-search, image-tools, pdf-tools, text-extraction');
   });
 });

@@ -189,6 +189,13 @@ public class LLM {
 
                 android.util.Log.d("LLM", "Resolved model path: " + actualPath + " using backend: " + backend);
 
+                // A missing or empty file otherwise surfaces as an opaque native init failure.
+                File modelOnDisk = new File(actualPath);
+                if (!modelOnDisk.isFile() || modelOnDisk.length() == 0) {
+                    throw new IllegalStateException("Model file is missing or empty: " + actualPath);
+                }
+                android.util.Log.d("LLM", "Model file size: " + modelOnDisk.length() + " bytes");
+
                 if (backend == BackendType.LITERT) {
                     Engine loadedEngine = initializeLiteRtModel(actualPath, request);
                     if (!isCurrentLoad(request.loadId)) {
@@ -221,10 +228,33 @@ public class LLM {
                 resetModelState();
 
                 if (callback != null) {
-                    callback.onError(exception.getMessage());
+                    callback.onError(describeFailure(exception));
                 }
             }
         });
+    }
+
+    /**
+     * "null" or a bare native message is useless in a bug report. Include the exception type and the root
+     * cause (native init failures usually carry the real reason one level down).
+     */
+    private static String describeFailure(Throwable error) {
+        StringBuilder out = new StringBuilder(error.getClass().getSimpleName());
+        if (error.getMessage() != null) {
+            out.append(": ").append(error.getMessage());
+        }
+        Throwable root = error;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root != error) {
+            out.append(" (caused by ").append(root.getClass().getSimpleName());
+            if (root.getMessage() != null) {
+                out.append(": ").append(root.getMessage());
+            }
+            out.append(")");
+        }
+        return out.toString();
     }
 
     private void notifySupersededLoad(ModelLoadCallback callback) {
@@ -254,12 +284,18 @@ public class LLM {
 
     private Engine initializeLiteRtModel(String actualPath, ModelLoadRequest request) {
         Backend primaryBackend = resolveLiteRtBackend(request.backend);
+        // Kagaz fix: vision and audio backends used to be set to the primary backend. This app's chat is
+        // text-only; asking the engine for Gemma 4's vision/audio sub-models too (on CPU) can make
+        // initialization fail, and wastes memory when it does not. Gallery and the LiteRT-LM docs leave
+        // them unset for text-only use (they are optional).
+        // (modelPath, backend, visionBackend, audioBackend, maxNumTokens, maxNumImages, cacheDir)
         EngineConfig config = new EngineConfig(
             actualPath,
             primaryBackend,
-            primaryBackend,
-            primaryBackend,
+            null,
+            null,
             request.maxTokens,
+            null,
             context.getCacheDir().getAbsolutePath()
         );
         Engine loadedEngine = new Engine(config);
@@ -385,13 +421,24 @@ public class LLM {
     private Conversation createLiteRtConversation() {
         ConversationConfig defaults = new ConversationConfig();
         SamplerConfig samplerConfig = new SamplerConfig(topk, DEFAULT_TOP_P, temperature.doubleValue(), randomSeed);
+        // LiteRT-LM 0.19 added fields to ConversationConfig; copy() takes all of them, so everything
+        // we do not customize is passed through from the defaults.
         ConversationConfig config = defaults.copy(
             defaults.getSystemInstruction(),
             defaults.getInitialMessages(),
             buildToolProviders(),
             samplerConfig,
             defaults.getAutomaticToolCalling(), // true by default — see JsBridgeTool.java's doc comment
-            defaults.getChannels()
+            defaults.getChannels(),
+            defaults.getExtraContext(),
+            defaults.getLoraConfig(),
+            defaults.getPrefillPrefaceOnInit(),
+            defaults.getMaxOutputToken(),
+            defaults.getThinkingConfig(),
+            defaults.getEnableResponseFormat(),
+            defaults.getEnableSpeculativeDecoding(),
+            defaults.getChatTemplate(),
+            defaults.getSpeculativeDecodingConfig()
         );
         return engine.createConversation(config);
     }

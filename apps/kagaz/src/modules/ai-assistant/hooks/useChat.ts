@@ -28,6 +28,7 @@ import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-too
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { semanticSearchDocuments } from '../services/document-search.service';
 import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
 import { SkillController } from '../skills/skill-controller';
@@ -268,6 +269,8 @@ export function useChat(): UseChatResult {
         }
         return text.length;
       },
+      semanticSearch: (query, limit) =>
+        semanticSearchDocuments({ listDocuments: () => documentDao.findAll(), extractText }, query, limit),
       askUser: (spec): { status: 'waiting_for_user' } => {
         // [SEC] The model must not be able to collect secrets through a form.
         if (findSensitiveRequest(spec)) {

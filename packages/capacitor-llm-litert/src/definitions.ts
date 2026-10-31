@@ -218,6 +218,10 @@ export interface GenerationErrorEvent {
  * Only `url` is required. `companionUrl` and `filename` are optional.
  */
 export interface DownloadModelOptions {
+  /**
+   * Expected size in bytes. Used for progress when the server sends no Content-Length (Kagaz addition).
+   */
+  expectedBytes?: number;
   /** URL of the model file to download */
   url: string;
   /** Optional: URL of a companion file for legacy model formats */

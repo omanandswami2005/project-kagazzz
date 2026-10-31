@@ -95,7 +95,11 @@ export async function downloadAndVerify(onProgress: (percent: number) => void): 
       onProgress(event.progress);
     });
     try {
-      const result = await CapacitorLlmLiteRT.downloadModel({ url: MODEL_URL, filename: MODEL_FILENAME });
+      const result = await CapacitorLlmLiteRT.downloadModel({
+        url: MODEL_URL,
+        filename: MODEL_FILENAME,
+        expectedBytes: MODEL_SIZE_BYTES,
+      });
       path = result.path;
     } catch (error) {
       logger.warn({ event: 'ai.model.download_failed', err: { message: String(error) } });

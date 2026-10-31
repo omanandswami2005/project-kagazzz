@@ -27,6 +27,7 @@ import {
   isAiSupported,
   loadModel,
   MODEL_SHA256,
+  MODEL_SIZE_BYTES,
   modelSizeOnDiskBytes,
 } from '../ai-engine.service';
 
@@ -86,6 +87,9 @@ describe('downloadAndVerify (F-13)', () => {
 
     expect(path).toBe('/data/model.litertlm');
     expect(plugin.downloadModel).toHaveBeenCalledOnce();
+    // The expected size lets the native side report progress even without a Content-Length — and for a
+    // file over 2 GiB (Gemma 4) the old int length was -1, which left the progress bar at 0.
+    expect(plugin.downloadModel).toHaveBeenCalledWith(expect.objectContaining({ expectedBytes: MODEL_SIZE_BYTES }));
     listeners.downloadProgress?.({ progress: 55 });
     expect(onProgress).toHaveBeenCalledWith(55);
   });
