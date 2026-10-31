@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { demoCsp } from './vite-plugins/demo-csp';
+import { webSqliteWasm } from './vite-plugins/web-sqlite-wasm';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -25,7 +26,14 @@ const appVersion = (
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, 'VITE_');
-  const plugins: PluginOption[] = [react(), tailwindcss(), demoCsp(env.VITE_OLLAMA_URL, mode)];
+  const plugins: PluginOption[] = [
+    react(),
+    tailwindcss(),
+    demoCsp({ ollamaUrl: env.VITE_OLLAMA_URL, cloudAi: env.VITE_CLOUD_AI }, mode),
+  ];
+  if (env.VITE_OLLAMA_URL || env.VITE_CLOUD_AI) {
+    plugins.push(webSqliteWasm());
+  }
 
   if (mode === 'analyze') {
     plugins.push(

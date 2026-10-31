@@ -1,14 +1,15 @@
 import type { Plugin } from 'vite';
 
 /**
- * Adds the demo Ollama origin to the CSP `connect-src` directive (the shipped
- * policy is `connect-src 'self'`, which would silently block every call to a
- * local Ollama server). Only runs when `VITE_OLLAMA_URL` is set.
+ * Demo-build CSP changes (the shipped policy is strict and offline:
+ * `connect-src 'self'`, no WASM). Two independent, opt-in relaxations:
+ *  - `connect-src` gets a local Ollama origin when `VITE_OLLAMA_URL` is set;
+ *  - `script-src` gets `'wasm-unsafe-eval'` for the browser demo database
+ *    (sql.js) when any demo flag is set.
+ * The cloud AI proxy is same-origin (`/api/ai/*`), so it needs neither.
  *
- * [SEC] A production build with the demo URL set is a hard error — it would
- * weaken the strict offline CSP on a PII app (see ADR-017). The value must
- * parse as an http(s) URL; only its origin is used, so it can't smuggle in
- * extra CSP directives.
+ * [SEC] Any demo flag in a `production` build is a hard error — it would weaken
+ * the strict offline CSP on a PII app (see ADR-017, ADR-022/023).
  */
 export function allowConnectOrigin(html: string, ollamaUrl: string): string {
   const url = new URL(ollamaUrl);
@@ -21,12 +22,34 @@ export function allowConnectOrigin(html: string, ollamaUrl: string): string {
   return html.replace("connect-src 'self'", `connect-src 'self' ${url.origin}`);
 }
 
-export function demoCsp(ollamaUrl: string | undefined, mode: string): Plugin {
-  if (ollamaUrl && mode === 'production') {
-    throw new Error('VITE_OLLAMA_URL is demo-only and must not be set for a production build');
+/** Lets sql.js compile its WASM (browser demo database only). */
+export function allowWasm(html: string): string {
+  if (!html.includes("script-src 'self'")) {
+    throw new Error("index.html CSP no longer contains \"script-src 'self'\"");
+  }
+  return html.replace("script-src 'self'", "script-src 'self' 'wasm-unsafe-eval'");
+}
+
+export interface DemoCspOptions {
+  /** `VITE_OLLAMA_URL`, if set. */
+  ollamaUrl?: string;
+  /** `VITE_CLOUD_AI`, if set. */
+  cloudAi?: string;
+}
+
+export function demoCsp({ ollamaUrl, cloudAi }: DemoCspOptions, mode: string): Plugin {
+  const demo = Boolean(ollamaUrl || cloudAi);
+  if (demo && mode === 'production') {
+    throw new Error('VITE_OLLAMA_URL / VITE_CLOUD_AI are demo-only and must not be set for a production build');
   }
   return {
     name: 'kagaz-demo-csp',
-    transformIndexHtml: (html) => (ollamaUrl ? allowConnectOrigin(html, ollamaUrl) : html),
+    transformIndexHtml: (html) => {
+      let out = html;
+      if (ollamaUrl) {
+        out = allowConnectOrigin(out, ollamaUrl);
+      }
+      return demo ? allowWasm(out) : out;
+    },
   };
 }
