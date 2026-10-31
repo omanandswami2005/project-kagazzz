@@ -11,7 +11,7 @@ export const AiAssistantPageAgent = definePage({
   id: 'ai.settings',
   route: '/ai-assistant',
   intent:
-    'Manage the on-device AI Assistant model: download it (one-time, ~475 MB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.',
+    'Manage the on-device AI Assistant model: download it (one-time, ~2.6 GB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.',
   surfaces: ['screen'],
   availableActions: [],
   // AI status lives in React context (AIProvider), not a store with a
