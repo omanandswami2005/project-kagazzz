@@ -59,7 +59,9 @@ public class LLMPlugin extends Plugin {
     @PluginMethod
     public void createChat(PluginCall call) {
         try {
-            String chatId = llm.createChat();
+            // Kagaz addition: the app's system prompt (identity + rules). Without it the model
+            // introduces itself as "Gemma 4, by Google DeepMind" and does not know the app's tools.
+            String chatId = llm.createChat(call.getString("systemPrompt"));
             JSObject ret = new JSObject();
             ret.put("id", chatId);
             call.resolve(ret);

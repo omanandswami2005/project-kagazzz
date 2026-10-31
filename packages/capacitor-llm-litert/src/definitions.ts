@@ -38,7 +38,7 @@ export interface LLMPlugin {
    * Creates a new chat session
    * @returns Promise with chat id and optional instructions
    */
-  createChat(): Promise<{ id: string; instructions?: string }>;
+  createChat(options?: { systemPrompt?: string }): Promise<{ id: string; instructions?: string }>;
 
   /**
    * Sends a message to the AI in a specific chat session

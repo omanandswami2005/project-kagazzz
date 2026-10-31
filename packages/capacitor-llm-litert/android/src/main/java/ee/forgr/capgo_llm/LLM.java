@@ -394,7 +394,7 @@ public class LLM {
         }
     }
 
-    public synchronized String createChat() {
+    public synchronized String createChat(String systemPrompt) {
         if (!isReady) {
             throw new IllegalStateException("Model not ready");
         }
@@ -406,7 +406,7 @@ public class LLM {
             if (engine == null) {
                 throw new IllegalStateException("LiteRT-LM engine not initialized");
             }
-            session = ChatSession.forLiteRt(createLiteRtConversation());
+            session = ChatSession.forLiteRt(createLiteRtConversation(systemPrompt));
         } else {
             if (llmInference == null) {
                 throw new IllegalStateException("MediaPipe model not initialized");
@@ -418,13 +418,15 @@ public class LLM {
         return chatId;
     }
 
-    private Conversation createLiteRtConversation() {
+    private Conversation createLiteRtConversation(String systemPrompt) {
         ConversationConfig defaults = new ConversationConfig();
         SamplerConfig samplerConfig = new SamplerConfig(topk, DEFAULT_TOP_P, temperature.doubleValue(), randomSeed);
         // LiteRT-LM 0.19 added fields to ConversationConfig; copy() takes all of them, so everything
         // we do not customize is passed through from the defaults.
         ConversationConfig config = defaults.copy(
-            defaults.getSystemInstruction(),
+            systemPrompt != null && !systemPrompt.trim().isEmpty()
+                ? com.google.ai.edge.litertlm.Contents.Companion.of(systemPrompt)
+                : defaults.getSystemInstruction(),
             defaults.getInitialMessages(),
             buildToolProviders(),
             samplerConfig,
