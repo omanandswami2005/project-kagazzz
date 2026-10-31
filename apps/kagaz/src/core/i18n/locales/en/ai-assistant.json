@@ -31,7 +31,10 @@
     "delete_button": "Delete AI model",
     "retry_button": "Try again",
     "gpu_toggle_label": "Experimental GPU acceleration",
-    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads."
+    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads.",
+    "intro_server": "Kagaz AI is using a local Gemma server (Ollama) at {{url}}. Your messages and any document you transcribe are sent to it — this is a demo setup, not on-device.",
+    "connect_button": "Connect to Gemma",
+    "disconnect_button": "Disconnect"
   },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."

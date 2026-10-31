@@ -30,6 +30,7 @@ function formatMb(bytes: number): string {
 export function AiAssistantPage(): ReactNode {
   const { t } = useTranslation('ai-assistant');
   const ai = useAi();
+  const server = ai.engine === 'ollama';
 
   return (
     <IonPage data-agent-id="ai.settings">
@@ -44,7 +45,7 @@ export function AiAssistantPage(): ReactNode {
 
       <IonContent>
         <main className="kg-ai-settings" data-agent-id="ai.settings.content" data-agent-state={ai.status}>
-          {ai.status !== 'unsupported' && (
+          {ai.status !== 'unsupported' && !server && (
             <div className="kg-ai-settings__gpu-toggle" data-agent-id="ai.settings.gpu-toggle">
               <Toggle
                 enabled={ai.preferGpu}
@@ -66,15 +67,17 @@ export function AiAssistantPage(): ReactNode {
           {ai.status === 'not-downloaded' && (
             <div className="kg-ai-settings__center" data-agent-id="ai.settings.download">
               <Icon name="Sparkles" size={32} aria-hidden />
-              <p>{t('lifecycle.intro')}</p>
+              <p>{server ? t('lifecycle.intro_server', { url: ai.serverUrl }) : t('lifecycle.intro')}</p>
               <Button
                 variant="primary"
                 onClick={() => void ai.activate(AI_TOOL_DESCRIPTORS)}
-                agentId="ai.settings.download-button"
+                agentId={server ? 'ai.settings.connect-button' : 'ai.settings.download-button'}
               >
-                {t('lifecycle.download_button', { size: formatMb(ai.modelSizeBytes) })}
+                {server
+                  ? t('lifecycle.connect_button')
+                  : t('lifecycle.download_button', { size: formatMb(ai.modelSizeBytes) })}
               </Button>
-              <p className="kg-ai-settings__hint">{t('lifecycle.wifi_hint')}</p>
+              {!server && <p className="kg-ai-settings__hint">{t('lifecycle.wifi_hint')}</p>}
             </div>
           )}
 
@@ -113,7 +116,7 @@ export function AiAssistantPage(): ReactNode {
                 onClick={() => void ai.remove()}
                 agentId="ai.settings.delete-button"
               >
-                {t('lifecycle.delete_button')}
+                {server ? t('lifecycle.disconnect_button') : t('lifecycle.delete_button')}
               </Button>
             </div>
           )}

@@ -55,10 +55,7 @@ export function parseSkill(raw: string, source = 'skill'): Skill {
   };
 }
 
-const files = import.meta.glob('./*.skill.md', { query: '?raw', import: 'default', eager: true }) as Record<
-  string,
-  string
->;
+const files = import.meta.glob('./*.skill.md', { query: '?raw', import: 'default', eager: true });
 
 export const SKILLS: Skill[] = Object.entries(files)
   .map(([path, raw]) => parseSkill(raw, path))

@@ -23,6 +23,7 @@ happen without an explicit human tap. I can explain what's happening
 
 ## Things I must NOT do
 - Never trigger a download or deletion myself.
+- In demo builds the assistant uses a local Gemma server (Ollama) instead: the page then shows a "Connect to Gemma" button (no download, no GPU switch) and says plainly that messages are sent to that server. Never describe it as on-device.
 - Don't imply the model is a one-time cost with no storage impact — it's
   genuinely ~475 MB on disk; the user should know before tapping Download.
 

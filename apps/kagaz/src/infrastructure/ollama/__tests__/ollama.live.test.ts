@@ -16,6 +16,9 @@ import { OllamaChatEngine } from '@/modules/ai-assistant/services/ollama-chat-en
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '@/modules/ai-assistant/services/ai-tool-registry';
 import type { AiToolContext, DocumentSummary } from '@/modules/ai-assistant/ai-tools.actions';
 import { SYSTEM_PROMPT } from '@/modules/ai-assistant/prompts/system-prompt';
+import { SkillController } from '@/modules/ai-assistant/skills/skill-controller';
+import { skillCatalog } from '@/modules/ai-assistant/skills/skill-registry';
+import { SkillSession } from '@/modules/ai-assistant/skills/skill-session';
 import { createOllamaVisionRecognizer } from '@/modules/image-engine/services/vision-ocr.service';
 import { InMemoryVectorStore, OllamaEmbeddingProvider, SemanticIndexService } from '@/modules/semantic-index';
 
@@ -34,8 +37,15 @@ interface Call { name: string; args: unknown; ok: boolean }
 
 /** Runs one user message through the real engine + real registry (real zod validation), recording tool calls. */
 async function runTurn(message: string): Promise<{ calls: Call[]; reply: string; error: string | null }> {
-  const engine = new OllamaChatEngine({ baseUrl: BASE, model: 'gemma4:e2b', systemPrompt: SYSTEM_PROMPT });
+  const engine = new OllamaChatEngine({
+    baseUrl: BASE,
+    model: 'gemma4:e2b',
+    systemPrompt: `${SYSTEM_PROMPT}\n\n${skillCatalog()}`,
+  });
   engine.setTools(AI_TOOL_DESCRIPTORS);
+  // Same skill wiring as useChat: start with core tools, router pre-loads, guard refuses unloaded tools.
+  const skills = new SkillController(new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)), engine);
+  skills.sync();
   const calls: Call[] = [];
   const created = { n: 0 };
   const ctx = {
@@ -51,6 +61,7 @@ async function runTurn(message: string): Promise<{ calls: Call[]; reply: string;
     resizeImage: () => Promise.resolve({ created: 1, resultSizeBytes: 40_000, hitQualityFloor: false }),
     enhanceImage: () => Promise.resolve(1),
     runOcr: () => Promise.resolve(100),
+    loadSkill: (name: string) => skills.load(name),
     setTheme: () => undefined,
     setLanguage: () => undefined,
     setSwipeAction: () => undefined,
@@ -68,12 +79,14 @@ async function runTurn(message: string): Promise<{ calls: Call[]; reply: string;
   await engine.addListener('toolCallRequested', (e) => {
     void (async () => {
       const args = JSON.parse(e.argumentsJson) as unknown;
-      const result = await aiToolRegistry.invoke(e.name, args, ctx);
+      const refusal = skills.refusal(e.name);
+      const result = refusal ? (JSON.parse(refusal) as { ok: false }) : await aiToolRegistry.invoke(e.name, args, ctx);
       calls.push({ name: e.name, args, ok: result.ok });
       await engine.resolveToolCall({ requestId: e.requestId, resultJson: JSON.stringify(result) });
     })();
   });
   const { id } = await engine.createChat();
+  skills.onUserMessage(message);
   await engine.sendMessage({ chatId: id, message });
   return { calls, reply, error };
 }
@@ -120,6 +133,31 @@ describe.skipIf(!live)('LIVE: Gemma 4 E2B via Ollama — tool selection against 
     const resize = r.calls.find((c) => c.name === 'ai.resizeImage');
     expect(resize?.ok, trace(r)).toBe(true);
     expect(resize?.args).toMatchObject({ documentId: 'doc-c', width: 200, height: 230, maxSizeKb: 50 });
+  }, TURN_TIMEOUT);
+
+  it('cross-skill: merge two PDFs AND resize a photo in one request → both tools run', async () => {
+    const r = await runTurn(
+      'Merge my rent agreement and my electricity bill, and also resize my photo to 200 by 230 pixels under 50 KB.'
+    );
+    expect(r.error).toBeNull();
+    expect(r.calls.find((c) => c.name === 'ai.mergeDocuments')?.ok, trace(r)).toBe(true);
+    expect(r.calls.find((c) => c.name === 'ai.resizeImage')?.ok, trace(r)).toBe(true);
+  }, TURN_TIMEOUT);
+
+  it('model-driven load: no trigger word, so the model must call ai.loadSkill itself', async () => {
+    // "smaller"/"agreement" are not triggers for pdf-tools — the router misses it.
+    const r = await runTurn('Make my rent agreement smaller in file size.');
+    expect(r.error).toBeNull();
+    const order = names(r.calls);
+    expect(order, trace(r)).toContain('ai.loadSkill');
+    expect(r.calls.find((c) => c.name === 'ai.compressDocument')?.ok, trace(r)).toBe(true);
+    expect(order.indexOf('ai.loadSkill')).toBeLessThan(order.indexOf('ai.compressDocument'));
+  }, TURN_TIMEOUT);
+
+  it('an unrelated request does not load unrelated skills', async () => {
+    const r = await runTurn('Switch the app to dark mode please.');
+    expect(r.error).toBeNull();
+    expect(names(r.calls).filter((n) => n === 'ai.loadSkill' || n.startsWith('ai.') && n !== 'ai.loadSkill'), trace(r)).toEqual([]);
   }, TURN_TIMEOUT);
 
   it('plain chat → answers in text and calls no tool', async () => {

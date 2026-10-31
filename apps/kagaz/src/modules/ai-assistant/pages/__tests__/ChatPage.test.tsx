@@ -35,6 +35,8 @@ function aiValue(overrides: Partial<ReturnType<typeof useAi>> = {}): ReturnType<
     downloadProgress: 0,
     errorMessage: null,
     capabilities: null,
+    engine: 'litert' as const,
+    serverUrl: null,
     modelSizeBytes: 497_664_000,
     preferGpu: false,
     setPreferGpu: vi.fn(),

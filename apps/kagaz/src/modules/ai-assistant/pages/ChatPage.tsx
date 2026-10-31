@@ -67,7 +67,7 @@ export function ChatPage(): ReactNode {
         {gated ? (
           <div className="kg-chat__gate" data-agent-id="ai.chat.gate">
             <Icon name="Sparkles" size={32} aria-hidden />
-            <p>{t('lifecycle.intro')}</p>
+            <p>{ai.engine === 'ollama' ? t('lifecycle.intro_server', { url: ai.serverUrl }) : t('lifecycle.intro')}</p>
             <Button
               variant="primary"
               onClick={() => router.push('/ai-assistant')}

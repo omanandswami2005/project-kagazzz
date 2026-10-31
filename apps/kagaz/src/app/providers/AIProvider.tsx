@@ -23,6 +23,7 @@ import {
   type LoadResult,
 } from '@/modules/ai-assistant/services/ai-engine.service';
 import { getOllamaEngine } from '@/modules/ai-assistant/services/chat-engine.registry';
+import { getOllamaConfig } from '@/infrastructure/ollama';
 
 const logger = log('ai-assistant');
 
@@ -38,6 +39,13 @@ export interface AiContextValue {
   errorMessage: string | null;
   /** Set only when status === 'ready'. */
   capabilities: LoadResult | null;
+  /**
+   * Which engine answers: the on-device native model, or a local Ollama server
+   * (demo builds). For `ollama`, `serverUrl` is where prompts and tool results
+   * are sent — the UI must not claim "nothing leaves your device".
+   */
+  engine: 'litert' | 'ollama';
+  serverUrl: string | null;
   /** Size of the shipped model — for the Settings "Download (~N MB)" label before download starts. */
   modelSizeBytes: number;
   /**
@@ -178,6 +186,8 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
       downloadProgress,
       errorMessage,
       capabilities,
+      engine: getOllamaEngine() ? 'ollama' : 'litert',
+      serverUrl: getOllamaConfig()?.baseUrl ?? null,
       modelSizeBytes: MODEL_SIZE_BYTES,
       preferGpu,
       setPreferGpu,

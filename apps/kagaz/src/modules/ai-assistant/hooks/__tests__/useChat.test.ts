@@ -102,6 +102,8 @@ function readyAiValue(): ReturnType<typeof useAi> {
     downloadProgress: 100,
     errorMessage: null,
     capabilities: { backend: 'gpu', loadTimeMs: 900 },
+    engine: 'litert' as const,
+    serverUrl: null,
     modelSizeBytes: 497_664_000,
     preferGpu: false,
     setPreferGpu: vi.fn(),
@@ -534,7 +536,9 @@ describe('useChat document-op tools (F-14 document operations)', () => {
 
     const result = await dispatch('ai.loadSkill', { name: 'pdf-tools' });
     expect(result.ok).toBe(true);
-    expect(result.data).toMatchObject({ loaded: 'pdf-tools', tools: expect.arrayContaining(['ai.mergeDocuments']) });
+    const data = result.data as { loaded: string; tools: string[] };
+    expect(data.loaded).toBe('pdf-tools');
+    expect(data.tools).toContain('ai.mergeDocuments');
 
     const unknown = await dispatch('ai.loadSkill', { name: 'nope' });
     expect(unknown.ok).toBe(false);
