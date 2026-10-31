@@ -15,9 +15,10 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, Input, Spinner } from '@kagaz/ui';
+import { AskUserForm } from '../components/AskUserForm';
 import { AttachSheet } from '../components/AttachSheet';
 import { AttachmentChips, ResultCard } from '../components/MessageParts';
 import { MicButton } from '../components/MicButton';
@@ -26,7 +27,7 @@ import { useUpload } from '@/modules/document-vault/hooks/useUpload';
 import { pickFiles, type UploadSource } from '@/modules/document-vault/services/upload-sources';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useAttachableDocuments } from '../hooks/useAttachableDocuments';
-import { parseParts, type DocRef } from '../types/message-parts';
+import { answeredFormIds, parseParts, type DocRef } from '../types/message-parts';
 import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../hooks/useChat';
 import './chat.css';
@@ -41,7 +42,13 @@ export function ChatPage(): ReactNode {
   const [attachments, setAttachments] = useState<DocRef[]>([]);
   const [attachOpen, setAttachOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const attachable = useAttachableDocuments(attachOpen);
+  // Forms the model asked for that the user has not answered yet (a reloaded, answered form must not reappear).
+  const answered = useMemo(() => answeredFormIds(chat.messages), [chat.messages]);
+  const hasOpenForm = useMemo(
+    () => chat.messages.some((m) => parseParts(m.partsJson).some((p) => p.type === 'form' && !answered.has(p.formId))),
+    [chat.messages, answered]
+  );
+  const attachable = useAttachableDocuments(attachOpen || hasOpenForm);
   const { ingestFiles } = useUpload();
   const listEndRef = useRef<HTMLDivElement>(null);
 
@@ -130,6 +137,7 @@ export function ChatPage(): ReactNode {
                 const parts = parseParts(message.partsJson);
                 const attached = parts.flatMap((p) => (p.type === 'attachments' ? p.documents : []));
                 const created = parts.flatMap((p) => (p.type === 'documents' ? p.documents : []));
+                const form = parts.find((p) => p.type === 'form');
                 if (message.role === 'tool') {
                   return created.length > 0 ? (
                     <li key={message.id} data-agent-id={`ai.chat.message-${message.id}`}>
@@ -143,11 +151,21 @@ export function ChatPage(): ReactNode {
                 return (
                   <li
                     key={message.id}
-                    className={`kg-chat__bubble kg-chat__bubble--${message.role}`}
+                    className={`kg-chat__bubble kg-chat__bubble--${message.role}${form ? ' kg-chat__bubble--form' : ''}`}
                     data-agent-id={`ai.chat.message-${message.id}`}
                   >
                     {attached.length > 0 && <AttachmentChips documents={attached} idPrefix={`ai.chat.sent-${message.id}`} />}
                     {message.content}
+                    {form && !answered.has(form.formId) && (
+                      <AskUserForm
+                        spec={form.spec}
+                        documents={attachable.documents}
+                        disabled={chat.isStreaming}
+                        onSubmit={(summary) =>
+                          void chat.sendMessage(summary, { parts: [{ type: 'answer', formId: form.formId }] })
+                        }
+                      />
+                    )}
                   </li>
                 );
               })}

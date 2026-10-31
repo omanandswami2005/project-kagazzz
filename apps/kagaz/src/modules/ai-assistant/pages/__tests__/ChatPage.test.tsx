@@ -307,3 +307,51 @@ describe('ChatPage attachments and result cards (chat journey)', () => {
     expect(q('ai.chat.message-m3')).toBeNull();
   });
 });
+
+describe('ChatPage forms from the assistant (GenUI)', () => {
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+  const spec = {
+    question: 'How should I resize it?',
+    fields: [{ id: 'width', label: 'Width', type: 'number', required: true, min: 16, max: 8000, unit: 'px', default: 200 }],
+  };
+  const formMessage = { id: 'f1', conversationId: 'c', role: 'assistant', content: spec.question, createdAt: '', partsJson: JSON.stringify([{ type: 'form', formId: 'form-1', spec }]) };
+  const answerMessage = { id: 'a1', conversationId: 'c', role: 'user', content: 'Width: 200 px', createdAt: '', partsJson: JSON.stringify([{ type: 'answer', formId: 'form-1' }]) };
+
+  beforeEach(() => {
+    useAiMock.mockReturnValue(aiValue());
+    attach.state = { documents: [], lockedCount: 0 };
+  });
+
+  it('shows the question with its form, and submitting sends the readable answer tagged with the form id', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage] as never, sendMessage }));
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    await userEvent.click(q('ai.chat.form-submit') as Element);
+
+    expect(sendMessage).toHaveBeenCalledWith('Width: 200 px', { parts: [{ type: 'answer', formId: 'form-1' }] });
+  });
+
+  it('an answered form shows only its question and the answer — it cannot be submitted twice', () => {
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage, answerMessage] as never }));
+    render(<ChatPage />);
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    expect(q('ai.chat.form')).toBeNull();
+    expect(q('ai.chat.message-a1')).toHaveTextContent('Width: 200 px');
+  });
+
+  it('a form is inert while the assistant is answering', () => {
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage] as never, isStreaming: true }));
+    render(<ChatPage />);
+    expect(q('ai.chat.form-submit')).toBeDisabled();
+  });
+
+  it('a form with a corrupt spec degrades to a plain message (no crash, no form)', () => {
+    const corrupt = { ...formMessage, partsJson: JSON.stringify([{ type: 'form', formId: 'x', spec: { question: 'q', fields: 'nope' } }]) };
+    useChatMock.mockReturnValue(chatValue({ messages: [corrupt] as never }));
+    render(<ChatPage />);
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    expect(q('ai.chat.form')).toBeNull();
+  });
+});

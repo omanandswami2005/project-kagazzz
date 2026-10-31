@@ -119,4 +119,18 @@ describe('CloudChatEngine', () => {
     const bad = new CloudChatEngine({ systemPrompt: '', fetchImpl: vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ error: 'gcloud failed — run: gcloud auth application-default login' }), { status: 502 }))) });
     await expect(bad.checkReady()).rejects.toThrow('application-default login');
   });
+
+  it('ends the turn after an end-turn tool (ai.askUser): the model is not called again', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(sse(toolChunk('ai.askUser', '{"question":"q","fields":[]}')));
+    const engine = new CloudChatEngine({ systemPrompt: 'SYS', endTurnTools: ['ai.askUser'], fetchImpl: fetchImpl });
+    engine.setTools([{ name: 'ai.askUser', descriptionJson: JSON.stringify({ name: 'ai.askUser', description: 'd', parameters: { type: 'object', properties: {} } }) }]);
+    const events = await collect(engine);
+    await engine.addListener('toolCallRequested', (e) => void engine.resolveToolCall({ requestId: e.requestId, resultJson: '{"ok":true,"data":{"status":"waiting_for_user"}}' }));
+    const { id } = await engine.createChat();
+
+    await engine.sendMessage({ chatId: id, message: 'resize my photo' });
+
+    expect(fetchImpl).toHaveBeenCalledOnce(); // no second round trip
+    expect(events.at(-1)?.type).toBe('aiFinished');
+  });
 });

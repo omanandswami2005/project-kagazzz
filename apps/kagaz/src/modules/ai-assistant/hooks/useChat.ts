@@ -28,6 +28,7 @@ import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-too
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
 import { SkillController } from '../skills/skill-controller';
 import { SkillSession } from '../skills/skill-session';
@@ -153,6 +154,8 @@ export function useChat(): UseChatResult {
   // The engine behind the chat (native LiteRT by default, Ollama in demo builds) — see chat-engine.registry.ts.
   const engine = getChatEngine();
   // Which skills (tool groups) are loaded in this chat — see skills/skill-session.ts.
+  // Persists a form the model asked for; assigned once the conversation exists (see recordForm below).
+  const recordFormRef = useRef<(spec: AskUserSpec) => Promise<void>>(() => Promise.resolve());
   const skills = useMemo(
     () => new SkillController(new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)), engine),
     [engine]
@@ -265,6 +268,18 @@ export function useChat(): UseChatResult {
         }
         return text.length;
       },
+      askUser: (spec): { status: 'waiting_for_user' } => {
+        // [SEC] The model must not be able to collect secrets through a form.
+        if (findSensitiveRequest(spec)) {
+          throw new Error(
+            'Do not ask for passwords, OTPs, PINs or ID/card numbers. Ask for something else, or say you cannot collect that.'
+          );
+        }
+        void recordFormRef.current(spec).catch((formError: unknown) => {
+          logger.warn({ event: 'ai.chat.record_form_failed', err: { message: String(formError) } });
+        });
+        return { status: 'waiting_for_user' };
+      },
       loadSkill: (name): ReturnType<AiToolContext['loadSkill']> => skills.load(name),
       // Bug-audit fix: settings.actions.ts's setTheme/setLanguage/
       // setSwipeAction were never registered into aiToolRegistry at all —
@@ -309,7 +324,10 @@ export function useChat(): UseChatResult {
   /** Shows documents a tool just created as a result card in the chat (persisted, so it survives a reload). */
   const recordCreated = useCallback(
     async (result: { ok: boolean; data?: unknown }): Promise<void> => {
-      const created = (result.data as { documents?: DocumentSummary[] } | undefined)?.documents;
+      // Only tools that CREATE documents report a `created` count. Search/list results carry a
+      // `documents` list too (existing files) and must never be shown as "Created".
+      const data = result.data as { created?: number; documents?: DocumentSummary[] } | undefined;
+      const created = typeof data?.created === 'number' && data.created > 0 ? data.documents : undefined;
       if (!dao || !conversationId || !result.ok || !Array.isArray(created) || created.length === 0) {
         return;
       }
@@ -342,6 +360,28 @@ export function useChat(): UseChatResult {
   const pendingToolCallRef = useRef<
     { requestId: string; name: string; args: unknown; requestedAt: number } | null
   >(null);
+
+  /** Puts the model's form in the chat. Replaces any text it streamed first — the form's question is the message. */
+  const recordForm = useCallback(
+    async (spec: AskUserSpec): Promise<void> => {
+      if (!dao || !conversationId) {
+        return;
+      }
+      streamingBuffer.current = '';
+      setStreamingText('');
+      const message = await dao.appendMessage({
+        conversationId,
+        role: 'assistant',
+        content: spec.question,
+        partsJson: serializeParts([{ type: 'form', formId: crypto.randomUUID(), spec }]),
+      });
+      setMessages((prev) => [...prev, message]);
+    },
+    [dao, conversationId]
+  );
+  useEffect(() => {
+    recordFormRef.current = recordForm;
+  }, [recordForm]);
 
   // Load-or-create the conversation once the model is ready.
   useEffect(() => {

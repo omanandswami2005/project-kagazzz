@@ -611,6 +611,61 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     expect(result.ok).toBe(false);
     expect(imageOps.applyFilter).not.toHaveBeenCalled();
   });
+
+  it('ai.askUser persists the form as an assistant message and tells the model it is waiting', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM documents/, [documentRow])
+      .onQuery(/FROM ai_messages WHERE id/, [
+        { id: 'f1', conversation_id: 'c-1', role: 'assistant', content: 'Which size?', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:03.000Z' },
+      ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    // A form needs a loaded conversation to attach to (real use: the user has already sent a message).
+    const { result: chat } = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+    await waitFor(() => expect(chat.current.isLoading).toBe(false));
+
+    const result = await dispatch('ai.askUser', {
+      question: 'Which size?',
+      fields: [{ id: 'width', label: 'Width', type: 'number' }],
+    });
+
+    expect(result).toEqual({ ok: true, data: { status: 'waiting_for_user' } });
+    await vi.waitFor(() => {
+      const insert = db.calls.find((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'));
+      const stored = insert?.params?.find((p) => typeof p === 'string' && p.includes('"form"')) as string;
+      const parts = JSON.parse(stored) as { type: string; spec: { question: string } }[];
+      expect(parts[0]).toMatchObject({ type: 'form', spec: { question: 'Which size?' } });
+      expect(insert?.params).toContain('Which size?');
+    });
+  });
+
+  it('ai.askUser refuses a form that asks for a password or ID number, and stores nothing', async () => {
+    const db = readyDbWithDocument();
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.askUser', {
+      question: 'To continue, enter your Aadhaar number',
+      fields: [{ id: 'n', label: 'Aadhaar number', type: 'text' }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))).toBe(false);
+  });
+
+  it('ai.askUser rejects a malformed form before anything is shown', async () => {
+    const db = readyDbWithDocument();
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.askUser', { question: 'q', fields: [{ id: 'c', label: 'C', type: 'choice' }] });
+    expect(result.ok).toBe(false);
+    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))).toBe(false);
+  });
 });
 
 describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () => {
@@ -780,6 +835,27 @@ describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () =>
     const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
     expect(parsed.ok).toBe(false);
     expect(parsed.code).toBe('AGENT_E_TIMEOUT');
+  });
+});
+
+describe('result cards only for tools that created documents', () => {
+  it('a search result (documents list, no created count) does not produce a "Created" card', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM documents/, [{ id: 'd-1', name: 'Passport photo.jpg', file_path: 'p', file_type: 'jpg', file_size: 1, is_favorite: 0, is_locked: 0, is_archived: 0, language: 'en', source_type: 'file_picker', created_at: '2026-07-24T00:00:00.000Z', updated_at: '2026-07-24T00:00:00.000Z', synced: 0, version: 1 }]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    plugin.resolveToolCall.mockClear();
+    listeners.toolCallRequested?.({ requestId: 'req-search', name: 'ai.searchDocuments', argumentsJson: JSON.stringify({ query: 'photo' }) });
+    await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
+    const payload = JSON.parse((plugin.resolveToolCall.mock.calls[0] as [{ resultJson: string }])[0].resultJson) as { data: { documents: unknown[] } };
+    expect(payload.data.documents).toHaveLength(1); // the model does get the search hit...
+    await new Promise((r) => setTimeout(r, 50));
+    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages') && c.params?.includes('tool'))).toBe(false); // ...but no chat card
   });
 });
 

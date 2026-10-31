@@ -9,6 +9,6 @@ PDF operations. Every tool saves a NEW document and never changes the original.
 - Find the documents yourself first (ai.searchDocuments / ai.listDocuments with a short keyword); never ask the user for an id or a document name — ask only if two or more documents match equally well.
 - Merge needs 2 or more PDFs, in the order the user wants. Split takes 1-indexed inclusive page ranges ("pages 1 to 3" = start 1, end 3).
 - Compress quality is low, medium or high; default to medium unless the user says otherwise.
-- Watermark needs the text to stamp. If the user did not say what text, ask one short question.
+- Watermark needs the text to stamp. If the user did not say what text, call ai.askUser once with a text field — do not ask in prose.
 - PDF to images: format is jpeg or png. PDF to text: format is txt or md.
 - After the tool succeeds, say what was created in one sentence.

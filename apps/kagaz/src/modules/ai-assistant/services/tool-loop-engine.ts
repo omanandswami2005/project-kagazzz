@@ -48,6 +48,11 @@ export interface ToolLoopOptions {
   toolTimeoutMs?: number;
   /** Non-system messages kept per chat before the oldest are dropped. */
   maxHistoryMessages?: number;
+  /**
+   * Tools whose result ends the turn: the model is not called again after them
+   * (e.g. `ai.askUser` — the question is on screen, the answer is the next user message).
+   */
+  endTurnTools?: string[];
 }
 
 type Listener<K extends keyof ChatEngineEvents> = (event: ChatEngineEvents[K]) => void;
@@ -165,6 +170,9 @@ export abstract class ToolLoopEngine implements ChatEngine {
       for (const call of toolCalls) {
         const resultJson = await this.requestTool(call.name, call.args);
         history.push({ role: 'tool', toolCallId: call.id, toolName: call.name, content: resultJson });
+      }
+      if (toolCalls.some((c) => this.options.endTurnTools?.includes(c.name))) {
+        return;
       }
     }
   }

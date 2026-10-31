@@ -175,4 +175,16 @@ describe('OllamaChatEngine', () => {
     const ok = new OllamaChatEngine({ baseUrl: 'http://x', model: 'gemma4:e2b', systemPrompt: '', fetchImpl: vi.fn().mockResolvedValue(new Response(JSON.stringify({ models: [{ name: 'gemma4:e2b' }] }))) });
     await expect(ok.checkReady()).resolves.toBeUndefined();
   });
+
+  it('ends the turn after an end-turn tool (ai.askUser): the model is not called again', async () => {
+    const { engine, fetchImpl } = makeEngine([ndjson(...toolCall('ai.listDocuments', {})), ndjson(...text('should never be requested'))], { endTurnTools: ['ai.listDocuments'] });
+    const events = await collect(engine);
+    await engine.addListener('toolCallRequested', (e) => void engine.resolveToolCall({ requestId: e.requestId, resultJson: '{"ok":true}' }));
+    const { id } = await engine.createChat();
+
+    await engine.sendMessage({ chatId: id, message: 'x' });
+
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(events.at(-1)?.type).toBe('aiFinished');
+  });
 });

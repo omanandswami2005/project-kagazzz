@@ -7,6 +7,7 @@
  */
 import { getAiMode, isCloudAiConfigured } from '@/infrastructure/cloud-ai';
 import { getOllamaConfig } from '@/infrastructure/ollama';
+import { END_TURN_TOOLS } from '../ai-ask-user.actions';
 import { SYSTEM_PROMPT } from '../prompts/system-prompt';
 import { skillCatalog } from '../skills/skill-registry';
 import type { ChatEngine } from './chat-engine';
@@ -27,7 +28,7 @@ export function getOllamaEngine(): OllamaChatEngine | null {
   if (ollamaEngine === undefined) {
     const config = getOllamaConfig();
     ollamaEngine = config
-      ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: systemPrompt() })
+      ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS })
       : null;
   }
   return ollamaEngine;
@@ -36,7 +37,7 @@ export function getOllamaEngine(): OllamaChatEngine | null {
 /** The cloud engine when this build has the proxy, else null. */
 export function getCloudEngine(): CloudChatEngine | null {
   if (cloudEngine === undefined) {
-    cloudEngine = isCloudAiConfigured() ? new CloudChatEngine({ systemPrompt: systemPrompt() }) : null;
+    cloudEngine = isCloudAiConfigured() ? new CloudChatEngine({ systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS }) : null;
   }
   return cloudEngine;
 }

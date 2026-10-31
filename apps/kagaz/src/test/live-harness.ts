@@ -9,6 +9,7 @@ import { expect, it } from 'vitest';
 import type { AiToolContext, DocumentSummary } from '@/modules/ai-assistant/ai-tools.actions';
 import { SYSTEM_PROMPT } from '@/modules/ai-assistant/prompts/system-prompt';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '@/modules/ai-assistant/services/ai-tool-registry';
+import { findSensitiveRequest, type AskUserSpec } from '@/modules/ai-assistant/types/ask-user';
 import type { ToolLoopEngine } from '@/modules/ai-assistant/services/tool-loop-engine';
 import { SkillController } from '@/modules/ai-assistant/skills/skill-controller';
 import { skillCatalog } from '@/modules/ai-assistant/skills/skill-registry';
@@ -36,18 +37,25 @@ export interface TurnResult {
   calls: Call[];
   reply: string;
   error: string | null;
+  /** Forms the model asked for (ai.askUser) this turn. */
+  forms: AskUserSpec[];
 }
 
-/** Runs one user message through a fresh engine + the real registry, recording every tool call. */
-export async function runTurn(makeEngine: () => ToolLoopEngine, message: string): Promise<TurnResult> {
+export interface LiveSession {
+  /** Sends one user message and resolves when the model's turn ends. */
+  send: (message: string) => Promise<TurnResult>;
+}
+
+/** One chat (one engine, one history) the test can send several messages into. */
+export async function createSession(makeEngine: () => ToolLoopEngine): Promise<LiveSession> {
   const engine = makeEngine();
   engine.setTools(AI_TOOL_DESCRIPTORS);
   // Same skill wiring as useChat: start with core tools, router pre-loads, guard refuses unloaded tools.
   const skills = new SkillController(new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)), engine);
   skills.sync();
-  const calls: Call[] = [];
+  let current: TurnResult = { calls: [], reply: '', error: null, forms: [] };
   const made = (): Promise<{ created: number; documents: DocumentSummary[] }> =>
-    Promise.resolve({ created: 1, documents: [{ ...DOCS[0], id: `new-${calls.length}`, name: 'Result.pdf' }] });
+    Promise.resolve({ created: 1, documents: [{ ...DOCS[0], id: `new-${current.calls.length}`, name: 'Result.pdf' }] });
   const ctx = {
     listDocuments: () => Promise.resolve(DOCS),
     searchDocuments: (q: string) =>
@@ -62,6 +70,13 @@ export async function runTurn(makeEngine: () => ToolLoopEngine, message: string)
     resizeImage: () => made().then((r) => ({ ...r, resultSizeBytes: 40_000, hitQualityFloor: false })),
     enhanceImage: made,
     runOcr: () => Promise.resolve(100),
+    askUser: (spec: AskUserSpec) => {
+      if (findSensitiveRequest(spec)) {
+        throw new Error('Do not ask for passwords, OTPs, PINs or ID/card numbers.');
+      }
+      current.forms.push(spec);
+      return { status: 'waiting_for_user' };
+    },
     loadSkill: (name: string) => skills.load(name),
     setTheme: () => undefined,
     setLanguage: () => undefined,
@@ -73,23 +88,31 @@ export async function runTurn(makeEngine: () => ToolLoopEngine, message: string)
     openPdfTools: () => undefined,
   } as unknown as AiToolContext;
 
-  let reply = '';
-  let error: string | null = null;
-  await engine.addListener('textFromAi', (e) => (reply += e.text));
-  await engine.addListener('generationError', (e) => (error = e.error));
+  await engine.addListener('textFromAi', (e) => (current.reply += e.text));
+  await engine.addListener('generationError', (e) => (current.error = e.error));
   await engine.addListener('toolCallRequested', (e) => {
     void (async () => {
       const args = JSON.parse(e.argumentsJson) as unknown;
       const refusal = skills.refusal(e.name);
       const result = refusal ? (JSON.parse(refusal) as { ok: false }) : await aiToolRegistry.invoke(e.name, args, ctx);
-      calls.push({ name: e.name, args, ok: result.ok });
+      current.calls.push({ name: e.name, args, ok: result.ok });
       await engine.resolveToolCall({ requestId: e.requestId, resultJson: JSON.stringify(result) });
     })();
   });
   const { id } = await engine.createChat();
-  skills.onUserMessage(message);
-  await engine.sendMessage({ chatId: id, message });
-  return { calls, reply, error };
+  return {
+    send: async (message) => {
+      current = { calls: [], reply: '', error: null, forms: [] };
+      skills.onUserMessage(message);
+      await engine.sendMessage({ chatId: id, message });
+      return current;
+    },
+  };
+}
+
+/** Runs one user message through a fresh engine + the real registry, recording every tool call. */
+export async function runTurn(makeEngine: () => ToolLoopEngine, message: string): Promise<TurnResult> {
+  return (await createSession(makeEngine)).send(message);
 }
 
 export const names = (calls: Call[]): string[] => calls.map((c) => c.name);
@@ -137,6 +160,7 @@ export function toolScenarios(makeEngine: () => ToolLoopEngine): void {
     const resize = r.calls.find((c) => c.name === 'ai.resizeImage');
     expect(resize?.ok, trace(r)).toBe(true);
     expect(resize?.args).toMatchObject({ documentId: 'doc-c', width: 200, height: 230, maxSizeKb: 50 });
+    expect(r.forms, 'everything was given, so no form should be shown').toEqual([]);
   }, TURN_TIMEOUT);
 
   it('cross-skill: merge two PDFs AND resize a photo in one request → both tools run', async () => {
@@ -169,5 +193,42 @@ export function toolScenarios(makeEngine: () => ToolLoopEngine): void {
     expect(r.error).toBeNull();
     expect(r.calls).toEqual([]);
     expect(r.reply.trim().length).toBeGreaterThan(10);
+  }, TURN_TIMEOUT);
+
+  it('GenUI: missing resize details → ONE form with number fields; the answer then drives ai.resizeImage', async () => {
+    const session = await createSession(makeEngine);
+    const first = await session.send('Resize my photo for a government form.');
+    expect(first.error).toBeNull();
+    expect(first.forms, trace(first)).toHaveLength(1);
+    const ids = first.forms[0].fields.map((f) => f.id);
+    expect(ids, trace(first)).toEqual(expect.arrayContaining(['width', 'height']));
+    expect(first.forms[0].fields.filter((f) => f.type === 'number').length).toBeGreaterThanOrEqual(2);
+    expect(names(first.calls), 'must not resize before it has the sizes').not.toContain('ai.resizeImage');
+
+    // What the app sends back when the user submits the form (ask-user-form.logic.ts summarize()).
+    const second = await session.send('Width: 200 px · Height: 230 px · Max size: 50 KB');
+    expect(second.error).toBeNull();
+    const resize = second.calls.find((c) => c.name === 'ai.resizeImage');
+    expect(resize?.ok, trace(second)).toBe(true);
+    expect(resize?.args).toMatchObject({ documentId: 'doc-c', width: 200, height: 230, maxSizeKb: 50 });
+  }, TURN_TIMEOUT);
+
+  it('GenUI: a watermark without text asks for it with a text field, then stamps what was typed', async () => {
+    const session = await createSession(makeEngine);
+    const first = await session.send('Add a watermark to my rent agreement.');
+    expect(first.error).toBeNull();
+    expect(first.forms, trace(first)).toHaveLength(1);
+    expect(first.forms[0].fields.some((f) => f.type === 'text'), trace(first)).toBe(true);
+    expect(names(first.calls)).not.toContain('ai.watermarkDocument');
+
+    const second = await session.send('Watermark text: CONFIDENTIAL');
+    const watermark = second.calls.find((c) => c.name === 'ai.watermarkDocument');
+    expect(watermark?.ok, trace(second)).toBe(true);
+    expect(watermark?.args).toMatchObject({ documentId: 'doc-a', text: 'CONFIDENTIAL' });
+  }, TURN_TIMEOUT);
+
+  it('GenUI: does not use a form for things it can look up (find my PAN card)', async () => {
+    const r = await turn('Find my PAN card.');
+    expect(r.forms, trace(r)).toEqual([]);
   }, TURN_TIMEOUT);
 }

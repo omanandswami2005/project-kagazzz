@@ -18,6 +18,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import type { AskUserSpec } from './types/ask-user';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
 /** Metadata-only projection of a document — never `ocrText`/`filePath`. */
@@ -98,6 +99,8 @@ export interface AiToolContext {
   ) => Promise<CreatedDocuments>;
   /** OCRs a document into its search text; resolves the character count only (never the text). */
   runOcr: (documentId: string) => Promise<number>;
+  /** Puts a form in front of the user and returns; the model's turn ends (ai-ask-user.actions.ts). */
+  askUser: (spec: AskUserSpec) => { status: 'waiting_for_user' };
   /** Loads a skill's tools into the chat and returns its usage rules (ai-skills.actions.ts). */
   loadSkill: (name: string) => { loaded: string; tools: string[]; rules: string; next: string };
   /** Applies (and persists) the colour theme (ai-settings.actions.ts). */
