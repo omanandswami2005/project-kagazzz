@@ -55,7 +55,7 @@ export function parseSkill(raw: string, source = 'skill'): Skill {
   };
 }
 
-const files = import.meta.glob('./*.skill.md', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('./*.skill.md', { query: '?raw', import: 'default', eager: true });
 
 export const SKILLS: Skill[] = Object.entries(files)
   .map(([path, raw]) => parseSkill(raw, path))
@@ -74,7 +74,7 @@ export function coreToolIds(allToolIds: string[], skills: Skill[] = SKILLS): str
 /** One line per skill for the system prompt, so the model knows what it can load. */
 export function skillCatalog(skills: Skill[] = SKILLS): string {
   return [
-    'Extra tools are grouped into skills. Their tools appear only after the skill is loaded; call ai.loadSkill with the skill name when you need one:',
+    'You do NOT have the tools below yet. They are grouped into skills and appear only after you load the skill. When the user asks for something one of these skills covers, call ai.loadSkill with that skill name FIRST (before replying or asking anything), then use its tools:',
     ...skills.map((s) => `- ${s.name}: ${s.description}`),
   ].join('\n');
 }

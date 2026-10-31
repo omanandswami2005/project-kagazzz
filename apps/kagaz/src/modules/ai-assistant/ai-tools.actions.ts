@@ -31,6 +31,12 @@ export interface DocumentSummary {
   createdAt: string;
 }
 
+/** Documents a tool created: ids let the chat link to them and the model chain steps ("merge, then compress the merged one"). */
+export interface CreatedDocuments {
+  created: number;
+  documents: DocumentSummary[];
+}
+
 /** Strips a full DocumentEntity down to what's safe to hand the model. */
 export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
   return {
@@ -65,31 +71,31 @@ export interface AiToolContext {
   /** Navigates to the PDF Tools hub (F-23). */
   openPdfTools: () => void;
   /** Merges the given documents (2+) into one new PDF (ai-document-ops.actions.ts). */
-  mergeDocuments: (documentIds: string[]) => Promise<number>;
+  mergeDocuments: (documentIds: string[]) => Promise<CreatedDocuments>;
   /** Splits a PDF by 1-indexed inclusive page ranges into new documents. */
-  splitDocument: (documentId: string, ranges: { start: number; end: number }[]) => Promise<number>;
+  splitDocument: (documentId: string, ranges: { start: number; end: number }[]) => Promise<CreatedDocuments>;
   /** Compresses a PDF into a new, smaller copy. */
-  compressDocument: (documentId: string, quality: 'low' | 'medium' | 'high') => Promise<number>;
+  compressDocument: (documentId: string, quality: 'low' | 'medium' | 'high') => Promise<CreatedDocuments>;
   /** Adds a text watermark, creating a new copy. */
-  watermarkDocument: (documentId: string, text: string) => Promise<number>;
+  watermarkDocument: (documentId: string, text: string) => Promise<CreatedDocuments>;
   /** Combines image documents into one new PDF. */
-  convertImagesToPdf: (documentIds: string[]) => Promise<number>;
+  convertImagesToPdf: (documentIds: string[]) => Promise<CreatedDocuments>;
   /** Renders every PDF page to a new image document each. */
-  convertPdfToImages: (documentId: string, format: 'jpeg' | 'png') => Promise<number>;
+  convertPdfToImages: (documentId: string, format: 'jpeg' | 'png') => Promise<CreatedDocuments>;
   /** Extracts a PDF's text layer into a new text/Markdown document. */
-  exportPdfText: (documentId: string, format: 'txt' | 'md') => Promise<number>;
+  exportPdfText: (documentId: string, format: 'txt' | 'md') => Promise<CreatedDocuments>;
   /** Resizes+compresses an image to exact dimensions under a byte budget (ai-image-ops.actions.ts). */
   resizeImage: (
     documentId: string,
     width: number,
     height: number,
     maxSizeBytes: number
-  ) => Promise<{ created: number; resultSizeBytes: number; hitQualityFloor: boolean }>;
+  ) => Promise<CreatedDocuments & { resultSizeBytes: number; hitQualityFloor: boolean }>;
   /** Applies an image filter preset, saving a new copy. */
   enhanceImage: (
     documentId: string,
     preset: 'grayscale' | 'bw' | 'enhance' | 'invert'
-  ) => Promise<number>;
+  ) => Promise<CreatedDocuments>;
   /** OCRs a document into its search text; resolves the character count only (never the text). */
   runOcr: (documentId: string) => Promise<number>;
   /** Loads a skill's tools into the chat and returns its usage rules (ai-skills.actions.ts). */

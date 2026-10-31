@@ -12,15 +12,14 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
-import type { AiToolContext } from './ai-tools.actions';
+import type { AiToolContext, CreatedDocuments } from './ai-tools.actions';
 
 /** Mirrors `FILTER_PRESETS` in image-engine/services/image-filters.ts. */
 const filterPresetSchema = z.enum(['grayscale', 'bw', 'enhance', 'invert']);
 
 export type AiFilterPreset = z.infer<typeof filterPresetSchema>;
 
-export interface ResizeImageResult {
-  created: number;
+export interface ResizeImageResult extends CreatedDocuments {
   resultSizeBytes: number;
   /** True when even the lowest quality exceeded the size budget. */
   hitQualityFloor: boolean;
@@ -59,8 +58,7 @@ export const aiImageOpsActions = {
     handler: (
       args: { documentId: string; preset: AiFilterPreset },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.enhanceImage(args.documentId, args.preset).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> => ctx.enhanceImage(args.documentId, args.preset),
   }),
 
   runOcr: defineAction({

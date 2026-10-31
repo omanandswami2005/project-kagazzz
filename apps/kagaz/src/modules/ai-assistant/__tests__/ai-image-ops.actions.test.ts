@@ -7,7 +7,7 @@ describe('aiImageOpsActions', () => {
   it('resizeImage converts the KB budget to bytes and forwards the result', async () => {
     const resizeImage = vi
       .fn()
-      .mockResolvedValue({ created: 1, resultSizeBytes: 40_000, hitQualityFloor: false });
+      .mockResolvedValue({ created: 1, documents: [], resultSizeBytes: 40_000, hitQualityFloor: false });
     const out = await aiImageOpsActions.resizeImage.handler(
       { documentId: 'd-1', width: 200, height: 230, maxSizeKb: 50 },
       { resizeImage } as unknown as AiToolContext
@@ -28,13 +28,13 @@ describe('aiImageOpsActions', () => {
 
   it('enhanceImage only accepts known presets', async () => {
     expect(aiImageOpsActions.enhanceImage.args.safeParse({ documentId: 'd', preset: 'sepia' }).success).toBe(false);
-    const enhanceImage = vi.fn().mockResolvedValue(1);
+    const enhanceImage = vi.fn().mockResolvedValue({ created: 1, documents: [] });
     const out = await aiImageOpsActions.enhanceImage.handler(
       { documentId: 'd-1', preset: 'bw' },
       { enhanceImage } as unknown as AiToolContext
     );
     expect(enhanceImage).toHaveBeenCalledWith('d-1', 'bw');
-    expect(out).toEqual({ created: 1 });
+    expect(out).toEqual({ created: 1, documents: [] });
   });
 
   it('runOcr returns only a character count, never text', async () => {

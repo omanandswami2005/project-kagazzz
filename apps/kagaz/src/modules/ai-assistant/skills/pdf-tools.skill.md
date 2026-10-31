@@ -2,7 +2,7 @@
 name: pdf-tools
 description: Merge, split, compress and watermark PDFs; turn a PDF into images or text.
 triggers: pdf, merge, combine, split, compress, shrink, watermark, page, pages, पीडीएफ, मर्ज, मिला, बांट, छोटा
-tools: ai.mergeDocuments, ai.splitDocument, ai.compressDocument, ai.watermarkDocument, ai.convertPdfToImages, ai.exportPdfText
+tools: ai.mergeDocuments, ai.splitDocument, ai.compressDocument, ai.watermarkDocument, ai.convertPdfToImages, ai.exportPdfText, tools.openPdfTools
 ---
 PDF operations. Every tool saves a NEW document and never changes the original.
 

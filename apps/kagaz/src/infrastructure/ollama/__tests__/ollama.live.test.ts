@@ -47,19 +47,20 @@ async function runTurn(message: string): Promise<{ calls: Call[]; reply: string;
   const skills = new SkillController(new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)), engine);
   skills.sync();
   const calls: Call[] = [];
-  const created = { n: 0 };
+  const made = (): Promise<{ created: number; documents: DocumentSummary[] }> =>
+    Promise.resolve({ created: 1, documents: [{ ...DOCS[0], id: `new-${calls.length}`, name: 'Result.pdf' }] });
   const ctx = {
     listDocuments: () => Promise.resolve(DOCS),
     searchDocuments: (q: string) => Promise.resolve(DOCS.filter((d) => d.name.toLowerCase().includes(q.toLowerCase().split(' ')[0]))),
-    mergeDocuments: () => Promise.resolve(++created.n),
-    splitDocument: () => Promise.resolve(++created.n),
-    compressDocument: () => Promise.resolve(++created.n),
-    watermarkDocument: () => Promise.resolve(++created.n),
-    convertImagesToPdf: () => Promise.resolve(++created.n),
-    convertPdfToImages: () => Promise.resolve(++created.n),
-    exportPdfText: () => Promise.resolve(++created.n),
-    resizeImage: () => Promise.resolve({ created: 1, resultSizeBytes: 40_000, hitQualityFloor: false }),
-    enhanceImage: () => Promise.resolve(1),
+    mergeDocuments: made,
+    splitDocument: made,
+    compressDocument: made,
+    watermarkDocument: made,
+    convertImagesToPdf: made,
+    convertPdfToImages: made,
+    exportPdfText: made,
+    resizeImage: () => made().then((r) => ({ ...r, resultSizeBytes: 40_000, hitQualityFloor: false })),
+    enhanceImage: made,
     runOcr: () => Promise.resolve(100),
     loadSkill: (name: string) => skills.load(name),
     setTheme: () => undefined,

@@ -24,7 +24,7 @@ import { useDocumentOcr } from '@/modules/document-vault/hooks/useDocumentOcr';
 import { useImageEnhancement } from '@/modules/document-vault/hooks/useImageEnhancement';
 import { useResizeCompress } from '@/modules/document-vault/hooks/useResizeCompress';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
-import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
+import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-tools.actions';
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
@@ -68,6 +68,21 @@ function requireSaved(count: number, opName: string): number {
     throw new Error(`${opName} did not produce a document`);
   }
   return count;
+}
+
+/**
+ * Runs a tool operation and reports which vault documents it created, by
+ * diffing the vault before and after. The pdf-engine and image hooks the AI
+ * tools reuse return only a count (their UI callers need nothing more), so
+ * this is how a tool result gets real ids/names for chat result cards and for
+ * the model to chain steps — without changing those hooks. Tool calls run one
+ * at a time, so the diff is unambiguous.
+ */
+export async function trackCreated(documentDao: DocumentDao, run: () => Promise<number>): Promise<CreatedDocuments> {
+  const before = new Set((await documentDao.findAll()).map((d) => d.id));
+  const created = await run();
+  const documents = (await documentDao.findAll()).filter((d) => !before.has(d.id)).map(toDocumentSummary);
+  return { created, documents };
 }
 
 /**
@@ -184,54 +199,57 @@ export function useChat(): UseChatResult {
       startQuickNote: (): void => router.push('/quick-notes?new=1', 'forward', 'push'),
       openSettings: (): void => router.push('/settings', 'forward', 'push'),
       openPdfTools: (): void => router.push('/pdf-tools', 'forward', 'push'),
-      mergeDocuments: async (documentIds): Promise<number> => {
+      mergeDocuments: async (documentIds): Promise<CreatedDocuments> => {
         const docs = await requireDocuments(documentDao, documentIds);
-        return requireSaved(await mergePdfs(docs), 'Merge');
+        return trackCreated(documentDao, async () => requireSaved(await mergePdfs(docs), 'Merge'));
       },
-      splitDocument: async (documentId, ranges): Promise<number> => {
+      splitDocument: async (documentId, ranges): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
         // Model-facing ranges are 1-indexed inclusive; PageRange is 0-indexed.
         const zeroIndexed = ranges.map(({ start, end }) => ({ start: start - 1, end: end - 1 }));
-        return requireSaved(await splitPdf(doc, zeroIndexed), 'Split');
+        return trackCreated(documentDao, async () => requireSaved(await splitPdf(doc, zeroIndexed), 'Split'));
       },
-      compressDocument: async (documentId, quality): Promise<number> => {
+      compressDocument: async (documentId, quality): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return requireSaved(await compressPdf(doc, quality), 'Compress');
+        return trackCreated(documentDao, async () => requireSaved(await compressPdf(doc, quality), 'Compress'));
       },
-      watermarkDocument: async (documentId, text): Promise<number> => {
+      watermarkDocument: async (documentId, text): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return requireSaved(await watermarkPdf(doc, text), 'Watermark');
+        return trackCreated(documentDao, async () => requireSaved(await watermarkPdf(doc, text), 'Watermark'));
       },
-      convertImagesToPdf: async (documentIds): Promise<number> => {
+      convertImagesToPdf: async (documentIds): Promise<CreatedDocuments> => {
         const docs = await requireDocuments(documentDao, documentIds);
-        return requireSaved(await imagesToPdf(docs), 'Images-to-PDF');
+        return trackCreated(documentDao, async () => requireSaved(await imagesToPdf(docs), 'Images-to-PDF'));
       },
-      convertPdfToImages: async (documentId, format): Promise<number> => {
+      convertPdfToImages: async (documentId, format): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images');
+        return trackCreated(documentDao, async () => requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images'));
       },
-      exportPdfText: async (documentId, format): Promise<number> => {
+      exportPdfText: async (documentId, format): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return requireSaved(await exportPdfText(doc, format), 'Text export');
+        return trackCreated(documentDao, async () => requireSaved(await exportPdfText(doc, format), 'Text export'));
       },
       resizeImage: async (documentId, width, height, maxSizeBytes): ReturnType<AiToolContext['resizeImage']> => {
         const doc = await requireDocument(documentDao, documentId);
-        const outcome = await resizeCompressRun(doc, { width, height, maxSizeBytes });
-        if (!outcome.saved) {
-          throw new Error('Resize did not produce a document');
-        }
-        return {
-          created: 1,
-          resultSizeBytes: outcome.resultSizeBytes,
-          hitQualityFloor: outcome.hitQualityFloor,
-        };
+        let outcome: Awaited<ReturnType<typeof resizeCompressRun>> | null = null;
+        const { created, documents } = await trackCreated(documentDao, async () => {
+          outcome = await resizeCompressRun(doc, { width, height, maxSizeBytes });
+          if (!outcome.saved) {
+            throw new Error('Resize did not produce a document');
+          }
+          return 1;
+        });
+        const result = outcome as unknown as { resultSizeBytes: number; hitQualityFloor: boolean };
+        return { created, documents, resultSizeBytes: result.resultSizeBytes, hitQualityFloor: result.hitQualityFloor };
       },
-      enhanceImage: async (documentId, preset): Promise<number> => {
+      enhanceImage: async (documentId, preset): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        if (!(await applyFilter(doc, preset))) {
-          throw new Error('Enhance did not produce a document');
-        }
-        return 1;
+        return trackCreated(documentDao, async () => {
+          if (!(await applyFilter(doc, preset))) {
+            throw new Error('Enhance did not produce a document');
+          }
+          return 1;
+        });
       },
       runOcr: async (documentId): Promise<number> => {
         const doc = await requireDocument(documentDao, documentId);
@@ -241,7 +259,7 @@ export function useChat(): UseChatResult {
         }
         return text.length;
       },
-      loadSkill: (name) => skills.load(name),
+      loadSkill: (name): ReturnType<AiToolContext['loadSkill']> => skills.load(name),
       // Bug-audit fix: settings.actions.ts's setTheme/setLanguage/
       // setSwipeAction were never registered into aiToolRegistry at all —
       // saying "dark mode" or "switch to hindi" to the assistant silently

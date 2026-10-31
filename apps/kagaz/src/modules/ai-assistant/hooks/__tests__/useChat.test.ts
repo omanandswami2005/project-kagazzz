@@ -6,7 +6,7 @@ import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { FakeDb } from '@/test/fake-db';
 import { aiToolRegistry } from '../../services/ai-tool-registry';
-import { useChat } from '../useChat';
+import { trackCreated, useChat } from '../useChat';
 
 vi.mock('@/app/providers/DatabaseProvider', () => ({ useDatabase: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
@@ -440,7 +440,7 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       expect.objectContaining({ id: 'd-1' }),
       expect.objectContaining({ id: 'd-1' }),
     ]);
-    expect(result).toEqual({ ok: true, data: { created: 1 } });
+    expect(result).toEqual({ ok: true, data: { created: 1, documents: [] } });
   });
 
   it('splitDocument converts 1-indexed inclusive ranges to 0-indexed before calling pdfEngine.splitPdf', async () => {
@@ -458,7 +458,7 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       expect.objectContaining({ id: 'd-1' }),
       [{ start: 0, end: 2 }]
     );
-    expect(result).toEqual({ ok: true, data: { created: 2 } });
+    expect(result).toEqual({ ok: true, data: { created: 2, documents: [] } });
   });
 
   it('compressDocument/watermarkDocument/convertImagesToPdf/convertPdfToImages/exportPdfText all forward correctly', async () => {
@@ -473,25 +473,25 @@ describe('useChat document-op tools (F-14 document operations)', () => {
 
     expect(await dispatch('ai.compressDocument', { documentId: 'd-1', quality: 'low' })).toEqual({
       ok: true,
-      data: { created: 1 },
+      data: { created: 1, documents: [] },
     });
     expect(pdfEngine.compressPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'low');
 
     expect(await dispatch('ai.watermarkDocument', { documentId: 'd-1', text: 'DRAFT' })).toEqual({
       ok: true,
-      data: { created: 1 },
+      data: { created: 1, documents: [] },
     });
     expect(pdfEngine.watermarkPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'DRAFT');
 
     expect(await dispatch('ai.convertImagesToPdf', { documentIds: ['d-1'] })).toEqual({
       ok: true,
-      data: { created: 1 },
+      data: { created: 1, documents: [] },
     });
     expect(pdfEngine.imagesToPdf).toHaveBeenCalledWith([expect.objectContaining({ id: 'd-1' })]);
 
     expect(await dispatch('ai.convertPdfToImages', { documentId: 'd-1', format: 'png' })).toEqual({
       ok: true,
-      data: { created: 4 },
+      data: { created: 4, documents: [] },
     });
     expect(pdfEngine.pdfToImages).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), {
       format: 'png',
@@ -499,7 +499,7 @@ describe('useChat document-op tools (F-14 document operations)', () => {
 
     expect(await dispatch('ai.exportPdfText', { documentId: 'd-1', format: 'md' })).toEqual({
       ok: true,
-      data: { created: 1 },
+      data: { created: 1, documents: [] },
     });
     expect(pdfEngine.exportPdfText).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'md');
   });
@@ -777,5 +777,23 @@ describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () =>
     const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
     expect(parsed.ok).toBe(false);
     expect(parsed.code).toBe('AGENT_E_TIMEOUT');
+  });
+});
+
+describe('trackCreated (document ids for tool results)', () => {
+  const row = (id: string): never => ({ id, name: `${id}.pdf`, fileType: 'pdf', filePath: `documents/${id}.pdf`, fileSize: 10 }) as never;
+
+  it('reports exactly the documents that appeared while the operation ran', async () => {
+    const findAll = vi.fn().mockResolvedValueOnce([row('a')]).mockResolvedValueOnce([row('a'), row('b'), row('c')]);
+    const out = await trackCreated({ findAll } as never, () => Promise.resolve(2));
+    expect(out.created).toBe(2);
+    expect(out.documents.map((d) => d.id)).toEqual(['b', 'c']);
+    expect(out.documents[0]).toMatchObject({ id: 'b', name: 'b.pdf', fileType: 'pdf' });
+  });
+
+  it('reports no documents when nothing new appeared, and propagates a failing operation', async () => {
+    const same = vi.fn().mockResolvedValue([row('a')]);
+    expect((await trackCreated({ findAll: same } as never, () => Promise.resolve(0))).documents).toEqual([]);
+    await expect(trackCreated({ findAll: same } as never, () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
   });
 });
