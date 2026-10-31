@@ -99,7 +99,7 @@ export interface AiToolContext {
   /** OCRs a document into its search text; resolves the character count only (never the text). */
   runOcr: (documentId: string) => Promise<number>;
   /** Loads a skill's tools into the chat and returns its usage rules (ai-skills.actions.ts). */
-  loadSkill: (name: string) => { loaded: string; tools: string[]; rules: string };
+  loadSkill: (name: string) => { loaded: string; tools: string[]; rules: string; next: string };
   /** Applies (and persists) the colour theme (ai-settings.actions.ts). */
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   /** Switches (and persists) the UI language (ai-settings.actions.ts). */

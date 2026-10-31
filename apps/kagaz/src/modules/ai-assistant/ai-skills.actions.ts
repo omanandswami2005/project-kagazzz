@@ -16,7 +16,7 @@ export const aiSkillActions = {
     handler: (
       args: { name: string },
       ctx: AiToolContext
-    ): Promise<{ loaded: string; tools: string[]; rules: string }> =>
+    ): Promise<{ loaded: string; tools: string[]; rules: string; next: string }> =>
       // Via a promise so an unknown-skill throw becomes an ActionResult error, not a sync exception.
       Promise.resolve().then(() => ctx.loadSkill(args.name)),
   }),

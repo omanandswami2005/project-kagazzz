@@ -19,7 +19,7 @@ import {
 } from './tool-loop-engine';
 
 export interface CloudChatEngineOptions extends ToolLoopOptions {
-  /** Sampling temperature; low keeps tool selection consistent. Default 0.2. */
+  /** Sampling temperature. Default 0: tool selection must be as repeatable as the model allows. */
   temperature?: number;
   fetchImpl?: FetchLike;
 }
@@ -89,7 +89,7 @@ export class CloudChatEngine extends ToolLoopEngine {
       {
         messages: history.map(toWire),
         ...(tools.length > 0 && { tools }),
-        temperature: this.cloud.temperature ?? 0.2,
+        temperature: this.cloud.temperature ?? 0,
       },
       this.cloud.fetchImpl
     )) {

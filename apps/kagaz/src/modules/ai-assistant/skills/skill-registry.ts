@@ -74,7 +74,7 @@ export function coreToolIds(allToolIds: string[], skills: Skill[] = SKILLS): str
 /** One line per skill for the system prompt, so the model knows what it can load. */
 export function skillCatalog(skills: Skill[] = SKILLS): string {
   return [
-    'You do NOT have the tools below yet. They are grouped into skills and appear only after you load the skill. When the user asks for something one of these skills covers, call ai.loadSkill with that skill name FIRST (before replying or asking anything), then use its tools:',
+    'Some tools are grouped into skills and only appear in your tool list once the skill is loaded. If you need a tool that is not in your list, call ai.loadSkill with the matching skill name (before replying or asking anything), then immediately carry on with the user\'s request using the tools it unlocks. Skills:',
     ...skills.map((s) => `- ${s.name}: ${s.description}`),
   ].join('\n');
 }

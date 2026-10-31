@@ -28,14 +28,20 @@ export class SkillController {
   }
 
   /** Model-driven load (`ai.loadSkill`). */
-  load(name: string): { loaded: string; tools: string[]; rules: string } {
+  load(name: string): { loaded: string; tools: string[]; rules: string; next: string } {
     const skill = getSkill(name);
     if (!skill) {
       throw new Error(`Unknown skill "${name}". Available: ${SKILLS.map((s) => s.name).join(', ')}`);
     }
     this.session.activate([name]);
     this.sync();
-    return { loaded: skill.name, tools: skill.tools, rules: skill.body };
+    return {
+      loaded: skill.name,
+      tools: skill.tools,
+      rules: skill.body,
+      // Models tend to stop and chat after a "load" call; say plainly that the request is not finished.
+      next: "The skill is loaded. Now carry out the user's original request with these tools: search for the documents yourself, then call the action — do not ask the user anything you can look up.",
+    };
   }
 
   /** A JSON error for a tool the model may not call yet, or null when it is allowed. */
