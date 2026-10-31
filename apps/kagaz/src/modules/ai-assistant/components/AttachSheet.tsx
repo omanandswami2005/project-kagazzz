@@ -52,19 +52,21 @@ export function AttachSheet({
           <Icon name="Upload" size={16} aria-hidden /> {t('attach.upload_new')}
         </Button>
         <p className="kg-chat-attach__hint">{t('attach.pick_hint')}</p>
-        <PdfDocPicker
-          documents={documents}
-          multi
-          selectedIds={selectedIds}
-          onChange={setSelectedIds}
-          emptyText={t('attach.empty')}
-          idPrefix="ai.chat.attach-picker"
-        />
-        {lockedCount > 0 && (
-          <p className="kg-chat-attach__hint" data-agent-id="ai.chat.attach-locked-hint">
-            {t('attach.locked_hint', { count: lockedCount })}
-          </p>
-        )}
+        <div className="kg-chat-attach__scroll">
+          <PdfDocPicker
+            documents={documents}
+            multi
+            selectedIds={selectedIds}
+            onChange={setSelectedIds}
+            emptyText={t('attach.empty')}
+            idPrefix="ai.chat.attach-picker"
+          />
+          {lockedCount > 0 && (
+            <p className="kg-chat-attach__hint" data-agent-id="ai.chat.attach-locked-hint">
+              {t('attach.locked_hint', { count: lockedCount })}
+            </p>
+          )}
+        </div>
         <Button
           variant="primary"
           disabled={selectedIds.length === 0}

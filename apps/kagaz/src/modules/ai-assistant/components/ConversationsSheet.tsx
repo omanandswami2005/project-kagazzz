@@ -40,7 +40,7 @@ export function ConversationsSheet({
         {conversations.length === 0 ? (
           <p className="kg-ai-settings__hint">{t('history.empty')}</p>
         ) : (
-          <ul className="kg-chat__history-list">
+          <ul className="kg-chat__history-list kg-chat__scroll">
             {conversations.map((c) => (
               <li
                 key={c.id}

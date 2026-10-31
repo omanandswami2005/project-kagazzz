@@ -163,11 +163,30 @@
   gap: var(--space-2);
 }
 
+/* Sheet layout: title + action stay put, only the list scrolls, the confirm button is always reachable. */
 .kg-chat-attach {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  height: 100%;
+  min-height: 0;
   padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.kg-chat-attach__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Fallback if the modal wrapper gives no definite height: the list never outgrows the screen. */
+  max-height: 48vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kg-chat-attach > button {
+  flex: 0 0 auto;
 }
 
 .kg-chat-attach__title {
@@ -369,7 +388,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  height: 100%;
+  min-height: 0;
   padding: var(--space-4);
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.kg-chat__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 55vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .kg-chat__history-head {
