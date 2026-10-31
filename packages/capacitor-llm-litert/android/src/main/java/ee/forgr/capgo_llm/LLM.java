@@ -238,7 +238,7 @@ public class LLM {
      * "null" or a bare native message is useless in a bug report. Include the exception type and the root
      * cause (native init failures usually carry the real reason one level down).
      */
-    private static String describeFailure(Throwable error) {
+    static String describeFailure(Throwable error) {
         StringBuilder out = new StringBuilder(error.getClass().getSimpleName());
         if (error.getMessage() != null) {
             out.append(": ").append(error.getMessage());

@@ -73,6 +73,13 @@ export interface LLMPlugin {
   downloadModel(options: DownloadModelOptions): Promise<DownloadModelResult>;
 
   /**
+   * Embeds texts with an EmbeddingGemma `.litertlm` file via the LiteRT-LM EmbeddingEngine
+   * (Android, CPU). The engine is created lazily on first call. Kagaz addition.
+   * @returns L2-normalised vectors, one per text, in input order
+   */
+  embedTexts(options: EmbedTextsOptions): Promise<EmbedTextsResult>;
+
+  /**
    * Adds a listener for text received from AI
    * @param eventName - Event name 'textFromAi'
    * @param listenerFunc - Callback function for text events
@@ -222,6 +229,8 @@ export interface DownloadModelOptions {
    * Expected size in bytes. Used for progress when the server sends no Content-Length (Kagaz addition).
    */
   expectedBytes?: number;
+  /** Echoed on this download's `downloadProgress` events so concurrent downloads can be told apart (Kagaz addition). */
+  tag?: string;
   /** URL of the model file to download */
   url: string;
   /** Optional: URL of a companion file for legacy model formats */
@@ -246,6 +255,8 @@ export interface DownloadModelResult {
 export interface DownloadProgressEvent {
   /** Percentage of download completed (0-100) */
   progress: number;
+  /** The `tag` the download was started with, if any (Kagaz addition). */
+  tag?: string;
   /** Total bytes to download */
   totalBytes?: number;
   /** Bytes downloaded so far */
@@ -289,4 +300,17 @@ export interface ModelOptions {
    * Not present upstream. Android (LiteRT-LM backend) only; ignored elsewhere.
    */
   tools?: ToolDescriptor[];
+}
+
+/** Options for {@link LLMPlugin.embedTexts}. */
+export interface EmbedTextsOptions {
+  /** Absolute path of the EmbeddingGemma `.litertlm` file. */
+  path: string;
+  /** Texts to embed (keep each under ~512 tokens). */
+  texts: string[];
+}
+
+/** Result of {@link LLMPlugin.embedTexts}. */
+export interface EmbedTextsResult {
+  embeddings: number[][];
 }

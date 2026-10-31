@@ -183,6 +183,9 @@ public class LLMPlugin extends Plugin {
         String companionUrl = call.getString("companionUrl");
         String filename = call.getString("filename");
         final long expectedBytes = call.getLong("expectedBytes", 0L);
+        // Kagaz addition: lets a second download (the search model) report progress without
+        // driving the chat model's progress bar. Echoed on every downloadProgress event.
+        final String tag = call.getString("tag");
 
         if (url == null) {
             call.reject("url is required");
@@ -206,6 +209,9 @@ public class LLMPlugin extends Plugin {
                 downloadFile(url, modelFile, expectedBytes, (progress) -> {
                     JSObject event = new JSObject();
                     event.put("progress", progress);
+                    if (tag != null) {
+                        event.put("tag", tag);
+                    }
                     notifyListeners("downloadProgress", event);
                 });
 
@@ -297,6 +303,95 @@ public class LLMPlugin extends Plugin {
     }
 
     // --- Kagaz fork additions below — none of this exists upstream. ---
+
+    // --- Search model (EmbeddingGemma) ---------------------------------------------------------
+
+    /** Largest input bucket in the EmbeddingGemma .litertlm (64/128/256/512 tokens). */
+    private static final int EMBEDDING_MAX_INPUT = 512;
+
+    private final java.util.concurrent.ExecutorService embedExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+    private com.google.ai.edge.litertlm.EmbeddingEngine embeddingEngine;
+    private String embeddingEnginePath;
+
+    /** Lazily creates the engine on first use (CPU: keeps the GPU free for the chat model). Runs on embedExecutor. */
+    private com.google.ai.edge.litertlm.EmbeddingEngine embeddingEngineFor(String path) {
+        if (embeddingEngine != null && path.equals(embeddingEnginePath)) {
+            return embeddingEngine;
+        }
+        if (embeddingEngine != null) {
+            embeddingEngine.close();
+            embeddingEngine = null;
+        }
+        java.io.File file = new java.io.File(path);
+        if (!file.isFile() || file.length() == 0) {
+            throw new IllegalStateException("Search model file is missing or empty: " + path);
+        }
+        com.google.ai.edge.litertlm.EmbeddingEngine engine = new com.google.ai.edge.litertlm.EmbeddingEngine(
+            new com.google.ai.edge.litertlm.EmbeddingEngineConfig(
+                path,
+                new com.google.ai.edge.litertlm.Backend.CPU(),
+                null,
+                null,
+                getContext().getCacheDir().getAbsolutePath(),
+                null,
+                EMBEDDING_MAX_INPUT
+            )
+        );
+        engine.initialize();
+        embeddingEngine = engine;
+        embeddingEnginePath = path;
+        return engine;
+    }
+
+    /** Embeds each text with EmbeddingGemma; returns L2-normalised 768-d vectors in input order. */
+    @PluginMethod
+    public void embedTexts(PluginCall call) {
+        final String path = call.getString("path");
+        final JSArray texts = call.getArray("texts");
+        if (path == null || texts == null) {
+            call.reject("path and texts are required");
+            return;
+        }
+        embedExecutor.execute(() -> {
+            try {
+                com.google.ai.edge.litertlm.EmbeddingEngine engine = embeddingEngineFor(path);
+                java.util.List<java.util.List<com.google.ai.edge.litertlm.InputData>> batch = new java.util.ArrayList<>();
+                for (int i = 0; i < texts.length(); i++) {
+                    java.util.List<com.google.ai.edge.litertlm.InputData> one = new java.util.ArrayList<>();
+                    one.add(new com.google.ai.edge.litertlm.InputData.Text(texts.getString(i)));
+                    batch.add(one);
+                }
+                java.util.List<com.google.ai.edge.litertlm.EmbeddingResponse> responses = engine.computeEmbeddingBatch(
+                    batch,
+                    new com.google.ai.edge.litertlm.EmbeddingOptions(Boolean.TRUE)
+                );
+                JSArray vectors = new JSArray();
+                for (com.google.ai.edge.litertlm.EmbeddingResponse response : responses) {
+                    JSArray vector = new JSArray();
+                    for (float value : response.getEmbedding()) {
+                        vector.put((double) value);
+                    }
+                    vectors.put(vector);
+                }
+                JSObject ret = new JSObject();
+                ret.put("embeddings", vectors);
+                call.resolve(ret);
+            } catch (Throwable error) {
+                call.reject("Embedding failed", LLM.describeFailure(error));
+            }
+        });
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        embedExecutor.execute(() -> {
+            if (embeddingEngine != null) {
+                embeddingEngine.close();
+                embeddingEngine = null;
+            }
+        });
+        super.handleOnDestroy();
+    }
 
     @PluginMethod
     public void sha256File(PluginCall call) {
