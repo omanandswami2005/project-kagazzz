@@ -60,6 +60,13 @@ export function ChatPage(): ReactNode {
             <IonBackButton defaultHref="/vault" data-agent-id="ai.chat.back" />
           </IonButtons>
           <IonTitle>{t('title')}</IonTitle>
+          {ai.onlineAvailable && (
+            <IonButtons slot="end">
+              <span className="kg-chat__mode" data-agent-id="ai.chat.mode-badge" data-agent-state={ai.mode}>
+                {ai.mode === 'online' ? t('mode.badge_online') : t('mode.badge_offline')}
+              </span>
+            </IonButtons>
+          )}
         </IonToolbar>
       </IonHeader>
 
@@ -67,7 +74,13 @@ export function ChatPage(): ReactNode {
         {gated ? (
           <div className="kg-chat__gate" data-agent-id="ai.chat.gate">
             <Icon name="Sparkles" size={32} aria-hidden />
-            <p>{ai.engine === 'ollama' ? t('lifecycle.intro_server', { url: ai.serverUrl }) : t('lifecycle.intro')}</p>
+            <p>
+              {ai.engine === 'cloud'
+                ? t('lifecycle.intro_cloud')
+                : ai.engine === 'ollama'
+                  ? t('lifecycle.intro_server', { url: ai.serverUrl })
+                  : t('lifecycle.intro')}
+            </p>
             <Button
               variant="primary"
               onClick={() => router.push('/ai-assistant')}

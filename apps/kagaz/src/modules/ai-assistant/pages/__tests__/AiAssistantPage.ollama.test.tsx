@@ -10,7 +10,8 @@ import { AiAssistantPage } from '../AiAssistantPage';
 const ollama = vi.hoisted(() => ({ setTools: vi.fn(), checkReady: vi.fn() }));
 
 vi.mock('@/modules/ai-assistant/services/chat-engine.registry', () => ({
-  getOllamaEngine: () => ollama,
+  getOllamaEngine: () => ({ ...ollama, kind: 'ollama' }),
+  getServerEngine: () => ({ ...ollama, kind: 'ollama' }),
   getChatEngine: () => ollama,
 }));
 vi.mock('@/infrastructure/ollama', () => ({

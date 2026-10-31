@@ -65,12 +65,9 @@ export function isOcrableType(fileType: string): boolean {
   return OCR_EXTENSIONS.has(fileType.toLowerCase());
 }
 
-/** Opt-in vision-model fallback (Gemma via Ollama) for platforms without ML Kit; null when off. */
-const visionRecognizer = getConfiguredVisionRecognizer();
-
-/** True when some OCR engine is available: native ML Kit, else the vision fallback. */
+/** True when some OCR engine is available: native ML Kit, else the (mode-dependent) vision fallback. */
 function hasOcrEngine(): boolean {
-  return isOcrSupported() || visionRecognizer !== null;
+  return isOcrSupported() || getConfiguredVisionRecognizer() !== null;
 }
 
 /** Whether OCR can run on this document (an engine is available + image type). */
@@ -94,7 +91,7 @@ export function canExtractText(document: DocumentEntity): boolean {
  * Independent of whether text was already extracted: re-running is the point.
  */
 export function canTranscribeWithVision(document: DocumentEntity): boolean {
-  return visionRecognizer !== null && (isOcrableType(document.fileType) || isPdf(document.fileType));
+  return getConfiguredVisionRecognizer() !== null && (isOcrableType(document.fileType) || isPdf(document.fileType));
 }
 
 /** Which engine to use: `auto` = ML Kit when native, else the vision fallback; `vision` = always Gemma. */
@@ -132,7 +129,7 @@ export function useDocumentOcr(): UseDocumentOcr {
       }
       setRunningId(document.id);
       // One engine decision for this run: Gemma when forced, or as the fallback where ML Kit is absent.
-      const recognizer = visionRecognizer;
+      const recognizer = getConfiguredVisionRecognizer();
       const useVision = recognizer !== null && (forceVision || !isOcrSupported());
       try {
         const lang = locale === 'hi' ? 'hi' : 'en';

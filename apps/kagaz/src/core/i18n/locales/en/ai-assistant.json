@@ -34,9 +34,22 @@
     "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads.",
     "intro_server": "Kagaz AI is using a local Gemma server (Ollama) at {{url}}. Your messages and any document you transcribe are sent to it — this is a demo setup, not on-device.",
     "connect_button": "Connect to Gemma",
-    "disconnect_button": "Disconnect"
+    "disconnect_button": "Disconnect",
+    "intro_cloud": "Online mode: Kagaz AI sends your messages to Google Cloud (Vertex AI). Documents you ask it to transcribe are sent too.",
+    "connect_cloud_button": "Connect to Google Cloud"
   },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."
+  },
+  "mode": {
+    "online_toggle": "Online mode (Google Cloud)",
+    "online_hint": "Online: your messages and any document you transcribe are sent to Google Cloud (Vertex AI).",
+    "offline_hint": "Offline: nothing is sent to Google.",
+    "warning_title": "Send your data to Google Cloud?",
+    "warning_body": "Online mode sends your chat messages — and any document you ask the assistant to read or transcribe — to Google Cloud (Vertex AI) so a larger model can answer. This can include personal information such as ID numbers. Offline mode keeps everything on this device. Turn on online mode?",
+    "warning_confirm": "Turn on online mode",
+    "warning_cancel": "Cancel",
+    "badge_online": "Online",
+    "badge_offline": "Offline"
   }
 }

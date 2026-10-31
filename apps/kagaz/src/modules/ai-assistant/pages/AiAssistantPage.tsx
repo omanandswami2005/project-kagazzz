@@ -15,9 +15,9 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
+import { Alert, Button, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './ai-assistant.css';
@@ -30,7 +30,9 @@ function formatMb(bytes: number): string {
 export function AiAssistantPage(): ReactNode {
   const { t } = useTranslation('ai-assistant');
   const ai = useAi();
-  const server = ai.engine === 'ollama';
+  const server = ai.engine !== 'litert';
+  const cloud = ai.engine === 'cloud';
+  const [confirmOnline, setConfirmOnline] = useState(false);
 
   return (
     <IonPage data-agent-id="ai.settings">
@@ -45,6 +47,36 @@ export function AiAssistantPage(): ReactNode {
 
       <IonContent>
         <main className="kg-ai-settings" data-agent-id="ai.settings.content" data-agent-state={ai.status}>
+          {ai.onlineAvailable && (
+            <div className="kg-ai-settings__mode" data-agent-id="ai.settings.mode">
+              <Toggle
+                enabled={ai.mode === 'online'}
+                onChange={(on) =>
+                  on ? setConfirmOnline(true) : void ai.setMode('offline', AI_TOOL_DESCRIPTORS)
+                }
+                label={t('mode.online_toggle')}
+                agentId="ai.settings.mode-switch"
+              />
+              <p className="kg-ai-settings__hint">
+                {ai.mode === 'online' ? t('mode.online_hint') : t('mode.offline_hint')}
+              </p>
+            </div>
+          )}
+          <Alert
+            isOpen={confirmOnline}
+            header={t('mode.warning_title')}
+            message={t('mode.warning_body')}
+            buttons={[
+              { text: t('mode.warning_cancel'), role: 'cancel' },
+              {
+                text: t('mode.warning_confirm'),
+                handler: () => void ai.setMode('online', AI_TOOL_DESCRIPTORS),
+              },
+            ]}
+            onDidDismiss={() => setConfirmOnline(false)}
+            agentId="ai.settings.mode-warning"
+          />
+
           {ai.status !== 'unsupported' && !server && (
             <div className="kg-ai-settings__gpu-toggle" data-agent-id="ai.settings.gpu-toggle">
               <Toggle
@@ -67,15 +99,23 @@ export function AiAssistantPage(): ReactNode {
           {ai.status === 'not-downloaded' && (
             <div className="kg-ai-settings__center" data-agent-id="ai.settings.download">
               <Icon name="Sparkles" size={32} aria-hidden />
-              <p>{server ? t('lifecycle.intro_server', { url: ai.serverUrl }) : t('lifecycle.intro')}</p>
+              <p>
+                {cloud
+                  ? t('lifecycle.intro_cloud')
+                  : server
+                    ? t('lifecycle.intro_server', { url: ai.serverUrl })
+                    : t('lifecycle.intro')}
+              </p>
               <Button
                 variant="primary"
                 onClick={() => void ai.activate(AI_TOOL_DESCRIPTORS)}
                 agentId={server ? 'ai.settings.connect-button' : 'ai.settings.download-button'}
               >
-                {server
-                  ? t('lifecycle.connect_button')
-                  : t('lifecycle.download_button', { size: formatMb(ai.modelSizeBytes) })}
+                {cloud
+                  ? t('lifecycle.connect_cloud_button')
+                  : server
+                    ? t('lifecycle.connect_button')
+                    : t('lifecycle.download_button', { size: formatMb(ai.modelSizeBytes) })}
               </Button>
               {!server && <p className="kg-ai-settings__hint">{t('lifecycle.wifi_hint')}</p>}
             </div>

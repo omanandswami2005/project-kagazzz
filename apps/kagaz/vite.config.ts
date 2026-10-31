@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { demoCsp } from './vite-plugins/demo-csp';
+import { cloudAiProxy } from './vite-plugins/cloud-ai-proxy';
 import { webSqliteWasm } from './vite-plugins/web-sqlite-wasm';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -34,6 +35,7 @@ export default defineConfig(({ mode }) => {
   if (env.VITE_OLLAMA_URL || env.VITE_CLOUD_AI) {
     plugins.push(webSqliteWasm());
   }
+  plugins.push(cloudAiProxy(Boolean(env.VITE_CLOUD_AI)));
 
   if (mode === 'analyze') {
     plugins.push(

@@ -22,7 +22,8 @@ import {
   MODEL_SIZE_BYTES,
   type LoadResult,
 } from '@/modules/ai-assistant/services/ai-engine.service';
-import { getOllamaEngine } from '@/modules/ai-assistant/services/chat-engine.registry';
+import { getOllamaEngine, getServerEngine } from '@/modules/ai-assistant/services/chat-engine.registry';
+import { getAiMode, isCloudAiConfigured, setAiMode, type AiMode } from '@/infrastructure/cloud-ai';
 import { getOllamaConfig } from '@/infrastructure/ollama';
 
 const logger = log('ai-assistant');
@@ -40,12 +41,21 @@ export interface AiContextValue {
   /** Set only when status === 'ready'. */
   capabilities: LoadResult | null;
   /**
-   * Which engine answers: the on-device native model, or a local Ollama server
-   * (demo builds). For `ollama`, `serverUrl` is where prompts and tool results
-   * are sent — the UI must not claim "nothing leaves your device".
+   * Which engine answers: the on-device native model, a local Ollama server, or
+   * Google Cloud (demo builds). For `ollama`, `serverUrl` is where prompts and
+   * tool results are sent; for `cloud` they go to Google Vertex AI — in both
+   * the UI must not claim "nothing leaves your device".
    */
-  engine: 'litert' | 'ollama';
+  engine: 'litert' | 'ollama' | 'cloud';
   serverUrl: string | null;
+  /** The user's single online/offline switch (persisted). `online` only exists in cloud-enabled builds. */
+  mode: AiMode;
+  onlineAvailable: boolean;
+  /**
+   * Switches mode and, going online, connects straight away. The UI must have
+   * shown the data-sharing warning and got a yes before calling this with `online`.
+   */
+  setMode: (next: AiMode, tools: ToolDescriptor[]) => Promise<void>;
   /** Size of the shipped model — for the Settings "Download (~N MB)" label before download starts. */
   modelSizeBytes: number;
   /**
@@ -88,7 +98,8 @@ function storePreferGpu(value: boolean): void {
 /** Provides AI engine status app-wide. */
 export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   // Demo builds with a local Ollama server work on any platform, not just Android.
-  const supported = useMemo(() => isAiSupported() || getOllamaEngine() !== null, []);
+  const supported = useMemo(() => isAiSupported() || getOllamaEngine() !== null || isCloudAiConfigured(), []);
+  const [mode, setModeState] = useState<AiMode>(getAiMode);
   const [status, setStatus] = useState<AiStatus>(supported ? 'not-downloaded' : 'unsupported');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -122,19 +133,19 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   const activate = useCallback(
     async (tools: ToolDescriptor[]): Promise<void> => {
       setErrorMessage(null);
-      const ollama = getOllamaEngine();
-      if (ollama) {
-        // No download / checksum / local model load: just confirm the server and model are there.
+      const server = getServerEngine();
+      if (server) {
+        // No download / checksum / local model load: just confirm the server (and model) are there.
         setStatus('loading');
         const startedAt = Date.now();
         try {
-          ollama.setTools(tools);
-          await ollama.checkReady();
-          setCapabilities({ backend: 'ollama', loadTimeMs: Date.now() - startedAt });
+          server.setTools(tools);
+          await server.checkReady();
+          setCapabilities({ backend: server.kind === 'cloud' ? 'cloud' : 'ollama', loadTimeMs: Date.now() - startedAt });
           setStatus('ready');
         } catch (error) {
-          logger.warn({ event: 'ai.ollama.not_ready', err: { message: String(error) } });
-          setErrorMessage(error instanceof Error ? error.message : 'Ollama is not available');
+          logger.warn({ event: 'ai.server.not_ready', engine: server.kind, err: { message: String(error) } });
+          setErrorMessage(error instanceof Error ? error.message : 'The AI server is not available');
           setStatus('error');
         }
         return;
@@ -156,9 +167,24 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
     [preferGpu]
   );
 
+  const setMode = useCallback(
+    async (next: AiMode, tools: ToolDescriptor[]): Promise<void> => {
+      setAiMode(next);
+      setModeState(next);
+      setCapabilities(null);
+      setErrorMessage(null);
+      setDownloadProgress(0);
+      setStatus(supported ? 'not-downloaded' : 'unsupported');
+      if (next === 'online') {
+        await activate(tools);
+      }
+    },
+    [activate, supported]
+  );
+
   const remove = useCallback(async (): Promise<void> => {
-    if (getOllamaEngine()) {
-      // Nothing is stored on-device for the Ollama engine.
+    if (getServerEngine()) {
+      // Nothing is stored on-device for a server engine.
       setCapabilities(null);
       setStatus('not-downloaded');
       return;
@@ -186,15 +212,18 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
       downloadProgress,
       errorMessage,
       capabilities,
-      engine: getOllamaEngine() ? 'ollama' : 'litert',
-      serverUrl: getOllamaConfig()?.baseUrl ?? null,
+      engine: getServerEngine()?.kind ?? 'litert',
+      serverUrl: getServerEngine()?.kind === 'ollama' ? (getOllamaConfig()?.baseUrl ?? null) : null,
+      mode,
+      onlineAvailable: isCloudAiConfigured(),
+      setMode,
       modelSizeBytes: MODEL_SIZE_BYTES,
       preferGpu,
       setPreferGpu,
       activate,
       remove,
     }),
-    [status, downloadProgress, errorMessage, capabilities, preferGpu, setPreferGpu, activate, remove]
+    [status, downloadProgress, errorMessage, capabilities, preferGpu, setPreferGpu, activate, remove, mode, setMode]
   );
 
   return <AiContext.Provider value={value}>{children}</AiContext.Provider>;

@@ -24,6 +24,7 @@
   font-size: var(--text-sm);
 }
 
+.kg-ai-settings__mode,
 .kg-ai-settings__gpu-toggle {
   display: flex;
   flex-direction: column;

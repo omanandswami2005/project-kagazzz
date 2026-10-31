@@ -79,3 +79,16 @@
 .kg-chat__composer > :first-child {
   flex: 1;
 }
+
+.kg-chat__mode {
+  margin-inline-end: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-surface-variant, rgba(0, 0, 0, 0.06));
+  font-size: var(--text-xs, 0.75rem);
+}
+
+.kg-chat__mode[data-agent-state='online'] {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+}

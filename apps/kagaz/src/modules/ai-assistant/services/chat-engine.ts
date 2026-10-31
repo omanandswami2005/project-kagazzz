@@ -28,7 +28,7 @@ export interface ChatEngineEvents {
 }
 
 export interface ChatEngine {
-  readonly kind: 'litert' | 'ollama';
+  readonly kind: 'litert' | 'ollama' | 'cloud';
   readonly locality: EngineLocality;
   /**
    * Restricts which tools the model sees (skills, §3.7). Optional: the native

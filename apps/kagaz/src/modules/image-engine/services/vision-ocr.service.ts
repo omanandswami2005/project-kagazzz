@@ -12,6 +12,7 @@
  * the per-document lock gate. Recognized text is never logged.
  */
 import { log } from '@/core/logging';
+import { cloudPost, isOnline } from '@/infrastructure/cloud-ai';
 import { getOllamaConfig, ollamaPost, type FetchLike } from '@/infrastructure/ollama';
 
 const logger = log('image-engine');
@@ -60,8 +61,41 @@ export function createOllamaVisionRecognizer(config: OllamaVisionConfig): ImageT
   };
 }
 
-/** The env-configured recognizer, or null when the fallback is not enabled. */
+/** Gemini on Vertex AI through the demo proxy (online mode) — an image leaves the device for Google Cloud. */
+export function createCloudVisionRecognizer(fetchImpl?: FetchLike): ImageTextRecognizer {
+  return async (image) => {
+    const url = `data:${image.type || 'image/png'};base64,${await toBase64(image)}`;
+    const body = await cloudPost<{ choices?: { message?: { content?: string } }[] }>(
+      '/chat',
+      {
+        temperature: 0,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: PROMPT },
+              { type: 'image_url', image_url: { url } },
+            ],
+          },
+        ],
+      },
+      fetchImpl
+    );
+    const text = (body.choices?.[0]?.message?.content ?? '').trim();
+    logger.info({ event: 'ocr.vision.success', engine: 'cloud', chars: text.length });
+    return text;
+  };
+}
+
+/**
+ * The recognizer for the current mode: Gemini when online, else the local
+ * Ollama model when configured, else null (no fallback in this build).
+ * Resolved per call so flipping the online/offline switch takes effect at once.
+ */
 export function getConfiguredVisionRecognizer(): ImageTextRecognizer | null {
+  if (isOnline()) {
+    return createCloudVisionRecognizer();
+  }
   const config = getOllamaConfig();
   return config ? createOllamaVisionRecognizer({ baseUrl: config.baseUrl, model: config.visionModel }) : null;
 }
