@@ -29,6 +29,7 @@
 - [ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only](#adr-020-client-side-office-interop-pdf--wordexcel--pure-js-permissive-libs-only)
 - [ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)](#adr-021-on-device-ai--litert-lm-supersedes-webllm)
 - [ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)
+- [ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine](#adr-024-on-device-semantic-search--embeddinggemma-via-litert-lm-embeddingengine)
 - [ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy](#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)
 - [Dependency Version Policy](#dependency-version-policy)
 
@@ -1259,6 +1260,18 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
+## ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine
+
+**Status:** Accepted (2026-10-31) · **Device-verified:** NO (built and unit-tested only)
+
+**Decision:** The Android app embeds document text and queries with **EmbeddingGemma-300M** using the `EmbeddingEngine` already present in `litertlm-android` 0.19.0 (CPU backend, 768-d, L2-normalised, 512-token input). The model is an **optional, separate ~330 MB download** (`embeddinggemma_300m.litertlm`) so chat works without it. The plugin gained `embedTexts` (lazy engine on its own executor) and a `tag` on download-progress events so the two downloads cannot drive each other's bars.
+
+**Provenance and licence:** a community conversion (`kasimtmc/embeddinggemma-litertlm`), not an official Google artifact. The URL is pinned to commit `9a66a1cf…`, size and SHA-256 (`1238108b…1136`) are checked after download. Licence: Gemma Terms of Use (not Apache-2.0) — acceptable for the hackathon MVP; needs legal review before a store release.
+
+**Consequences:** vectors are held in memory only, so documents are re-embedded after an app restart (persisted vectors are a follow-up). Backend order: online (Vertex, demo) → Ollama (demo) → on-device. On a phone, scanned PDFs are read by ML Kit OCR, then embedded. Retrieved passages go to the on-device model only, so the metadata-only boundary is not crossed on this path.
+
+**Alternatives rejected:** hashing-trick lexical embeddings (not semantic); a phone→Mac Ollama call (breaks offline-first); `localagents-rag` (Gecko, not EmbeddingGemma).
+
 ## ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy
 
 | | |
@@ -1290,4 +1303,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.5 (ADR-023 online mode on Vertex AI; ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.6 (ADR-024 on-device EmbeddingGemma search; ADR-023 online mode on Vertex AI; ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*

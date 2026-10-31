@@ -260,6 +260,10 @@ One switch in AI settings flips between **offline** (on-device, or a local Ollam
 - **Models:** chat and vision use **Gemma 4 26B on Vertex AI** (`CLOUD_CHAT_MODEL` overrides, e.g. to compare with Gemini). Embeddings use `text-embedding-005` because EmbeddingGemma is not offered on Vertex (checked: 404).
 - **Engine:** `CloudChatEngine` and `OllamaChatEngine` both extend `ToolLoopEngine` and differ only in wire format.
 
+### 3.9 On-device semantic search (added 2026-10-31)
+
+`ai.semanticSearch` finds documents by meaning. On Android it uses EmbeddingGemma-300M through the LiteRT-LM `EmbeddingEngine` (see ADR-024): Settings → AI Assistant → **Search model** downloads it (~330 MB, optional, SHA-256 verified). Until it is downloaded the tool returns an error telling the assistant to ask the user to download it. Document text comes from ML Kit OCR / the PDF text layer; vectors are in memory and rebuilt after restart.
+
 ## 4. Tool Calling System
 
 ### 4.1 Tool Calling Flow
