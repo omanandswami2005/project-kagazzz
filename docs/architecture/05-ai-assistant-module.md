@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/ai-assistant`
 > **Version**: 2.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-10-31 (**ChatEngine seam + demo-only local Ollama/Gemma 4 engine, image tools, lock gate** — §3.6, §4.2.4; earlier: engine switched from WebLLM to LiteRT-LM, §3.0)
+> **Last Updated**: 2026-10-31 (**Gemma 4 everywhere; skills, online mode, GenUI forms, attachments, markdown** — §3.6–§3.8, §4.2.4–§4.2.5; earlier: engine switched from WebLLM to LiteRT-LM, §3.0)
 
 ---
 
@@ -232,6 +232,25 @@ flowchart TD
 **Semantic index (spike, not wired).** `modules/semantic-index/` defines `EmbeddingProvider` and `VectorStore` ports with an Ollama (`embeddinggemma`) adapter and an in-memory cosine store. It is not connected to the assistant or the search bar yet. Retrieving passages into prompts would cross the metadata-only boundary in §11 and needs the security docs, the DPIA and the privacy policy updated first.
 
 ---
+
+### 3.7 Skills — tools on demand (added 2026-10-31)
+
+A small model reads every tool schema on every turn, so the tool list is split into **skills**: `skills/pdf-tools.skill.md`, `image-tools`, `text-extraction`, `app-settings`. Each file is a frontmatter block (name, description, English + Hindi trigger words, the tool ids it unlocks) plus a short usage body. **Core tools** are derived — every registry action no skill claims (search, list, open screens, `ai.loadSkill`, `ai.askUser`) — so the action definitions stay the single source of truth; `skill-registry.test.ts` enforces that every listed tool exists and no tool is in two skills.
+
+- **Router (no model call):** before each send, `matchSkills()` substring-matches the user's text against trigger words and pre-loads the matching skills.
+- **`ai.loadSkill` (fallback):** if the model needs a tool that is not in its list it loads the skill itself.
+- **Session:** loaded skills are sticky (changing the tool list invalidates the server's prompt cache) with a cap of 3, least-recently-used evicted.
+- **Guard:** on engines that can change tools per request (Ollama, cloud) a call to a tool whose skill is not loaded is rejected in code and the error tells the model to load it. The native LiteRT engine fixes its tools when the conversation is created, so it keeps all of them (`ChatEngine.setActiveTools` is optional).
+
+Two lessons recorded so nobody repeats them: (1) a core navigation tool named "open PDF Tools" was a look-alike — asked to compress, the model navigated instead and claimed success; moving it into `pdf-tools` fixed the fallback test. (2) Delivering a skill's *rules* to the model as a standing second system message made tool use **worse** in a controlled test (askUser used 3/3 without the rules, 1/6 with), so only the tools are loaded on demand and the rules stay out of the prompt.
+
+### 3.8 Online mode (demo builds) (added 2026-10-31)
+
+One switch in AI settings flips between **offline** (on-device, or a local Ollama server in demos) and **online** (Google Vertex AI). Turning it on first shows a plain-language warning that messages — and any document the user asks the assistant to read — go to Google Cloud and may contain personal information. The choice persists (`kagaz:ai-mode`); the chat header shows an Online/Offline badge.
+
+- **Transport:** `vite-plugins/cloud-ai-proxy.ts` exposes `/api/ai/{health,chat,embed}` on the *dev server only*, using the developer's gcloud application-default credentials. The page never sees a credential; requests must be same-origin JSON; the model is pinned server-side. The build refuses to include it ([ADR-023](08-tech-stack-decisions.md#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)).
+- **Models:** chat and vision use **Gemma 4 26B on Vertex AI** (`CLOUD_CHAT_MODEL` overrides, e.g. to compare with Gemini). Embeddings use `text-embedding-005` because EmbeddingGemma is not offered on Vertex (checked: 404).
+- **Engine:** `CloudChatEngine` and `OllamaChatEngine` both extend `ToolLoopEngine` and differ only in wire format.
 
 ## 4. Tool Calling System
 
@@ -717,6 +736,14 @@ Three tools reuse the same document-vault hooks the UI uses (`ai-image-ops.actio
 **Lock gate.** Every tool that takes a document id resolves it through one function (`requireDocument` in `useChat.ts`), which refuses a locked document before anything runs. The pdf-engine and image hooks these tools reuse do not check the per-document lock themselves, so without this the model could process a locked file with no biometric prompt. (Before 2026-10-31 only list/search filtered locked documents; the id-based PDF tools did not.)
 
 ---
+
+### 4.2.5 GenUI forms, attachments, result cards, markdown (added 2026-10-31)
+
+- **`ai.askUser`** lets the model put a form (1–3 fields: choice, multi, number, text, toggle, date, document) in front of the user instead of asking in prose. The call **ends the model's turn**: the tool returns `waiting_for_user`, the form is stored as an assistant message part (`ai_messages.parts_json`, migration 007) and rendered with validation; the answer goes back as the user's *next message* (a readable summary plus an `answer` part that marks the form answered, so a reloaded form cannot be submitted twice). Ending the turn avoids a pending call that the native bridge would time out after 30 s. The schema is deliberately flat (a `type` enum, not a tagged union) because simple JSON Schema is what every function-calling model handles reliably. Forms that ask for passwords, OTPs, PINs or ID/card numbers are refused; model-written text is rendered as plain text.
+- **Attachments:** the **+** button attaches vault documents (or uploads new ones through the existing upload sheet). Locked documents are never offered. The model receives a metadata-only line per file (`[Attached: "name" (id …, type)]`) so it never needs to ask for an id; `toModelText()` is the one function used for live sends and history replay.
+- **Result cards:** a tool that reports `created > 0` produces a persisted card with an *Open* button (search/list results also carry a `documents` list and must not produce a card).
+- **Markdown:** assistant, streaming and user bubbles render a safe subset through a React-element renderer (no HTML injection; http/https/mailto links only). The message box is a growing multi-line textarea (Enter sends, Shift+Enter newline, IME-safe).
+- **Known weakness (live-tested):** the model sometimes asks in plain text instead of using the form, and may do only the first part of a two-part request.
 
 ## 5. Chat UI Design
 

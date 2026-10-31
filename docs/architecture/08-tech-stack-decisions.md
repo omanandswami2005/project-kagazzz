@@ -29,6 +29,7 @@
 - [ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only](#adr-020-client-side-office-interop-pdf--wordexcel--pure-js-permissive-libs-only)
 - [ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)](#adr-021-on-device-ai--litert-lm-supersedes-webllm)
 - [ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)
+- [ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy](#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -58,6 +59,7 @@
 | 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
 | 020 | Office interop (PDF↔Word/Excel) | **`docx` + SheetJS `xlsx` + `mammoth`** (pure-JS, lazy-loaded) | LibreOffice-WASM, commercial SDKs | ✅ Accepted |
 | 021 | On-Device AI | **LiteRT-LM** (Google AI Edge, forked `@capgo/capacitor-llm` bridge, native tool calling) | WebLLM (ADR-006), Transformers.js, Cloud API | ✅ Accepted |
+| 023 | Online AI mode (demo) | **Gemma 4 26B on Vertex AI** through a same-origin dev proxy; one user switch with a data-sharing warning | Direct browser→Google calls, API keys in the app, Gemini | ✅ Accepted (demo-only) |
 | 022 | Demo AI engine | **Local Ollama (Gemma 4 E2B + EmbeddingGemma)** behind a `ChatEngine` seam; demo builds only | Hosted API (later, with consent), LiteRT on desktop (no Intel-Mac build) | ✅ Accepted (demo-only) |
 
 ---
@@ -1257,6 +1259,23 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
+## ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy
+
+| | |
+|---|---|
+| **Status** | ✅ Accepted — **demo / hackathon builds only** (2026-10-31) |
+| **Supplements** | [ADR-022](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam), [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) |
+
+**Context.** Local Gemma 4 E2B on a CPU-only laptop takes tens of seconds for a first answer, too slow to demo comfortably, and a phone cannot run it unattended on every device. Google serves Gemma 4 (and Gemini) on Vertex AI behind an OpenAI-compatible endpoint, authenticated with the developer's application-default credentials — which must never reach a browser or an APK.
+
+**Decision.** Add a third `ChatEngine` (`CloudChatEngine`) that talks to a **same-origin dev proxy** (`/api/ai/*`, a Vite dev-server plugin) forwarding to Vertex AI. The user gets **one online/offline switch**; turning it on shows a data-sharing warning first. Default online model: **Gemma 4 26B** (`google/gemma-4-26b-a4b-it-maas`), so the app stays one model family; `CLOUD_CHAT_MODEL` overrides it. Vision follows the same model. Embeddings use `text-embedding-005` because EmbeddingGemma is not published on Vertex in this project (404). The browser demo also needs a database, so a demo-only unencrypted sql.js store (pinned `sql.js@1.11.0`, the binary that matches `jeep-sqlite` 2.8.0's bundled glue) is mounted when a demo flag is set.
+
+**Guardrails.** The proxy exists only under `vite serve`; same-origin JSON only; model pinned server-side; bodies never logged; tokens never returned. `vite-plugins/demo-csp.ts` fails any `production` build with `VITE_CLOUD_AI` or `VITE_OLLAMA_URL` set, and only then widens the CSP (`'wasm-unsafe-eval'`, plus the Ollama origin). A real product needs a real backend in the proxy's place, a DPIA update, and per-user consent logging.
+
+**Consequences.** Gemma 4 26B passed the shared live suite 15/16, 14/16, 15/16 across three runs (the failing scenario is a two-part request); Gemini 2.5 Flash scored 14/16 three times, and on form-asking scenarios Gemma did better. Billing goes to the developer's GCP project.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1271,4 +1290,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.4 (ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.5 (ADR-023 online mode on Vertex AI; ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*
