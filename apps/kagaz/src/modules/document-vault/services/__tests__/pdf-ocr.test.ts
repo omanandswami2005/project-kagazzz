@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ocrPdfPages, type PdfOcrDeps } from '../pdf-ocr';
+import { ocrPdfPages, type PdfOcrNativeDeps } from '../pdf-ocr';
 
 /** A tiny blob standing in for a rendered PDF page. */
 const page = (): Blob => new Blob([new Uint8Array([1, 2, 3])]);
 
-function deps(over: Partial<PdfOcrDeps> = {}): PdfOcrDeps {
+function deps(over: Partial<PdfOcrNativeDeps> = {}): PdfOcrNativeDeps {
   let n = 0;
   return {
     renderPages: vi.fn(async () => [page(), page()]),
@@ -66,5 +66,14 @@ describe('ocrPdfPages (F-20 per-page OCR)', () => {
     const d = deps();
     await ocrPdfPages(new Uint8Array([0]), [0, 1], 'hi', d);
     expect(d.recognize).toHaveBeenCalledWith(expect.any(String), 'hi');
+  });
+  it('uses recognizeImage directly (no temp files) when given the vision fallback', async () => {
+    const recognizeImage = vi.fn().mockResolvedValueOnce(' page one ').mockResolvedValueOnce('page two');
+    const renderPages = vi.fn().mockResolvedValue([new Blob(['a']), new Blob(['b'])]);
+
+    const out = await ocrPdfPages(new Uint8Array([1]), [0, 1], 'en', { renderPages, recognizeImage });
+
+    expect(out).toEqual(['page one', 'page two']);
+    expect(renderPages).toHaveBeenCalledWith(expect.any(Uint8Array), [0, 1]);
   });
 });

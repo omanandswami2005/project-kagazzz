@@ -32,7 +32,9 @@ import {
   extractPdfTextPerPageImpl,
   pdfToImagesImpl,
 } from '@/modules/pdf-engine/services/pdf-render-ops';
+import { getConfiguredVisionRecognizer } from '@/modules/image-engine/services/vision-ocr.service';
 import { ocrPdfPages } from '../services/pdf-ocr';
+import { mimeTypeFor } from '../services/upload.service';
 import { isPdf } from './useDocumentFile';
 import { useDocLock } from './useDocLock';
 
@@ -63,9 +65,17 @@ export function isOcrableType(fileType: string): boolean {
   return OCR_EXTENSIONS.has(fileType.toLowerCase());
 }
 
-/** Whether ML Kit OCR can run on this document (native platform + image type). */
+/** Opt-in vision-model fallback (Gemma via Ollama) for platforms without ML Kit; null when off. */
+const visionRecognizer = getConfiguredVisionRecognizer();
+
+/** True when some OCR engine is available: native ML Kit, else the vision fallback. */
+function hasOcrEngine(): boolean {
+  return isOcrSupported() || visionRecognizer !== null;
+}
+
+/** Whether OCR can run on this document (an engine is available + image type). */
 export function canOcr(document: DocumentEntity): boolean {
-  return isOcrSupported() && isOcrableType(document.fileType);
+  return hasOcrEngine() && isOcrableType(document.fileType);
 }
 
 /**
@@ -117,13 +127,17 @@ export function useDocumentOcr(): UseDocumentOcr {
             .map(({ i }) => i);
           // Scanned pages (whole doc, or just some pages) have no real text
           // layer — OCR exactly those pages (native only; no-op on web).
-          if (sparsePages.length > 0 && isOcrSupported()) {
-            const ocrTexts = await ocrPdfPages(bytes, sparsePages, lang, {
-              renderPages: (pdf, pages) =>
-                pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages }),
-              recognize: recognizeDocumentText,
-              storage: createFileStorage(),
-            });
+          if (sparsePages.length > 0 && hasOcrEngine()) {
+            const renderPages = (pdf: Uint8Array, pages?: number[]): Promise<Blob[]> =>
+              pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages });
+            const ocrTexts = await ocrPdfPages(
+              bytes,
+              sparsePages,
+              lang,
+              isOcrSupported() || !visionRecognizer
+                ? { renderPages, recognize: recognizeDocumentText, storage: createFileStorage() }
+                : { renderPages, recognizeImage: visionRecognizer }
+            );
             sparsePages.forEach((pageIndex, k) => {
               // Keep the native (if any) text when OCR itself found nothing —
               // a stamped page number beats an empty string.
@@ -139,7 +153,14 @@ export function useDocumentOcr(): UseDocumentOcr {
                 : 'pdf-mixed';
         } else {
           // Images go straight through native ML Kit OCR.
-          text = await recognizeDocumentText(document.filePath, lang);
+          text =
+            isOcrSupported() || !visionRecognizer
+              ? await recognizeDocumentText(document.filePath, lang)
+              : await visionRecognizer(
+                  new Blob([(await createFileStorage().read(document.filePath)) as BlobPart], {
+                    type: mimeTypeFor(document.fileType),
+                  })
+                );
         }
         await new DocumentDao(db).update(document.id, { ocrText: text });
         logger.info({
