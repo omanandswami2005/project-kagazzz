@@ -30,7 +30,7 @@ import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
 import { decodeFromModel, encodeForModel } from '../services/document-alias';
-import { findInDocumentText, readDocumentText } from '../services/document-text.service';
+import { findInDocumentText, rankDocumentMatches, readDocumentText } from '../services/document-text.service';
 import { semanticSearchDocuments } from '../services/document-search.service';
 import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
@@ -215,6 +215,11 @@ export function useChat(): UseChatResult {
     if (!documentDao) {
       return null;
     }
+    // One term at a time through FTS (sanitised), excluding locked documents; the text service ranks.
+    const searchByTerm = async (term: string): Promise<DocumentEntity[]> => {
+      const match = buildFtsMatchQuery(term);
+      return match ? (await documentDao.search(match, 30)).filter((d) => !d.isLocked) : [];
+    };
     return {
       // [SEC] Bug-audit fix: locked documents must never appear in AI
       // list/search results, same invariant useSearch.ts already enforces
@@ -227,13 +232,11 @@ export function useChat(): UseChatResult {
           .slice(0, limit)
           .map(toDocumentSummary),
       searchDocuments: async (query, limit): Promise<DocumentSummary[]> => {
-        const match = buildFtsMatchQuery(query);
-        if (!match) {
-          return [];
-        }
-        return (await documentDao.search(match, limit))
-          .filter((doc) => !doc.isLocked)
-          .map(toDocumentSummary);
+        const ranked = await rankDocumentMatches({ search: searchByTerm }, query, limit);
+        return ranked.map(({ doc, snippet }) => ({
+          ...toDocumentSummary(doc),
+          ...(snippet ? { snippet } : {}),
+        }));
       },
       openQuickReference: (): void => router.push('/quick-reference', 'forward', 'push'),
       openQuickNotes: (): void => router.push('/quick-notes', 'forward', 'push'),
@@ -323,7 +326,7 @@ export function useChat(): UseChatResult {
         return text.length;
       },
       findInDocuments: (query, limit) =>
-        findInDocumentText({ search: (term) => documentDao.search(term, 30) }, query, limit),
+        findInDocumentText({ search: searchByTerm }, query, limit),
       readDocumentText: async (documentId) =>
         readDocumentText(await requireDocument(documentDao, documentId), extractText),
       semanticSearch: (query, limit) =>

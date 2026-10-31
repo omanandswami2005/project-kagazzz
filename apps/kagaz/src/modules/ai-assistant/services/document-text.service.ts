@@ -78,11 +78,12 @@ function snippetAround(text: string, term: string): string {
   return `${start > 0 ? '…' : ''}${clean.slice(start, at + term.length + SNIPPET_RADIUS)}…`;
 }
 
-export async function findInDocumentText(
+/** Ranked documents whose name or extracted text matches the query's terms, each with a snippet of the hit. */
+export async function rankDocumentMatches(
   deps: { search: (term: string) => Promise<DocumentEntity[]> },
   query: string,
   limit: number
-): Promise<TextMatch[]> {
+): Promise<{ doc: DocumentEntity; snippet: string }[]> {
   const scored = new Map<string, { doc: DocumentEntity; hits: number; term: string }>();
   for (const term of searchTerms(query)) {
     for (const doc of await deps.search(term)) {
@@ -97,11 +98,16 @@ export async function findInDocumentText(
   return [...scored.values()]
     .sort((a, b) => b.hits - a.hits)
     .slice(0, limit)
-    .map(({ doc, term }) => ({
-      documentId: doc.id,
-      name: doc.name,
-      snippet: snippetAround(doc.ocrText ?? '', term),
-    }));
+    .map(({ doc, term }) => ({ doc, snippet: snippetAround(doc.ocrText ?? '', term) }));
+}
+
+export async function findInDocumentText(
+  deps: { search: (term: string) => Promise<DocumentEntity[]> },
+  query: string,
+  limit: number
+): Promise<TextMatch[]> {
+  const ranked = await rankDocumentMatches(deps, query, limit);
+  return ranked.map(({ doc, snippet }) => ({ documentId: doc.id, name: doc.name, snippet }));
 }
 
 export async function readDocumentText(

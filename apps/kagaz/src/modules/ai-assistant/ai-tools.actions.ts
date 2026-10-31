@@ -32,6 +32,8 @@ export interface DocumentSummary {
   isFavorite: boolean;
   isLocked: boolean;
   createdAt: string;
+  /** Text around the hit when the match was inside the document's extracted text (search results only). */
+  snippet?: string;
 }
 
 /** Documents a tool created: ids let the chat link to them and the model chain steps ("merge, then compress the merged one"). */
@@ -138,7 +140,7 @@ export const aiToolActions = {
   searchDocuments: defineAction({
     id: 'ai.searchDocuments',
     summary:
-      'Search the user\'s documents by name or extracted text, returning metadata only (never the matched text itself).',
+      'Find documents by a name OR by words inside their extracted text (a person, a company, "rover"…); pass a short keyword, not a sentence. Each result has a snippet of the matching text when the match was inside it. To answer what a document says (a phone number, date, amount), call ai.readDocumentText with its id next.',
     args: z.object({
       query: z.string().min(1),
       limit: z.number().int().min(1).max(50).default(20),
