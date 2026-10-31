@@ -19,6 +19,7 @@ import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
+import { SearchModelCard } from '../components/SearchModelCard';
 import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './ai-assistant.css';
 
@@ -174,6 +175,7 @@ export function AiAssistantPage(): ReactNode {
               </Button>
             </div>
           )}
+          <SearchModelCard />
         </main>
       </IonContent>
     </IonPage>

@@ -1,4 +1,5 @@
 import { ollamaPost, type FetchLike } from '@/infrastructure/ollama';
+import { withEmbeddingGemmaPrefix } from '../embedding-gemma-prefixes';
 import type { EmbeddingProvider } from '../types';
 
 export interface OllamaEmbeddingConfig {
@@ -10,19 +11,12 @@ export interface OllamaEmbeddingConfig {
   fetchImpl?: FetchLike;
 }
 
-/**
- * EmbeddingGemma is trained with task prefixes; a query and a document are
- * embedded differently. Callers pass plain text, the provider adds the prefix.
- */
-const QUERY_PREFIX = 'task: search result | query: ';
-const DOCUMENT_PREFIX = 'title: none | text: ';
-
 /** Embeds text through a local Ollama server's `/api/embed` batch endpoint. */
 export class OllamaEmbeddingProvider implements EmbeddingProvider {
   constructor(private readonly config: OllamaEmbeddingConfig) {}
 
   embed(texts: string[], kind: 'query' | 'document' = 'document'): Promise<number[][]> {
-    return this.request(texts.map((t) => (kind === 'query' ? QUERY_PREFIX : DOCUMENT_PREFIX) + t));
+    return this.request(texts.map((t) => withEmbeddingGemmaPrefix(t, kind)));
   }
 
   private async request(inputs: string[]): Promise<number[][]> {

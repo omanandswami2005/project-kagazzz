@@ -19,11 +19,11 @@ beforeEach(() => {
 });
 
 describe('semanticSearchDocuments', () => {
-  it('fails clearly when the build has no embedding backend', async () => {
+  it('fails clearly when the search model is not downloaded', async () => {
     active.value = false;
     await expect(
       semanticSearchDocuments({ listDocuments: () => Promise.resolve([]), extractText: vi.fn() }, 'deposit', 3)
-    ).rejects.toThrow('no embedding backend');
+    ).rejects.toThrow('needs the search model');
   });
 
   it('reads documents that have no text with the vision model, indexes everything, and maps hits to names', async () => {

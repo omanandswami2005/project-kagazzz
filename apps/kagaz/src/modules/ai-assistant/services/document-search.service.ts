@@ -42,7 +42,9 @@ export async function semanticSearchDocuments(
 ): Promise<SemanticSearchResult> {
   const active = getDocumentIndex();
   if (!active) {
-    throw new Error('Semantic search is not available in this build: there is no embedding backend.');
+    throw new Error(
+      'Semantic search needs the search model. Ask the user to download it in Settings → AI Assistant → Search model (about 330 MB, one time).'
+    );
   }
   const documents = (await deps.listDocuments()).filter((d) => !d.isLocked);
   const budget = deps.maxTranscribe ?? 6;
