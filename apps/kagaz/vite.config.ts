@@ -53,6 +53,10 @@ export default defineConfig(({ mode }) => {
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
+    // Dev only. These are first imported by a lazy PDF chunk, so Vite used to discover them
+    // mid-session, re-optimize and RELOAD the page — dropping in-memory state such as the
+    // AI connection (found while rehearsing the demo). Declaring them up front avoids that.
+    optimizeDeps: { include: ['@pdfsmaller/pdf-encrypt', '@pdfsmaller/pdf-decrypt'] },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
