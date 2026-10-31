@@ -80,6 +80,7 @@ const listeners: Record<string, Listener> = {};
 const plugin = vi.hoisted(() => ({
   createChat: vi.fn(),
   sendMessage: vi.fn(),
+  setToolSubset: vi.fn(),
   addListener: vi.fn(),
   resolveToolCall: vi.fn<(options: { requestId: string; resultJson: string }) => Promise<void>>(),
 }));
@@ -123,6 +124,7 @@ beforeEach(() => {
     return Promise.resolve({ remove: vi.fn().mockResolvedValue(undefined) });
   });
   plugin.createChat.mockResolvedValue({ id: 'session-1' });
+  plugin.setToolSubset.mockResolvedValue(undefined);
   plugin.sendMessage.mockResolvedValue(undefined);
   useAiMock.mockReturnValue(readyAiValue());
 });

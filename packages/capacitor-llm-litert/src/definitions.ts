@@ -73,6 +73,12 @@ export interface LLMPlugin {
   downloadModel(options: DownloadModelOptions): Promise<DownloadModelResult>;
 
   /**
+   * Restricts which tools one chat may call (skills); the conversation is rebuilt with its history replayed.
+   * `tools` omitted = every tool. Kagaz addition.
+   */
+  setToolSubset(options: { chatId: string; tools?: string[] }): Promise<void>;
+
+  /**
    * Embeds texts with an EmbeddingGemma `.litertlm` file via the LiteRT-LM EmbeddingEngine
    * (Android, CPU). The engine is created lazily on first call. Kagaz addition.
    * @returns L2-normalised vectors, one per text, in input order

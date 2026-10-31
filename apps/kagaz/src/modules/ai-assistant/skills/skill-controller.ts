@@ -12,12 +12,16 @@ import type { SkillSession } from './skill-session';
 export class SkillController {
   constructor(
     private readonly session: SkillSession,
-    private readonly engine: Pick<ChatEngine, 'setActiveTools'>
+    private readonly engine: Pick<ChatEngine, 'setActiveTools' | 'setToolSubset'>
   ) {}
 
   /** Sends the current tool set to the engine (a no-op for engines that fix their tools up front). */
   sync(): void {
     this.engine.setActiveTools?.(this.session.toolIds());
+    // Native engine: with a skill loaded, show the model only core + that skill's tools; with none, all of them.
+    this.engine.setToolSubset?.(
+      this.session.activeSkills().length > 0 ? this.session.toolIds() : null
+    );
   }
 
   /** Router pre-activation, called before each user message is sent. */
@@ -31,7 +35,9 @@ export class SkillController {
   load(name: string): { loaded: string; tools: string[]; rules: string; next: string } {
     const skill = getSkill(name);
     if (!skill) {
-      throw new Error(`Unknown skill "${name}". Available: ${SKILLS.map((s) => s.name).join(', ')}`);
+      throw new Error(
+        `Unknown skill "${name}". Available: ${SKILLS.map((s) => s.name).join(', ')}`
+      );
     }
     this.session.activate([name]);
     this.sync();

@@ -264,6 +264,10 @@ One switch in AI settings flips between **offline** (on-device, or a local Ollam
 
 `ai.semanticSearch` finds documents by meaning. On Android it uses EmbeddingGemma-300M through the LiteRT-LM `EmbeddingEngine` (see ADR-024): Settings → AI Assistant → **Search model** downloads it (~330 MB, optional, SHA-256 verified). Until it is downloaded the tool returns an error telling the assistant to ask the user to download it. Document text comes from ML Kit OCR / the PDF text layer; vectors are in memory and rebuilt after restart.
 
+### 3.10 Skills on the phone (added 2026-10-31)
+
+The native engine fixes its tools when a conversation is created, so skills are applied there by **rebuilding the conversation**: when the router (or `ai.loadSkill`) activates a skill, the plugin's `setToolSubset` recreates the chat with only core + that skill's tools and replays the chat's transcript (last 16 messages) as initial messages. With no skill active every tool stays registered. If a skill loads while a reply is streaming, the change is queued for the next message. The app never *refuses* tool calls on this engine (the model just is not shown the rest), unlike the Ollama/cloud engines, which gate in JS. Skill rule text is not injected on the phone (it made the small model worse); guidance lives in tool descriptions. Not yet device-verified.
+
 ## 4. Tool Calling System
 
 ### 4.1 Tool Calling Flow

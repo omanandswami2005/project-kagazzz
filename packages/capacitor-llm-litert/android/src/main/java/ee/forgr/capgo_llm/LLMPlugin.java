@@ -70,6 +70,34 @@ public class LLMPlugin extends Plugin {
         }
     }
 
+    /** Kagaz addition: limits which tools one chat may call (skills). `tools` omitted/null = every tool. */
+    @PluginMethod
+    public void setToolSubset(PluginCall call) {
+        String chatId = call.getString("chatId");
+        if (chatId == null) {
+            call.reject("chatId is required");
+            return;
+        }
+        JSArray raw = call.getArray("tools");
+        List<String> names = null;
+        if (raw != null) {
+            names = new ArrayList<>();
+            for (int i = 0; i < raw.length(); i++) {
+                try {
+                    names.add(raw.getString(i));
+                } catch (JSONException ignored) {
+                    // skip a malformed entry
+                }
+            }
+        }
+        try {
+            llm.setToolSubset(chatId, names);
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Failed to set tools", e);
+        }
+    }
+
     @PluginMethod
     public void sendMessage(PluginCall call) {
         String chatId = call.getString("chatId");

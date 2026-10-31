@@ -39,6 +39,37 @@ describe('SkillController', () => {
 
   it('load() rejects an unknown skill and lists the valid ones', () => {
     const { controller } = make(true);
-    expect(() => controller.load('nope')).toThrow('Available: app-settings, document-search, image-tools, pdf-tools, text-extraction');
+    expect(() => controller.load('nope')).toThrow(
+      'Available: app-settings, document-search, image-tools, pdf-tools, text-extraction'
+    );
+  });
+
+  describe('native engine (tool subset, never refuses)', () => {
+    const native = () => {
+      const setToolSubset = vi.fn();
+      const controller = new SkillController(
+        new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)),
+        { setToolSubset }
+      );
+      return { controller, setToolSubset };
+    };
+
+    it('shows every tool until a skill matches, then only core + that skill', () => {
+      const { controller, setToolSubset } = native();
+      controller.sync();
+      expect(setToolSubset).toHaveBeenLastCalledWith(null); // no skill: all tools
+
+      controller.onUserMessage('please merge these pdfs');
+      const subset = setToolSubset.mock.calls.at(-1)?.[0] as string[];
+      expect(subset).toContain('ai.mergeDocuments');
+      expect(subset).toContain('ai.listDocuments'); // core stays
+      expect(subset).not.toContain('ai.resizeImage'); // other skills are hidden
+    });
+
+    it('does not refuse tools it merely hides (the model cannot call what it is not shown)', () => {
+      const { controller } = native();
+      controller.onUserMessage('merge pdfs');
+      expect(controller.refusal('ai.resizeImage')).toBeNull();
+    });
   });
 });

@@ -36,6 +36,12 @@ export interface ChatEngine {
    * and keeps all of them; callers must not assume it exists.
    */
   setActiveTools?(toolIds: string[]): void;
+  /**
+   * Native engine only: narrows the tools the current chat can call to a skill-sized subset
+   * (`null` = all tools). Unlike `setActiveTools` it never makes the app refuse a tool call — the
+   * model simply isn't shown the rest — because the native conversation is rebuilt, not filtered.
+   */
+  setToolSubset?(toolIds: string[] | null): void;
   createChat(): Promise<{ id: string }>;
   sendMessage(options: { chatId: string; message: string }): Promise<void>;
   /** Hands a tool's result (a JSON string) back to the model. */
