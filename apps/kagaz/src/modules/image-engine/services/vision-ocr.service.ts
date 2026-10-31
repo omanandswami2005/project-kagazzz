@@ -93,6 +93,9 @@ export function createCloudVisionRecognizer(fetchImpl?: FetchLike): ImageTextRec
  * Resolved per call so flipping the online/offline switch takes effect at once.
  */
 export function getConfiguredVisionRecognizer(): ImageTextRecognizer | null {
+  if (!__KAGAZ_DEMO__) {
+    return null; // release builds have no vision fallback (and the code below is removed)
+  }
   if (isOnline()) {
     return createCloudVisionRecognizer();
   }

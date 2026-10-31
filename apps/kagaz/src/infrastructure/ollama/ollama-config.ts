@@ -21,7 +21,7 @@ const DEFAULT_EMBEDDING_MODEL = 'embeddinggemma';
 
 /** Env-derived config, or null when `VITE_OLLAMA_URL` is unset (the shipped default). */
 export function getOllamaConfig(): OllamaConfig | null {
-  const baseUrl = import.meta.env.VITE_OLLAMA_URL as string | undefined;
+  const baseUrl = __KAGAZ_DEMO__ ? (import.meta.env.VITE_OLLAMA_URL as string | undefined) : undefined;
   if (!baseUrl) {
     return null;
   }

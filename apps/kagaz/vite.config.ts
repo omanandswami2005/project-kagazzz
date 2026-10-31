@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => {
     plugins,
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
+      __KAGAZ_DEMO__: JSON.stringify(Boolean(env.VITE_OLLAMA_URL || env.VITE_CLOUD_AI)),
     },
     // Dev only. These are first imported by a lazy PDF chunk, so Vite used to discover them
     // mid-session, re-optimize and RELOAD the page — dropping in-memory state such as the

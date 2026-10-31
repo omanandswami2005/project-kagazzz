@@ -27,7 +27,7 @@ let cloudEngine: CloudChatEngine | null | undefined;
 export function getOllamaEngine(): OllamaChatEngine | null {
   if (ollamaEngine === undefined) {
     const config = getOllamaConfig();
-    ollamaEngine = config
+    ollamaEngine = __KAGAZ_DEMO__ && config
       ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS })
       : null;
   }
@@ -37,7 +37,7 @@ export function getOllamaEngine(): OllamaChatEngine | null {
 /** The cloud engine when this build has the proxy, else null. */
 export function getCloudEngine(): CloudChatEngine | null {
   if (cloudEngine === undefined) {
-    cloudEngine = isCloudAiConfigured() ? new CloudChatEngine({ systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS }) : null;
+    cloudEngine = __KAGAZ_DEMO__ && isCloudAiConfigured() ? new CloudChatEngine({ systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS }) : null;
   }
   return cloudEngine;
 }

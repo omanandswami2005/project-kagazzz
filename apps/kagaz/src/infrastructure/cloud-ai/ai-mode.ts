@@ -15,7 +15,7 @@ const listeners = new Set<(mode: AiMode) => void>();
 
 /** True when this build ships the cloud proxy (demo builds only). */
 export function isCloudAiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_CLOUD_AI);
+  return __KAGAZ_DEMO__ && Boolean(import.meta.env.VITE_CLOUD_AI);
 }
 
 /** The persisted mode; always `offline` when online is not available in this build. */
