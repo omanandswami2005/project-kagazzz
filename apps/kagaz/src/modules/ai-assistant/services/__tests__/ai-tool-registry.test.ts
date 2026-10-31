@@ -54,6 +54,8 @@ describe('aiToolRegistry', () => {
       loadSkill: vi.fn(),
       askUser: vi.fn(),
       semanticSearch: vi.fn(),
+      findInDocuments: vi.fn(),
+      readDocumentText: vi.fn(),
       setTheme: vi.fn(),
       setLanguage: vi.fn(),
       setSwipeAction: vi.fn(),

@@ -18,6 +18,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import type { DocumentText, TextMatch } from './services/document-text.service';
 import type { SemanticSearchResult } from './services/document-search.service';
 import type { AskUserSpec } from './types/ask-user';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -102,6 +103,10 @@ export interface AiToolContext {
   runOcr: (documentId: string) => Promise<number>;
   /** Searches inside documents by meaning and returns the matching passages (ai-semantic-search.actions.ts). */
   semanticSearch: (query: string, limit: number) => Promise<SemanticSearchResult>;
+  /** Keyword-searches the extracted text of documents (ai-document-text.actions.ts). */
+  findInDocuments: (query: string, limit: number) => Promise<TextMatch[]>;
+  /** Returns one document's extracted text, extracting it first if needed. */
+  readDocumentText: (documentId: string) => Promise<DocumentText>;
   /** Puts a form in front of the user and returns; the model's turn ends (ai-ask-user.actions.ts). */
   askUser: (spec: AskUserSpec) => { status: 'waiting_for_user' };
   /** Loads a skill's tools into the chat and returns its usage rules (ai-skills.actions.ts). */

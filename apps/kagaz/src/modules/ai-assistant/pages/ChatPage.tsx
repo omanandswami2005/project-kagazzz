@@ -24,7 +24,6 @@ import { Markdown } from '../components/Markdown';
 import { AttachSheet } from '../components/AttachSheet';
 import { ConversationsSheet } from '../components/ConversationsSheet';
 import { AttachmentChips, ResultCard, ToolChip } from '../components/MessageParts';
-import { aiToolRegistry } from '../services/ai-tool-registry';
 import { MicButton } from '../components/MicButton';
 import { UploadOptionsSheet } from '@/modules/document-vault/components/UploadOptionsSheet';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
@@ -190,7 +189,6 @@ export function ChatPage(): ReactNode {
                         name={toolPart.name}
                         ok={toolPart.ok}
                         error={toolPart.error}
-                        label={aiToolRegistry.get(toolPart.name)?.summary}
                       />
                     </li>
                   );

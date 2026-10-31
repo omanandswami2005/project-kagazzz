@@ -29,6 +29,8 @@ import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-too
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { decodeFromModel, encodeForModel } from '../services/document-alias';
+import { findInDocumentText, readDocumentText } from '../services/document-text.service';
 import { semanticSearchDocuments } from '../services/document-search.service';
 import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
@@ -320,6 +322,10 @@ export function useChat(): UseChatResult {
         }
         return text.length;
       },
+      findInDocuments: (query, limit) =>
+        findInDocumentText({ search: (term) => documentDao.search(term, 30) }, query, limit),
+      readDocumentText: async (documentId) =>
+        readDocumentText(await requireDocument(documentDao, documentId), extractText),
       semanticSearch: (query, limit) =>
         semanticSearchDocuments(
           { listDocuments: () => documentDao.findAll(), extractText },
@@ -563,7 +569,11 @@ export function useChat(): UseChatResult {
         streamingBuffer.current = '';
         setStreamingText('');
         setIsStreaming(false);
-        setError(event.error);
+        setError(
+          /parse tool calls|Failed to parse FC/i.test(event.error)
+            ? 'The assistant garbled a tool call. Please try again, or say it a little differently.'
+            : event.error
+        );
       }),
       // F-14: dispatches through the same real ActionRegistry the rest of
       // the agent-interface contract uses — args validation, confirmation
@@ -584,7 +594,7 @@ export function useChat(): UseChatResult {
           }
           let args: unknown;
           try {
-            args = JSON.parse(event.argumentsJson) as unknown;
+            args = JSON.parse(decodeFromModel(event.argumentsJson)) as unknown;
           } catch {
             chip(false, `Malformed arguments: ${event.argumentsJson.slice(0, 120)}`);
             return JSON.stringify({ ok: false, error: 'Malformed tool arguments' });
@@ -641,7 +651,10 @@ export function useChat(): UseChatResult {
             if (resultJson === null) {
               return;
             }
-            return engine.resolveToolCall({ requestId: event.requestId, resultJson });
+            return engine.resolveToolCall({
+              requestId: event.requestId,
+              resultJson: encodeForModel(resultJson),
+            });
           })
           .catch((toolError: unknown) => {
             logger.warn({ event: 'ai.chat.tool_call_failed', err: { message: String(toolError) } });
@@ -733,7 +746,7 @@ export function useChat(): UseChatResult {
       try {
         await engine.resolveToolCall({
           requestId: pending.requestId,
-          resultJson: JSON.stringify(result),
+          resultJson: encodeForModel(JSON.stringify(result)),
         });
       } catch (resolveError) {
         // Per the plugin's own contract, resolving a requestId the native
@@ -801,7 +814,7 @@ export function useChat(): UseChatResult {
       try {
         await engine.sendMessage({
           chatId: chatSessionId.current,
-          message: toModelText({ content: trimmed, partsJson }),
+          message: encodeForModel(toModelText({ content: trimmed, partsJson })),
         });
       } catch (sendError) {
         logger.warn({ event: 'ai.chat.send_failed', err: { message: String(sendError) } });

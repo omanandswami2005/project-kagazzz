@@ -13,6 +13,7 @@ import { aiDocumentOpsActions } from '../ai-document-ops.actions';
 import { aiImageOpsActions } from '../ai-image-ops.actions';
 import { aiSettingsActions } from '../ai-settings.actions';
 import { aiAskUserActions } from '../ai-ask-user.actions';
+import { aiDocumentTextActions } from '../ai-document-text.actions';
 import { aiSemanticSearchActions } from '../ai-semantic-search.actions';
 import { aiSkillActions } from '../ai-skills.actions';
 
@@ -25,7 +26,8 @@ export const aiToolRegistry = new ActionRegistry<AiToolContext>()
   .registerAll(aiSettingsActions)
   .registerAll(aiSkillActions)
   .registerAll(aiAskUserActions)
-  .registerAll(aiSemanticSearchActions);
+  .registerAll(aiSemanticSearchActions)
+  .registerAll(aiDocumentTextActions);
 
 /**
  * Converts a registry {@link ToolDefinition} into the native bridge's
