@@ -73,9 +73,9 @@ data-type matrix, the correct entries are:
 - **What happens:** the user explicitly taps "Download" on the Settings → AI
   Assistant screen (never automatic/background). The app performs a single
   HTTPS GET to Hugging Face
-  (`huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm`,
-  ~586 MB, one host) for a **public, pre-trained model file** — LiteRT-LM's
-  Qwen3-0.6B, Apache-2.0. The response is verified against a hardcoded SHA-256
+  (`huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm`,
+  ~2.6 GB, one host) for a **public, pre-trained model file** — LiteRT-LM's
+  Gemma 4 E2B, Apache-2.0. The response is verified against a hardcoded SHA-256
   before use ([ADR-021](../architecture/08-tech-stack-decisions.md#adr-021-on-device-ai--litert-lm-supersedes-webllm),
   `[SEC]` §5).
 - **No user data leaves the device for this request.** The GET carries no
@@ -99,8 +99,8 @@ data-type matrix, the correct entries are:
 **Reviewer notes addendum (append to the V1 paragraph above once V1.5 ships):**
 
 > Kagaz's optional on-device AI assistant (Settings → AI Assistant) requires a
-> one-time, user-initiated download (~586 MB) of a public, open-weights model
-> file (LiteRT-LM Qwen3-0.6B, Apache-2.0) from Hugging Face, verified by
+> one-time, user-initiated download (~2.6 GB) of a public, open-weights model
+> file (LiteRT-LM Gemma 4 E2B, Apache-2.0) from Hugging Face, verified by
 > SHA-256 checksum before use. This is the only network request the app
 > performs, and it carries no user data — no identifiers, no document
 > content, no analytics. After download, the AI assistant runs fully

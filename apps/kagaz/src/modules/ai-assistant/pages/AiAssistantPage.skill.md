@@ -2,7 +2,7 @@
 
 ## Purpose
 The user is on the AI Assistant management screen. This is where the
-on-device AI model (~475 MB, downloaded once) gets downloaded, verified,
+on-device AI model (~2.6 GB, downloaded once) gets downloaded, verified,
 and loaded — the AI chat itself can't be used until this model is ready.
 Also where the user can delete the model to free storage.
 
@@ -25,7 +25,7 @@ happen without an explicit human tap. I can explain what's happening
 - Never trigger a download or deletion myself.
 - In demo builds the assistant uses a local Gemma server (Ollama) instead: the page then shows a "Connect to Gemma" button (no download, no GPU switch) and says plainly that messages are sent to that server. Never describe it as on-device.
 - Don't imply the model is a one-time cost with no storage impact — it's
-  genuinely ~475 MB on disk; the user should know before tapping Download.
+  genuinely ~2.6 GB on disk; the user should know before tapping Download.
 
 ## Cross-page handoffs
 - Reached from Settings → AI Assistant.

@@ -117,11 +117,11 @@ This module originally speced **WebLLM** (`@mlc-ai/web-llm`, `WebWorkerMLCEngine
 
 | Model | Size (download) | License | Notes |
 |---|---|---|---|
-| **Qwen3-0.6B** (chosen default) | ~586 MB | Apache-2.0 | Fits this module's original 600 MB–1.7 GB design-note range; smallest reliable chat-quality option in the LiteRT Community catalog at time of writing |
-| Qwen2.5-0.5B | ~521 MB | Apache-2.0 | Fallback if Qwen3-0.6B underperforms tool-calling accuracy in testing |
-| Gemma4-E2B | ~2.6 GB | Apache-2.0 | Reserved for a future "better quality, opt-in bigger download" tier — not the default, exceeds the original size budget |
+| **Gemma 4 E2B** (the on-device model) | ~2.6 GB (2,588,147,712 bytes) | Apache-2.0 | `litert-community/gemma-4-E2B-it-litert-lm` — public, not gated. Text + native function calling. Needs a recent phone with plenty of free memory. **Not yet verified on a physical device** (2026-10-31). |
 
-No dynamic VRAM-based model selection (unlike the old WebGPU plan's `selectModel()` heuristic) — LiteRT-LM's CPU/GPU/NPU backend selection happens per-inference-call, not per-model, and Android doesn't expose a WebGPU-style `adapter.limits` heuristic. One fixed default model keeps the download/cache/checksum story simple; a model picker is a documented future enhancement (§12), not v1 of this item.
+**One model, no fallback (decided 2026-10-31).** Earlier revisions defaulted to Qwen3-0.6B (~0.5 GB) for the small download; it has been removed entirely — Gemma 4 E2B is the only on-device model, matching the Gemma 4 used in the demo's local (Ollama) and online (Vertex AI) engines. The size is far above the original 600 MB–1.7 GB budget, so the Settings screen shows the real size before the user taps Download, and the file is checksum-verified on every load. A smaller tier can be re-added behind the same `MODEL_*` constants if device testing shows the memory cost is too high.
+
+No dynamic VRAM-based model selection — LiteRT-LM's CPU/GPU/NPU backend selection happens per-inference-call, not per-model, and Android doesn't expose a WebGPU-style `adapter.limits` heuristic.
 
 ### 3.3 Capability Gating
 
@@ -151,7 +151,7 @@ class AiEngineManager {
     );
     const { path } = await CapacitorLlmLiteRT.downloadModel({
       url: MODEL_URL,
-      filename: 'qwen3-0.6b.litertlm',
+      filename: MODEL_FILENAME, // gemma-4-E2B-it.litertlm
     });
     await sub.remove();
 
@@ -192,7 +192,7 @@ flowchart TD
     CHECK{"Model file<br/>on disk?"}
     VERIFY{"SHA-256<br/>matches?"}
     LOAD["Load into LiteRT-LM engine<br/>(native, background executor)"]
-    DOWNLOAD["Download model<br/>(~586 MB, Qwen3-0.6B)"]
+    DOWNLOAD["Download model<br/>(~2.6 GB, Gemma 4 E2B)"]
     DELETE["Delete corrupt file<br/>+ show MODEL_DOWNLOAD_FAILED"]
     READY["AI Ready"]
 
@@ -1121,16 +1121,16 @@ type AiErrorCode =
 
 | Model | Backend | Notes |
 |---|---|---|
-| Qwen3-0.6B | CPU (current default) | `loadModel()` requests `backend: 'cpu'` directly — see §3.4's CPU-only note. GPU was found to crash the whole process on-device rather than gracefully falling back, so it's not attempted at all right now |
-| Qwen3-0.6B | GPU delegate | Not currently used — would need a pre-flight capability check before this is safe to re-enable (§3.4) |
+| Gemma 4 E2B | CPU (current default) | `loadModel()` requests `backend: 'cpu'` directly — see §3.4's CPU-only note. GPU was found to crash the whole process on-device rather than gracefully falling back, so it's not attempted at all right now |
+| Gemma 4 E2B | GPU delegate | Not currently used — would need a pre-flight capability check before this is safe to re-enable (§3.4) |
 
-No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Qwen3-0.6B on the specific mid-range Android range this app targets — unlike the old WebLLM table (which quoted MLC's own desktop/mobile benchmarks), this needs a real device measurement pass once F-13 is implemented, not an assumed number.
+No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Gemma 4 E2B on the specific mid-range Android range this app targets — unlike the old WebLLM table (which quoted MLC's own desktop/mobile benchmarks), this needs a real device measurement pass once F-13 is implemented, not an assumed number.
 
 ### 10.2 Memory Usage
 
 | Component | Memory |
 |---|---|
-| Model weights (Qwen3-0.6B, .litertlm) | ~586 MB on disk |
+| Model weights (Gemma 4 E2B, .litertlm) | ~2.6 GB on disk |
 | Native engine (Kotlin, background executor) | Runs in the app's own process — no separate Worker process overhead the way a Web Worker has |
 | Chat history (in-memory) | ~1 MB RAM |
 

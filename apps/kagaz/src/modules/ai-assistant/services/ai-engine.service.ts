@@ -16,12 +16,17 @@ import { log } from '@/core/logging';
 
 const logger = log('ai-assistant');
 
-/** litert-community/Qwen3-0.6B's mixed-INT4 artifact — Apache-2.0, ~498 MB. */
-export const MODEL_FILENAME = 'qwen3_0_6b_mixed_int4.litertlm';
+/**
+ * Gemma 4 E2B (text + tool calling) as a LiteRT-LM file from litert-community —
+ * public (not gated), Apache-2.0, ~2.6 GB, so it needs a recent phone with
+ * plenty of free memory. SHA-256 is the repository's published LFS checksum and
+ * is verified on every load, not just after download.
+ */
+export const MODEL_FILENAME = 'gemma-4-E2B-it.litertlm';
 export const MODEL_URL =
-  'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm';
-export const MODEL_SHA256 = 'b1baab462f6be49d70eada79d715c2c52cd9ece0cad00bddf6a2c097d23498e9';
-export const MODEL_SIZE_BYTES = 497_664_000;
+  'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
+export const MODEL_SHA256 = '181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c';
+export const MODEL_SIZE_BYTES = 2_588_147_712;
 
 /** Mirrors 05-ai-assistant-module.md §9.1 (renamed from the old WebGPU-era set). */
 export type AiErrorCode =

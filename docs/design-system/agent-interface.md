@@ -14,7 +14,7 @@ Kagaz publishes a **first-class machine-readable surface** alongside the human U
 
 This gives us four wins:
 
-1. **Agents work offline.** The on-device AI assistant (Llama-3.2 / Qwen2.5) can drive the app without a vision model.
+1. **Agents work offline.** The on-device AI assistant (Gemma 4) can drive the app without a vision model.
 2. **Tests get free.** The agent surface is the cleanest possible E2E test API.
 3. **Voice = agent.** Voice commands resolve to the same Action Registry, no parallel implementation.
 4. **Telemetry is structured.** Every user (and agent) action is named and observable.
