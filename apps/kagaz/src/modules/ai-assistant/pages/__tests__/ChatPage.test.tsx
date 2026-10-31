@@ -355,3 +355,33 @@ describe('ChatPage forms from the assistant (GenUI)', () => {
     expect(q('ai.chat.form')).toBeNull();
   });
 });
+
+describe('ChatPage markdown in messages', () => {
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+
+  it('renders assistant markdown (bold, lists) and the user\'s own markdown, as elements not symbols', () => {
+    useAiMock.mockReturnValue(aiValue());
+    useChatMock.mockReturnValue(
+      chatValue({
+        messages: [
+          { id: 'u1', conversationId: 'c', role: 'user', content: 'make **this** bold', createdAt: '' },
+          { id: 'a1', conversationId: 'c', role: 'assistant', content: 'Found **Rent agreement.pdf**:\n- 120 KB\n- 2 pages', createdAt: '' },
+        ] as never,
+      })
+    );
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-a1')?.querySelector('strong')?.textContent).toBe('Rent agreement.pdf');
+    expect([...(q('ai.chat.message-a1')?.querySelectorAll('li') ?? [])].map((li) => li.textContent)).toEqual(['120 KB', '2 pages']);
+    expect(q('ai.chat.message-a1')?.textContent).not.toContain('**');
+    expect(q('ai.chat.message-u1')?.querySelector('strong')?.textContent).toBe('this');
+  });
+
+  it('renders the in-progress streamed reply as markdown too, and never executes injected markup', () => {
+    useAiMock.mockReturnValue(aiValue());
+    useChatMock.mockReturnValue(chatValue({ isStreaming: true, streamingText: 'Working on **it** <img src=x onerror=alert(1)>' }));
+    render(<ChatPage />);
+    expect(q('ai.chat.streaming')?.querySelector('strong')?.textContent).toBe('it');
+    expect(q('ai.chat.streaming')?.querySelector('img')).toBeNull();
+  });
+});

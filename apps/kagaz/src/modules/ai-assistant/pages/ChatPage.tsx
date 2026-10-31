@@ -17,8 +17,10 @@ import {
 } from '@ionic/react';
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Input, Spinner } from '@kagaz/ui';
+import { Button, Icon, Spinner } from '@kagaz/ui';
 import { AskUserForm } from '../components/AskUserForm';
+import { ChatTextarea } from '../components/ChatTextarea';
+import { Markdown } from '../components/Markdown';
 import { AttachSheet } from '../components/AttachSheet';
 import { AttachmentChips, ResultCard } from '../components/MessageParts';
 import { MicButton } from '../components/MicButton';
@@ -66,8 +68,7 @@ export function ChatPage(): ReactNode {
   const addAttachments = (docs: DocumentEntity[]): void =>
     setAttachments((prev) => [...prev, ...docs.filter((d) => !prev.some((p) => p.id === d.id)).map(toRef)]);
 
-  const handleSubmit = (event: FormEvent): void => {
-    event.preventDefault();
+  const submit = (): void => {
     if ((!draft.trim() && attachments.length === 0) || chat.isStreaming) {
       return;
     }
@@ -75,6 +76,10 @@ export function ChatPage(): ReactNode {
     setDraft('');
     setAttachments([]);
     void chat.sendMessage(text, { attachments });
+  };
+  const handleSubmit = (event: FormEvent): void => {
+    event.preventDefault();
+    submit();
   };
 
   // Upload new: reuse the vault's source picker, then attach whatever landed in the vault.
@@ -155,7 +160,7 @@ export function ChatPage(): ReactNode {
                     data-agent-id={`ai.chat.message-${message.id}`}
                   >
                     {attached.length > 0 && <AttachmentChips documents={attached} idPrefix={`ai.chat.sent-${message.id}`} />}
-                    {message.content}
+                    <Markdown text={message.content ?? ''} />
                     {form && !answered.has(form.formId) && (
                       <AskUserForm
                         spec={form.spec}
@@ -175,7 +180,7 @@ export function ChatPage(): ReactNode {
                   data-agent-id="ai.chat.streaming"
                   aria-live="polite"
                 >
-                  {chat.streamingText || <Spinner size="sm" label={t('thinking')} />}
+                  {chat.streamingText ? <Markdown text={chat.streamingText} /> : <Spinner size="sm" label={t('thinking')} />}
                 </li>
               )}
               {chat.error && (
@@ -252,14 +257,13 @@ export function ChatPage(): ReactNode {
             >
               <Icon name="Plus" size={20} aria-label={t('attach.button')} />
             </Button>
-            <Input
-              type="text"
-              label={t('input_placeholder')}
-              placeholder={t('input_placeholder')}
+            <ChatTextarea
               value={draft}
               onChange={setDraft}
+              onSubmit={submit}
+              label={t('input_placeholder')}
+              placeholder={t('input_placeholder')}
               disabled={chat.isStreaming}
-              agentId="ai.chat.input"
             />
             <MicButton onResult={(text) => setDraft(text)} onPartial={(text) => setDraft(text)} />
             <Button
