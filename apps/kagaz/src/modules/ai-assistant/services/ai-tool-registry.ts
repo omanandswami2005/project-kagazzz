@@ -12,6 +12,7 @@ import { aiNavigationActions } from '../ai-navigation.actions';
 import { aiDocumentOpsActions } from '../ai-document-ops.actions';
 import { aiImageOpsActions } from '../ai-image-ops.actions';
 import { aiSettingsActions } from '../ai-settings.actions';
+import { aiSkillActions } from '../ai-skills.actions';
 
 /** Registered once — see the module doc comment for why this is a singleton. */
 export const aiToolRegistry = new ActionRegistry<AiToolContext>()
@@ -19,7 +20,8 @@ export const aiToolRegistry = new ActionRegistry<AiToolContext>()
   .registerAll(aiNavigationActions)
   .registerAll(aiDocumentOpsActions)
   .registerAll(aiImageOpsActions)
-  .registerAll(aiSettingsActions);
+  .registerAll(aiSettingsActions)
+  .registerAll(aiSkillActions);
 
 /**
  * Converts a registry {@link ToolDefinition} into the native bridge's

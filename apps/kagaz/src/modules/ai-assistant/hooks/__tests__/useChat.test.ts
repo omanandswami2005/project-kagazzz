@@ -527,6 +527,19 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('ai.loadSkill returns the skill rules and tools through the real registry', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.loadSkill', { name: 'pdf-tools' });
+    expect(result.ok).toBe(true);
+    expect(result.data).toMatchObject({ loaded: 'pdf-tools', tools: expect.arrayContaining(['ai.mergeDocuments']) });
+
+    const unknown = await dispatch('ai.loadSkill', { name: 'nope' });
+    expect(unknown.ok).toBe(false);
+  });
+
   it('image tools: resize forwards dimensions and budget, ocr returns only a character count', async () => {
     useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
     imageOps.resizeRun.mockResolvedValue({

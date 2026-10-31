@@ -149,6 +149,22 @@ describe('OllamaChatEngine', () => {
     expect(last.length).toBeLessThanOrEqual(6);
   });
 
+  it('sends only the active tools once setActiveTools is called, and all of them before that', async () => {
+    const { engine, fetchImpl } = makeEngine([ndjson(...text('a')), ndjson(...text('b'))]);
+    engine.setTools([
+      { name: 'core.one', descriptionJson: JSON.stringify({ name: 'core.one', description: 'c', parameters: { type: 'object', properties: {} } }) },
+      { name: 'skill.two', descriptionJson: JSON.stringify({ name: 'skill.two', description: 's', parameters: { type: 'object', properties: {} } }) },
+    ]);
+    const { id } = await engine.createChat();
+
+    await engine.sendMessage({ chatId: id, message: 'x' });
+    expect(bodyOf(fetchImpl, 0).tools).toHaveLength(2);
+
+    engine.setActiveTools(['core.one']);
+    await engine.sendMessage({ chatId: id, message: 'y' });
+    expect(bodyOf(fetchImpl, 1).tools).toHaveLength(1);
+  });
+
   it('checkReady explains an unreachable server and a missing model', async () => {
     const unreachable = new OllamaChatEngine({ baseUrl: 'http://x', model: 'gemma4:e2b', systemPrompt: '', fetchImpl: vi.fn().mockRejectedValue(new Error('down')) });
     await expect(unreachable.checkReady()).rejects.toThrow('ollama serve');

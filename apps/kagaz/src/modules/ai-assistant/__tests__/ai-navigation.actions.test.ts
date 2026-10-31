@@ -21,6 +21,7 @@ function makeCtx(): AiToolContext {
     resizeImage: vi.fn(),
     enhanceImage: vi.fn(),
     runOcr: vi.fn(),
+    loadSkill: vi.fn(),
     setTheme: vi.fn(),
     setLanguage: vi.fn(),
     setSwipeAction: vi.fn(),

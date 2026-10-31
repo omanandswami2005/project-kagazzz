@@ -30,6 +30,12 @@ export interface ChatEngineEvents {
 export interface ChatEngine {
   readonly kind: 'litert' | 'ollama';
   readonly locality: EngineLocality;
+  /**
+   * Restricts which tools the model sees (skills, §3.7). Optional: the native
+   * engine fixes its tools when the conversation is created, so it omits this
+   * and keeps all of them; callers must not assume it exists.
+   */
+  setActiveTools?(toolIds: string[]): void;
   createChat(): Promise<{ id: string }>;
   sendMessage(options: { chatId: string; message: string }): Promise<void>;
   /** Hands a tool's result (a JSON string) back to the model. */

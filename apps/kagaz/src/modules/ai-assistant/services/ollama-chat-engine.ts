@@ -58,7 +58,8 @@ export class OllamaChatEngine implements ChatEngine {
   readonly kind = 'ollama' as const;
   readonly locality = 'local-server' as const;
 
-  private tools: { type: 'function'; function: unknown }[] = [];
+  private allTools: { id: string; tool: { type: 'function'; function: unknown } }[] = [];
+  private activeIds: Set<string> | null = null;
   private readonly histories = new Map<string, OllamaMessage[]>();
   private readonly busy = new Set<string>();
   private readonly pending = new Map<string, { resolve: (resultJson: string) => void; timer: ReturnType<typeof setTimeout> }>();
@@ -73,10 +74,19 @@ export class OllamaChatEngine implements ChatEngine {
 
   /** Registers the tool set sent with every request (from the Action Registry). */
   setTools(descriptors: ToolDescriptor[]): void {
-    this.tools = descriptors.map((d) => ({
-      type: 'function',
-      function: JSON.parse(d.descriptionJson) as unknown,
+    this.allTools = descriptors.map((d) => ({
+      id: d.name,
+      tool: { type: 'function', function: JSON.parse(d.descriptionJson) as unknown },
     }));
+  }
+
+  /** Only these tools are sent from now on (skills); until called, every registered tool is. */
+  setActiveTools(toolIds: string[]): void {
+    this.activeIds = new Set(toolIds);
+  }
+
+  private currentTools(): unknown[] {
+    return this.allTools.filter((t) => !this.activeIds || this.activeIds.has(t.id)).map((t) => t.tool);
   }
 
   /** Throws a readable error unless the server is reachable and has the model. */
@@ -164,7 +174,7 @@ export class OllamaChatEngine implements ChatEngine {
           model: this.options.model,
           stream: true,
           messages: history,
-          tools: this.tools,
+          tools: this.currentTools(),
           options: { num_ctx: this.options.numCtx ?? 8192, temperature: this.options.temperature ?? 0.2 },
         },
         this.options.fetchImpl

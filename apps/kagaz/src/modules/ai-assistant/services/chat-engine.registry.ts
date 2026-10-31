@@ -6,6 +6,7 @@
  */
 import { getOllamaConfig } from '@/infrastructure/ollama';
 import { SYSTEM_PROMPT } from '../prompts/system-prompt';
+import { skillCatalog } from '../skills/skill-registry';
 import type { ChatEngine } from './chat-engine';
 import { litertChatEngine } from './litert-chat-engine';
 import { OllamaChatEngine } from './ollama-chat-engine';
@@ -17,7 +18,7 @@ export function getOllamaEngine(): OllamaChatEngine | null {
   if (ollamaEngine === undefined) {
     const config = getOllamaConfig();
     ollamaEngine = config
-      ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: SYSTEM_PROMPT })
+      ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: `${SYSTEM_PROMPT}\n\n${skillCatalog()}` })
       : null;
   }
   return ollamaEngine;

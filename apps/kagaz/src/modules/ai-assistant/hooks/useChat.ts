@@ -27,7 +27,9 @@ import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
-import { aiToolRegistry } from '../services/ai-tool-registry';
+import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { SkillController } from '../skills/skill-controller';
+import { SkillSession } from '../skills/skill-session';
 
 const logger = log('ai-assistant');
 
@@ -129,6 +131,11 @@ export function useChat(): UseChatResult {
   const ai = useAi();
   // The engine behind the chat (native LiteRT by default, Ollama in demo builds) — see chat-engine.registry.ts.
   const engine = getChatEngine();
+  // Which skills (tool groups) are loaded in this chat — see skills/skill-session.ts.
+  const skills = useMemo(
+    () => new SkillController(new SkillSession(AI_TOOL_DESCRIPTORS.map((d) => d.name)), engine),
+    [engine]
+  );
   const router = useIonRouter();
   const { setTheme: applyTheme } = useTheme();
   const { i18n } = useTranslation();
@@ -234,6 +241,7 @@ export function useChat(): UseChatResult {
         }
         return text.length;
       },
+      loadSkill: (name) => skills.load(name),
       // Bug-audit fix: settings.actions.ts's setTheme/setLanguage/
       // setSwipeAction were never registered into aiToolRegistry at all —
       // saying "dark mode" or "switch to hindi" to the assistant silently
@@ -259,6 +267,7 @@ export function useChat(): UseChatResult {
     applyTheme,
     i18n,
     setSwipeAction,
+    skills,
   ]);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -326,12 +335,13 @@ export function useChat(): UseChatResult {
     void engine.createChat().then(({ id }) => {
       if (!cancelled) {
         chatSessionId.current = id;
+        skills.sync(); // start with core tools only; skills load on demand
       }
     });
     return (): void => {
       cancelled = true;
     };
-  }, [ai.status, engine]);
+  }, [ai.status, engine, skills]);
 
   // Persist the accumulated streamingBuffer once as an assistant turn.
   const finishStreaming = useCallback((): void => {
@@ -397,6 +407,11 @@ export function useChat(): UseChatResult {
           } catch {
             return JSON.stringify({ ok: false, error: 'Malformed tool arguments' });
           }
+          // Skills: refuse a tool whose skill isn't loaded (enforced here, not just in the prompt).
+          const refusal = skills.refusal(event.name);
+          if (refusal) {
+            return refusal;
+          }
           const action = aiToolRegistry.get(event.name);
           if (action?.requiresConfirmation) {
             // Bug-audit fix: a second requiresConfirmation call arriving
@@ -459,7 +474,7 @@ export function useChat(): UseChatResult {
     return (): void => {
       subscriptions.forEach((subscription) => void subscription.then((s) => s.remove()));
     };
-  }, [ai.status, finishStreaming, toolContext, engine]);
+  }, [ai.status, finishStreaming, toolContext, engine, skills]);
 
   // Expires a pending confirmation client-side shortly before the native
   // bridge's own 30s timeout (see CONFIRMATION_TIMEOUT_MS) so the card never
@@ -550,6 +565,8 @@ export function useChat(): UseChatResult {
       setIsStreaming(true);
       streamingBuffer.current = '';
       setStreamingText('');
+      // Pre-load skills the message suggests, so most turns need no ai.loadSkill round trip.
+      skills.onUserMessage(trimmed);
       try {
         await engine.sendMessage({ chatId: chatSessionId.current, message: trimmed });
       } catch (sendError) {
@@ -558,7 +575,7 @@ export function useChat(): UseChatResult {
         setError('Failed to reach the AI Assistant');
       }
     },
-    [dao, conversationId, engine]
+    [dao, conversationId, engine, skills]
   );
 
   return {
