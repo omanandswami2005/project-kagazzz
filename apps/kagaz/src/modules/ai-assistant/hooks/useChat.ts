@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIonRouter } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
-import { CapacitorLlmLiteRT, type ToolCallRequestedEvent } from '@kagaz/capacitor-llm-litert';
+import type { ToolCallRequestedEvent } from '@kagaz/capacitor-llm-litert';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
@@ -26,6 +26,7 @@ import { useResizeCompress } from '@/modules/document-vault/hooks/useResizeCompr
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
 import { toDocumentSummary } from '../ai-tools.actions';
+import { getChatEngine } from '../services/chat-engine.registry';
 import { aiToolRegistry } from '../services/ai-tool-registry';
 
 const logger = log('ai-assistant');
@@ -126,6 +127,8 @@ export function useChat(): UseChatResult {
   const dao = useMemo(() => (db ? new AiConversationDao(db) : null), [db]);
   const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
+  // The engine behind the chat (native LiteRT by default, Ollama in demo builds) — see chat-engine.registry.ts.
+  const engine = getChatEngine();
   const router = useIonRouter();
   const { setTheme: applyTheme } = useTheme();
   const { i18n } = useTranslation();
@@ -320,7 +323,7 @@ export function useChat(): UseChatResult {
       return;
     }
     let cancelled = false;
-    void CapacitorLlmLiteRT.createChat().then(({ id }) => {
+    void engine.createChat().then(({ id }) => {
       if (!cancelled) {
         chatSessionId.current = id;
       }
@@ -328,7 +331,7 @@ export function useChat(): UseChatResult {
     return (): void => {
       cancelled = true;
     };
-  }, [ai.status]);
+  }, [ai.status, engine]);
 
   // Persist the accumulated streamingBuffer once as an assistant turn.
   const finishStreaming = useCallback((): void => {
@@ -352,20 +355,20 @@ export function useChat(): UseChatResult {
       return;
     }
     const subscriptions = [
-      CapacitorLlmLiteRT.addListener('textFromAi', (event) => {
+      engine.addListener('textFromAi', (event) => {
         if (event.chatId !== chatSessionId.current) {
           return;
         }
         streamingBuffer.current += event.text;
         setStreamingText(streamingBuffer.current);
       }),
-      CapacitorLlmLiteRT.addListener('aiFinished', (event) => {
+      engine.addListener('aiFinished', (event) => {
         if (event.chatId !== chatSessionId.current) {
           return;
         }
         finishStreaming();
       }),
-      CapacitorLlmLiteRT.addListener('generationError', (event) => {
+      engine.addListener('generationError', (event) => {
         if (event.chatId && event.chatId !== chatSessionId.current) {
           return;
         }
@@ -383,7 +386,7 @@ export function useChat(): UseChatResult {
       // the card resolves it later via confirmPendingToolCall/
       // rejectPendingToolCall (05-ai-assistant-module.md §4.3's
       // `needsConfirmation` contract).
-      CapacitorLlmLiteRT.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
+      engine.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
         void (async (): Promise<string | null> => {
           if (!toolContext) {
             return JSON.stringify({ ok: false, error: 'AI tools are not available yet' });
@@ -431,7 +434,7 @@ export function useChat(): UseChatResult {
             if (resultJson === null) {
               return;
             }
-            return CapacitorLlmLiteRT.resolveToolCall({ requestId: event.requestId, resultJson });
+            return engine.resolveToolCall({ requestId: event.requestId, resultJson });
           })
           .catch((toolError: unknown) => {
             logger.warn({ event: 'ai.chat.tool_call_failed', err: { message: String(toolError) } });
@@ -441,7 +444,7 @@ export function useChat(): UseChatResult {
             // benign case resolvePendingToolCall's own catch already
             // documents. This retry can reject for the identical reason;
             // without its own catch it was an unhandled promise rejection.
-            CapacitorLlmLiteRT.resolveToolCall({
+            engine.resolveToolCall({
               requestId: event.requestId,
               resultJson: JSON.stringify({ ok: false, error: 'Tool call failed' }),
             }).catch((resolveError: unknown) => {
@@ -456,7 +459,7 @@ export function useChat(): UseChatResult {
     return (): void => {
       subscriptions.forEach((subscription) => void subscription.then((s) => s.remove()));
     };
-  }, [ai.status, finishStreaming, toolContext]);
+  }, [ai.status, finishStreaming, toolContext, engine]);
 
   // Expires a pending confirmation client-side shortly before the native
   // bridge's own 30s timeout (see CONFIRMATION_TIMEOUT_MS) so the card never
@@ -506,7 +509,7 @@ export function useChat(): UseChatResult {
                 userMessage: 'Okay, I will not do that.',
               };
       try {
-        await CapacitorLlmLiteRT.resolveToolCall({
+        await engine.resolveToolCall({
           requestId: pending.requestId,
           resultJson: JSON.stringify(result),
         });
@@ -520,7 +523,7 @@ export function useChat(): UseChatResult {
         });
       }
     },
-    [toolContext]
+    [toolContext, engine]
   );
 
   const confirmPendingToolCall = useCallback((): void => {
@@ -548,14 +551,14 @@ export function useChat(): UseChatResult {
       streamingBuffer.current = '';
       setStreamingText('');
       try {
-        await CapacitorLlmLiteRT.sendMessage({ chatId: chatSessionId.current, message: trimmed });
+        await engine.sendMessage({ chatId: chatSessionId.current, message: trimmed });
       } catch (sendError) {
         logger.warn({ event: 'ai.chat.send_failed', err: { message: String(sendError) } });
         setIsStreaming(false);
         setError('Failed to reach the AI Assistant');
       }
     },
-    [dao, conversationId]
+    [dao, conversationId, engine]
   );
 
   return {

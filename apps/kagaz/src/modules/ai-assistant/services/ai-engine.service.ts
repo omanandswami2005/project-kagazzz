@@ -113,7 +113,8 @@ export async function downloadAndVerify(onProgress: (percent: number) => void): 
 
 /** What backend actually ended up loaded, and how long it took — for the Settings "ready" line. */
 export interface LoadResult {
-  backend: 'cpu' | 'gpu';
+  /** `ollama` = a local Ollama server (demo builds), not an on-device backend. */
+  backend: 'cpu' | 'gpu' | 'ollama';
   loadTimeMs: number;
 }
 

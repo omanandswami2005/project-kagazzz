@@ -12,6 +12,7 @@
  * the per-document lock gate. Recognized text is never logged.
  */
 import { log } from '@/core/logging';
+import { getOllamaConfig, ollamaPost, type FetchLike } from '@/infrastructure/ollama';
 
 const logger = log('image-engine');
 
@@ -24,7 +25,7 @@ export interface OllamaVisionConfig {
   /** A vision-capable model, e.g. `gemma4:e2b` */
   model: string;
   /** Injectable for tests; defaults to the global `fetch`. */
-  fetchImpl?: typeof fetch;
+  fetchImpl?: FetchLike;
 }
 
 const PROMPT =
@@ -42,21 +43,17 @@ async function toBase64(blob: Blob): Promise<string> {
 
 export function createOllamaVisionRecognizer(config: OllamaVisionConfig): ImageTextRecognizer {
   return async (image) => {
-    const doFetch = config.fetchImpl ?? fetch;
-    const response = await doFetch(`${config.baseUrl}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const body = await ollamaPost<{ message?: { content?: string } }>(
+      config.baseUrl,
+      '/api/chat',
+      {
         model: config.model,
         stream: false,
         options: { temperature: 0 },
         messages: [{ role: 'user', content: PROMPT, images: [await toBase64(image)] }],
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`Vision OCR failed: HTTP ${response.status}`);
-    }
-    const body = (await response.json()) as { message?: { content?: string } };
+      },
+      config.fetchImpl
+    );
     const text = (body.message?.content ?? '').trim();
     logger.info({ event: 'ocr.vision.success', chars: text.length });
     return text;
@@ -65,10 +62,6 @@ export function createOllamaVisionRecognizer(config: OllamaVisionConfig): ImageT
 
 /** The env-configured recognizer, or null when the fallback is not enabled. */
 export function getConfiguredVisionRecognizer(): ImageTextRecognizer | null {
-  const baseUrl = import.meta.env.VITE_OLLAMA_URL as string | undefined;
-  if (!baseUrl) {
-    return null;
-  }
-  const model = (import.meta.env.VITE_OLLAMA_VISION_MODEL as string | undefined) ?? 'gemma4:e2b';
-  return createOllamaVisionRecognizer({ baseUrl, model });
+  const config = getOllamaConfig();
+  return config ? createOllamaVisionRecognizer({ baseUrl: config.baseUrl, model: config.visionModel }) : null;
 }

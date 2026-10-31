@@ -22,6 +22,7 @@ import {
   MODEL_SIZE_BYTES,
   type LoadResult,
 } from '@/modules/ai-assistant/services/ai-engine.service';
+import { getOllamaEngine } from '@/modules/ai-assistant/services/chat-engine.registry';
 
 const logger = log('ai-assistant');
 
@@ -78,7 +79,8 @@ function storePreferGpu(value: boolean): void {
 
 /** Provides AI engine status app-wide. */
 export function AIProvider({ children }: { children: ReactNode }): ReactNode {
-  const supported = useMemo(() => isAiSupported(), []);
+  // Demo builds with a local Ollama server work on any platform, not just Android.
+  const supported = useMemo(() => isAiSupported() || getOllamaEngine() !== null, []);
   const [status, setStatus] = useState<AiStatus>(supported ? 'not-downloaded' : 'unsupported');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -112,6 +114,23 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   const activate = useCallback(
     async (tools: ToolDescriptor[]): Promise<void> => {
       setErrorMessage(null);
+      const ollama = getOllamaEngine();
+      if (ollama) {
+        // No download / checksum / local model load: just confirm the server and model are there.
+        setStatus('loading');
+        const startedAt = Date.now();
+        try {
+          ollama.setTools(tools);
+          await ollama.checkReady();
+          setCapabilities({ backend: 'ollama', loadTimeMs: Date.now() - startedAt });
+          setStatus('ready');
+        } catch (error) {
+          logger.warn({ event: 'ai.ollama.not_ready', err: { message: String(error) } });
+          setErrorMessage(error instanceof Error ? error.message : 'Ollama is not available');
+          setStatus('error');
+        }
+        return;
+      }
       setStatus('downloading');
       setDownloadProgress(0);
       try {
@@ -130,6 +149,12 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
   );
 
   const remove = useCallback(async (): Promise<void> => {
+    if (getOllamaEngine()) {
+      // Nothing is stored on-device for the Ollama engine.
+      setCapabilities(null);
+      setStatus('not-downloaded');
+      return;
+    }
     try {
       await deleteDownloadedModel();
       setCapabilities(null);

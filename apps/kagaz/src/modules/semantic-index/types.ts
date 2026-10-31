@@ -6,8 +6,11 @@
 
 /** Turns text into fixed-length vectors. One adapter per backend (Ollama, hosted API, on-device). */
 export interface EmbeddingProvider {
-  /** Embeds each text; result order matches input order. */
-  embed(texts: string[]): Promise<number[][]>;
+  /**
+   * Embeds each text; result order matches input order. `kind` lets models
+   * that embed queries and documents differently (EmbeddingGemma) do so.
+   */
+  embed(texts: string[], kind?: 'query' | 'document'): Promise<number[][]>;
 }
 
 /** A stored, searchable piece of a document. */

@@ -37,7 +37,7 @@ export class SemanticIndexService {
   }
 
   async search(query: string, topK = 5): Promise<SearchHit[]> {
-    const [queryVector] = await this.embeddings.embed([query]);
+    const [queryVector] = await this.embeddings.embed([query], 'query');
     return this.store.search(queryVector, topK);
   }
 }
