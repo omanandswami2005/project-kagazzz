@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { defineConfig, type PluginOption } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
+import { demoCsp } from './vite-plugins/demo-csp';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -23,7 +24,8 @@ const appVersion = (
 ).version;
 
 export default defineConfig(({ mode }) => {
-  const plugins: PluginOption[] = [react(), tailwindcss()];
+  const env = loadEnv(mode, __dirname, 'VITE_');
+  const plugins: PluginOption[] = [react(), tailwindcss(), demoCsp(env.VITE_OLLAMA_URL, mode)];
 
   if (mode === 'analyze') {
     plugins.push(
