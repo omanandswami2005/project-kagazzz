@@ -54,7 +54,10 @@ async function requireDocument(documentDao: DocumentDao, id: string): Promise<Do
   return doc;
 }
 
-async function requireDocuments(documentDao: DocumentDao, ids: string[]): Promise<DocumentEntity[]> {
+async function requireDocuments(
+  documentDao: DocumentDao,
+  ids: string[]
+): Promise<DocumentEntity[]> {
   return Promise.all(ids.map((id) => requireDocument(documentDao, id)));
 }
 
@@ -81,10 +84,15 @@ function requireSaved(count: number, opName: string): number {
  * the model to chain steps — without changing those hooks. Tool calls run one
  * at a time, so the diff is unambiguous.
  */
-export async function trackCreated(documentDao: DocumentDao, run: () => Promise<number>): Promise<CreatedDocuments> {
+export async function trackCreated(
+  documentDao: DocumentDao,
+  run: () => Promise<number>
+): Promise<CreatedDocuments> {
   const before = new Set((await documentDao.findAll()).map((d) => d.id));
   const created = await run();
-  const documents = (await documentDao.findAll()).filter((d) => !before.has(d.id)).map(toDocumentSummary);
+  const documents = (await documentDao.findAll())
+    .filter((d) => !before.has(d.id))
+    .map(toDocumentSummary);
   return { created, documents };
 }
 
@@ -135,7 +143,12 @@ export interface UseChatResult {
    * model sees a metadata-only line per document); `parts` carries extra
    * structured state such as the answer to a form.
    */
-  sendMessage: (text: string, options?: { attachments?: DocRef[]; parts?: MessagePart[] }) => Promise<void>;
+  sendMessage: (
+    text: string,
+    options?: { attachments?: DocRef[]; parts?: MessagePart[] }
+  ) => Promise<void>;
+  /** Starts a fresh conversation (new history + new native session); no-op while streaming. */
+  newChat: () => Promise<void>;
   /** A destructive tool call waiting on the confirmation card, if any. */
   pendingConfirmation: PendingToolConfirmation | null;
   /** Runs the pending tool call and resolves it back to the model. */
@@ -169,8 +182,15 @@ export function useChat(): UseChatResult {
   const { run: resizeCompressRun } = useResizeCompress();
   const { applyFilter } = useImageEnhancement();
   const { extractText } = useDocumentOcr();
-  const { mergePdfs, splitPdf, compressPdf, watermarkPdf, imagesToPdf, pdfToImages, exportPdfText } =
-    pdfEngine;
+  const {
+    mergePdfs,
+    splitPdf,
+    compressPdf,
+    watermarkPdf,
+    imagesToPdf,
+    pdfToImages,
+    exportPdfText,
+  } = pdfEngine;
 
   // F-14/F-23: the context ai-tools.actions.ts's + ai-navigation.actions.ts's
   // + ai-document-ops.actions.ts's handlers run against — built fresh
@@ -217,29 +237,46 @@ export function useChat(): UseChatResult {
         const doc = await requireDocument(documentDao, documentId);
         // Model-facing ranges are 1-indexed inclusive; PageRange is 0-indexed.
         const zeroIndexed = ranges.map(({ start, end }) => ({ start: start - 1, end: end - 1 }));
-        return trackCreated(documentDao, async () => requireSaved(await splitPdf(doc, zeroIndexed), 'Split'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await splitPdf(doc, zeroIndexed), 'Split')
+        );
       },
       compressDocument: async (documentId, quality): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return trackCreated(documentDao, async () => requireSaved(await compressPdf(doc, quality), 'Compress'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await compressPdf(doc, quality), 'Compress')
+        );
       },
       watermarkDocument: async (documentId, text): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return trackCreated(documentDao, async () => requireSaved(await watermarkPdf(doc, text), 'Watermark'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await watermarkPdf(doc, text), 'Watermark')
+        );
       },
       convertImagesToPdf: async (documentIds): Promise<CreatedDocuments> => {
         const docs = await requireDocuments(documentDao, documentIds);
-        return trackCreated(documentDao, async () => requireSaved(await imagesToPdf(docs), 'Images-to-PDF'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await imagesToPdf(docs), 'Images-to-PDF')
+        );
       },
       convertPdfToImages: async (documentId, format): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return trackCreated(documentDao, async () => requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images')
+        );
       },
       exportPdfText: async (documentId, format): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
-        return trackCreated(documentDao, async () => requireSaved(await exportPdfText(doc, format), 'Text export'));
+        return trackCreated(documentDao, async () =>
+          requireSaved(await exportPdfText(doc, format), 'Text export')
+        );
       },
-      resizeImage: async (documentId, width, height, maxSizeBytes): ReturnType<AiToolContext['resizeImage']> => {
+      resizeImage: async (
+        documentId,
+        width,
+        height,
+        maxSizeBytes
+      ): ReturnType<AiToolContext['resizeImage']> => {
         const doc = await requireDocument(documentDao, documentId);
         let outcome: Awaited<ReturnType<typeof resizeCompressRun>> | null = null;
         const { created, documents } = await trackCreated(documentDao, async () => {
@@ -250,7 +287,12 @@ export function useChat(): UseChatResult {
           return 1;
         });
         const result = outcome as unknown as { resultSizeBytes: number; hitQualityFloor: boolean };
-        return { created, documents, resultSizeBytes: result.resultSizeBytes, hitQualityFloor: result.hitQualityFloor };
+        return {
+          created,
+          documents,
+          resultSizeBytes: result.resultSizeBytes,
+          hitQualityFloor: result.hitQualityFloor,
+        };
       },
       enhanceImage: async (documentId, preset): Promise<CreatedDocuments> => {
         const doc = await requireDocument(documentDao, documentId);
@@ -270,7 +312,11 @@ export function useChat(): UseChatResult {
         return text.length;
       },
       semanticSearch: (query, limit) =>
-        semanticSearchDocuments({ listDocuments: () => documentDao.findAll(), extractText }, query, limit),
+        semanticSearchDocuments(
+          { listDocuments: () => documentDao.findAll(), extractText },
+          query,
+          limit
+        ),
       askUser: (spec): { status: 'waiting_for_user' } => {
         // [SEC] The model must not be able to collect secrets through a form.
         if (findSensitiveRequest(spec)) {
@@ -330,8 +376,15 @@ export function useChat(): UseChatResult {
       // Only tools that CREATE documents report a `created` count. Search/list results carry a
       // `documents` list too (existing files) and must never be shown as "Created".
       const data = result.data as { created?: number; documents?: DocumentSummary[] } | undefined;
-      const created = typeof data?.created === 'number' && data.created > 0 ? data.documents : undefined;
-      if (!dao || !conversationId || !result.ok || !Array.isArray(created) || created.length === 0) {
+      const created =
+        typeof data?.created === 'number' && data.created > 0 ? data.documents : undefined;
+      if (
+        !dao ||
+        !conversationId ||
+        !result.ok ||
+        !Array.isArray(created) ||
+        created.length === 0
+      ) {
         return;
       }
       const documents = created.map((d) => ({ id: d.id, name: d.name, fileType: d.fileType }));
@@ -360,9 +413,12 @@ export function useChat(): UseChatResult {
    * resolvePendingToolCall checks elapsed real time before running a real
    * side effect, not just whether the client timer happened to fire.
    */
-  const pendingToolCallRef = useRef<
-    { requestId: string; name: string; args: unknown; requestedAt: number } | null
-  >(null);
+  const pendingToolCallRef = useRef<{
+    requestId: string;
+    name: string;
+    args: unknown;
+    requestedAt: number;
+  } | null>(null);
 
   /** Puts the model's form in the chat. Replaces any text it streamed first — the form's question is the message. */
   const recordForm = useCallback(
@@ -516,7 +572,8 @@ export function useChat(): UseChatResult {
             if (pendingToolCallRef.current) {
               return JSON.stringify({
                 ok: false,
-                error: 'Another confirmation is already pending — wait for the user to respond to it first.',
+                error:
+                  'Another confirmation is already pending — wait for the user to respond to it first.',
               });
             }
             pendingToolCallRef.current = {
@@ -535,7 +592,10 @@ export function useChat(): UseChatResult {
           }
           const result = await aiToolRegistry.invoke(event.name, args, toolContext);
           void recordCreatedRef.current(result).catch((recordError: unknown) => {
-            logger.warn({ event: 'ai.chat.record_created_failed', err: { message: String(recordError) } });
+            logger.warn({
+              event: 'ai.chat.record_created_failed',
+              err: { message: String(recordError) },
+            });
           });
           return JSON.stringify(result);
         })()
@@ -553,15 +613,17 @@ export function useChat(): UseChatResult {
             // benign case resolvePendingToolCall's own catch already
             // documents. This retry can reject for the identical reason;
             // without its own catch it was an unhandled promise rejection.
-            engine.resolveToolCall({
-              requestId: event.requestId,
-              resultJson: JSON.stringify({ ok: false, error: 'Tool call failed' }),
-            }).catch((resolveError: unknown) => {
-              logger.warn({
-                event: 'ai.chat.tool_call_resolve_after_timeout',
-                err: { message: String(resolveError) },
+            engine
+              .resolveToolCall({
+                requestId: event.requestId,
+                resultJson: JSON.stringify({ ok: false, error: 'Tool call failed' }),
+              })
+              .catch((resolveError: unknown) => {
+                logger.warn({
+                  event: 'ai.chat.tool_call_resolve_after_timeout',
+                  err: { message: String(resolveError) },
+                });
               });
-            });
           });
       }),
     ];
@@ -618,7 +680,10 @@ export function useChat(): UseChatResult {
                 userMessage: 'Okay, I will not do that.',
               };
       void recordCreatedRef.current(result).catch((recordError: unknown) => {
-        logger.warn({ event: 'ai.chat.record_created_failed', err: { message: String(recordError) } });
+        logger.warn({
+          event: 'ai.chat.record_created_failed',
+          err: { message: String(recordError) },
+        });
       });
       try {
         await engine.resolveToolCall({
@@ -657,15 +722,27 @@ export function useChat(): UseChatResult {
     ): Promise<void> => {
       const trimmed = text.trim();
       const attachments = options?.attachments ?? [];
-      if ((!trimmed && attachments.length === 0) || !dao || !conversationId || !chatSessionId.current) {
+      if (
+        (!trimmed && attachments.length === 0) ||
+        !dao ||
+        !conversationId ||
+        !chatSessionId.current
+      ) {
         return;
       }
       setError(null);
       const partsJson = serializeParts([
-        ...(attachments.length > 0 ? [{ type: 'attachments' as const, documents: attachments }] : []),
+        ...(attachments.length > 0
+          ? [{ type: 'attachments' as const, documents: attachments }]
+          : []),
         ...(options?.parts ?? []),
       ]);
-      const userMessage = await dao.appendMessage({ conversationId, role: 'user', content: trimmed, partsJson });
+      const userMessage = await dao.appendMessage({
+        conversationId,
+        role: 'user',
+        content: trimmed,
+        partsJson,
+      });
       setMessages((prev) => [...prev, userMessage]);
       setIsStreaming(true);
       streamingBuffer.current = '';
@@ -673,7 +750,10 @@ export function useChat(): UseChatResult {
       // Pre-load skills the message suggests, so most turns need no ai.loadSkill round trip.
       skills.onUserMessage(toModelText({ content: trimmed, partsJson }));
       try {
-        await engine.sendMessage({ chatId: chatSessionId.current, message: toModelText({ content: trimmed, partsJson }) });
+        await engine.sendMessage({
+          chatId: chatSessionId.current,
+          message: toModelText({ content: trimmed, partsJson }),
+        });
       } catch (sendError) {
         logger.warn({ event: 'ai.chat.send_failed', err: { message: String(sendError) } });
         setIsStreaming(false);
@@ -683,7 +763,21 @@ export function useChat(): UseChatResult {
     [dao, conversationId, engine, skills]
   );
 
+  const newChat = useCallback(async (): Promise<void> => {
+    if (!dao || isStreaming) {
+      return;
+    }
+    const conversation = await dao.create();
+    const { id } = await engine.createChat();
+    chatSessionId.current = id;
+    skills.sync();
+    setConversationId(conversation.id);
+    setMessages([]);
+    setError(null);
+  }, [dao, engine, skills, isStreaming]);
+
   return {
+    newChat,
     messages,
     streamingText,
     isStreaming,

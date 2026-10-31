@@ -35,6 +35,7 @@ function chatValue(overrides: Partial<ReturnType<typeof useChat>> = {}): ReturnT
     error: null,
     isLoading: false,
     sendMessage: vi.fn(),
+    newChat: vi.fn(),
     pendingConfirmation: null,
     confirmPendingToolCall: vi.fn(),
     rejectPendingToolCall: vi.fn(),

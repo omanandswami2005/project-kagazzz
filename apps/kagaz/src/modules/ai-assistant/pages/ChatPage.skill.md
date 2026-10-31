@@ -30,6 +30,7 @@ the model a "not done" result, never a silent success.
 
 ## State I should check first
 - If the AI model isn't ready, the screen shows a setup gate, not chat.
+- The **+** in the top bar starts a new conversation (history is kept in the database; disabled while streaming or when the chat is empty).
 - While a response is streaming, the send control is disabled — one turn
   at a time. A pending confirmation card counts as still-streaming (the
   model is mid-turn waiting on the tool result).

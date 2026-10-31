@@ -131,20 +131,17 @@ describe('useChat (F-13)', () => {
   it('reuses the most recent conversation and loads its history', async () => {
     const db = new FakeDb()
       .onQuery(/FROM ai_conversations/, [conversationRow])
-      .onQuery(
-        /FROM ai_messages/,
-        [
-          {
-            id: 'm-1',
-            conversation_id: 'c-1',
-            role: 'user',
-            content: 'Hi',
-            tool_calls_json: null,
-            tool_call_id: null,
-            created_at: '2026-07-24T00:00:01.000Z',
-          },
-        ]
-      );
+      .onQuery(/FROM ai_messages/, [
+        {
+          id: 'm-1',
+          conversation_id: 'c-1',
+          role: 'user',
+          content: 'Hi',
+          tool_calls_json: null,
+          tool_call_id: null,
+          created_at: '2026-07-24T00:00:01.000Z',
+        },
+      ]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
 
     const { result } = renderHook(() => useChat());
@@ -159,10 +156,39 @@ describe('useChat (F-13)', () => {
 
     renderHook(() => useChat());
     await waitFor(() =>
-      expect(db.calls.some((c) => c.kind === 'run' && /INSERT INTO ai_conversations/.test(c.sql))).toBe(
-        true
-      )
+      expect(
+        db.calls.some((c) => c.kind === 'run' && /INSERT INTO ai_conversations/.test(c.sql))
+      ).toBe(true)
     );
+  });
+
+  it('newChat starts an empty conversation with a fresh native session', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM ai_messages/, [
+        {
+          id: 'm-1',
+          conversation_id: 'c-1',
+          role: 'user',
+          content: 'Hi',
+          tool_calls_json: null,
+          tool_call_id: null,
+          created_at: '2026-07-24T00:00:01.000Z',
+        },
+      ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(result.current.messages).toHaveLength(1));
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+
+    await act(async () => {
+      await result.current.newChat();
+    });
+    expect(result.current.messages).toHaveLength(0);
+    expect(plugin.createChat).toHaveBeenCalledTimes(2);
+    expect(
+      db.calls.some((c) => c.kind === 'run' && /INSERT INTO ai_conversations/.test(c.sql))
+    ).toBe(true);
   });
 
   it('creates a native chat session once the model is ready', async () => {
@@ -223,7 +249,8 @@ describe('useChat (F-13)', () => {
     // assert directly on the INSERT this hook issued, which is the real
     // behavior under test.
     const assistantInsert = db.calls.find(
-      (c) => c.kind === 'run' && /INSERT INTO ai_messages/.test(c.sql) && c.params[2] === 'assistant'
+      (c) =>
+        c.kind === 'run' && /INSERT INTO ai_messages/.test(c.sql) && c.params[2] === 'assistant'
     );
     expect(assistantInsert?.params).toContain('You have 12 documents.');
   });
@@ -308,7 +335,11 @@ describe('useChat (F-13)', () => {
     renderHook(() => useChat());
     await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
 
-    listeners.toolCallRequested?.({ requestId: 'req-1', name: 'ai.listDocuments', argumentsJson: '{}' });
+    listeners.toolCallRequested?.({
+      requestId: 'req-1',
+      name: 'ai.listDocuments',
+      argumentsJson: '{}',
+    });
     await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
     const [call] = plugin.resolveToolCall.mock.calls;
     expect(call?.[0]).toMatchObject({ requestId: 'req-1' });
@@ -317,15 +348,17 @@ describe('useChat (F-13)', () => {
       data: { documents: { id: string; name: string }[] };
     };
     expect(result.ok).toBe(true);
-    expect(result.data.documents).toEqual([{
-      id: 'd-1',
-      name: 'Passport Copy',
-      fileType: 'pdf',
-      fileSizeBytes: 1024,
-      isFavorite: false,
-      isLocked: false,
-      createdAt: '2026-07-24T00:00:00.000Z',
-    }]);
+    expect(result.data.documents).toEqual([
+      {
+        id: 'd-1',
+        name: 'Passport Copy',
+        fileType: 'pdf',
+        fileSizeBytes: 1024,
+        isFavorite: false,
+        isLocked: false,
+        createdAt: '2026-07-24T00:00:00.000Z',
+      },
+    ]);
   });
 
   it('rejects an unknown tool name with an ActionResult error, not a thrown exception', async () => {
@@ -336,7 +369,11 @@ describe('useChat (F-13)', () => {
     renderHook(() => useChat());
     await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
 
-    listeners.toolCallRequested?.({ requestId: 'req-2', name: 'ai.doesNotExist', argumentsJson: '{}' });
+    listeners.toolCallRequested?.({
+      requestId: 'req-2',
+      name: 'ai.doesNotExist',
+      argumentsJson: '{}',
+    });
     await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
     const [call] = plugin.resolveToolCall.mock.calls;
     const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; code?: string };
@@ -363,7 +400,10 @@ describe('useChat (F-13)', () => {
 
     expect(routerPush).toHaveBeenCalledWith(path, 'forward', 'push');
     const [call] = plugin.resolveToolCall.mock.calls;
-    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { opened: boolean } };
+    const result = JSON.parse(call?.[0]?.resultJson ?? '{}') as {
+      ok: boolean;
+      data?: { opened: boolean };
+    };
     expect(result).toEqual({ ok: true, data: { opened: true } });
   });
 
@@ -457,10 +497,9 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       ranges: [{ start: 1, end: 3 }],
     });
 
-    expect(pdfEngine.splitPdf).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'd-1' }),
-      [{ start: 0, end: 2 }]
-    );
+    expect(pdfEngine.splitPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), [
+      { start: 0, end: 2 },
+    ]);
     expect(result).toEqual({ ok: true, data: { created: 2, documents: [] } });
   });
 
@@ -478,13 +517,19 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       ok: true,
       data: { created: 1, documents: [] },
     });
-    expect(pdfEngine.compressPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'low');
+    expect(pdfEngine.compressPdf).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'd-1' }),
+      'low'
+    );
 
     expect(await dispatch('ai.watermarkDocument', { documentId: 'd-1', text: 'DRAFT' })).toEqual({
       ok: true,
       data: { created: 1, documents: [] },
     });
-    expect(pdfEngine.watermarkPdf).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'DRAFT');
+    expect(pdfEngine.watermarkPdf).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'd-1' }),
+      'DRAFT'
+    );
 
     expect(await dispatch('ai.convertImagesToPdf', { documentIds: ['d-1'] })).toEqual({
       ok: true,
@@ -504,18 +549,26 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       ok: true,
       data: { created: 1, documents: [] },
     });
-    expect(pdfEngine.exportPdfText).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), 'md');
+    expect(pdfEngine.exportPdfText).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'd-1' }),
+      'md'
+    );
   });
 
   it('fails cleanly (not a thrown exception) when the document id does not exist', async () => {
     useDatabaseMock.mockReturnValue({
       status: 'ready',
-      db: new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]).onQuery(/FROM documents/, []),
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, []),
     });
     plugin.resolveToolCall.mockResolvedValue(undefined);
     await renderReady();
 
-    const result = await dispatch('ai.compressDocument', { documentId: 'ghost', quality: 'medium' });
+    const result = await dispatch('ai.compressDocument', {
+      documentId: 'ghost',
+      quality: 'medium',
+    });
 
     expect(result.ok).toBe(false);
     expect(pdfEngine.compressPdf).not.toHaveBeenCalled();
@@ -588,7 +641,10 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     await renderReady();
 
     const merged = await dispatch('ai.mergeDocuments', { documentIds: ['d-1', 'd-1'] });
-    const split = await dispatch('ai.splitDocument', { documentId: 'd-1', ranges: [{ start: 1, end: 1 }] });
+    const split = await dispatch('ai.splitDocument', {
+      documentId: 'd-1',
+      ranges: [{ start: 1, end: 1 }],
+    });
 
     expect(merged.ok).toBe(false);
     expect(split.ok).toBe(false);
@@ -617,7 +673,16 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       .onQuery(/FROM ai_conversations/, [conversationRow])
       .onQuery(/FROM documents/, [documentRow])
       .onQuery(/FROM ai_messages WHERE id/, [
-        { id: 'f1', conversation_id: 'c-1', role: 'assistant', content: 'Which size?', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:03.000Z' },
+        {
+          id: 'f1',
+          conversation_id: 'c-1',
+          role: 'assistant',
+          content: 'Which size?',
+          tool_calls_json: null,
+          tool_call_id: null,
+          parts_json: null,
+          created_at: '2026-07-24T00:00:03.000Z',
+        },
       ]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     plugin.resolveToolCall.mockResolvedValue(undefined);
@@ -633,8 +698,12 @@ describe('useChat document-op tools (F-14 document operations)', () => {
 
     expect(result).toEqual({ ok: true, data: { status: 'waiting_for_user' } });
     await vi.waitFor(() => {
-      const insert = db.calls.find((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'));
-      const stored = insert?.params?.find((p) => typeof p === 'string' && p.includes('"form"')) as string;
+      const insert = db.calls.find(
+        (c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages')
+      );
+      const stored = insert?.params?.find(
+        (p) => typeof p === 'string' && p.includes('"form"')
+      ) as string;
       const parts = JSON.parse(stored) as { type: string; spec: { question: string } }[];
       expect(parts[0]).toMatchObject({ type: 'form', spec: { question: 'Which size?' } });
       expect(insert?.params).toContain('Which size?');
@@ -653,7 +722,9 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))).toBe(false);
+    expect(
+      db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))
+    ).toBe(false);
   });
 
   it('ai.askUser rejects a malformed form before anything is shown', async () => {
@@ -662,9 +733,14 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     plugin.resolveToolCall.mockResolvedValue(undefined);
     await renderReady();
 
-    const result = await dispatch('ai.askUser', { question: 'q', fields: [{ id: 'c', label: 'C', type: 'choice' }] });
+    const result = await dispatch('ai.askUser', {
+      question: 'q',
+      fields: [{ id: 'c', label: 'C', type: 'choice' }],
+    });
     expect(result.ok).toBe(false);
-    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))).toBe(false);
+    expect(
+      db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))
+    ).toBe(false);
   });
 });
 
@@ -715,7 +791,10 @@ describe('useChat confirmation-card flow (bug-audit hardening follow-up)', () =>
     await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
     const [call] = plugin.resolveToolCall.mock.calls;
     expect(call?.[0]).toMatchObject({ requestId: 'req-confirm' });
-    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as { ok: boolean; data?: { done: boolean } };
+    const parsed = JSON.parse(call?.[0]?.resultJson ?? '{}') as {
+      ok: boolean;
+      data?: { done: boolean };
+    };
     expect(parsed).toEqual({ ok: true, data: { done: true } });
   });
 
@@ -842,7 +921,24 @@ describe('result cards only for tools that created documents', () => {
   it('a search result (documents list, no created count) does not produce a "Created" card', async () => {
     const db = new FakeDb()
       .onQuery(/FROM ai_conversations/, [conversationRow])
-      .onQuery(/FROM documents/, [{ id: 'd-1', name: 'Passport photo.jpg', file_path: 'p', file_type: 'jpg', file_size: 1, is_favorite: 0, is_locked: 0, is_archived: 0, language: 'en', source_type: 'file_picker', created_at: '2026-07-24T00:00:00.000Z', updated_at: '2026-07-24T00:00:00.000Z', synced: 0, version: 1 }]);
+      .onQuery(/FROM documents/, [
+        {
+          id: 'd-1',
+          name: 'Passport photo.jpg',
+          file_path: 'p',
+          file_type: 'jpg',
+          file_size: 1,
+          is_favorite: 0,
+          is_locked: 0,
+          is_archived: 0,
+          language: 'en',
+          source_type: 'file_picker',
+          created_at: '2026-07-24T00:00:00.000Z',
+          updated_at: '2026-07-24T00:00:00.000Z',
+          synced: 0,
+          version: 1,
+        },
+      ]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     plugin.resolveToolCall.mockResolvedValue(undefined);
     const { result } = renderHook(() => useChat());
@@ -850,20 +946,43 @@ describe('result cards only for tools that created documents', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     plugin.resolveToolCall.mockClear();
-    listeners.toolCallRequested?.({ requestId: 'req-search', name: 'ai.searchDocuments', argumentsJson: JSON.stringify({ query: 'photo' }) });
+    listeners.toolCallRequested?.({
+      requestId: 'req-search',
+      name: 'ai.searchDocuments',
+      argumentsJson: JSON.stringify({ query: 'photo' }),
+    });
     await vi.waitFor(() => expect(plugin.resolveToolCall).toHaveBeenCalledOnce());
-    const payload = JSON.parse((plugin.resolveToolCall.mock.calls[0] as [{ resultJson: string }])[0].resultJson) as { data: { documents: unknown[] } };
+    const payload = JSON.parse(
+      (plugin.resolveToolCall.mock.calls[0] as [{ resultJson: string }])[0].resultJson
+    ) as { data: { documents: unknown[] } };
     expect(payload.data.documents).toHaveLength(1); // the model does get the search hit...
     await new Promise((r) => setTimeout(r, 50));
-    expect(db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages') && c.params?.includes('tool'))).toBe(false); // ...but no chat card
+    expect(
+      db.calls.some(
+        (c) =>
+          c.kind === 'run' &&
+          c.sql.includes('INSERT INTO ai_messages') &&
+          c.params?.includes('tool')
+      )
+    ).toBe(false); // ...but no chat card
   });
 });
 
 describe('trackCreated (document ids for tool results)', () => {
-  const row = (id: string): never => ({ id, name: `${id}.pdf`, fileType: 'pdf', filePath: `documents/${id}.pdf`, fileSize: 10 }) as never;
+  const row = (id: string): never =>
+    ({
+      id,
+      name: `${id}.pdf`,
+      fileType: 'pdf',
+      filePath: `documents/${id}.pdf`,
+      fileSize: 10,
+    }) as never;
 
   it('reports exactly the documents that appeared while the operation ran', async () => {
-    const findAll = vi.fn().mockResolvedValueOnce([row('a')]).mockResolvedValueOnce([row('a'), row('b'), row('c')]);
+    const findAll = vi
+      .fn()
+      .mockResolvedValueOnce([row('a')])
+      .mockResolvedValueOnce([row('a'), row('b'), row('c')]);
     const out = await trackCreated({ findAll } as never, () => Promise.resolve(2));
     expect(out.created).toBe(2);
     expect(out.documents.map((d) => d.id)).toEqual(['b', 'c']);
@@ -872,8 +991,12 @@ describe('trackCreated (document ids for tool results)', () => {
 
   it('reports no documents when nothing new appeared, and propagates a failing operation', async () => {
     const same = vi.fn().mockResolvedValue([row('a')]);
-    expect((await trackCreated({ findAll: same } as never, () => Promise.resolve(0))).documents).toEqual([]);
-    await expect(trackCreated({ findAll: same } as never, () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
+    expect(
+      (await trackCreated({ findAll: same } as never, () => Promise.resolve(0))).documents
+    ).toEqual([]);
+    await expect(
+      trackCreated({ findAll: same } as never, () => Promise.reject(new Error('boom')))
+    ).rejects.toThrow('boom');
   });
 });
 
@@ -884,7 +1007,16 @@ describe('useChat attachments and result cards (chat journey)', () => {
     const db = new FakeDb()
       .onQuery(/FROM ai_conversations/, [conversationRow])
       .onQuery(/FROM ai_messages WHERE id/, [
-        { id: 'm1', conversation_id: 'c-1', role: 'user', content: 'compress this', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:02.000Z' },
+        {
+          id: 'm1',
+          conversation_id: 'c-1',
+          role: 'user',
+          content: 'compress this',
+          tool_calls_json: null,
+          tool_call_id: null,
+          parts_json: null,
+          created_at: '2026-07-24T00:00:02.000Z',
+        },
       ]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     const { result } = renderHook(() => useChat());
@@ -895,8 +1027,12 @@ describe('useChat attachments and result cards (chat journey)', () => {
       await result.current.sendMessage('compress this', { attachments: [attachmentDoc] });
     });
 
-    const insert = db.calls.find((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'));
-    const stored = insert?.params?.find((p) => typeof p === 'string' && p.includes('"attachments"')) as string;
+    const insert = db.calls.find(
+      (c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages')
+    );
+    const stored = insert?.params?.find(
+      (p) => typeof p === 'string' && p.includes('"attachments"')
+    ) as string;
     expect(JSON.parse(stored)).toEqual([{ type: 'attachments', documents: [attachmentDoc] }]);
     expect(plugin.sendMessage).toHaveBeenCalledWith({
       chatId: 'session-1',
@@ -908,7 +1044,16 @@ describe('useChat attachments and result cards (chat journey)', () => {
     const db = new FakeDb()
       .onQuery(/FROM ai_conversations/, [conversationRow])
       .onQuery(/FROM ai_messages WHERE id/, [
-        { id: 'm1', conversation_id: 'c-1', role: 'user', content: '', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:02.000Z' },
+        {
+          id: 'm1',
+          conversation_id: 'c-1',
+          role: 'user',
+          content: '',
+          tool_calls_json: null,
+          tool_call_id: null,
+          parts_json: null,
+          created_at: '2026-07-24T00:00:02.000Z',
+        },
       ]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     const { result } = renderHook(() => useChat());

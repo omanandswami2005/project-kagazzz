@@ -54,5 +54,5 @@ Measured in live tests against the real models — they fail consistently, so do
 - **One switch** between on-device/local and Google Cloud; flipping it online shows a data-sharing warning first.
 - **Gemma 4 E2B locally**: ~22 tokens/s on an Intel i9, 16 GB, no GPU. Cloud replies in ~2.5 s.
 - **Skills**: tools load on demand — the first prompt shrinks from 1,822 to 660 tokens (core only; −34 % for a PDF-only chat).
-- **Gemma vision** reads English + Hindi document images; **EmbeddingGemma** is wired for semantic search (not yet in the UI).
+- **Gemma vision** reads English + Hindi document images; semantic search (`ai.semanticSearch`) works only on the dev server (Ollama EmbeddingGemma or Vertex embeddings); the APK has no embedding backend, and scanned PDFs without a text layer are not yet searchable.
 - **Demo build only.** The browser database is unencrypted and the cloud proxy exists only in the dev server — neither can be in a release build (the build refuses). Production is an encrypted Android app.

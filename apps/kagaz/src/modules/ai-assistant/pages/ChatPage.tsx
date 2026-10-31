@@ -47,7 +47,10 @@ export function ChatPage(): ReactNode {
   // Forms the model asked for that the user has not answered yet (a reloaded, answered form must not reappear).
   const answered = useMemo(() => answeredFormIds(chat.messages), [chat.messages]);
   const hasOpenForm = useMemo(
-    () => chat.messages.some((m) => parseParts(m.partsJson).some((p) => p.type === 'form' && !answered.has(p.formId))),
+    () =>
+      chat.messages.some((m) =>
+        parseParts(m.partsJson).some((p) => p.type === 'form' && !answered.has(p.formId))
+      ),
     [chat.messages, answered]
   );
   const attachable = useAttachableDocuments(attachOpen || hasOpenForm);
@@ -66,7 +69,10 @@ export function ChatPage(): ReactNode {
 
   const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType: d.fileType });
   const addAttachments = (docs: DocumentEntity[]): void =>
-    setAttachments((prev) => [...prev, ...docs.filter((d) => !prev.some((p) => p.id === d.id)).map(toRef)]);
+    setAttachments((prev) => [
+      ...prev,
+      ...docs.filter((d) => !prev.some((p) => p.id === d.id)).map(toRef),
+    ]);
 
   const submit = (): void => {
     if ((!draft.trim() && attachments.length === 0) || chat.isStreaming) {
@@ -102,13 +108,28 @@ export function ChatPage(): ReactNode {
             <IonBackButton defaultHref="/vault" data-agent-id="ai.chat.back" />
           </IonButtons>
           <IonTitle>{t('title')}</IonTitle>
-          {ai.onlineAvailable && (
-            <IonButtons slot="end">
-              <span className="kg-chat__mode" data-agent-id="ai.chat.mode-badge" data-agent-state={ai.mode}>
+          <IonButtons slot="end">
+            {!gated && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void chat.newChat()}
+                disabled={chat.isStreaming || chat.messages.length === 0}
+                agentId="ai.chat.new"
+              >
+                <Icon name="Plus" size={20} aria-label={t('new_chat')} />
+              </Button>
+            )}
+            {ai.onlineAvailable && (
+              <span
+                className="kg-chat__mode"
+                data-agent-id="ai.chat.mode-badge"
+                data-agent-state={ai.mode}
+              >
                 {ai.mode === 'online' ? t('mode.badge_online') : t('mode.badge_offline')}
               </span>
-            </IonButtons>
-          )}
+            )}
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
 
@@ -140,7 +161,9 @@ export function ChatPage(): ReactNode {
             <ul className="kg-chat__list" data-agent-id="ai.chat.messages">
               {chat.messages.map((message) => {
                 const parts = parseParts(message.partsJson);
-                const attached = parts.flatMap((p) => (p.type === 'attachments' ? p.documents : []));
+                const attached = parts.flatMap((p) =>
+                  p.type === 'attachments' ? p.documents : []
+                );
                 const created = parts.flatMap((p) => (p.type === 'documents' ? p.documents : []));
                 const form = parts.find((p) => p.type === 'form');
                 if (message.role === 'tool') {
@@ -159,7 +182,12 @@ export function ChatPage(): ReactNode {
                     className={`kg-chat__bubble kg-chat__bubble--${message.role}${form ? ' kg-chat__bubble--form' : ''}`}
                     data-agent-id={`ai.chat.message-${message.id}`}
                   >
-                    {attached.length > 0 && <AttachmentChips documents={attached} idPrefix={`ai.chat.sent-${message.id}`} />}
+                    {attached.length > 0 && (
+                      <AttachmentChips
+                        documents={attached}
+                        idPrefix={`ai.chat.sent-${message.id}`}
+                      />
+                    )}
                     <Markdown text={message.content ?? ''} />
                     {form && !answered.has(form.formId) && (
                       <AskUserForm
@@ -167,7 +195,9 @@ export function ChatPage(): ReactNode {
                         documents={attachable.documents}
                         disabled={chat.isStreaming}
                         onSubmit={(summary) =>
-                          void chat.sendMessage(summary, { parts: [{ type: 'answer', formId: form.formId }] })
+                          void chat.sendMessage(summary, {
+                            parts: [{ type: 'answer', formId: form.formId }],
+                          })
                         }
                       />
                     )}
@@ -180,7 +210,11 @@ export function ChatPage(): ReactNode {
                   data-agent-id="ai.chat.streaming"
                   aria-live="polite"
                 >
-                  {chat.streamingText ? <Markdown text={chat.streamingText} /> : <Spinner size="sm" label={t('thinking')} />}
+                  {chat.streamingText ? (
+                    <Markdown text={chat.streamingText} />
+                  ) : (
+                    <Spinner size="sm" label={t('thinking')} />
+                  )}
                 </li>
               )}
               {chat.error && (
