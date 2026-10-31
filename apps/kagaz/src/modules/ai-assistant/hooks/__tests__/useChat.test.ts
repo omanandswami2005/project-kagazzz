@@ -229,6 +229,45 @@ describe('useChat (F-13)', () => {
     await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
   });
 
+  it('re-prompts once when the model promises an action and ends the turn without a tool call', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM ai_messages WHERE id/, [
+        {
+          id: 'echo',
+          conversation_id: 'c-1',
+          role: 'user',
+          content: 'merge my first 3 docs',
+          tool_calls_json: null,
+          tool_call_id: null,
+          created_at: '2026-07-24T00:00:02.000Z',
+        },
+      ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+    plugin.sendMessage.mockResolvedValue(undefined);
+
+    await act(async () => {
+      await result.current.sendMessage('merge my first 3 docs');
+    });
+    const promise = 'I will now merge the documents. Please wait a moment.';
+    act(() => {
+      listeners.textFromAi?.({ chatId: 'session-1', text: promise, isChunk: true });
+      listeners.aiFinished?.({ chatId: 'session-1' });
+    });
+    await waitFor(() => expect(plugin.sendMessage).toHaveBeenCalledTimes(2));
+    expect(plugin.sendMessage.mock.calls[1]?.[0].message).toMatch(/call the tool/i);
+
+    // A second empty promise in the same turn is NOT nudged again.
+    act(() => {
+      listeners.textFromAi?.({ chatId: 'session-1', text: promise, isChunk: true });
+      listeners.aiFinished?.({ chatId: 'session-1' });
+    });
+    expect(plugin.sendMessage).toHaveBeenCalledTimes(2);
+  });
+
   it('sendMessage persists the user turn and streams the assistant reply', async () => {
     const db = new FakeDb()
       .onQuery(/FROM ai_conversations/, [conversationRow])

@@ -29,6 +29,7 @@ import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-too
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { NUDGE_MESSAGE, shouldNudge } from '../services/narration-guard';
 import { decodeFromModel, encodeForModel } from '../services/document-alias';
 import { findInDocumentText, rankDocumentMatches, readDocumentText } from '../services/document-text.service';
 import { semanticSearchDocuments } from '../services/document-search.service';
@@ -387,6 +388,9 @@ export function useChat(): UseChatResult {
   );
 
   const chatSessionId = useRef<string | null>(null);
+  /** Tool calls in the current user turn, and whether we already re-prompted it (see narration-guard). */
+  const toolCallsThisTurn = useRef(0);
+  const nudgedThisTurn = useRef(false);
 
   /** Shows documents a tool just created as a result card in the chat (persisted, so it survives a reload). */
   const recordCreated = useCallback(
@@ -562,7 +566,17 @@ export function useChat(): UseChatResult {
         if (event.chatId !== chatSessionId.current) {
           return;
         }
+        const reply = streamingBuffer.current;
         finishStreaming();
+        // The model promised an action and stopped: re-prompt once so the tool really runs.
+        if (shouldNudge(reply, toolCallsThisTurn.current, nudgedThisTurn.current) && chatSessionId.current) {
+          nudgedThisTurn.current = true;
+          logger.info({ event: 'ai.chat.nudge' });
+          setIsStreaming(true);
+          void engine
+            .sendMessage({ chatId: chatSessionId.current, message: NUDGE_MESSAGE })
+            .catch(() => setIsStreaming(false));
+        }
       }),
       engine.addListener('generationError', (event) => {
         if (event.chatId && event.chatId !== chatSessionId.current) {
@@ -587,6 +601,7 @@ export function useChat(): UseChatResult {
       // rejectPendingToolCall (05-ai-assistant-module.md §4.3's
       // `needsConfirmation` contract).
       engine.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
+        toolCallsThisTurn.current++;
         void (async (): Promise<string | null> => {
           const chip = (ok: boolean, reason?: string): void => {
             void recordToolCallRef.current(event.name, ok, reason).catch(() => undefined);
@@ -809,6 +824,8 @@ export function useChat(): UseChatResult {
       if (!messages.some((m) => m.role === 'user') && trimmed) {
         void dao.rename(conversationId, trimmed.slice(0, 48)).catch(() => undefined);
       }
+      toolCallsThisTurn.current = 0;
+      nudgedThisTurn.current = false;
       setIsStreaming(true);
       streamingBuffer.current = '';
       setStreamingText('');

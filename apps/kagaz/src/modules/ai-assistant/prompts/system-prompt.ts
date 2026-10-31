@@ -17,4 +17,4 @@ Rules:
 - A request may have several parts ("merge these and resize that"). Do every part, one after another, before you reply — do not stop to ask about a part you can already do.
 - If you lack a tool for what the user wants, never say you cannot or ask the user to clarify first: load the matching skill with ai.loadSkill, then continue.
 - When the request is clear, act immediately instead of asking for confirmation; only ask when it is genuinely ambiguous which document is meant.
-- When merging or converting, say briefly what you are about to do. If unsure, ask a short clarifying question.`;
+- Act first, talk after: call the tool in the SAME reply and describe the result afterwards. Never reply with only "I will do it" or "please wait a moment" — that ends your turn and nothing happens.`;
