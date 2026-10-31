@@ -28,6 +28,7 @@ import {
   loadModel,
   MODEL_SHA256,
   MODEL_SIZE_BYTES,
+  ON_DEVICE_MAX_TOKENS,
   modelSizeOnDiskBytes,
 } from '../ai-engine.service';
 
@@ -139,6 +140,8 @@ describe('loadModel (F-13)', () => {
       path: '/data/model.litertlm',
       modelType: 'litertlm',
       backend: 'cpu',
+      // Not the plugin's 2,048 default: the tool schemas alone overflow it ("2196 >= 2048" on a phone).
+      maxTokens: ON_DEVICE_MAX_TOKENS,
       tools: [],
     });
   });

@@ -28,6 +28,15 @@ export const MODEL_URL =
 export const MODEL_SHA256 = '181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c';
 export const MODEL_SIZE_BYTES = 2_588_147_712;
 
+/**
+ * Context window requested from the engine. The plugin's own default is 2,048 tokens, and this chat
+ * overflows it on its own: the native engine registers every tool up front (about 2,000 tokens of
+ * schemas) before the first word is typed, which failed on a phone with "input token ids are too
+ * long ... 2196 >= 2048". Gemma 4 E2B supports up to 32k; 8,192 leaves room for a real conversation
+ * and tool results without a large KV-cache cost.
+ */
+export const ON_DEVICE_MAX_TOKENS = 8192;
+
 /** Mirrors 05-ai-assistant-module.md §9.1 (renamed from the old WebGPU-era set). */
 export type AiErrorCode =
   | 'PLATFORM_NOT_SUPPORTED'
@@ -156,7 +165,13 @@ export async function loadModel(
 ): Promise<LoadResult> {
   if (preferGpu) {
     try {
-      await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'gpu', tools });
+      await CapacitorLlmLiteRT.setModel({
+        path,
+        modelType: 'litertlm',
+        backend: 'gpu',
+        maxTokens: ON_DEVICE_MAX_TOKENS,
+        tools,
+      });
       return logLoaded();
     } catch (gpuError) {
       // A genuine native crash never reaches this catch — see the doc
@@ -166,7 +181,13 @@ export async function loadModel(
   }
 
   try {
-    await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
+    await CapacitorLlmLiteRT.setModel({
+      path,
+      modelType: 'litertlm',
+      backend: 'cpu',
+      maxTokens: ON_DEVICE_MAX_TOKENS,
+      tools,
+    });
   } catch (cpuError) {
     // Surface the native engine's real message (e.g. an out-of-memory or
     // engine-init failure reason) instead of a generic string — it was
