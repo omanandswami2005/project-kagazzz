@@ -33,6 +33,24 @@ const pdfEngine = vi.hoisted(() => ({
 // rather than its whole native/Filesystem/upload dependency tree.
 vi.mock('@/modules/pdf-engine/hooks/usePdfEngine', () => ({ usePdfEngine: () => pdfEngine }));
 
+// The image tools reuse three document-vault hooks (resize, enhance, OCR);
+// each needs providers this hook-only test doesn't render — mocked at the
+// hook boundary, same as usePdfEngine above.
+const imageOps = vi.hoisted(() => ({
+  resizeRun: vi.fn(),
+  applyFilter: vi.fn(),
+  extractText: vi.fn(),
+}));
+vi.mock('@/modules/document-vault/hooks/useResizeCompress', () => ({
+  useResizeCompress: () => ({ runningId: null, run: imageOps.resizeRun }),
+}));
+vi.mock('@/modules/document-vault/hooks/useImageEnhancement', () => ({
+  useImageEnhancement: () => ({ runningId: null, applyFilter: imageOps.applyFilter }),
+}));
+vi.mock('@/modules/document-vault/hooks/useDocumentOcr', () => ({
+  useDocumentOcr: () => ({ runningId: null, extractText: imageOps.extractText }),
+}));
+
 const routerPush = vi.hoisted(() => vi.fn());
 // useChat now calls useIonRouter() for F-23's navigation tools —
 // useIonRouter() throws "An Ionic Router is required" without a real
@@ -507,6 +525,51 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     const result = await dispatch('ai.watermarkDocument', { documentId: 'd-1', text: 'DRAFT' });
 
     expect(result.ok).toBe(false);
+  });
+
+  it('image tools: resize forwards dimensions and budget, ocr returns only a character count', async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    imageOps.resizeRun.mockResolvedValue({
+      saved: true,
+      hitQualityFloor: false,
+      resultSizeBytes: 40_000,
+      belowMinSize: false,
+    });
+    imageOps.extractText.mockResolvedValue('secret text 123');
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const resized = await dispatch('ai.resizeImage', {
+      documentId: 'd-1',
+      width: 200,
+      height: 230,
+      maxSizeKb: 50,
+    });
+    expect(imageOps.resizeRun).toHaveBeenCalledWith(expect.objectContaining({ id: 'd-1' }), {
+      width: 200,
+      height: 230,
+      maxSizeBytes: 50 * 1024,
+    });
+    expect(resized.ok).toBe(true);
+
+    const ocr = await dispatch('ai.runOcr', { documentId: 'd-1' });
+    expect(ocr).toEqual({ ok: true, data: { characters: 15 } });
+  });
+
+  it('image tools refuse a locked document before running anything', async () => {
+    const lockedRow = { ...documentRow, is_locked: 1 };
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, [lockedRow]),
+    });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.enhanceImage', { documentId: 'd-1', preset: 'bw' });
+    expect(result.ok).toBe(false);
+    expect(imageOps.applyFilter).not.toHaveBeenCalled();
   });
 });
 

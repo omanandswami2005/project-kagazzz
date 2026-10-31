@@ -78,6 +78,20 @@ export interface AiToolContext {
   convertPdfToImages: (documentId: string, format: 'jpeg' | 'png') => Promise<number>;
   /** Extracts a PDF's text layer into a new text/Markdown document. */
   exportPdfText: (documentId: string, format: 'txt' | 'md') => Promise<number>;
+  /** Resizes+compresses an image to exact dimensions under a byte budget (ai-image-ops.actions.ts). */
+  resizeImage: (
+    documentId: string,
+    width: number,
+    height: number,
+    maxSizeBytes: number
+  ) => Promise<{ created: number; resultSizeBytes: number; hitQualityFloor: boolean }>;
+  /** Applies an image filter preset, saving a new copy. */
+  enhanceImage: (
+    documentId: string,
+    preset: 'grayscale' | 'bw' | 'enhance' | 'invert'
+  ) => Promise<number>;
+  /** OCRs a document into its search text; resolves the character count only (never the text). */
+  runOcr: (documentId: string) => Promise<number>;
   /** Applies (and persists) the colour theme (ai-settings.actions.ts). */
   setTheme: (theme: 'system' | 'light' | 'dark') => void;
   /** Switches (and persists) the UI language (ai-settings.actions.ts). */

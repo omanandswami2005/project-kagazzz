@@ -20,6 +20,9 @@ import { usePreferencesStore } from '@/core/preferences';
 import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
 import type { AiMessageEntity, DocumentEntity } from '@/infrastructure/database/types';
 import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
+import { useDocumentOcr } from '@/modules/document-vault/hooks/useDocumentOcr';
+import { useImageEnhancement } from '@/modules/document-vault/hooks/useImageEnhancement';
+import { useResizeCompress } from '@/modules/document-vault/hooks/useResizeCompress';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
 import type { AiToolContext, DocumentSummary } from '../ai-tools.actions';
 import { toDocumentSummary } from '../ai-tools.actions';
@@ -32,6 +35,19 @@ async function requireDocument(documentDao: DocumentDao, id: string): Promise<Do
   const doc = await documentDao.findById(id);
   if (!doc) {
     throw new Error(`No document found with id "${id}"`);
+  }
+  return doc;
+}
+
+/**
+ * Image tools reuse vault hooks that don't gate on the per-document lock
+ * (only OCR does), so refuse locked documents here — the model must never
+ * process a locked file without the biometric prompt (10-security §3.1).
+ */
+async function requireUnlockedDocument(documentDao: DocumentDao, id: string): Promise<DocumentEntity> {
+  const doc = await requireDocument(documentDao, id);
+  if (doc.isLocked) {
+    throw new Error('This document is locked; open it yourself to use it');
   }
   return doc;
 }
@@ -119,6 +135,9 @@ export function useChat(): UseChatResult {
   const { i18n } = useTranslation();
   const setSwipeAction = usePreferencesStore((s) => s.setSwipeAction);
   const pdfEngine = usePdfEngine();
+  const { run: resizeCompressRun } = useResizeCompress();
+  const { applyFilter } = useImageEnhancement();
+  const { extractText } = useDocumentOcr();
   const { mergePdfs, splitPdf, compressPdf, watermarkPdf, imagesToPdf, pdfToImages, exportPdfText } =
     pdfEngine;
 
@@ -189,6 +208,33 @@ export function useChat(): UseChatResult {
         const doc = await requireDocument(documentDao, documentId);
         return requireSaved(await exportPdfText(doc, format), 'Text export');
       },
+      resizeImage: async (documentId, width, height, maxSizeBytes): ReturnType<AiToolContext['resizeImage']> => {
+        const doc = await requireUnlockedDocument(documentDao, documentId);
+        const outcome = await resizeCompressRun(doc, { width, height, maxSizeBytes });
+        if (!outcome.saved) {
+          throw new Error('Resize did not produce a document');
+        }
+        return {
+          created: 1,
+          resultSizeBytes: outcome.resultSizeBytes,
+          hitQualityFloor: outcome.hitQualityFloor,
+        };
+      },
+      enhanceImage: async (documentId, preset): Promise<number> => {
+        const doc = await requireUnlockedDocument(documentDao, documentId);
+        if (!(await applyFilter(doc, preset))) {
+          throw new Error('Enhance did not produce a document');
+        }
+        return 1;
+      },
+      runOcr: async (documentId): Promise<number> => {
+        const doc = await requireUnlockedDocument(documentDao, documentId);
+        const text = await extractText(doc);
+        if (text === null) {
+          throw new Error('No text could be read from this document');
+        }
+        return text.length;
+      },
       // Bug-audit fix: settings.actions.ts's setTheme/setLanguage/
       // setSwipeAction were never registered into aiToolRegistry at all —
       // saying "dark mode" or "switch to hindi" to the assistant silently
@@ -208,6 +254,9 @@ export function useChat(): UseChatResult {
     imagesToPdf,
     pdfToImages,
     exportPdfText,
+    resizeCompressRun,
+    applyFilter,
+    extractText,
     applyTheme,
     i18n,
     setSwipeAction,
