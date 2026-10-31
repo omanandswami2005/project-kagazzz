@@ -258,7 +258,9 @@ describe('useChat (F-13)', () => {
       listeners.aiFinished?.({ chatId: 'session-1' });
     });
     await waitFor(() => expect(plugin.sendMessage).toHaveBeenCalledTimes(2));
-    expect(plugin.sendMessage.mock.calls[1]?.[0].message).toMatch(/call the tool/i);
+    expect((plugin.sendMessage.mock.calls[1]?.[0] as { message: string }).message).toMatch(
+      /call the tool/i
+    );
 
     // A second empty promise in the same turn is NOT nudged again.
     act(() => {
