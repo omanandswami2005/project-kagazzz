@@ -51,6 +51,7 @@ import { useDocument } from '../hooks/useDocument';
 import { useDocLock } from '../hooks/useDocLock';
 import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
+import { isOnline } from '@/infrastructure/cloud-ai';
 import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { copyToClipboard } from '@/core/clipboard';
@@ -314,7 +315,7 @@ export function DocumentViewerPage(): ReactNode {
                     >
                       {t('actions.transcribe_gemma')}
                     </Button>
-                    <p className="kg-viewer__text-empty">{t('ocr.vision_hint')}</p>
+                    <p className="kg-viewer__text-empty">{isOnline() ? t('ocr.vision_hint_online') : t('ocr.vision_hint')}</p>
                   </>
                 )}
               </section>

@@ -185,7 +185,8 @@
     "done": "Text saved — now searchable",
     "none": "No text found in this image",
     "failed": "Couldn't read text. Please try again.",
-    "vision_hint": "Sends this document to your local Gemma server (demo setup) and replaces the saved text."
+    "vision_hint": "Sends this document to your local Gemma server (demo setup) and replaces the saved text.",
+    "vision_hint_online": "Sends this document to Google Cloud (Gemma on Vertex AI) and replaces the saved text."
   },
   "lock": {
     "reason": "Unlock this document",

@@ -12,6 +12,7 @@ const state = vi.hoisted(
     ocrText: string;
     canOcr: boolean;
     canVision: boolean;
+    online: boolean;
     /** `?trashed=1` or `''` — read by the mocked `useLocation`. */
     search: string;
     extractText: ReturnType<typeof vi.fn>;
@@ -29,6 +30,7 @@ const state = vi.hoisted(
     ocrText: '',
     canOcr: true,
     canVision: false,
+    online: false,
     search: '',
     extractText: vi.fn(),
     softDelete: vi.fn(),
@@ -70,6 +72,7 @@ vi.mock('../../hooks/useDocument', () => ({
 vi.mock('../../hooks/useDocumentFile', () => ({
   useDocumentFile: () => ({ pages: state.pages, loading: state.fileLoading, error: state.error }),
 }));
+vi.mock('@/infrastructure/cloud-ai', () => ({ isOnline: () => state.online }));
 vi.mock('../../hooks/useDocumentOcr', () => ({
   canExtractText: () => state.canOcr,
   canTranscribeWithVision: () => state.canVision,
@@ -116,6 +119,7 @@ beforeEach(() => {
   state.ocrText = '';
   state.canOcr = true;
   state.canVision = false;
+  state.online = false;
   state.search = '';
   state.document = doc({ ocrText: state.ocrText });
   state.authorizeView.mockResolvedValue(true);
@@ -183,6 +187,23 @@ describe('DocumentViewerPage (UX-6)', () => {
       fireEvent.click(q('vault.viewer.transcribe-gemma')!);
     });
     expect(state.extractText).toHaveBeenCalledWith(expect.anything(), { engine: 'vision' });
+  });
+
+  it('the transcribe hint says where the document goes: a local server offline, Google Cloud online', async () => {
+    // (t() returns the key in this test environment; the keys carry the wording.)
+    const hint = (key: string): HTMLElement | null =>
+      [...document.querySelectorAll('p')].find((p) => p.textContent === key) ?? null;
+    state.canVision = true;
+    state.document = doc({ ocrText: 'AADHAAR 1234' });
+    await renderAuthorized();
+    expect(hint('ocr.vision_hint')).not.toBeNull();
+    expect(hint('ocr.vision_hint_online')).toBeNull();
+    cleanup();
+
+    state.online = true;
+    await renderAuthorized();
+    expect(hint('ocr.vision_hint_online')).not.toBeNull();
+    expect(hint('ocr.vision_hint')).toBeNull();
   });
 
   it('offers Extract text for a PDF with no stored text (UX-13)', async () => {

@@ -179,7 +179,9 @@ export function cloudAiProxy(enabled: boolean): Plugin {
       const handler = createCloudProxyHandler({
         getToken: gcloudTokenProvider(),
         project,
-        chatModel: process.env.CLOUD_CHAT_MODEL ?? 'google/gemini-2.5-flash',
+        // Gemma 4 on Vertex AI, so online and offline are the same model family. Override with e.g.
+        // CLOUD_CHAT_MODEL=google/gemini-2.5-flash to compare.
+        chatModel: process.env.CLOUD_CHAT_MODEL ?? 'google/gemma-4-26b-a4b-it-maas',
         embeddingModel: process.env.CLOUD_EMBEDDING_MODEL ?? 'text-embedding-005',
       });
       server.middlewares.use('/api/ai', (req, res) => void handler(req, res));
