@@ -23,6 +23,8 @@ export interface OllamaChatEngineOptions {
   systemPrompt: string;
   /** Context window to request; the default (4096) truncates ~25 tool schemas silently. */
   numCtx?: number;
+  /** Sampling temperature; low keeps tool selection consistent. Default 0.2. */
+  temperature?: number;
   /** Max model↔tool round trips per user message — guards against tool loops. */
   maxToolRounds?: number;
   /** Matches the native bridge's 30s; an unanswered tool call resolves to a timeout result. */
@@ -163,7 +165,7 @@ export class OllamaChatEngine implements ChatEngine {
           stream: true,
           messages: history,
           tools: this.tools,
-          options: { num_ctx: this.options.numCtx ?? 8192 },
+          options: { num_ctx: this.options.numCtx ?? 8192, temperature: this.options.temperature ?? 0.2 },
         },
         this.options.fetchImpl
       )) {

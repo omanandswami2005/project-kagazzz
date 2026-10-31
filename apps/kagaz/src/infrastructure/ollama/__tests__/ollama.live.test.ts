@@ -79,6 +79,9 @@ async function runTurn(message: string): Promise<{ calls: Call[]; reply: string;
 }
 
 const names = (calls: Call[]): string[] => calls.map((c) => c.name);
+/** Shown in assertion failures so a wrong tool choice is diagnosable from the log. */
+const trace = (r: { calls: Call[]; reply: string; error: string | null }): string =>
+  `calls=${JSON.stringify(r.calls)} reply=${JSON.stringify(r.reply.slice(0, 300))} error=${String(r.error)}`;
 
 describe.skipIf(!live)('LIVE: Gemma 4 E2B via Ollama — tool selection against the real registry', () => {
   it('"switch to dark mode" → settings.setTheme {theme: dark}', async () => {
@@ -107,7 +110,7 @@ describe.skipIf(!live)('LIVE: Gemma 4 E2B via Ollama — tool selection against 
     const r = await runTurn('Merge my rent agreement and my electricity bill into one PDF.');
     expect(r.error).toBeNull();
     const merge = r.calls.find((c) => c.name === 'ai.mergeDocuments');
-    expect(merge?.ok).toBe(true);
+    expect(merge?.ok, trace(r)).toBe(true);
     expect((merge?.args as { documentIds: string[] }).documentIds.sort()).toEqual(['doc-a', 'doc-b']);
   }, TURN_TIMEOUT);
 
@@ -115,7 +118,7 @@ describe.skipIf(!live)('LIVE: Gemma 4 E2B via Ollama — tool selection against 
     const r = await runTurn('Resize my photo to 200 by 230 pixels and under 50 KB for a form.');
     expect(r.error).toBeNull();
     const resize = r.calls.find((c) => c.name === 'ai.resizeImage');
-    expect(resize?.ok).toBe(true);
+    expect(resize?.ok, trace(r)).toBe(true);
     expect(resize?.args).toMatchObject({ documentId: 'doc-c', width: 200, height: 230, maxSizeKb: 50 });
   }, TURN_TIMEOUT);
 
