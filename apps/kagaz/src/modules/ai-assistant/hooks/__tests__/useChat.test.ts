@@ -800,3 +800,52 @@ describe('trackCreated (document ids for tool results)', () => {
     await expect(trackCreated({ findAll: same } as never, () => Promise.reject(new Error('boom')))).rejects.toThrow('boom');
   });
 });
+
+describe('useChat attachments and result cards (chat journey)', () => {
+  const attachmentDoc = { id: 'doc-a', name: 'Rent agreement.pdf', fileType: 'pdf' };
+
+  it('sendMessage with attachments stores them as parts and tells the model the id (metadata only)', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM ai_messages WHERE id/, [
+        { id: 'm1', conversation_id: 'c-1', role: 'user', content: 'compress this', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:02.000Z' },
+      ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.sendMessage('compress this', { attachments: [attachmentDoc] });
+    });
+
+    const insert = db.calls.find((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'));
+    const stored = insert?.params?.find((p) => typeof p === 'string' && p.includes('"attachments"')) as string;
+    expect(JSON.parse(stored)).toEqual([{ type: 'attachments', documents: [attachmentDoc] }]);
+    expect(plugin.sendMessage).toHaveBeenCalledWith({
+      chatId: 'session-1',
+      message: 'compress this\n[Attached: "Rent agreement.pdf" (id doc-a, pdf)]',
+    });
+  });
+
+  it('attachments alone (no text) are enough to send', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM ai_messages WHERE id/, [
+        { id: 'm1', conversation_id: 'c-1', role: 'user', content: '', tool_calls_json: null, tool_call_id: null, parts_json: null, created_at: '2026-07-24T00:00:02.000Z' },
+      ]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(plugin.createChat).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.sendMessage('', { attachments: [attachmentDoc] });
+    });
+    expect(plugin.sendMessage).toHaveBeenCalledOnce();
+    await act(async () => {
+      await result.current.sendMessage('   ');
+    });
+    expect(plugin.sendMessage).toHaveBeenCalledOnce(); // nothing to send
+  });
+});

@@ -51,5 +51,21 @@
     "warning_cancel": "Cancel",
     "badge_online": "Online",
     "badge_offline": "Offline"
+  },
+  "attach": {
+    "button": "Attach documents",
+    "title": "Attach documents",
+    "upload_new": "Upload new…",
+    "pick_hint": "Or pick from your vault",
+    "empty": "No documents in your vault yet.",
+    "locked_hint_one": "1 locked document isn't shown — open it yourself to use it.",
+    "locked_hint_other": "{{count}} locked documents aren't shown — open them yourself to use them.",
+    "confirm_one": "Attach 1 document",
+    "confirm_other": "Attach {{count}} documents",
+    "remove": "Remove {{name}}"
+  },
+  "result": {
+    "title": "Created",
+    "open": "Open"
   }
 }

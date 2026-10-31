@@ -6,6 +6,20 @@ import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../../hooks/useChat';
 import { ChatPage } from '../ChatPage';
 
+// The attach flow needs the vault database and upload pipeline; the page's own
+// behavior is what's under test here, so both hooks are mocked at their boundary.
+const attach = vi.hoisted(() => ({
+  state: { documents: [] as unknown[], lockedCount: 0 },
+  ingestFiles: vi.fn(),
+}));
+vi.mock('../../hooks/useAttachableDocuments', () => ({ useAttachableDocuments: () => attach.state }));
+vi.mock('@/modules/document-vault/hooks/useUpload', () => ({ useUpload: () => ({ ingestFiles: attach.ingestFiles }) }));
+
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('@ionic/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ionic/react')>()),
+  useIonRouter: () => ({ push: routerPush }),
+}));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 vi.mock('../../hooks/useChat', () => ({ useChat: vi.fn() }));
 vi.mock('../../components/MicButton', () => ({ MicButton: () => null }));
@@ -111,7 +125,7 @@ describe('ChatPage (F-13)', () => {
     await userEvent.type(input, 'How many documents do I have?');
     await userEvent.click(document.querySelector('[data-agent-id="ai.chat.send"]') as Element);
 
-    expect(sendMessage).toHaveBeenCalledWith('How many documents do I have?');
+    expect(sendMessage).toHaveBeenCalledWith('How many documents do I have?', { attachments: [] });
     expect(input.value).toBe('');
   });
 
@@ -204,5 +218,92 @@ describe('ChatPage (F-13)', () => {
     expect(document.querySelector('[data-agent-id="ai.chat.confirm-approve"]')).not.toBeInTheDocument();
     await userEvent.click(document.querySelector('[data-agent-id="ai.chat.confirm-dismiss"]') as Element);
     expect(dismissExpiredConfirmation).toHaveBeenCalledOnce();
+  });
+});
+
+describe('ChatPage attachments and result cards (chat journey)', () => {
+  const doc = (id: string, name: string, fileType = 'pdf'): Record<string, unknown> => ({ id, name, fileType, isLocked: false });
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+
+  beforeEach(() => {
+    useAiMock.mockReturnValue(aiValue());
+    attach.state = { documents: [doc('doc-a', 'Rent agreement.pdf'), doc('doc-c', 'Photo.jpg', 'jpg')], lockedCount: 0 };
+    routerPush.mockClear();
+  });
+
+  it('attaching documents shows chips, sends them with the message, then clears them', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ sendMessage }));
+    render(<ChatPage />);
+
+    await userEvent.click(q('ai.chat.attach') as Element);
+    await userEvent.click(await screen.findByRole('button', { name: /Rent agreement\.pdf/ }));
+    await userEvent.click(q('ai.chat.attach-confirm') as Element);
+
+    expect(q('ai.chat.attachment-doc-a')).toHaveTextContent('Rent agreement.pdf');
+    await userEvent.type(q('ai.chat.input') as HTMLInputElement, 'compress this');
+    await userEvent.click(q('ai.chat.send') as Element);
+
+    expect(sendMessage).toHaveBeenCalledWith('compress this', {
+      attachments: [{ id: 'doc-a', name: 'Rent agreement.pdf', fileType: 'pdf' }],
+    });
+    expect(q('ai.chat.attachment-doc-a')).toBeNull();
+  });
+
+  it('a chip can be removed, and attachments alone (no text) can be sent', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ sendMessage }));
+    render(<ChatPage />);
+    const attachDoc = async (name: RegExp): Promise<void> => {
+      await userEvent.click(q('ai.chat.attach') as Element);
+      await userEvent.click(await screen.findByRole('button', { name }));
+      await userEvent.click(q('ai.chat.attach-confirm') as Element);
+    };
+
+    await attachDoc(/Rent agreement\.pdf/);
+    await userEvent.click(q('ai.chat.attachment-remove-doc-a') as Element);
+    expect(q('ai.chat.attachment-doc-a')).toBeNull();
+    expect(q('ai.chat.send')).toBeDisabled();
+
+    await attachDoc(/Photo\.jpg/);
+    expect(q('ai.chat.send')).not.toBeDisabled();
+    await userEvent.click(q('ai.chat.send') as Element);
+    expect(sendMessage).toHaveBeenCalledWith('', { attachments: [{ id: 'doc-c', name: 'Photo.jpg', fileType: 'jpg' }] });
+  });
+
+  it('says how many locked documents are hidden from the picker', async () => {
+    attach.state = { documents: [], lockedCount: 2 };
+    useChatMock.mockReturnValue(chatValue());
+    render(<ChatPage />);
+    await userEvent.click(q('ai.chat.attach') as Element);
+    expect(await screen.findByText(/2 locked documents aren't shown/)).toBeInTheDocument();
+  });
+
+  it('shows a sent message with its attached documents, and a tool result as an openable card', async () => {
+    const parts = (p: unknown): string => JSON.stringify(p);
+    useChatMock.mockReturnValue(
+      chatValue({
+        messages: [
+          { id: 'm1', conversationId: 'c', role: 'user', content: 'merge these', createdAt: '', partsJson: parts([{ type: 'attachments', documents: [{ id: 'doc-a', name: 'Rent agreement.pdf', fileType: 'pdf' }] }]) },
+          { id: 'm2', conversationId: 'c', role: 'tool', content: 'Merged.pdf', createdAt: '', partsJson: parts([{ type: 'documents', documents: [{ id: 'new-1', name: 'Merged.pdf', fileType: 'pdf' }] }]) },
+        ] as never,
+      })
+    );
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-m1')).toHaveTextContent('Rent agreement.pdf');
+    expect(q('ai.chat.message-m1')).toHaveTextContent('merge these');
+    expect(q('ai.chat.result-card')).toHaveTextContent('Merged.pdf');
+
+    await userEvent.click(q('ai.chat.result-open-new-1') as Element);
+    expect(routerPush).toHaveBeenCalledWith('/doc/new-1', 'forward', 'push');
+  });
+
+  it('a plain tool message without a documents part renders nothing', () => {
+    useChatMock.mockReturnValue(
+      chatValue({ messages: [{ id: 'm3', conversationId: 'c', role: 'tool', content: 'x', createdAt: '' }] as never })
+    );
+    render(<ChatPage />);
+    expect(q('ai.chat.message-m3')).toBeNull();
   });
 });

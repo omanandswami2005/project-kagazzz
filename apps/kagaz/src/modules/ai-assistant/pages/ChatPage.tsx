@@ -18,7 +18,15 @@ import {
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, Input, Spinner } from '@kagaz/ui';
+import { AttachSheet } from '../components/AttachSheet';
+import { AttachmentChips, ResultCard } from '../components/MessageParts';
 import { MicButton } from '../components/MicButton';
+import { UploadOptionsSheet } from '@/modules/document-vault/components/UploadOptionsSheet';
+import { useUpload } from '@/modules/document-vault/hooks/useUpload';
+import { pickFiles, type UploadSource } from '@/modules/document-vault/services/upload-sources';
+import type { DocumentEntity } from '@/infrastructure/database/types';
+import { useAttachableDocuments } from '../hooks/useAttachableDocuments';
+import { parseParts, type DocRef } from '../types/message-parts';
 import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../hooks/useChat';
 import './chat.css';
@@ -30,6 +38,11 @@ export function ChatPage(): ReactNode {
   const ai = useAi();
   const chat = useChat();
   const [draft, setDraft] = useState('');
+  const [attachments, setAttachments] = useState<DocRef[]>([]);
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const attachable = useAttachableDocuments(attachOpen);
+  const { ingestFiles } = useUpload();
   const listEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,14 +55,31 @@ export function ChatPage(): ReactNode {
 
   const gated = ai.status !== 'ready';
 
+  const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType: d.fileType });
+  const addAttachments = (docs: DocumentEntity[]): void =>
+    setAttachments((prev) => [...prev, ...docs.filter((d) => !prev.some((p) => p.id === d.id)).map(toRef)]);
+
   const handleSubmit = (event: FormEvent): void => {
     event.preventDefault();
-    if (!draft.trim() || chat.isStreaming) {
+    if ((!draft.trim() && attachments.length === 0) || chat.isStreaming) {
       return;
     }
     const text = draft;
     setDraft('');
-    void chat.sendMessage(text);
+    setAttachments([]);
+    void chat.sendMessage(text, { attachments });
+  };
+
+  // Upload new: reuse the vault's source picker, then attach whatever landed in the vault.
+  const handleUploadSource = async (source: UploadSource): Promise<void> => {
+    setUploadOpen(false);
+    const files = await pickFiles(source);
+    if (files.length === 0) {
+      return;
+    }
+    const outcome = await ingestFiles(files);
+    addAttachments(outcome.documents);
+    setAttachOpen(false);
   };
 
   return (
@@ -96,15 +126,31 @@ export function ChatPage(): ReactNode {
         ) : (
           <main className="kg-chat" data-agent-id="ai.chat.content">
             <ul className="kg-chat__list" data-agent-id="ai.chat.messages">
-              {chat.messages.map((message) => (
-                <li
-                  key={message.id}
-                  className={`kg-chat__bubble kg-chat__bubble--${message.role}`}
-                  data-agent-id={`ai.chat.message-${message.id}`}
-                >
-                  {message.content}
-                </li>
-              ))}
+              {chat.messages.map((message) => {
+                const parts = parseParts(message.partsJson);
+                const attached = parts.flatMap((p) => (p.type === 'attachments' ? p.documents : []));
+                const created = parts.flatMap((p) => (p.type === 'documents' ? p.documents : []));
+                if (message.role === 'tool') {
+                  return created.length > 0 ? (
+                    <li key={message.id} data-agent-id={`ai.chat.message-${message.id}`}>
+                      <ResultCard
+                        documents={created}
+                        onOpen={(id) => router.push(`/doc/${id}`, 'forward', 'push')}
+                      />
+                    </li>
+                  ) : null;
+                }
+                return (
+                  <li
+                    key={message.id}
+                    className={`kg-chat__bubble kg-chat__bubble--${message.role}`}
+                    data-agent-id={`ai.chat.message-${message.id}`}
+                  >
+                    {attached.length > 0 && <AttachmentChips documents={attached} idPrefix={`ai.chat.sent-${message.id}`} />}
+                    {message.content}
+                  </li>
+                );
+              })}
               {chat.isStreaming && (
                 <li
                   className="kg-chat__bubble kg-chat__bubble--assistant"
@@ -172,7 +218,22 @@ export function ChatPage(): ReactNode {
 
       {!gated && !chat.isLoading && (
         <IonFooter>
+          {attachments.length > 0 && (
+            <AttachmentChips
+              documents={attachments}
+              onRemove={(id) => setAttachments((prev) => prev.filter((d) => d.id !== id))}
+            />
+          )}
           <form className="kg-chat__composer" onSubmit={handleSubmit}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAttachOpen(true)}
+              disabled={chat.isStreaming}
+              agentId="ai.chat.attach"
+            >
+              <Icon name="Plus" size={20} aria-label={t('attach.button')} />
+            </Button>
             <Input
               type="text"
               label={t('input_placeholder')}
@@ -187,12 +248,28 @@ export function ChatPage(): ReactNode {
               type="submit"
               variant="primary"
               size="sm"
-              disabled={!draft.trim() || chat.isStreaming}
+              disabled={(!draft.trim() && attachments.length === 0) || chat.isStreaming}
               agentId="ai.chat.send"
             >
               <Icon name="Send" size={20} aria-label={t('input_placeholder')} />
             </Button>
           </form>
+          <AttachSheet
+            isOpen={attachOpen}
+            documents={attachable.documents}
+            lockedCount={attachable.lockedCount}
+            onDismiss={() => setAttachOpen(false)}
+            onAttach={(docs) => {
+              addAttachments(docs);
+              setAttachOpen(false);
+            }}
+            onUploadNew={() => setUploadOpen(true)}
+          />
+          <UploadOptionsSheet
+            isOpen={uploadOpen}
+            onDismiss={() => setUploadOpen(false)}
+            onSelect={(source) => void handleUploadSource(source)}
+          />
         </IonFooter>
       )}
     </IonPage>

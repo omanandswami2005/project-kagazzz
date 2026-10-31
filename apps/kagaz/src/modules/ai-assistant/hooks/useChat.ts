@@ -28,6 +28,7 @@ import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-too
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
+import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
 import { SkillController } from '../skills/skill-controller';
 import { SkillSession } from '../skills/skill-session';
 
@@ -127,7 +128,12 @@ export interface UseChatResult {
   error: string | null;
   /** True until the conversation + its history have loaded. */
   isLoading: boolean;
-  sendMessage: (text: string) => Promise<void>;
+  /**
+   * Sends a user turn. `attachments` are vault documents the user picked (the
+   * model sees a metadata-only line per document); `parts` carries extra
+   * structured state such as the answer to a form.
+   */
+  sendMessage: (text: string, options?: { attachments?: DocRef[]; parts?: MessagePart[] }) => Promise<void>;
   /** A destructive tool call waiting on the confirmation card, if any. */
   pendingConfirmation: PendingToolConfirmation | null;
   /** Runs the pending tool call and resolves it back to the model. */
@@ -299,6 +305,30 @@ export function useChat(): UseChatResult {
   );
 
   const chatSessionId = useRef<string | null>(null);
+
+  /** Shows documents a tool just created as a result card in the chat (persisted, so it survives a reload). */
+  const recordCreated = useCallback(
+    async (result: { ok: boolean; data?: unknown }): Promise<void> => {
+      const created = (result.data as { documents?: DocumentSummary[] } | undefined)?.documents;
+      if (!dao || !conversationId || !result.ok || !Array.isArray(created) || created.length === 0) {
+        return;
+      }
+      const documents = created.map((d) => ({ id: d.id, name: d.name, fileType: d.fileType }));
+      const message = await dao.appendMessage({
+        conversationId,
+        role: 'tool',
+        content: documents.map((d) => d.name).join(', '),
+        partsJson: serializeParts([{ type: 'documents', documents }]),
+      });
+      setMessages((prev) => [...prev, message]);
+    },
+    [dao, conversationId]
+  );
+  // The tool-call listener is subscribed once per engine; it reads the latest recorder through a ref.
+  const recordCreatedRef = useRef(recordCreated);
+  useEffect(() => {
+    recordCreatedRef.current = recordCreated;
+  }, [recordCreated]);
   const streamingBuffer = useRef('');
   /**
    * The full call the card resolves on confirm/reject — not in state since
@@ -461,6 +491,9 @@ export function useChat(): UseChatResult {
             return null;
           }
           const result = await aiToolRegistry.invoke(event.name, args, toolContext);
+          void recordCreatedRef.current(result).catch((recordError: unknown) => {
+            logger.warn({ event: 'ai.chat.record_created_failed', err: { message: String(recordError) } });
+          });
           return JSON.stringify(result);
         })()
           .then((resultJson) => {
@@ -541,6 +574,9 @@ export function useChat(): UseChatResult {
                 retryable: false,
                 userMessage: 'Okay, I will not do that.',
               };
+      void recordCreatedRef.current(result).catch((recordError: unknown) => {
+        logger.warn({ event: 'ai.chat.record_created_failed', err: { message: String(recordError) } });
+      });
       try {
         await engine.resolveToolCall({
           requestId: pending.requestId,
@@ -572,21 +608,29 @@ export function useChat(): UseChatResult {
   }, []);
 
   const sendMessage = useCallback(
-    async (text: string): Promise<void> => {
+    async (
+      text: string,
+      options?: { attachments?: DocRef[]; parts?: MessagePart[] }
+    ): Promise<void> => {
       const trimmed = text.trim();
-      if (!trimmed || !dao || !conversationId || !chatSessionId.current) {
+      const attachments = options?.attachments ?? [];
+      if ((!trimmed && attachments.length === 0) || !dao || !conversationId || !chatSessionId.current) {
         return;
       }
       setError(null);
-      const userMessage = await dao.appendMessage({ conversationId, role: 'user', content: trimmed });
+      const partsJson = serializeParts([
+        ...(attachments.length > 0 ? [{ type: 'attachments' as const, documents: attachments }] : []),
+        ...(options?.parts ?? []),
+      ]);
+      const userMessage = await dao.appendMessage({ conversationId, role: 'user', content: trimmed, partsJson });
       setMessages((prev) => [...prev, userMessage]);
       setIsStreaming(true);
       streamingBuffer.current = '';
       setStreamingText('');
       // Pre-load skills the message suggests, so most turns need no ai.loadSkill round trip.
-      skills.onUserMessage(trimmed);
+      skills.onUserMessage(toModelText({ content: trimmed, partsJson }));
       try {
-        await engine.sendMessage({ chatId: chatSessionId.current, message: trimmed });
+        await engine.sendMessage({ chatId: chatSessionId.current, message: toModelText({ content: trimmed, partsJson }) });
       } catch (sendError) {
         logger.warn({ event: 'ai.chat.send_failed', err: { message: String(sendError) } });
         setIsStreaming(false);

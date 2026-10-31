@@ -92,6 +92,22 @@ describe('AiConversationDao', () => {
     expect(update?.params?.[1]).toBe('c-1');
   });
 
+  it('appendMessage stores parts_json, and the row maps back to partsJson (migration 007)', async () => {
+    const parts = JSON.stringify([{ type: 'attachments', documents: [{ id: 'd-1', name: 'a.pdf', fileType: 'pdf' }] }]);
+    db.onQuery(/FROM ai_messages WHERE id/, [messageRow({ parts_json: parts })]);
+    const message = await dao.appendMessage({ conversationId: 'c-1', role: 'user', content: 'x', partsJson: parts });
+    expect(message.partsJson).toBe(parts);
+    const insert = db.calls.find((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'));
+    expect(insert?.sql).toContain('parts_json');
+    expect(insert?.params).toContain(parts);
+  });
+
+  it('setActiveSkills persists the loaded skills as JSON', async () => {
+    expect(await dao.setActiveSkills('c-1', ['pdf-tools'])).toBe(1);
+    const update = db.calls.find((c) => c.kind === 'run' && c.sql.includes('active_skills'));
+    expect(update?.params).toEqual(['["pdf-tools"]', 'c-1']);
+  });
+
   it('appendMessage throws if the row cannot be read back', async () => {
     await expect(
       dao.appendMessage({ conversationId: 'c-1', role: 'assistant' })
