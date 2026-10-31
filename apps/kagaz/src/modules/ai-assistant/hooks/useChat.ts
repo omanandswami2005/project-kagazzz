@@ -18,6 +18,7 @@ import { useTheme } from '@/app/providers/ThemeProvider';
 import { log } from '@/core/logging';
 import { usePreferencesStore } from '@/core/preferences';
 import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
+import type { AiConversationEntity } from '@/infrastructure/database/types';
 import type { AiMessageEntity, DocumentEntity } from '@/infrastructure/database/types';
 import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
 import { useDocumentOcr } from '@/modules/document-vault/hooks/useDocumentOcr';
@@ -149,6 +150,14 @@ export interface UseChatResult {
   ) => Promise<void>;
   /** Starts a fresh conversation (new history + new native session); no-op while streaming. */
   newChat: () => Promise<void>;
+  /** Saved conversations, newest first (call {@link UseChatResult.loadConversations} to refresh). */
+  conversations: AiConversationEntity[];
+  activeConversationId: string | null;
+  loadConversations: () => Promise<void>;
+  /** Switches to a saved conversation (its messages load; the model starts a fresh session). */
+  openConversation: (id: string) => Promise<void>;
+  /** Deletes a saved conversation; deleting the open one starts a new chat. */
+  deleteConversation: (id: string) => Promise<void>;
   /** A destructive tool call waiting on the confirmation card, if any. */
   pendingConfirmation: PendingToolConfirmation | null;
   /** Runs the pending tool call and resolves it back to the model. */
@@ -399,6 +408,27 @@ export function useChat(): UseChatResult {
     [dao, conversationId]
   );
   // The tool-call listener is subscribed once per engine; it reads the latest recorder through a ref.
+  /** Persists one tool run as a chip in the chat (name + ok/failed) so every tool call is visible. */
+  const recordToolCall = useCallback(
+    async (name: string, ok: boolean, error?: string): Promise<void> => {
+      if (!dao || !conversationId) {
+        return;
+      }
+      const message = await dao.appendMessage({
+        conversationId,
+        role: 'tool',
+        content: name,
+        partsJson: serializeParts([{ type: 'tool', name, ok, error: error?.slice(0, 300) }]),
+      });
+      setMessages((prev) => [...prev, message]);
+    },
+    [dao, conversationId]
+  );
+  const recordToolCallRef = useRef(recordToolCall);
+  useEffect(() => {
+    recordToolCallRef.current = recordToolCall;
+  }, [recordToolCall]);
+
   const recordCreatedRef = useRef(recordCreated);
   useEffect(() => {
     recordCreatedRef.current = recordCreated;
@@ -545,18 +575,24 @@ export function useChat(): UseChatResult {
       // `needsConfirmation` contract).
       engine.addListener('toolCallRequested', (event: ToolCallRequestedEvent) => {
         void (async (): Promise<string | null> => {
+          const chip = (ok: boolean, reason?: string): void => {
+            void recordToolCallRef.current(event.name, ok, reason).catch(() => undefined);
+          };
           if (!toolContext) {
+            chip(false, 'AI tools are not available yet');
             return JSON.stringify({ ok: false, error: 'AI tools are not available yet' });
           }
           let args: unknown;
           try {
             args = JSON.parse(event.argumentsJson) as unknown;
           } catch {
+            chip(false, `Malformed arguments: ${event.argumentsJson.slice(0, 120)}`);
             return JSON.stringify({ ok: false, error: 'Malformed tool arguments' });
           }
           // Skills: refuse a tool whose skill isn't loaded (enforced here, not just in the prompt).
           const refusal = skills.refusal(event.name);
           if (refusal) {
+            chip(false, 'Skill not loaded yet');
             return refusal;
           }
           const action = aiToolRegistry.get(event.name);
@@ -591,6 +627,8 @@ export function useChat(): UseChatResult {
             return null;
           }
           const result = await aiToolRegistry.invoke(event.name, args, toolContext);
+          logger.info({ event: 'ai.chat.tool_run', name: event.name, ok: result.ok });
+          chip(result.ok, result.ok ? undefined : result.userMessage || result.message);
           void recordCreatedRef.current(result).catch((recordError: unknown) => {
             logger.warn({
               event: 'ai.chat.record_created_failed',
@@ -679,6 +717,13 @@ export function useChat(): UseChatResult {
                 retryable: false,
                 userMessage: 'Okay, I will not do that.',
               };
+      void recordToolCallRef
+        .current(
+          pending.name,
+          result.ok,
+          result.ok ? undefined : result.userMessage || result.message
+        )
+        .catch(() => undefined);
       void recordCreatedRef.current(result).catch((recordError: unknown) => {
         logger.warn({
           event: 'ai.chat.record_created_failed',
@@ -744,6 +789,10 @@ export function useChat(): UseChatResult {
         partsJson,
       });
       setMessages((prev) => [...prev, userMessage]);
+      // Title a new conversation after its first message so the list is readable.
+      if (!messages.some((m) => m.role === 'user') && trimmed) {
+        void dao.rename(conversationId, trimmed.slice(0, 48)).catch(() => undefined);
+      }
       setIsStreaming(true);
       streamingBuffer.current = '';
       setStreamingText('');
@@ -763,21 +812,66 @@ export function useChat(): UseChatResult {
     [dao, conversationId, engine, skills]
   );
 
+  const [conversations, setConversations] = useState<AiConversationEntity[]>([]);
+
+  const loadConversations = useCallback(async (): Promise<void> => {
+    if (dao) {
+      setConversations(await dao.findAll());
+    }
+  }, [dao]);
+
+  /** Points the chat at a conversation and gives the model a clean session. */
+  const switchTo = useCallback(
+    async (id: string, history: AiMessageEntity[]): Promise<void> => {
+      const { id: sessionId } = await engine.createChat();
+      chatSessionId.current = sessionId;
+      skills.sync();
+      setConversationId(id);
+      setMessages(history);
+      setError(null);
+    },
+    [engine, skills]
+  );
+
   const newChat = useCallback(async (): Promise<void> => {
     if (!dao || isStreaming) {
       return;
     }
     const conversation = await dao.create();
-    const { id } = await engine.createChat();
-    chatSessionId.current = id;
-    skills.sync();
-    setConversationId(conversation.id);
-    setMessages([]);
-    setError(null);
-  }, [dao, engine, skills, isStreaming]);
+    await switchTo(conversation.id, []);
+  }, [dao, isStreaming, switchTo]);
+
+  const openConversation = useCallback(
+    async (id: string): Promise<void> => {
+      if (!dao || isStreaming || id === conversationId) {
+        return;
+      }
+      await switchTo(id, await dao.findMessages(id));
+    },
+    [dao, isStreaming, conversationId, switchTo]
+  );
+
+  const deleteConversation = useCallback(
+    async (id: string): Promise<void> => {
+      if (!dao || isStreaming) {
+        return;
+      }
+      await dao.delete(id);
+      if (id === conversationId) {
+        await newChat();
+      }
+      await loadConversations();
+    },
+    [dao, isStreaming, conversationId, newChat, loadConversations]
+  );
 
   return {
     newChat,
+    conversations,
+    activeConversationId: conversationId,
+    loadConversations,
+    openConversation,
+    deleteConversation,
     messages,
     streamingText,
     isStreaming,

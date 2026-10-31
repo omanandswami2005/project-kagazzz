@@ -8,8 +8,7 @@
 import { getAiMode, isCloudAiConfigured } from '@/infrastructure/cloud-ai';
 import { getOllamaConfig } from '@/infrastructure/ollama';
 import { END_TURN_TOOLS } from '../ai-ask-user.actions';
-import { SYSTEM_PROMPT } from '../prompts/system-prompt';
-import { skillCatalog } from '../skills/skill-registry';
+import { buildSystemPrompt } from '../prompts/build-system-prompt';
 import type { ChatEngine } from './chat-engine';
 import { CloudChatEngine } from './cloud-chat-engine';
 import { litertChatEngine } from './litert-chat-engine';
@@ -18,8 +17,6 @@ import { OllamaChatEngine } from './ollama-chat-engine';
 /** Engines that talk to a server and are connected (not downloaded) from the settings screen. */
 export type ServerEngine = OllamaChatEngine | CloudChatEngine;
 
-const systemPrompt = (): string => `${SYSTEM_PROMPT}\n\n${skillCatalog()}`;
-
 let ollamaEngine: OllamaChatEngine | null | undefined;
 let cloudEngine: CloudChatEngine | null | undefined;
 
@@ -27,9 +24,15 @@ let cloudEngine: CloudChatEngine | null | undefined;
 export function getOllamaEngine(): OllamaChatEngine | null {
   if (ollamaEngine === undefined) {
     const config = getOllamaConfig();
-    ollamaEngine = __KAGAZ_DEMO__ && config
-      ? new OllamaChatEngine({ baseUrl: config.baseUrl, model: config.chatModel, systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS })
-      : null;
+    ollamaEngine =
+      __KAGAZ_DEMO__ && config
+        ? new OllamaChatEngine({
+            baseUrl: config.baseUrl,
+            model: config.chatModel,
+            systemPrompt: buildSystemPrompt(),
+            endTurnTools: END_TURN_TOOLS,
+          })
+        : null;
   }
   return ollamaEngine;
 }
@@ -37,7 +40,10 @@ export function getOllamaEngine(): OllamaChatEngine | null {
 /** The cloud engine when this build has the proxy, else null. */
 export function getCloudEngine(): CloudChatEngine | null {
   if (cloudEngine === undefined) {
-    cloudEngine = __KAGAZ_DEMO__ && isCloudAiConfigured() ? new CloudChatEngine({ systemPrompt: systemPrompt(), endTurnTools: END_TURN_TOOLS }) : null;
+    cloudEngine =
+      __KAGAZ_DEMO__ && isCloudAiConfigured()
+        ? new CloudChatEngine({ systemPrompt: buildSystemPrompt(), endTurnTools: END_TURN_TOOLS })
+        : null;
   }
   return cloudEngine;
 }

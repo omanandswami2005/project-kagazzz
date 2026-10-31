@@ -87,5 +87,15 @@
     "ready": "Search model ready.",
     "delete": "Delete search model",
     "failed": "The search model could not be downloaded or verified. Check your connection and try again."
+  },
+  "tool": {
+    "failed": "Tool failed"
+  },
+  "history": {
+    "title": "Conversations",
+    "close": "Close",
+    "empty": "No saved conversations yet.",
+    "untitled": "New conversation",
+    "delete": "Delete {{name}}"
   }
 }

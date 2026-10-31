@@ -191,6 +191,34 @@ describe('useChat (F-13)', () => {
     ).toBe(true);
   });
 
+  it('lists, opens and deletes saved conversations', async () => {
+    const db = new FakeDb()
+      .onQuery(/FROM ai_conversations/, [conversationRow])
+      .onQuery(/FROM ai_messages/, []);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    const { result } = renderHook(() => useChat());
+    await waitFor(() => expect(result.current.activeConversationId).toBe('c-1'));
+
+    await act(async () => {
+      await result.current.loadConversations();
+    });
+    expect(result.current.conversations).toHaveLength(1);
+
+    await act(async () => {
+      await result.current.openConversation('c-2');
+    });
+    expect(result.current.activeConversationId).toBe('c-2');
+    expect(plugin.createChat).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await result.current.deleteConversation('c-2'); // the open one → a new chat starts
+    });
+    expect(
+      db.calls.some((c) => c.kind === 'run' && /DELETE FROM ai_conversations/.test(c.sql))
+    ).toBe(true);
+    expect(result.current.activeConversationId).not.toBe('c-2');
+  });
+
   it('creates a native chat session once the model is ready', async () => {
     const db = new FakeDb().onQuery(/FROM ai_conversations/, [conversationRow]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
@@ -723,7 +751,12 @@ describe('useChat document-op tools (F-14 document operations)', () => {
 
     expect(result.ok).toBe(false);
     expect(
-      db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))
+      db.calls.some(
+        (c) =>
+          c.kind === 'run' &&
+          c.sql.includes('INSERT INTO ai_messages') &&
+          c.params?.some((p) => typeof p === 'string' && p.includes('"type":"form"'))
+      )
     ).toBe(false);
   });
 
@@ -739,7 +772,12 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     });
     expect(result.ok).toBe(false);
     expect(
-      db.calls.some((c) => c.kind === 'run' && c.sql.includes('INSERT INTO ai_messages'))
+      db.calls.some(
+        (c) =>
+          c.kind === 'run' &&
+          c.sql.includes('INSERT INTO ai_messages') &&
+          c.params?.some((p) => typeof p === 'string' && p.includes('"type":"form"'))
+      )
     ).toBe(false);
   });
 });
@@ -962,7 +1000,7 @@ describe('result cards only for tools that created documents', () => {
         (c) =>
           c.kind === 'run' &&
           c.sql.includes('INSERT INTO ai_messages') &&
-          c.params?.includes('tool')
+          c.params?.some((p) => typeof p === 'string' && p.includes('"type":"documents"'))
       )
     ).toBe(false); // ...but no chat card
   });

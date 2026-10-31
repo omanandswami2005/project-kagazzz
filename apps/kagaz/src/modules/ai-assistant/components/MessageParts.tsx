@@ -52,19 +52,63 @@ export function ResultCard({
 }): ReactNode {
   const { t } = useTranslation('ai-assistant');
   return (
-    <div className="kg-chat__result" role="group" aria-label={t('result.title')} data-agent-id="ai.chat.result-card">
+    <div
+      className="kg-chat__result"
+      role="group"
+      aria-label={t('result.title')}
+      data-agent-id="ai.chat.result-card"
+    >
       <span className="kg-chat__result-title">{t('result.title')}</span>
       <ul className="kg-chat__result-list">
         {documents.map((doc) => (
           <li key={doc.id} className="kg-chat__result-item">
             <Icon name={iconFor(doc.fileType)} size={20} aria-hidden />
             <span className="kg-chat__chip-name">{doc.name}</span>
-            <Button variant="secondary" size="sm" onClick={() => onOpen(doc.id)} agentId={`ai.chat.result-open-${doc.id}`}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onOpen(doc.id)}
+              agentId={`ai.chat.result-open-${doc.id}`}
+            >
               <Icon name="ExternalLink" size={16} aria-hidden /> {t('result.open')}
             </Button>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** "pdf.mergePdfs" → "Merge pdfs": a readable label for a tool id when no summary is known. */
+function toolLabel(name: string): string {
+  const last = name.split('.').pop() ?? name;
+  const words = last.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** One chip per tool the assistant ran: what it did and whether it worked (the reason shows when it failed). */
+export function ToolChip({
+  name,
+  ok,
+  error,
+  label,
+}: {
+  name: string;
+  ok: boolean;
+  error?: string;
+  label?: string;
+}): ReactNode {
+  const { t } = useTranslation('ai-assistant');
+  return (
+    <div
+      className={`kg-chat__tool${ok ? '' : ' kg-chat__tool--failed'}`}
+      role="status"
+      data-agent-id={`ai.chat.tool-${name}`}
+      data-agent-state={ok ? 'ok' : 'failed'}
+    >
+      <Icon name={ok ? 'Check' : 'AlertCircle'} size={16} aria-hidden />
+      <span className="kg-chat__tool-name">{label ?? toolLabel(name)}</span>
+      {!ok && <span className="kg-chat__tool-error">{error || t('tool.failed')}</span>}
     </div>
   );
 }

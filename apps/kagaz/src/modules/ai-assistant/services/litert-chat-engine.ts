@@ -1,4 +1,5 @@
 import { CapacitorLlmLiteRT } from '@kagaz/capacitor-llm-litert';
+import { buildSystemPrompt } from '../prompts/build-system-prompt';
 import type { ChatEngine } from './chat-engine';
 
 interface UntypedEmitter {
@@ -9,7 +10,7 @@ interface UntypedEmitter {
 export const litertChatEngine: ChatEngine = {
   kind: 'litert',
   locality: 'on-device',
-  createChat: () => CapacitorLlmLiteRT.createChat(),
+  createChat: () => CapacitorLlmLiteRT.createChat({ systemPrompt: buildSystemPrompt() }),
   sendMessage: (options) => CapacitorLlmLiteRT.sendMessage(options),
   resolveToolCall: (options) => CapacitorLlmLiteRT.resolveToolCall(options),
   // The plugin declares one addListener overload per event, which a generic

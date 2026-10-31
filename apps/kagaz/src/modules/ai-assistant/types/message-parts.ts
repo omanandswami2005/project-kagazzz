@@ -16,6 +16,13 @@ export const messagePartSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('attachments'), documents: z.array(docRefSchema) }),
   /** Tool-result message: documents a tool just created. */
   z.object({ type: z.literal('documents'), documents: z.array(docRefSchema) }),
+  /** Tool-call message: one tool the assistant ran, shown as a chip. */
+  z.object({
+    type: z.literal('tool'),
+    name: z.string(),
+    ok: z.boolean(),
+    error: z.string().optional(),
+  }),
   /** Assistant message: a form the user should fill in. */
   z.object({ type: z.literal('form'), formId: z.string(), spec: askUserSchema }),
   /** User message: the answer to a form (its readable text is the message content). */
@@ -46,7 +53,9 @@ export const serializeParts = (parts: MessagePart[]): string | undefined =>
  */
 export function toModelText(message: { content?: string; partsJson?: string }): string {
   const text = message.content ?? '';
-  const attached = parseParts(message.partsJson).flatMap((p) => (p.type === 'attachments' ? p.documents : []));
+  const attached = parseParts(message.partsJson).flatMap((p) =>
+    p.type === 'attachments' ? p.documents : []
+  );
   if (attached.length === 0) {
     return text;
   }
@@ -57,6 +66,8 @@ export function toModelText(message: { content?: string; partsJson?: string }): 
 /** Form ids the user has already answered, so a reloaded form card can't be submitted twice. */
 export function answeredFormIds(messages: { partsJson?: string }[]): Set<string> {
   return new Set(
-    messages.flatMap((m) => parseParts(m.partsJson).flatMap((p) => (p.type === 'answer' ? [p.formId] : [])))
+    messages.flatMap((m) =>
+      parseParts(m.partsJson).flatMap((p) => (p.type === 'answer' ? [p.formId] : []))
+    )
   );
 }

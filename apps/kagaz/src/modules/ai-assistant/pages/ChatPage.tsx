@@ -22,7 +22,9 @@ import { AskUserForm } from '../components/AskUserForm';
 import { ChatTextarea } from '../components/ChatTextarea';
 import { Markdown } from '../components/Markdown';
 import { AttachSheet } from '../components/AttachSheet';
-import { AttachmentChips, ResultCard } from '../components/MessageParts';
+import { ConversationsSheet } from '../components/ConversationsSheet';
+import { AttachmentChips, ResultCard, ToolChip } from '../components/MessageParts';
+import { aiToolRegistry } from '../services/ai-tool-registry';
 import { MicButton } from '../components/MicButton';
 import { UploadOptionsSheet } from '@/modules/document-vault/components/UploadOptionsSheet';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
@@ -43,6 +45,7 @@ export function ChatPage(): ReactNode {
   const [draft, setDraft] = useState('');
   const [attachments, setAttachments] = useState<DocRef[]>([]);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   // Forms the model asked for that the user has not answered yet (a reloaded, answered form must not reappear).
   const answered = useMemo(() => answeredFormIds(chat.messages), [chat.messages]);
@@ -113,6 +116,19 @@ export function ChatPage(): ReactNode {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => {
+                  void chat.loadConversations();
+                  setHistoryOpen(true);
+                }}
+                agentId="ai.chat.history"
+              >
+                <Icon name="List" size={20} aria-label={t('history.title')} />
+              </Button>
+            )}
+            {!gated && (
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => void chat.newChat()}
                 disabled={chat.isStreaming || chat.messages.length === 0}
                 agentId="ai.chat.new"
@@ -166,6 +182,19 @@ export function ChatPage(): ReactNode {
                 );
                 const created = parts.flatMap((p) => (p.type === 'documents' ? p.documents : []));
                 const form = parts.find((p) => p.type === 'form');
+                const toolPart = parts.find((p) => p.type === 'tool');
+                if (message.role === 'tool' && toolPart) {
+                  return (
+                    <li key={message.id} data-agent-id={`ai.chat.message-${message.id}`}>
+                      <ToolChip
+                        name={toolPart.name}
+                        ok={toolPart.ok}
+                        error={toolPart.error}
+                        label={aiToolRegistry.get(toolPart.name)?.summary}
+                      />
+                    </li>
+                  );
+                }
                 if (message.role === 'tool') {
                   return created.length > 0 ? (
                     <li key={message.id} data-agent-id={`ai.chat.message-${message.id}`}>
@@ -310,6 +339,16 @@ export function ChatPage(): ReactNode {
               <Icon name="Send" size={20} aria-label={t('input_placeholder')} />
             </Button>
           </form>
+          <ConversationsSheet
+            isOpen={historyOpen}
+            conversations={chat.conversations}
+            activeId={chat.activeConversationId}
+            onOpen={(id) => {
+              void chat.openConversation(id).then(() => setHistoryOpen(false));
+            }}
+            onDelete={(id) => void chat.deleteConversation(id)}
+            onDismiss={() => setHistoryOpen(false)}
+          />
           <AttachSheet
             isOpen={attachOpen}
             documents={attachable.documents}
