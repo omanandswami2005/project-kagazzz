@@ -76,10 +76,6 @@
   padding: var(--space-3) var(--space-4);
 }
 
-.kg-chat__composer > :first-child {
-  flex: 1;
-}
-
 .kg-chat__mode {
   margin-inline-end: var(--space-3);
   padding: var(--space-1) var(--space-2);
@@ -336,4 +332,11 @@
 .kg-chat__textarea:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 1px;
+}
+
+/* Keep the empty box one line tall: a wrapping placeholder would make an idle box look like a two-line message. */
+.kg-chat__textarea::placeholder {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
