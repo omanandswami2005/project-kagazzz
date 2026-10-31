@@ -11,6 +11,7 @@ const state = vi.hoisted(
     error: boolean;
     ocrText: string;
     canOcr: boolean;
+    canVision: boolean;
     /** `?trashed=1` or `''` — read by the mocked `useLocation`. */
     search: string;
     extractText: ReturnType<typeof vi.fn>;
@@ -27,6 +28,7 @@ const state = vi.hoisted(
     error: false,
     ocrText: '',
     canOcr: true,
+    canVision: false,
     search: '',
     extractText: vi.fn(),
     softDelete: vi.fn(),
@@ -70,6 +72,7 @@ vi.mock('../../hooks/useDocumentFile', () => ({
 }));
 vi.mock('../../hooks/useDocumentOcr', () => ({
   canExtractText: () => state.canOcr,
+  canTranscribeWithVision: () => state.canVision,
   useDocumentOcr: () => ({ extractText: state.extractText, runningId: null }),
 }));
 vi.mock('../../hooks/useVaultMutations', () => ({
@@ -112,6 +115,7 @@ beforeEach(() => {
   state.error = false;
   state.ocrText = '';
   state.canOcr = true;
+  state.canVision = false;
   state.search = '';
   state.document = doc({ ocrText: state.ocrText });
   state.authorizeView.mockResolvedValue(true);
@@ -161,6 +165,24 @@ describe('DocumentViewerPage (UX-6)', () => {
       fireEvent.click(q('vault.viewer.extract-text')!);
     });
     expect(state.extractText).toHaveBeenCalled();
+  });
+
+  it('hides the Gemma transcribe button when Gemma is not set up', async () => {
+    state.document = doc({ ocrText: 'AADHAAR 1234' });
+    await renderAuthorized();
+    expect(q('vault.viewer.transcribe-gemma')).toBeNull();
+  });
+
+  it('offers Gemma transcription even when text is already extracted, and runs it in vision mode', async () => {
+    state.canVision = true;
+    state.document = doc({ ocrText: 'AADHAAR 1234' });
+    await renderAuthorized();
+    expect(q('vault.viewer.copy-text')).not.toBeNull(); // text exists...
+    expect(q('vault.viewer.transcribe-gemma')).not.toBeNull(); // ...yet the option is still there
+    await act(async () => {
+      fireEvent.click(q('vault.viewer.transcribe-gemma')!);
+    });
+    expect(state.extractText).toHaveBeenCalledWith(expect.anything(), { engine: 'vision' });
   });
 
   it('offers Extract text for a PDF with no stored text (UX-13)', async () => {

@@ -17,6 +17,7 @@
     "unlock": "Unlock document",
     "archive": "Archive",
     "extract_text": "Extract text",
+    "transcribe_gemma": "Transcribe with Gemma",
     "delete": "Delete",
     "delete_confirm_title": "Delete \"{{name}}\"?",
     "delete_confirm_message": "It moves to Trash and can be restored later.",
@@ -183,7 +184,8 @@
     "running": "Reading text…",
     "done": "Text saved — now searchable",
     "none": "No text found in this image",
-    "failed": "Couldn't read text. Please try again."
+    "failed": "Couldn't read text. Please try again.",
+    "vision_hint": "Sends this document to your local Gemma server (demo setup) and replaces the saved text."
   },
   "lock": {
     "reason": "Unlock this document",
