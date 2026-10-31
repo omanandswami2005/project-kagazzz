@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const listeners: Record<string, (data: unknown) => void> = {};
 const plugin = vi.hoisted(() => ({
@@ -9,6 +9,7 @@ const plugin = vi.hoisted(() => ({
   stop: vi.fn().mockResolvedValue(undefined),
   removeAllListeners: vi.fn().mockResolvedValue(undefined),
   addListener: vi.fn(),
+  isListening: vi.fn().mockResolvedValue({ listening: true }),
 }));
 
 vi.mock('@capacitor-community/speech-recognition', () => ({ SpeechRecognition: plugin }));
@@ -17,7 +18,16 @@ import { CapacitorSpeechRecognizer } from '../speech-recognition.service';
 
 const stt = new CapacitorSpeechRecognizer();
 
+/** stop() waits out the final-result grace period, which fake timers must advance. */
+async function stopAndFlush(): Promise<void> {
+  const stopped = stt.stop();
+  await vi.advanceTimersByTimeAsync(800);
+  await stopped;
+}
+
 beforeEach(() => {
+  vi.useFakeTimers();
+  plugin.isListening.mockResolvedValue({ listening: true });
   for (const k of Object.keys(listeners)) delete listeners[k];
   vi.clearAllMocks();
   plugin.addListener.mockImplementation((event: string, cb: (d: unknown) => void) => {
@@ -27,6 +37,10 @@ beforeEach(() => {
   plugin.start.mockResolvedValue(undefined);
   plugin.stop.mockResolvedValue(undefined);
   plugin.removeAllListeners.mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('CapacitorSpeechRecognizer (F-15)', () => {
@@ -74,7 +88,46 @@ describe('CapacitorSpeechRecognizer (F-15)', () => {
     listeners.listeningState?.({ status: 'stopped' });
 
     expect(onPartial).toHaveBeenCalledExactlyOnceWith('मेरा आधार');
+    // onEnd waits out the final-result grace period.
+    expect(onEnd).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(800);
     expect(onEnd).toHaveBeenCalledOnce();
+    await stopAndFlush();
+  });
+
+  it('delivers the FINAL transcript that arrives after end-of-speech', async () => {
+    const onPartial = vi.fn();
+    const onEnd = vi.fn();
+    await stt.start('en', { onPartial, onEnd });
+    listeners.partialResults?.({ matches: ['pay the electricity'] });
+    listeners.listeningState?.({ status: 'stopped' }); // Android: end-of-speech first
+    listeners.partialResults?.({ matches: ['pay the electricity bill'] }); // then the final
+    await vi.advanceTimersByTimeAsync(800);
+    expect(onPartial).toHaveBeenLastCalledWith('pay the electricity bill');
+    expect(onEnd).toHaveBeenCalledOnce();
+    await stopAndFlush();
+  });
+
+  it('detects a recognizer that died silently (the plugin emits no event for errors)', async () => {
+    const onEnd = vi.fn();
+    await stt.start('en', { onPartial: vi.fn(), onEnd });
+    plugin.isListening.mockResolvedValue({ listening: false });
+    await vi.advanceTimersByTimeAsync(400 + 800);
+    expect(onEnd).toHaveBeenCalledOnce();
+    await stopAndFlush();
+  });
+
+  it('stop() waits for the final result before detaching listeners', async () => {
+    const onPartial = vi.fn();
+    await stt.start('en', { onPartial, onEnd: vi.fn() });
+    const stopped = stt.stop();
+    await vi.advanceTimersByTimeAsync(10);
+    listeners.partialResults?.({ matches: ['last words'] });
+    expect(plugin.removeAllListeners).toHaveBeenCalledTimes(1); // only start()'s reset so far
+    await vi.advanceTimersByTimeAsync(100);
+    await stopped;
+    expect(onPartial).toHaveBeenCalledWith('last words');
+    expect(plugin.removeAllListeners).toHaveBeenCalledTimes(2);
   });
 
   it('uses en-IN for English', async () => {
@@ -84,7 +137,7 @@ describe('CapacitorSpeechRecognizer (F-15)', () => {
 
   it('stop() swallows a stop error and still detaches listeners', async () => {
     plugin.stop.mockRejectedValueOnce(new Error('not listening'));
-    await expect(stt.stop()).resolves.toBeUndefined();
+    await expect(stopAndFlush()).resolves.toBeUndefined();
     expect(plugin.removeAllListeners).toHaveBeenCalled();
   });
 });

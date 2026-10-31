@@ -298,7 +298,9 @@
     "voice": {
       "start": "Search by voice",
       "stop": "Stop listening",
-      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice."
+      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice.",
+      "no_speech": "Didn't catch that. Tap the mic and try again.",
+      "failed": "Voice input couldn't start. Check that Google speech services are installed and try again."
     }
   },
   "templates": {

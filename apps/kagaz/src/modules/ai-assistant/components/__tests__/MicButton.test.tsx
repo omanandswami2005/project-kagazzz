@@ -47,10 +47,27 @@ describe('MicButton (F-15)', () => {
 
   it('hold-to-speak: pointer down starts, pointer up stops', () => {
     render(<MicButton onResult={vi.fn()} />);
+    vi.useFakeTimers();
     fireEvent.pointerDown(mic()!);
     expect(voice.start).toHaveBeenCalledOnce();
+    vi.advanceTimersByTime(800); // a real hold
     fireEvent.pointerUp(mic()!);
     expect(voice.stop).toHaveBeenCalledOnce();
+    vi.useRealTimers();
+  });
+
+  it('a quick tap latches listening on; the second tap finishes it', () => {
+    vi.useFakeTimers();
+    render(<MicButton onResult={vi.fn()} />);
+    fireEvent.pointerDown(mic()!);
+    vi.advanceTimersByTime(100);
+    fireEvent.pointerUp(mic()!);
+    expect(voice.stop).not.toHaveBeenCalled(); // still listening
+    fireEvent.pointerDown(mic()!);
+    fireEvent.pointerUp(mic()!);
+    expect(voice.stop).toHaveBeenCalledOnce();
+    expect(voice.start).toHaveBeenCalledOnce();
+    vi.useRealTimers();
   });
 
   it('captures the pointer on press (bug-audit fix: finger drift must not cut dictation short)', () => {

@@ -40,8 +40,25 @@ export interface SpeechRecognizer {
   stop(): Promise<void>;
 }
 
+/** How often the native "still listening?" flag is polled (ms). */
+const NATIVE_POLL_MS = 400;
+/**
+ * Grace period for the recognizer's FINAL result. Android fires end-of-speech
+ * (and `stopListening()`) first and delivers the final transcript a moment
+ * later; detaching listeners before it lands drops the last words.
+ */
+const FINAL_RESULT_GRACE_MS = 700;
+/** Gives up on a session that never produced speech or an end event (ms). */
+const START_WATCHDOG_MS = 15_000;
+
 /** Real recognizer backed by @capacitor-community/speech-recognition. */
 export class CapacitorSpeechRecognizer implements SpeechRecognizer {
+  private poll: ReturnType<typeof setInterval> | null = null;
+  private watchdog: ReturnType<typeof setTimeout> | null = null;
+  /** Set while a session is live; resolves the final-result wait early. */
+  private onLateResult: (() => void) | null = null;
+  private stopping = false;
+
   async isAvailable(): Promise<boolean> {
     try {
       const { available } = await SpeechRecognition.available();
@@ -65,16 +82,35 @@ export class CapacitorSpeechRecognizer implements SpeechRecognizer {
   }
 
   async start(language: SupportedLanguage, handlers: VoiceSessionHandlers): Promise<void> {
+    this.clearTimers();
+    this.stopping = false;
     await SpeechRecognition.removeAllListeners();
+
+    let ended = false;
+    // The plugin reports nothing when the recognizer dies on its own (no speech,
+    // network error, busy) — only a normal end-of-speech. Both routes land here,
+    // after the grace period so the final transcript is not cut off.
+    const end = (): void => {
+      if (ended || this.stopping) {
+        return;
+      }
+      ended = true;
+      this.clearTimers();
+      setTimeout(handlers.onEnd, FINAL_RESULT_GRACE_MS);
+    };
+
     await SpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
       const transcript = data.matches[0];
       if (transcript) {
         handlers.onPartial(transcript);
+        this.onLateResult?.();
       }
     });
     await SpeechRecognition.addListener('listeningState', (data: { status: string }) => {
-      if (data.status === 'stopped') {
-        handlers.onEnd();
+      if (data.status === 'started') {
+        this.clearWatchdog();
+      } else if (data.status === 'stopped') {
+        end();
       }
     });
     await SpeechRecognition.start({
@@ -83,17 +119,56 @@ export class CapacitorSpeechRecognizer implements SpeechRecognizer {
       partialResults: true,
       popup: false,
     });
+
+    this.poll = setInterval(() => {
+      void SpeechRecognition.isListening().then(
+        ({ listening }) => {
+          if (!listening) {
+            end();
+          }
+        },
+        () => undefined
+      );
+    }, NATIVE_POLL_MS);
+    this.watchdog = setTimeout(end, START_WATCHDOG_MS);
     logger.info({ event: 'assistant.voice.start', language });
   }
 
   async stop(): Promise<void> {
+    this.stopping = true;
+    this.clearTimers();
+    // Wait for the final result (resolved early when it arrives), then detach.
+    const lateResult = new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, FINAL_RESULT_GRACE_MS);
+      this.onLateResult = (): void => {
+        clearTimeout(timer);
+        setTimeout(resolve, 50);
+      };
+    });
     try {
       await SpeechRecognition.stop();
+      await lateResult;
     } catch {
       // Stopping an already-stopped session is fine.
     }
+    this.onLateResult = null;
     await SpeechRecognition.removeAllListeners();
     logger.info({ event: 'assistant.voice.stop' });
+  }
+
+  private clearWatchdog(): void {
+    if (this.watchdog) {
+      clearTimeout(this.watchdog);
+      this.watchdog = null;
+    }
+  }
+
+  private clearTimers(): void {
+    this.clearWatchdog();
+    if (this.poll) {
+      clearInterval(this.poll);
+      this.poll = null;
+    }
   }
 }
 
