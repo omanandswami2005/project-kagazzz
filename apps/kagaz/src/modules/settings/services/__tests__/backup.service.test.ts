@@ -1,13 +1,21 @@
 import JSZip from 'jszip';
 import { describe, expect, it, vi } from 'vitest';
-import { decryptBackup } from '@/core/crypto';
-import type { DocumentEntity, FolderEntity } from '@/infrastructure/database/types';
+import { decryptBackup, encryptBackup } from '@/core/crypto';
+import type {
+  DocumentEntity,
+  FolderEntity,
+  NewDocument,
+  NewFolder,
+} from '@/infrastructure/database/types';
 import {
+  applyBackup,
   backupFilename,
   buildBackupManifest,
   createBackup,
+  decryptAndParseBackup,
   type BackupDeps,
   type BackupManifest,
+  type RestoreDeps,
 } from '../backup.service';
 
 const KEY = 'c'.repeat(64);
@@ -134,5 +142,185 @@ describe('createBackup (SEC-V1 #11)', () => {
     const { deps } = makeDeps();
     await createBackup(deps);
     expect(deps.getBackupKey).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Fakes FolderDao/DocumentDao.create + FileStorage.write, recording calls. */
+function makeRestoreDeps(): {
+  deps: RestoreDeps;
+  createdFolders: NewFolder[];
+  createdDocuments: NewDocument[];
+  written: Map<string, Uint8Array>;
+} {
+  const createdFolders: NewFolder[] = [];
+  const createdDocuments: NewDocument[] = [];
+  const written = new Map<string, Uint8Array>();
+  let folderSeq = 0;
+  let docSeq = 0;
+  const deps: RestoreDeps = {
+    createFolder: vi.fn(async (folder: NewFolder): Promise<FolderEntity> => {
+      createdFolders.push(folder);
+      folderSeq += 1;
+      return { ...folder, id: `new-folder-${folderSeq}`, createdAt: 'now', updatedAt: 'now' };
+    }),
+    createDocument: vi.fn(async (doc: NewDocument): Promise<DocumentEntity> => {
+      createdDocuments.push(doc);
+      docSeq += 1;
+      return {
+        ...doc,
+        id: `new-doc-${docSeq}`,
+        createdAt: 'now',
+        updatedAt: 'now',
+        synced: false,
+        version: 1,
+      };
+    }),
+    writeFile: vi.fn(async (p: string, bytes: Uint8Array) => {
+      written.set(p, bytes);
+    }),
+  };
+  return { deps, createdFolders, createdDocuments, written };
+}
+
+describe('decryptAndParseBackup (restore, SEC-V1 #11)', () => {
+  it('decrypts and parses a real archive round-trip', async () => {
+    const { deps, written } = makeDeps();
+    const result = await createBackup(deps);
+    const bytes = written.get(result.path)!;
+
+    const parsed = await decryptAndParseBackup(bytes, KEY);
+    expect(parsed.manifest.format).toBe('kagaz-backup');
+    expect(parsed.manifest.counts.documents).toBe(2);
+    expect(await parsed.zip.file('documents/a.pdf')!.async('string')).toBe('AAA');
+  });
+
+  it('rejects with a clear message on the wrong key (a different device/install)', async () => {
+    const { deps, written } = makeDeps();
+    const result = await createBackup(deps);
+    const bytes = written.get(result.path)!;
+
+    await expect(decryptAndParseBackup(bytes, 'd'.repeat(64))).rejects.toThrow(
+      /different device|corrupted/
+    );
+  });
+
+  it('rejects a foreign (non-Kagaz) encrypted archive', async () => {
+    const foreign = await encryptBackup(new TextEncoder().encode('not a zip at all'), KEY);
+    await expect(decryptAndParseBackup(foreign, KEY)).rejects.toThrow(/corrupted/);
+  });
+
+  it('rejects an archive with no manifest.json', async () => {
+    const zip = new JSZip();
+    zip.file('documents/a.pdf', 'AAA');
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+    const encrypted = await encryptBackup(bytes, KEY);
+    await expect(decryptAndParseBackup(encrypted, KEY)).rejects.toThrow(/not a kagaz backup/i);
+  });
+
+  it('rejects an unsupported manifest version', async () => {
+    const zip = new JSZip();
+    zip.file('manifest.json', JSON.stringify({ format: 'kagaz-backup', version: 99 }));
+    const bytes = await zip.generateAsync({ type: 'uint8array' });
+    const encrypted = await encryptBackup(bytes, KEY);
+    await expect(decryptAndParseBackup(encrypted, KEY)).rejects.toThrow(/unsupported backup version/i);
+  });
+});
+
+describe('applyBackup (restore, SEC-V1 #11)', () => {
+  it('restores documents and folders additively with fresh ids, remapping folderId', async () => {
+    const { deps, written: exportWritten } = makeDeps();
+    const backupResult = await createBackup(deps);
+    const container = exportWritten.get(backupResult.path)!;
+    const parsed = await decryptAndParseBackup(container, KEY);
+
+    // Give the manifest's documents a folderId so remap is actually exercised.
+    parsed.manifest.documents.forEach((d) => {
+      d.folderId = 'f1';
+    });
+
+    const { deps: restoreDeps, createdFolders, createdDocuments, written } = makeRestoreDeps();
+    const result = await applyBackup(parsed, restoreDeps);
+
+    expect(result.restoredFolders).toBe(1);
+    expect(result.restoredDocuments).toBe(2);
+    expect(result.skippedDocuments).toEqual([]);
+    expect(createdFolders).toEqual([
+      { name: 'Personal', parentId: undefined, icon: undefined, color: undefined, sortOrder: 0 },
+    ]);
+    // Both documents' folderId was remapped from the manifest's original
+    // folder id ('f1') to the freshly-created folder's real id.
+    expect(createdDocuments.every((d) => d.folderId === 'new-folder-1')).toBe(true);
+    expect(createdDocuments.map((d) => d.name).sort()).toEqual(['Doc a', 'Doc b']);
+    // Each document's bytes were written to a brand-new documents/ path, not
+    // the original archive path.
+    expect([...written.keys()].every((p) => p.startsWith('documents/'))).toBe(true);
+    expect([...written.keys()]).not.toContain('documents/a.pdf');
+  });
+
+  it('restores nested folders parent-first so the child gets the remapped parent id', async () => {
+    const parent: FolderEntity = {
+      id: 'p1',
+      name: 'Parent',
+      sortOrder: 0,
+      createdAt: '2026-07-10T00:00:00.000Z',
+      updatedAt: '2026-07-10T00:00:00.000Z',
+    };
+    const child: FolderEntity = {
+      id: 'c1',
+      name: 'Child',
+      parentId: 'p1',
+      sortOrder: 0,
+      createdAt: '2026-07-10T00:00:00.000Z',
+      updatedAt: '2026-07-10T00:00:00.000Z',
+    };
+    // Deliberately listed child-before-parent — applyBackup must still
+    // resolve the parent first.
+    const manifest = buildBackupManifest([], [child, parent], '2026-07-10T00:00:00Z');
+    const zip = new JSZip();
+    zip.file('manifest.json', JSON.stringify(manifest));
+
+    const { deps: restoreDeps, createdFolders } = makeRestoreDeps();
+    await applyBackup({ manifest, zip }, restoreDeps);
+
+    expect(createdFolders[0].name).toBe('Parent');
+    expect(createdFolders[1]).toEqual({
+      name: 'Child',
+      parentId: 'new-folder-1',
+      icon: undefined,
+      color: undefined,
+      sortOrder: 0,
+    });
+  });
+
+  it('skips a document whose file is missing from the archive, without aborting the rest', async () => {
+    const manifest = buildBackupManifest(
+      [doc('a', 'documents/a.pdf'), doc('b', 'documents/missing.pdf')],
+      [],
+      '2026-07-10T00:00:00Z'
+    );
+    const zip = new JSZip();
+    zip.file('manifest.json', JSON.stringify(manifest));
+    zip.file('documents/a.pdf', 'AAA');
+    // documents/missing.pdf deliberately not added.
+
+    const { deps: restoreDeps, createdDocuments } = makeRestoreDeps();
+    const result = await applyBackup({ manifest, zip }, restoreDeps);
+
+    expect(result.restoredDocuments).toBe(1);
+    expect(result.skippedDocuments).toEqual(['Doc b']);
+    expect(createdDocuments).toHaveLength(1);
+    expect(createdDocuments[0].name).toBe('Doc a');
+  });
+
+  it('treats a document with no folderId as root-level', async () => {
+    const manifest = buildBackupManifest([doc('a', 'documents/a.pdf')], [], '2026-07-10T00:00:00Z');
+    const zip = new JSZip();
+    zip.file('manifest.json', JSON.stringify(manifest));
+    zip.file('documents/a.pdf', 'AAA');
+
+    const { deps: restoreDeps, createdDocuments } = makeRestoreDeps();
+    await applyBackup({ manifest, zip }, restoreDeps);
+
+    expect(createdDocuments[0].folderId).toBeUndefined();
   });
 });

@@ -590,21 +590,81 @@ describe('EmptyVaultState', () => {
 });
 
 describe('UploadFAB', () => {
-  it('invokes onClick and exposes the primary-action agent surface', async () => {
-    const onClick = vi.fn();
-    render(<UploadFAB onClick={onClick} />);
+  // UX pass 2026-07-25: the main button now opens a 3-item speed-dial
+  // (Upload / New Folder / Quick Note) instead of firing the upload sheet
+  // directly — see UploadFAB.tsx for why (Ionic's ion-fab-button toggles any
+  // sibling ion-fab-list on every click, main or child).
+  it('opening the drawer exposes the primary-action agent surface, and the Upload item invokes onUpload', async () => {
+    const onUpload = vi.fn();
+    const onNewFolder = vi.fn();
+    const onQuickNote = vi.fn();
+    render(
+      <UploadFAB
+        onUpload={onUpload}
+        onNewFolder={onNewFolder}
+        onQuickNote={onQuickNote}
+      />
+    );
     const fab = document.querySelector(
       '[data-agent-id="vault.home.upload-fab"]'
     );
     expect(fab).not.toBeNull();
     expect(fab).toHaveAttribute('data-agent-role', 'primary-action');
     expect(fab).toHaveAttribute('data-agent-state', 'idle');
+
     await userEvent.click(fab as Element);
-    expect(onClick).toHaveBeenCalledOnce();
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-upload"]'
+      ) as Element
+    );
+    expect(onUpload).toHaveBeenCalledOnce();
+    expect(onNewFolder).not.toHaveBeenCalled();
+    expect(onQuickNote).not.toHaveBeenCalled();
+  });
+
+  it('the New Folder and Quick Note items invoke their own handlers', async () => {
+    const onNewFolder = vi.fn();
+    const onQuickNote = vi.fn();
+    render(
+      <UploadFAB
+        onUpload={() => undefined}
+        onNewFolder={onNewFolder}
+        onQuickNote={onQuickNote}
+      />
+    );
+    const fab = document.querySelector(
+      '[data-agent-id="vault.home.upload-fab"]'
+    ) as Element;
+
+    await userEvent.click(fab);
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-new-folder"]'
+      ) as Element
+    );
+    expect(onNewFolder).toHaveBeenCalledOnce();
+
+    // The drawer auto-collapses on the item click above (Ionic toggles on
+    // every fab-button click in the group) — re-open it for the second item.
+    await userEvent.click(fab);
+    await userEvent.click(
+      document.querySelector(
+        '[data-agent-id="vault.home.upload-fab-quick-note"]'
+      ) as Element
+    );
+    expect(onQuickNote).toHaveBeenCalledOnce();
   });
 
   it('reflects the disabled state', () => {
-    render(<UploadFAB disabled onClick={() => undefined} />);
+    render(
+      <UploadFAB
+        disabled
+        onUpload={() => undefined}
+        onNewFolder={() => undefined}
+        onQuickNote={() => undefined}
+      />
+    );
     expect(
       document.querySelector('[data-agent-id="vault.home.upload-fab"]')
     ).toHaveAttribute('data-agent-state', 'disabled');

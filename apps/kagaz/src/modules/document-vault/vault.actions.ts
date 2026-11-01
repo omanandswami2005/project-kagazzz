@@ -46,6 +46,16 @@ export interface VaultActionContext {
   ) => Promise<{ tagId: string }>;
   /** Navigates to the Quick Reference screen (F-84). */
   openQuickReference: () => void;
+  /** Navigates to the Quick Notes screen (UX pass, 2026-07-23). */
+  openQuickNotes: () => void;
+  /**
+   * Navigates to Quick Notes and opens the add-note composer directly
+   * (UX pass, 2026-07-25 — the FAB drawer's Quick Note quick-add, skipping
+   * the list that `openQuickNotes` lands on).
+   */
+  startQuickNote: () => void;
+  /** Archives a document by id — hides it from the main list/Recent (F-89). */
+  archiveDocument: (documentId: string) => Promise<void>;
 }
 
 const uploadSourceSchema = z.enum(['camera', 'gallery', 'files', 'scanner']);
@@ -176,6 +186,32 @@ export const vaultActions = {
     },
   }),
 
+  openQuickNotes: defineAction({
+    id: 'vault.openQuickNotes',
+    summary:
+      'Open Quick Notes, the fast, gate-free personal notes screen for non-sensitive data.',
+    voice: ['open quick notes', 'show my notes', 'क्विक नोट्स खोलो'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.openQuickNotes();
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
+  startQuickNote: defineAction({
+    id: 'vault.startQuickNote',
+    summary:
+      'Open Quick Notes with the add-note composer already open, ready to type a title and value.',
+    voice: ['take a quick note', 'add a quick note', 'एक क्विक नोट लिखो'],
+    args: z.object({}),
+    requiresConfirmation: false,
+    handler: (_args: unknown, ctx: VaultActionContext): Promise<{ ok: true }> => {
+      ctx.startQuickNote();
+      return Promise.resolve({ ok: true });
+    },
+  }),
+
   openFilters: defineAction({
     id: 'vault.openFilters',
     summary: 'Open the filter panel to narrow the document list.',
@@ -276,6 +312,23 @@ export const vaultActions = {
       args: { documentId: string; tag: string },
       ctx: VaultActionContext
     ): Promise<{ tagId: string }> => ctx.tagDocument(args.documentId, args.tag),
+  }),
+
+  archiveDocument: defineAction({
+    id: 'vault.archiveDocument',
+    summary:
+      'Archive a document — hides it from the main list and Recent, but keeps it searchable, favoritable, and backed up (F-89).',
+    voice: ['archive this', 'archive this document', 'इसे आर्काइव करो'],
+    args: z.object({ documentId: z.string().min(1) }),
+    // Reversible from the Archived view (unarchive) — no confirmation needed.
+    requiresConfirmation: false,
+    handler: async (
+      args: { documentId: string },
+      ctx: VaultActionContext
+    ): Promise<{ ok: true }> => {
+      await ctx.archiveDocument(args.documentId);
+      return { ok: true };
+    },
   }),
 
   toggleSortDirection: defineAction({

@@ -19,6 +19,14 @@ describe('pdfErrorMessageKey', () => {
     expect(pdfErrorMessageKey('OUT_OF_MEMORY')).toBe('errors.failed');
   });
 
+  it('maps PAGE_OUT_OF_RANGE to its own key (bug-audit follow-up)', () => {
+    expect(pdfErrorMessageKey('PAGE_OUT_OF_RANGE')).toBe('errors.page_out_of_range');
+  });
+
+  it('maps PASSWORD_REQUIRED to its own key, not the generic fallback (bug-audit fix)', () => {
+    expect(pdfErrorMessageKey('PASSWORD_REQUIRED')).toBe('errors.password_required');
+  });
+
   it('returns null when there is no error', () => {
     expect(pdfErrorMessageKey(null)).toBeNull();
     expect(pdfErrorMessageKey(undefined)).toBeNull();

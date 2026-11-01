@@ -26,7 +26,7 @@ describe('App shell', () => {
     await waitFor(
       () =>
         expect(
-          screen.getByText(/My Documents|मेरे दस्तावेज़/)
+          screen.getByText(/My Kagazzz|मेरा Kagazzz/)
         ).toBeInTheDocument(),
       { timeout: 10000 }
     );

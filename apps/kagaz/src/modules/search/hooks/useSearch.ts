@@ -3,12 +3,12 @@
  * FTS5 search over the documents table. Returns the query setter, the
  * current results, and status flags for the vault UI (F-11).
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import type { DocumentEntity } from '@/infrastructure/database/types';
-import { buildFtsMatchQuery, isSearchable } from '../services/search.service';
+import { buildFtsMatchQuery, isSearchable } from '@/infrastructure/database/fts-query';
 
 const logger = log('search');
 
@@ -36,6 +36,14 @@ export function useSearch(): UseSearchResult {
   const [query, setQueryState] = useState('');
   const [results, setResults] = useState<DocumentEntity[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  // Bug-audit fix: `run` had no stale-response guard — if an older query's
+  // dao.search() happened to resolve after a newer one's (real, if rare,
+  // possibility once the debounce boundary is crossed twice in quick
+  // succession), its results briefly overwrote the newer query's, and its
+  // `finally` could flip isSearching back to false while the newer search
+  // was still in flight. Same generation-counter pattern already used by
+  // core/clipboard's auto-clear.
+  const generation = useRef(0);
 
   const isActive = isSearchable(query);
 
@@ -53,26 +61,38 @@ export function useSearch(): UseSearchResult {
 
   const run = useCallback(
     async (raw: string): Promise<void> => {
+      const myGeneration = ++generation.current;
+      const isCurrent = (): boolean => generation.current === myGeneration;
+
       const match = buildFtsMatchQuery(raw);
       if (!dao || !match) {
-        setResults([]);
-        setIsSearching(false);
+        if (isCurrent()) {
+          setResults([]);
+          setIsSearching(false);
+        }
         return;
       }
       try {
         const rows = await dao.search(match, 50);
         // [SEC] SEC-V1 §8 #4: locked documents never appear in search results.
         const visible = rows.filter((row) => !row.isLocked);
+        if (!isCurrent()) {
+          return; // A newer query already resolved (or is resolving) — drop this stale result.
+        }
         setResults(visible);
         logger.info({ event: 'search.run', resultCount: visible.length });
       } catch (error) {
-        setResults([]);
+        if (isCurrent()) {
+          setResults([]);
+        }
         logger.error({
           event: 'search.failed',
           err: { message: String(error) },
         });
       } finally {
-        setIsSearching(false);
+        if (isCurrent()) {
+          setIsSearching(false);
+        }
       }
     },
     [dao]

@@ -90,6 +90,12 @@ export interface UsePdfEngineResult {
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
+  /**
+   * Combines freshly-picked images (not yet vault documents) into one PDF
+   * (UX pass 2026-07-24: multi-select gallery photos straight to a single
+   * PDF, instead of N separate image documents).
+   */
+  imagesToPdfFromFiles: (files: IncomingFile[]) => Promise<number>;
   /** Scan pages natively and append them to an existing PDF (F-44). 0 if cancelled. */
   appendScan: (doc: DocumentEntity) => Promise<number>;
   stampImage: (
@@ -122,6 +128,12 @@ const MIME_FOR: Record<string, string> = {
 export function usePdfEngine(): UsePdfEngineResult {
   const { ingestFiles } = useUpload();
   const engineRef = useRef<PdfEngineServiceImpl | null>(null);
+  // Bug-audit fix: memoizes the in-flight initialize() so two getEngine()
+  // calls issued before the first resolves await the SAME engine/Worker
+  // instead of each constructing + initializing its own — the loser's
+  // Worker was never referenced again by engineRef and so never
+  // terminate()d by the unmount cleanup below, a real (if narrow) leak.
+  const engineInitRef = useRef<Promise<PdfEngineServiceImpl> | null>(null);
   const storageRef = useRef(createFileStorage());
   const [state, setState] = useState<PdfRunState>(IDLE);
 
@@ -130,16 +142,21 @@ export function usePdfEngine(): UsePdfEngineResult {
     return (): void => {
       void engineRef.current?.destroy();
       engineRef.current = null;
+      engineInitRef.current = null;
     };
   }, []);
 
   const getEngine = useCallback(async (): Promise<PdfEngineServiceImpl> => {
-    if (!engineRef.current) {
+    if (engineRef.current) {
+      return engineRef.current;
+    }
+    engineInitRef.current ??= (async (): Promise<PdfEngineServiceImpl> => {
       const engine = new PdfEngineServiceImpl();
       await engine.initialize();
       engineRef.current = engine;
-    }
-    return engineRef.current;
+      return engine;
+    })();
+    return engineInitRef.current;
   }, []);
 
   const readBytes = useCallback(
@@ -319,6 +336,27 @@ export function usePdfEngine(): UsePdfEngineResult {
         ]);
       }),
     [run, readBytes, save]
+  );
+
+  const imagesToPdfFromFiles = useCallback(
+    (files: IncomingFile[]): Promise<number> =>
+      run(async (engine, onProgress) => {
+        const inputs = await Promise.all(
+          files.map(async (file) => ({
+            data: new Uint8Array(await file.blob.arrayBuffer()),
+            mimeType: file.blob.type || 'image/jpeg',
+          }))
+        );
+        const pdf = await engine.imagesToPdf(inputs, onProgress);
+        return save([
+          {
+            name: `Photos_${new Date().toISOString().replace(/[:.]/g, '-')}.pdf`,
+            blob: blobOf(pdf, 'pdf'),
+            source: 'gallery',
+          },
+        ]);
+      }),
+    [run, save]
   );
 
   const appendScan = useCallback(
@@ -523,6 +561,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     addPageNumbers,
     compressPdf,
     imagesToPdf,
+    imagesToPdfFromFiles,
     appendScan,
     stampImage,
     pdfToImages,

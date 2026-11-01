@@ -19,6 +19,8 @@ export const VaultHomePageAgent = definePage({
     toolsActions.openPdfTools,
     vaultActions.searchDocuments,
     vaultActions.openQuickReference,
+    vaultActions.openQuickNotes,
+    vaultActions.startQuickNote,
     vaultActions.openFilters,
     vaultActions.clearFilters,
     vaultActions.bulkDelete,
@@ -31,6 +33,7 @@ export const VaultHomePageAgent = definePage({
     vaultActions.tagDocument,
     vaultActions.setSortBy,
     vaultActions.toggleSortDirection,
+    vaultActions.archiveDocument,
   ],
   observableState: {
     documentCount: () => useVaultStore.getState().documents.length,
@@ -83,6 +86,8 @@ export const VaultHomePageAgent = definePage({
       utterance: 'set up starter folders',
       action: 'vault.createStarterFolders',
     },
+    { utterance: 'take a quick note', action: 'vault.startQuickNote' },
+    { utterance: 'एक क्विक नोट लिखो', action: 'vault.startQuickNote' },
     { utterance: 'edit tags', action: 'vault.manageTags' },
     {
       utterance: 'tag this as important',
@@ -92,5 +97,6 @@ export const VaultHomePageAgent = definePage({
     { utterance: 'sort by name', action: 'vault.setSortBy', args: { key: 'name' } },
     { utterance: 'sort by size', action: 'vault.setSortBy', args: { key: 'fileSize' } },
     { utterance: 'reverse the order', action: 'vault.toggleSortDirection' },
+    { utterance: 'archive this document', action: 'vault.archiveDocument' },
   ],
 });

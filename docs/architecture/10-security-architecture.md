@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-07-18
+> **Last Updated:** 2026-10-31
 
 ---
 
@@ -257,6 +257,12 @@ In V1, Kagaz enforces a strict **no-network** policy:
 > **Network-permission reality (corrected 2026-07-11).** An earlier revision claimed the app ships with **no `INTERNET` permission**. Building and inspecting the **release** APK (`aapt dump permissions`) disproved that: the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)) depends on `play-services-mlkit-document-scanner`, whose transitive Play-Services libraries declare `INTERNET` + `ACCESS_NETWORK_STATE`, and the manifest merger folds them into our app manifest. The **plugin's own** manifest declares no permissions (that part of the ADR-018 verification was right) — but the **merged** result carries them.
 > **Accepted, not stripped** (decision 2026-07-11): the permission is real but the app never uses it — it makes no HTTP calls (F-19 audit), ships no analytics/CDN, and the CSP blocks WebView egress. It exists solely so Play Services can fetch the scanner model once. Stripping it via `tools:node="remove"` was considered and rejected (risk to the Play-Services download path). **Consequence:** the "zero network permission, airplane-mode-provable" claim is downgraded to **"the app makes no network calls of its own; the `INTERNET` permission is present only for the Play-Services scanner model download."** This must be reflected in the Play **data-safety** declaration (G1-6) and the privacy policy. On devices without Play Services, scanning is unavailable; everything else is 100% offline.
 
+> [!WARNING]
+> **Demo-only browser database and cloud path (added 2026-10-31).** The browser demo opens an **unencrypted** sql.js database (SQLCipher has no browser build), and online mode sends messages and transcribed documents to Google Vertex AI through a dev-server proxy that holds the developer's credentials. Both exist only when a demo flag is set, and `vite-plugins/demo-csp.ts` fails any production build that sets one. See [ADR-023](08-tech-stack-decisions.md#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy).
+
+> [!WARNING]
+> **Demo-only local-server path (added 2026-10-31).** When `VITE_OLLAMA_URL` is set at build time, the WebView is allowed to call that one origin (a local Ollama server) for chat, vision OCR and embeddings, and **prompts, tool results and document images/text leave the WebView for it**. This is never enabled in shipped builds: `vite-plugins/demo-csp.ts` only widens `connect-src` when the variable is set and fails a `production` build that sets it, so the CSP row above holds for every release. The server must be localhost or a machine the user controls. A hosted-API fallback would need an explicit PII data-sharing warning and consent before enabling ([05-ai-assistant-module.md](05-ai-assistant-module.md) §3.6, [ADR-022](08-tech-stack-decisions.md#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)).
+
 ---
 
 ### 3.6 Quick Reference Access Control (F-84)
@@ -268,7 +274,7 @@ narrow, threat-model note beyond the general document posture:
 
 | Control | Behavior |
 |---|---|
-| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. |
+| **Screen-level biometric gate** | Opening the Quick Reference screen requires a fresh biometric/device-credential prompt, reusing `biometric.service` (the same call F-16's app lock and per-document lock make) — no separate auth stack. **On by default, user-toggleable** (2026-07-21 follow-up): unlike F-16's app lock (opt-in), this gate ships enabled because Quick Reference is the highest-sensitivity screen in the app (§3.6.1) — but it's a Settings → Security switch (`quick-reference-lock.store.ts`, `kagaz:lock:quick-reference`), not a hardcoded requirement, since the per-visit prompt is real friction for a phone the user already keeps locked. Turning it off doesn't require a biometric proof first (unlike enabling F-16's app lock) because there's no lockout risk to guard against — the page already skips the gate gracefully when no biometric/credential is enrolled, so disabling only ever *reduces* friction, never denies access. |
 | **Mask by default** | Values render as `•••• <last 4 chars>` until explicitly revealed per-entry; reveal state is not persisted (resets on screen re-entry). |
 | **No structured PII typing** | The schema has no `label_type`/`value_type` column (§3.6.1 below) — the app never knows or asserts "this value is an Aadhaar number." |
 | **Clipboard auto-clear** | Every copy action clears the clipboard ~30s later if it still holds exactly what was copied (`core/clipboard`'s new `autoClearMs` option) — bounds how long a sensitive value sits somewhere a keyboard app's clipboard history could surface it. |
@@ -490,8 +496,12 @@ AI tool calls are categorized by risk level:
 | Risk Level | Examples | Authorization Required |
 |---|---|---|
 | 🟢 **Read** | Search docs, list folders, get metadata | None — automatic |
-| 🟡 **Modify** | Rename doc, move to folder, add tag | None — automatic |
-| 🔴 **Destructive** | Delete doc, merge/split, clear conversations | **User confirmation required** |
+| 🟡 **Modify** | Rename doc, move to folder, add tag, merge/split/compress/watermark/convert a document | None — automatic |
+| 🔴 **Destructive** | Delete doc, clear conversations | **User confirmation required** |
+
+**Reclassified 2026-07-25** (F-14 document-ops tool rollout): merge/split moved from 🔴 to 🟡, joined by compress/watermark/convert. The `requiresConfirmation` policy actually implemented in code (`packages/agent-kit/src/define-action.ts`) is "true ONLY for actions without undo" — and every one of these operations, as actually built (`apps/kagaz/src/modules/pdf-engine/hooks/usePdfEngine.ts`), **creates a brand-new vault document and never mutates or removes the source**. The original table entry predated that implementation and assumed an in-place edit. Full undo is just deleting the new document; nothing about the source document ever changes. Encrypt/decrypt (password handling through the model's context) and any future in-place-mutation tool remain candidates for 🔴 and are deliberately **not** included in this AI tool-calling pass.
+
+**Locked documents (2026-10-31).** Every AI tool that takes a document id refuses a per-document-locked document (`requireDocument` in `useChat.ts`), because the pdf-engine and image hooks the tools reuse do not check the lock. The user must open a locked document themselves (biometric prompt) to operate on it. `ai.runOcr` returns a character count only, never the recognized text.
 
 ### Confirmation Flow
 

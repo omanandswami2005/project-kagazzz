@@ -16,15 +16,18 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Toggle } from '@kagaz/ui';
+import { Alert, Button, Toggle } from '@kagaz/ui';
 import { DeleteAllDataDialog } from '../components/DeleteAllDataDialog';
 import { useBackupExport } from '../hooks/useBackupExport';
+import { useBackupRestore } from '../hooks/useBackupRestore';
 import {
   useLocale,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from '@/core/i18n';
+import type { SwipeActionKind } from '@/core/gestures';
 import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
+import { useQuickReferenceLockSettings } from '@/modules/auth/hooks/useQuickReferenceLockSettings';
 import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import { usePreferencesStore } from '@/core/preferences';
@@ -37,6 +40,15 @@ const LANGUAGE_LABEL = {
   en: 'english',
   hi: 'hindi',
 } as const satisfies Record<SupportedLanguage, string>;
+/** F-88: every choice offered for swipe-left / swipe-right, in display order. */
+const SWIPE_ACTION_OPTIONS: readonly SwipeActionKind[] = [
+  'delete',
+  'favorite',
+  'move',
+  'tags',
+  'archive',
+  'none',
+];
 
 /** The app Settings page. */
 export function SettingsPage(): ReactNode {
@@ -44,11 +56,18 @@ export function SettingsPage(): ReactNode {
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
   const lock = useLockSettings();
+  const quickRefLock = useQuickReferenceLockSettings();
   const backup = useBackupExport();
+  const restore = useBackupRestore();
   const router = useIonRouter();
   const [eraseOpen, setEraseOpen] = useState(false);
   const renameOnAdd = usePreferencesStore((s) => s.renameOnAdd);
   const setRenameOnAdd = usePreferencesStore((s) => s.setRenameOnAdd);
+  const swipeLeftAction = usePreferencesStore((s) => s.swipeLeftAction);
+  const swipeRightAction = usePreferencesStore((s) => s.swipeRightAction);
+  const setSwipeAction = usePreferencesStore((s) => s.setSwipeAction);
+  const hapticsEnabled = usePreferencesStore((s) => s.hapticsEnabled);
+  const setHapticsEnabled = usePreferencesStore((s) => s.setHapticsEnabled);
 
   return (
     <IonPage data-agent-id="settings">
@@ -138,6 +157,78 @@ export function SettingsPage(): ReactNode {
           </section>
 
           <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-swipe">
+              {t('swipe.title')}
+            </h2>
+            <p className="kg-settings__hint">{t('swipe.hint')}</p>
+            <div className="kg-settings__row">
+              <span className="kg-settings__label" id="settings-swipe-left-label">
+                {t('swipe.left')}
+              </span>
+              <div
+                className="kg-settings__choices"
+                role="group"
+                aria-labelledby="settings-swipe-left-label"
+                data-agent-id="settings.swipe-left"
+                data-agent-state={swipeLeftAction}
+              >
+                {SWIPE_ACTION_OPTIONS.map((option) => (
+                  <Button
+                    key={option}
+                    variant={swipeLeftAction === option ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setSwipeAction('left', option)}
+                    agentId={`settings.swipe-left-${option}`}
+                    agentAction="settings.setSwipeAction"
+                  >
+                    {t(`swipe.action_${option}`)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="kg-settings__row">
+              <span className="kg-settings__label" id="settings-swipe-right-label">
+                {t('swipe.right')}
+              </span>
+              <div
+                className="kg-settings__choices"
+                role="group"
+                aria-labelledby="settings-swipe-right-label"
+                data-agent-id="settings.swipe-right"
+                data-agent-state={swipeRightAction}
+              >
+                {SWIPE_ACTION_OPTIONS.map((option) => (
+                  <Button
+                    key={option}
+                    variant={swipeRightAction === option ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setSwipeAction('right', option)}
+                    agentId={`settings.swipe-right-${option}`}
+                    agentAction="settings.setSwipeAction"
+                  >
+                    {t(`swipe.action_${option}`)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-haptics">
+              {t('haptics.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={hapticsEnabled}
+                label={t('haptics.enabled')}
+                onChange={setHapticsEnabled}
+                agentId="settings.haptics-enabled"
+              />
+              <p className="kg-settings__hint">{t('haptics.enabled_hint')}</p>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
             <h2 className="kg-settings__section-title" id="settings-security">
               {t('security.title')}
             </h2>
@@ -181,6 +272,32 @@ export function SettingsPage(): ReactNode {
                 </div>
               </div>
             )}
+            <div className="kg-settings__row">
+              <Toggle
+                enabled={quickRefLock.enabled}
+                label={t('security.quickref_lock')}
+                onChange={quickRefLock.setEnabled}
+                agentId="settings.quickref-lock"
+              />
+              <p className="kg-settings__hint">{t('security.quickref_lock_hint')}</p>
+            </div>
+          </section>
+
+          <section className="kg-settings__section">
+            <h2 className="kg-settings__section-title" id="settings-ai">
+              {t('ai.title')}
+            </h2>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => router.push('/ai-assistant')}
+                agentId="settings.open-ai-assistant"
+              >
+                {t('ai.manage')}
+              </Button>
+              <p className="kg-settings__hint">{t('ai.manage_hint')}</p>
+            </div>
           </section>
 
           <section className="kg-settings__section">
@@ -202,6 +319,17 @@ export function SettingsPage(): ReactNode {
               <Button
                 variant="secondary"
                 size="sm"
+                onClick={() => router.push('/archived')}
+                agentId="settings.open-archived"
+              >
+                {t('data.archived')}
+              </Button>
+              <p className="kg-settings__hint">{t('data.archived_hint')}</p>
+            </div>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => void backup.exportBackup()}
                 loading={backup.status === 'running'}
                 agentId="settings.export-backup"
@@ -218,6 +346,30 @@ export function SettingsPage(): ReactNode {
                   : backup.status === 'error'
                     ? t('data.backup_error')
                     : t('data.backup_hint')}
+              </p>
+            </div>
+            <div className="kg-settings__row">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void restore.pickBackup()}
+                loading={restore.status === 'reading'}
+                agentId="settings.restore-backup"
+              >
+                {t('data.restore')}
+              </Button>
+              <p
+                className="kg-settings__hint"
+                data-agent-id="settings.restore-status"
+                data-agent-state={restore.status}
+              >
+                {restore.status === 'reading'
+                  ? t('data.restore_reading')
+                  : restore.status === 'done' && restore.result
+                    ? t('data.restore_done', { count: restore.result.restoredDocuments })
+                    : restore.status === 'error'
+                      ? t('data.restore_error')
+                      : t('data.restore_hint')}
               </p>
             </div>
             <div className="kg-settings__row">
@@ -264,6 +416,35 @@ export function SettingsPage(): ReactNode {
         <DeleteAllDataDialog
           isOpen={eraseOpen}
           onDismiss={() => setEraseOpen(false)}
+        />
+
+        {/* Restore preview — nothing is written until the user confirms
+           (useBackupRestore's pickBackup() only decrypts + parses). */}
+        <Alert
+          isOpen={restore.status === 'confirming' && restore.preview !== null}
+          header={t('data.restore_confirm_title')}
+          message={
+            restore.preview
+              ? t('data.restore_confirm_body', {
+                  count: restore.preview.counts.documents,
+                  folders: restore.preview.counts.folders,
+                  date: new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(
+                    new Date(restore.preview.createdAt)
+                  ),
+                })
+              : ''
+          }
+          agentId="settings.restore-confirm"
+          onDidDismiss={() => restore.cancel()}
+          buttons={[
+            {
+              text: t('data.restore_confirm_button'),
+              handler: (): void => {
+                void restore.confirmRestore();
+              },
+            },
+            { text: t('data.cancel'), role: 'cancel' },
+          ]}
         />
       </IonContent>
     </IonPage>

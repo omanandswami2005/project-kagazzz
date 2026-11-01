@@ -25,7 +25,7 @@ import type {
   StampPosition,
 } from '../types/pdf-engine.types';
 import type { UsePdfEngineResult } from '../hooks/usePdfEngine';
-import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '../services/pdf-ops-meta';
+import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '@/core/pdf-tools-catalog';
 import { parsePageRanges } from '../services/parse-ranges';
 import { pdfErrorMessageKey } from '../services/pdf-error-message';
 import { PdfDocPicker } from './PdfDocPicker';

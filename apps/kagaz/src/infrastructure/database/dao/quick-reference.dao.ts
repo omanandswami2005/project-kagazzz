@@ -6,7 +6,7 @@
  */
 import type { DbConnection, SqlRow, SqlValue } from '../connection';
 import type { QuickReferenceEntry, TagEntity } from '../types';
-import { asOptionalString, asString, newId, nowIso } from './row-mapping';
+import { asBool, asOptionalString, asString, newId, nowIso } from './row-mapping';
 
 function mapRow(row: SqlRow): QuickReferenceEntry {
   return {
@@ -14,6 +14,7 @@ function mapRow(row: SqlRow): QuickReferenceEntry {
     label: asString(row, 'label'),
     value: asString(row, 'value'),
     linkedDocumentId: asOptionalString(row, 'linked_document_id'),
+    isSecure: asBool(row, 'is_secure'),
     createdAt: asString(row, 'created_at'),
     updatedAt: asString(row, 'updated_at'),
   };
@@ -41,10 +42,18 @@ export class QuickReferenceDao {
     return rows[0] ? mapRow(rows[0]) : null;
   }
 
-  /** Lists all entries, most recently updated first. */
-  async findAll(): Promise<QuickReferenceEntry[]> {
+  /** Lists entries, most recently updated first. `isSecure` filters to just
+   * the Quick Reference (true) or Quick Notes (false) board; omit for both. */
+  async findAll(isSecure?: boolean): Promise<QuickReferenceEntry[]> {
+    if (isSecure === undefined) {
+      const rows = await this.db.query(
+        'SELECT * FROM quick_reference_entries ORDER BY updated_at DESC'
+      );
+      return rows.map(mapRow);
+    }
     const rows = await this.db.query(
-      'SELECT * FROM quick_reference_entries ORDER BY updated_at DESC'
+      'SELECT * FROM quick_reference_entries WHERE is_secure = ? ORDER BY updated_at DESC',
+      [isSecure ? 1 : 0]
     );
     return rows.map(mapRow);
   }
@@ -60,19 +69,22 @@ export class QuickReferenceDao {
     return rows.map(mapRow);
   }
 
-  /** Creates an entry. `label`/`value` are stored verbatim, untyped. */
+  /** Creates an entry. `label`/`value` are stored verbatim, untyped.
+   * `isSecure` picks which board it belongs to (default true — secure by
+   * default, same posture as the Quick Reference lock toggle's own default). */
   async create(
     label: string,
     value: string,
+    isSecure = true,
     linkedDocumentId?: string
   ): Promise<QuickReferenceEntry> {
     const id = newId();
     const now = nowIso();
     await this.db.run(
       `INSERT INTO quick_reference_entries
-         (id, label, value, linked_document_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, label, value, linkedDocumentId ?? null, now, now]
+         (id, label, value, linked_document_id, is_secure, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, label, value, linkedDocumentId ?? null, isSecure ? 1 : 0, now, now]
     );
     const created = await this.findById(id);
     if (!created) {

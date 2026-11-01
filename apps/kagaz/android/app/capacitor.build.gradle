@@ -21,6 +21,7 @@ dependencies {
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-share')
+    implementation project(':kagaz-capacitor-llm-litert')
     implementation project(':capacitor-secure-storage-plugin')
 
 }

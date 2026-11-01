@@ -69,4 +69,59 @@ describe('ActionSheet', () => {
     expect(handler).not.toHaveBeenCalled();
     expect(onDidDismiss).toHaveBeenCalled();
   });
+
+  it('renders a row icon when given, decoratively (no accessible-name change)', () => {
+    render(
+      <ActionSheet
+        isOpen
+        buttons={[{ text: 'Move', icon: 'Move' }]}
+        onDidDismiss={() => undefined}
+      />
+    );
+    const button = screen.getByRole('button', { name: 'Move' });
+    const icon = button.querySelector('svg');
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('renders no icon for a row that specifies none', () => {
+    render(
+      <ActionSheet
+        isOpen
+        buttons={[{ text: 'Details' }]}
+        onDidDismiss={() => undefined}
+      />
+    );
+    expect(
+      screen.getByRole('button', { name: 'Details' }).querySelector('svg')
+    ).not.toBeInTheDocument();
+  });
+
+  it('defaults a cancel row to the X icon when none is given', () => {
+    render(
+      <ActionSheet
+        isOpen
+        buttons={[{ text: 'Cancel', role: 'cancel' }]}
+        onDidDismiss={() => undefined}
+      />
+    );
+    expect(
+      screen.getByRole('button', { name: 'Cancel' }).querySelector('svg')
+    ).toBeInTheDocument();
+  });
+
+  it('lets a cancel row override the default icon', () => {
+    render(
+      <ActionSheet
+        isOpen
+        buttons={[{ text: 'Keep editing', role: 'cancel', icon: 'Pencil' }]}
+        onDidDismiss={() => undefined}
+      />
+    );
+    // Just confirms it still renders exactly one icon, not the X default —
+    // the specific glyph isn't asserted (Icon.tsx already covers name→glyph).
+    expect(
+      screen.getByRole('button', { name: 'Keep editing' }).querySelectorAll('svg')
+    ).toHaveLength(1);
+  });
 });

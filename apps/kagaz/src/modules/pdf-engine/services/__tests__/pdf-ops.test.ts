@@ -3,6 +3,7 @@ import { PDFDocument } from 'pdf-lib';
 import { mergePdfsImpl, splitPdfImpl, loadAndValidatePdf } from '../pdf-ops';
 import { compressPdfImpl } from '../pdf-compress-ops';
 import { pdfToImagesImpl } from '../pdf-render-ops';
+import { isEncrypted } from '@pdfsmaller/pdf-decrypt';
 import { type ProgressEvent } from '../../types/pdf-engine.types';
 
 // Compression rasterises each page via pdfjs (needs a canvas — device only),
@@ -10,6 +11,13 @@ import { type ProgressEvent } from '../../types/pdf-engine.types';
 // render → rebuild orchestration (rebuild uses real pdf-lib embedJpg).
 vi.mock('../pdf-render-ops', () => ({
   pdfToImagesImpl: vi.fn(),
+}));
+
+// Real encrypted-PDF fixtures aren't worth generating for a unit test —
+// mock the encryption check itself (same isolation style as the render
+// mock above) for the one test that needs `encrypted: true`.
+vi.mock('@pdfsmaller/pdf-decrypt', () => ({
+  isEncrypted: vi.fn().mockResolvedValue({ encrypted: false }),
 }));
 
 /** A real 1×1 JPEG so pdf-lib's embedJpg can parse it during rebuild. */
@@ -63,6 +71,16 @@ describe('PDF Engine Core Operations Implementation', () => {
       await expect(loadAndValidatePdf(new Uint8Array(0), 'test')).rejects.toThrowError(
         expect.objectContaining({
           code: 'INVALID_PDF',
+          operation: 'test',
+        })
+      );
+    });
+
+    it('bug-audit fix: throws PASSWORD_REQUIRED (not the generic INVALID_PDF) for an encrypted PDF', async () => {
+      vi.mocked(isEncrypted).mockResolvedValueOnce({ encrypted: true });
+      await expect(loadAndValidatePdf(valid1PagePdf, 'test')).rejects.toThrowError(
+        expect.objectContaining({
+          code: 'PASSWORD_REQUIRED',
           operation: 'test',
         })
       );
@@ -188,6 +206,42 @@ describe('PDF Engine Core Operations Implementation', () => {
         expect.objectContaining({ code: 'INVALID_PDF', operation: 'compressPdf' })
       );
       expect(pdfToImagesImpl).not.toHaveBeenCalled();
+    });
+
+    it('bug-audit fix: falls back to the original bytes when the rasterized rebuild would be larger', async () => {
+      // Many embedded pages against a tiny 1-page original guarantees the
+      // rebuild is bigger regardless of per-unit encoding overhead — exactly
+      // the mostly-text/vector input case the file's own doc comment says
+      // this lossy trade-off isn't for.
+      vi.mocked(pdfToImagesImpl).mockResolvedValue(
+        Array.from({ length: 50 }, () => fakePageBlob())
+      );
+
+      const result = await compressPdfImpl(valid1PagePdf, 'high');
+
+      expect(result.length).toBe(valid1PagePdf.length);
+      expect(result).toEqual(valid1PagePdf);
+    });
+
+    it('keeps the rasterized result when it is genuinely smaller than the original', async () => {
+      // A single tiny rendered page against an original inflated with a lot
+      // of real vector-text content — the direction this feature actually
+      // targets (a text-heavy/vector original the rasterized rebuild beats).
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([600, 800]);
+      for (let i = 0; i < 500; i++) {
+        page.drawText(`Line ${i} of a lot of vector text content that takes real bytes to encode.`, {
+          x: 10,
+          y: 790 - i,
+        });
+      }
+      const bigOriginal = await pdfDoc.save();
+      vi.mocked(pdfToImagesImpl).mockResolvedValue([fakePageBlob()]);
+
+      const result = await compressPdfImpl(bigOriginal, 'low');
+
+      expect(result.length).toBeLessThan(bigOriginal.length);
+      expect(result).not.toEqual(bigOriginal);
     });
 
     it('wraps a render failure as COMPRESSION_FAILED', async () => {

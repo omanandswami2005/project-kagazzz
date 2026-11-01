@@ -3,6 +3,7 @@ import type { DocumentEntity } from '@/infrastructure/database/types';
 import {
   openDocumentWith,
   shareDocument,
+  shareDocuments,
   type DocumentIntentDeps,
 } from '../document-intent.service';
 
@@ -26,6 +27,36 @@ describe('shareDocument (F-65)', () => {
     expect(d.share).toHaveBeenCalledWith({
       title: 'PAN Card',
       url: 'file:///data/documents/d1.pdf',
+    });
+  });
+});
+
+describe('shareDocuments (F-65 bulk-select)', () => {
+  it('is a no-op for an empty selection', async () => {
+    const d = deps();
+    await shareDocuments([], d);
+    expect(d.getUri).not.toHaveBeenCalled();
+    expect(d.share).not.toHaveBeenCalled();
+  });
+
+  it('delegates a single document to the plain url shape', async () => {
+    const d = deps();
+    await shareDocuments([doc()], d);
+    expect(d.share).toHaveBeenCalledWith({
+      title: 'PAN Card',
+      url: 'file:///data/documents/d1.pdf',
+    });
+  });
+
+  it('shares multiple documents in one call via the files array', async () => {
+    const d = deps();
+    const second = doc({ id: 'd2', name: 'Aadhaar', filePath: 'documents/d2.jpg' });
+    await shareDocuments([doc(), second], d);
+    expect(d.getUri).toHaveBeenCalledWith('documents/d1.pdf');
+    expect(d.getUri).toHaveBeenCalledWith('documents/d2.jpg');
+    expect(d.share).toHaveBeenCalledWith({
+      title: 'PAN Card, Aadhaar',
+      files: ['file:///data/documents/d1.pdf', 'file:///data/documents/d2.jpg'],
     });
   });
 });

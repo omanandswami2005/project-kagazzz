@@ -29,3 +29,18 @@ export function parsePageRanges(input: string): PageRange[] | null {
   }
   return ranges;
 }
+
+/**
+ * Expands page ranges into a flat, deduped, ascending list of 0-based page
+ * indices — the shape `RenderOptions.pages` (F-6 pdfToImages) needs, as
+ * opposed to the `PageRange[]` shape extractPages/split take.
+ */
+export function flattenPageRanges(ranges: PageRange[]): number[] {
+  const pages = new Set<number>();
+  for (const { start, end } of ranges) {
+    for (let p = start; p <= end; p++) {
+      pages.add(p);
+    }
+  }
+  return [...pages].sort((a, b) => a - b);
+}

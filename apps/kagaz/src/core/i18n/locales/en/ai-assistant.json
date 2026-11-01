@@ -1,20 +1,101 @@
 {
   "title": "Kagaz AI",
+  "new_chat": "New chat",
   "input_placeholder": "Ask me anything about your documents...",
   "listening": "Listening...",
+  "voice_modal": {
+    "hint": "Say something...",
+    "stop": "Stop listening"
+  },
   "model_loading": "Setting up the assistant (first time takes a moment)...",
   "thinking": "Thinking...",
   "confirm_action": {
     "title": "Confirm this action?",
     "approve": "Yes, do it",
-    "reject": "No, cancel"
+    "reject": "No, cancel",
+    "expired": "This took too long to confirm — please ask again.",
+    "dismiss": "Dismiss"
   },
   "suggestions": {
     "find": "Find a document",
     "merge": "Merge PDFs",
     "scan": "Scan something new"
   },
+  "lifecycle": {
+    "unsupported": "The AI Assistant needs on-device AI support, which isn't available on this platform.",
+    "intro": "Kagaz AI runs entirely on your device — nothing you type or ask ever leaves your phone.",
+    "download_button": "Download AI Assistant ({{size}})",
+    "wifi_hint": "One-time download. Wi-Fi recommended.",
+    "downloading": "Downloading the AI model...",
+    "ready": "The AI Assistant is ready.",
+    "capabilities": "Running on {{backend}} · loaded in {{seconds}}s",
+    "delete_button": "Delete AI model",
+    "retry_button": "Try again",
+    "gpu_toggle_label": "Experimental GPU acceleration",
+    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads.",
+    "intro_server": "Kagaz AI is using a local Gemma server (Ollama) at {{url}}. Your messages and any document you transcribe are sent to it — this is a demo setup, not on-device.",
+    "connect_button": "Connect to Gemma",
+    "disconnect_button": "Disconnect",
+    "intro_cloud": "Online mode: Kagaz AI sends your messages to Google Cloud (Vertex AI). Documents you ask it to transcribe are sent too.",
+    "connect_cloud_button": "Connect to Google Cloud"
+  },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."
+  },
+  "mode": {
+    "online_toggle": "Online mode (Google Cloud)",
+    "online_hint": "Online: your messages and any document you transcribe are sent to Google Cloud (Vertex AI).",
+    "offline_hint": "Offline: nothing is sent to Google.",
+    "warning_title": "Send your data to Google Cloud?",
+    "warning_body": "Online mode sends your chat messages — and any document you ask the assistant to read or transcribe — to Google Cloud (Vertex AI) so a larger model can answer. This can include personal information such as ID numbers. Offline mode keeps everything on this device. Turn on online mode?",
+    "warning_confirm": "Turn on online mode",
+    "warning_cancel": "Cancel",
+    "badge_online": "Online",
+    "badge_offline": "Offline"
+  },
+  "attach": {
+    "button": "Attach documents",
+    "title": "Attach documents",
+    "upload_new": "Upload new…",
+    "pick_hint": "Or pick from your vault",
+    "empty": "No documents in your vault yet.",
+    "locked_hint_one": "1 locked document isn't shown — open it yourself to use it.",
+    "locked_hint_other": "{{count}} locked documents aren't shown — open them yourself to use them.",
+    "confirm_one": "Attach 1 document",
+    "confirm_other": "Attach {{count}} documents",
+    "remove": "Remove {{name}}"
+  },
+  "result": {
+    "title": "Created",
+    "open": "Open"
+  },
+  "form": {
+    "submit": "Send",
+    "no_documents": "No matching documents in your vault.",
+    "errors": {
+      "required": "Required",
+      "min": "Must be at least {{min}}",
+      "max": "Must be at most {{max}}",
+      "invalid": "Enter a valid value"
+    }
+  },
+  "search_model": {
+    "title": "Search model",
+    "hint": "Lets the assistant search inside your documents by meaning, fully on your phone. Optional, one-time download. Wi-Fi recommended.",
+    "download": "Download search model ({{size}})",
+    "downloading": "Downloading the search model...",
+    "ready": "Search model ready.",
+    "delete": "Delete search model",
+    "failed": "The search model could not be downloaded or verified. Check your connection and try again."
+  },
+  "tool": {
+    "failed": "Tool failed"
+  },
+  "history": {
+    "title": "Conversations",
+    "close": "Close",
+    "empty": "No saved conversations yet.",
+    "untitled": "New conversation",
+    "delete": "Delete {{name}}"
   }
 }

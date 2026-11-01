@@ -26,6 +26,7 @@ function mapConversation(row: SqlRow): AiConversationEntity {
     createdAt: asString(row, 'created_at'),
     updatedAt: asString(row, 'updated_at'),
     isPinned: asBool(row, 'is_pinned'),
+    activeSkills: asOptionalString(row, 'active_skills'),
   };
 }
 
@@ -37,6 +38,7 @@ function mapMessage(row: SqlRow): AiMessageEntity {
     content: asOptionalString(row, 'content'),
     toolCallsJson: asOptionalString(row, 'tool_calls_json'),
     toolCallId: asOptionalString(row, 'tool_call_id'),
+    partsJson: asOptionalString(row, 'parts_json'),
     createdAt: asString(row, 'created_at'),
   };
 }
@@ -113,8 +115,8 @@ export class AiConversationDao {
     const now = nowIso();
     await this.db.run(
       `INSERT INTO ai_messages (id, conversation_id, role, content,
-        tool_calls_json, tool_call_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        tool_calls_json, tool_call_id, parts_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
         message.conversationId,
@@ -122,6 +124,7 @@ export class AiConversationDao {
         message.content ?? null,
         message.toolCallsJson ?? null,
         message.toolCallId ?? null,
+        message.partsJson ?? null,
         now,
       ]
     );
@@ -136,6 +139,15 @@ export class AiConversationDao {
       throw new Error(`ai_messages insert for ${id} did not persist`);
     }
     return mapMessage(rows[0]);
+  }
+
+  /** Remembers which skills are loaded in a conversation (migration 007). */
+  async setActiveSkills(id: string, skills: string[]): Promise<number> {
+    const result = await this.db.run('UPDATE ai_conversations SET active_skills = ? WHERE id = ?', [
+      JSON.stringify(skills),
+      id,
+    ]);
+    return result.changes;
   }
 
   /** Lists a conversation's messages in chronological order. */

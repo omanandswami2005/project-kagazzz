@@ -77,6 +77,38 @@ describe('usePdfEngine finalize phase (UX-10/11)', () => {
   });
 });
 
+describe('usePdfEngine engine initialization (bug-audit fix)', () => {
+  it('memoizes the in-flight initialize() so two concurrent ops share one engine, not two', async () => {
+    // Resolve initialize() only after both ops have already called
+    // getEngine() — the exact window the race lived in.
+    let releaseInit: () => void = () => {};
+    initialize.mockReturnValue(
+      new Promise<void>((resolve) => {
+        releaseInit = resolve;
+      })
+    );
+
+    const { result } = renderHook(() => usePdfEngine());
+
+    let mergeA: Promise<number>;
+    let mergeB: Promise<number>;
+    act(() => {
+      // Neither op awaits before the other starts — both see engineRef
+      // as null and, pre-fix, would each construct + initialize their
+      // own engine.
+      mergeA = result.current.mergePdfs([doc('a')]);
+      mergeB = result.current.mergePdfs([doc('b')]);
+    });
+
+    await act(async () => {
+      releaseInit();
+      await Promise.all([mergeA, mergeB]);
+    });
+
+    expect(initialize).toHaveBeenCalledOnce();
+  });
+});
+
 describe('usePdfEngine.appendScan (F-44)', () => {
   const pdfDoc = (): DocumentEntity =>
     ({ id: 'src', name: 'contract.pdf', filePath: 'documents/src.pdf' }) as DocumentEntity;

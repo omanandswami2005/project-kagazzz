@@ -22,6 +22,12 @@ export interface DocLock {
    * locked docs require a successful biometric prompt.
    */
   authorizeView: (document: DocumentEntity) => Promise<boolean>;
+  /**
+   * Batch form of {@link authorizeView} for a bulk action (e.g. multi-select
+   * Share) — a single biometric prompt covers the whole selection when at
+   * least one document is locked, rather than one prompt per locked item.
+   */
+  authorizeViewMany: (documents: DocumentEntity[]) => Promise<boolean>;
 }
 
 /** Wires per-document lock gating to the biometric prompt + vault mutations. */
@@ -58,5 +64,16 @@ export function useDocLock(): DocLock {
     [t]
   );
 
-  return { toggleLock, authorizeView };
+  const authorizeViewMany = useCallback(
+    async (documents: DocumentEntity[]): Promise<boolean> => {
+      if (!documents.some((document) => document.isLocked)) {
+        return true;
+      }
+      const result = await biometricAuthenticator.authenticate(t('lock.reason'));
+      return result === 'success';
+    },
+    [t]
+  );
+
+  return { toggleLock, authorizeView, authorizeViewMany };
 }

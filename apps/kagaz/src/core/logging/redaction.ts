@@ -53,8 +53,17 @@ const DENY_KEYS: ReadonlySet<string> = new Set(
 const MAX_DEPTH = 16;
 
 function redactValue(value: unknown, depth: number): unknown {
-  if (depth > MAX_DEPTH || value === null || typeof value !== 'object') {
+  if (value === null || typeof value !== 'object') {
     return value;
+  }
+  if (depth > MAX_DEPTH) {
+    // Bug-audit fix: this used to return the raw, un-redacted subtree once
+    // the cycle-safety depth cap was hit — silently contradicting this
+    // module's own "redacts every denylisted key at any nesting depth"
+    // claim (a denylisted key nested past MAX_DEPTH passed straight
+    // through). Traversal correctly stops here for cycle-safety, but
+    // "too deep to safely inspect" must censor, not leak, on a PII app.
+    return REDACTION_CENSOR;
   }
   if (Array.isArray(value)) {
     return value.map((item) => redactValue(item, depth + 1));

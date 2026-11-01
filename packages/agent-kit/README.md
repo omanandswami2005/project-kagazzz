@@ -7,7 +7,7 @@ Agent interface primitives (P0-7). Spec: [docs/design-system/agent-interface.md]
 | `useAgentProps` | 1 — DOM | data-agent-* bag + dev `agent:render` events for the AgentInspector |
 | `AGENT_STATES` / `AgentState` | 1 | The fixed state vocabulary (no custom values without an RFC) |
 | `defineAction` / `ActionMap` | 2 — Registry | One typed entry per voice/agent command; Zod args schema |
-| `ActionRegistry` | 2 | register/invoke (validated, `ActionResult` envelope, never throws) + `toToolDefinitions()` for WebLLM |
+| `ActionRegistry` | 2 | register/invoke (validated, `ActionResult` envelope, never throws) + `toToolDefinitions()` for the on-device AI assistant (LiteRT-LM, F-13) |
 | `definePage` | 3 — Page Skill | Typed page manifest; validates primary ∈ available, voice examples resolve |
 | `ActionResult` | — | `{ ok, data } \| { ok:false, code, retryable, userMessage }` failure semantics |
 

@@ -7,6 +7,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import type { SwipeActionKind } from '@/core/gestures';
 import type { SupportedLanguage } from '@/core/i18n';
 import type { ThemeSetting } from '@/app/providers/ThemeProvider';
 
@@ -18,10 +19,21 @@ export interface SettingsActionContext {
   setTheme: (theme: ThemeSetting) => void;
   /** Switches (and persists) the UI language. */
   setLanguage: (language: SupportedLanguage) => void;
+  /** Sets which action fires on swipe-left/right over document rows (F-88). */
+  setSwipeAction: (side: 'left' | 'right', action: SwipeActionKind) => void;
 }
 
 const themeSchema = z.enum(['system', 'light', 'dark']);
 const languageSchema = z.enum(['en', 'hi']);
+const swipeSideSchema = z.enum(['left', 'right']);
+const swipeActionSchema = z.enum([
+  'delete',
+  'favorite',
+  'move',
+  'tags',
+  'archive',
+  'none',
+]);
 
 /** All settings actions, registered by id. */
 export const settingsActions = {
@@ -72,6 +84,25 @@ export const settingsActions = {
     ): Promise<{ language: SupportedLanguage }> => {
       ctx.setLanguage(args.language);
       return Promise.resolve({ language: args.language });
+    },
+  }),
+  setSwipeAction: defineAction({
+    id: 'settings.setSwipeAction',
+    summary:
+      'Choose what happens when a document row is swiped left or right (delete, favorite, move, add tag, or nothing).',
+    voice: [
+      'swipe left to delete',
+      'swipe right to favorite',
+      'दस्तावेज़ को स्वाइप करके हटाओ',
+    ],
+    args: z.object({ side: swipeSideSchema, action: swipeActionSchema }),
+    requiresConfirmation: false,
+    handler: (
+      args: { side: 'left' | 'right'; action: SwipeActionKind },
+      ctx: SettingsActionContext
+    ): Promise<{ side: 'left' | 'right'; action: SwipeActionKind }> => {
+      ctx.setSwipeAction(args.side, args.action);
+      return Promise.resolve(args);
     },
   }),
 };

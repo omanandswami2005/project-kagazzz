@@ -27,7 +27,12 @@ export function isIntentSupported(): boolean {
 /** Injectable surface (tests pass fakes; runtime uses the plugins). */
 export interface DocumentIntentDeps {
   getUri: (path: string) => Promise<string>;
-  share: (options: { title: string; url: string; dialogTitle?: string }) => Promise<unknown>;
+  share: (options: {
+    title: string;
+    url?: string;
+    files?: string[];
+    dialogTitle?: string;
+  }) => Promise<unknown>;
   openFile: (options: {
     filePath: string;
     contentType?: string;
@@ -50,6 +55,32 @@ export async function shareDocument(
 ): Promise<void> {
   const url = await deps.getUri(document.filePath);
   await deps.share({ title: document.name, url });
+}
+
+/**
+ * Shares multiple documents in one OS share sheet (F-65 bulk-select
+ * follow-up) — `@capacitor/share`'s `files` array (v4.1+) is exactly this:
+ * multiple `file://` URIs in one `ACTION_SEND_MULTIPLE` intent, each still
+ * resolved through the receiving plugin's own FileProvider. A single
+ * document delegates to {@link shareDocument} (plain `url`, the simpler and
+ * more broadly compatible single-file shape).
+ */
+export async function shareDocuments(
+  documents: DocumentEntity[],
+  deps: DocumentIntentDeps = defaultIntentDeps
+): Promise<void> {
+  if (documents.length === 0) {
+    return;
+  }
+  if (documents.length === 1) {
+    await shareDocument(documents[0], deps);
+    return;
+  }
+  const files = await Promise.all(documents.map((d) => deps.getUri(d.filePath)));
+  await deps.share({
+    title: documents.map((d) => d.name).join(', '),
+    files,
+  });
 }
 
 /** Opens a document in another app via the "Open with" chooser (F-64). */

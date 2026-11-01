@@ -15,6 +15,7 @@ import {
 } from '@capacitor-community/sqlite';
 import type { DbConnection, RunResult, SqlRow, SqlValue } from './connection';
 import { getOrCreateDbEncryptionKey } from './encryption-key.provider';
+import { isWebDemo, mountWebStore } from './web-store';
 import { runMigrations, type Migration } from './migration-runner';
 import { migrations as registry } from './migrations';
 
@@ -23,7 +24,36 @@ export const DATABASE_NAME = 'kagaz';
 
 /** Adapts a plugin connection to the {@link DbConnection} protocol. */
 export class SqliteDbAdapter implements DbConnection {
-  constructor(private readonly db: SQLiteDBConnection) {}
+  private txDepth = 0;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * @param persistWhenIdle - browser demo only: flush the in-memory sql.js
+   *   database to IndexedDB. Called ~400 ms after the last write and never
+   *   inside a transaction (sql.js `export()` closes/reopens the database,
+   *   which would silently end an open `BEGIN`).
+   */
+  constructor(
+    private readonly db: SQLiteDBConnection,
+    private readonly persistWhenIdle?: () => Promise<void>
+  ) {}
+
+  private markDirty(): void {
+    if (!this.persistWhenIdle) {
+      return;
+    }
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+    }
+    this.saveTimer = setTimeout(() => {
+      this.saveTimer = null;
+      if (this.txDepth > 0) {
+        this.markDirty(); // a transaction is open — try again after it ends
+        return;
+      }
+      void this.persistWhenIdle?.().catch(() => undefined);
+    }, 400);
+  }
 
   async query(sql: string, params: SqlValue[] = []): Promise<SqlRow[]> {
     const result = await this.db.query(sql, params);
@@ -35,6 +65,7 @@ export class SqliteDbAdapter implements DbConnection {
     // Last arg disables the plugin's per-statement implicit transaction;
     // transactional scope is owned by transaction().
     const result = await this.db.run(sql, params, false);
+    this.markDirty();
     return { changes: result.changes?.changes ?? 0 };
   }
 
@@ -50,10 +81,12 @@ export class SqliteDbAdapter implements DbConnection {
     // a separate native-splitter constraint enforced by migrations.test.)
     const normalized = sql.endsWith('\n') ? sql : `${sql}\n`;
     await this.db.execute(normalized, false);
+    this.markDirty();
   }
 
   async transaction<T>(fn: (tx: DbConnection) => Promise<T>): Promise<T> {
     await this.db.execute('BEGIN TRANSACTION;', false);
+    this.txDepth++;
     try {
       const result = await fn(this);
       await this.db.execute('COMMIT;', false);
@@ -61,6 +94,9 @@ export class SqliteDbAdapter implements DbConnection {
     } catch (error) {
       await this.db.execute('ROLLBACK;', false);
       throw error;
+    } finally {
+      this.txDepth--;
+      this.markDirty();
     }
   }
 }
@@ -78,28 +114,42 @@ export async function openDatabase(
 ): Promise<DbConnection> {
   const sqlite = new SQLiteConnection(CapacitorSQLite);
 
-  if (Capacitor.getPlatform() === 'web') {
-    // Web fallback requires the jeep-sqlite custom element + wasm store.
-    await sqlite.initWebStore();
-  }
-
-  const encryptionKey = await getOrCreateDbEncryptionKey();
-  await sqlite.isSecretStored().then(async ({ result }) => {
-    if (!result) {
-      await sqlite.setEncryptionSecret(encryptionKey);
+  // Browser = demo-only unencrypted sql.js store (web-store.ts); native = SQLCipher.
+  const web = Capacitor.getPlatform() === 'web';
+  if (web) {
+    if (!isWebDemo()) {
+      throw new Error('The browser database is only available in demo builds');
     }
-  });
+    await mountWebStore();
+    await sqlite.initWebStore();
+  } else {
+    const encryptionKey = await getOrCreateDbEncryptionKey();
+    await sqlite.isSecretStored().then(async ({ result }) => {
+      if (!result) {
+        await sqlite.setEncryptionSecret(encryptionKey);
+      }
+    });
+  }
 
   const db = await sqlite.createConnection(
     DATABASE_NAME,
-    true,
-    'secret',
+    !web,
+    web ? 'no-encryption' : 'secret',
     1,
     false
   );
   await db.open();
 
-  const connection = new SqliteDbAdapter(db);
+  const connection = new SqliteDbAdapter(db, web ? () => sqlite.saveToStore(DATABASE_NAME) : undefined);
+  // Bug-audit fix: SQLite disables foreign-key enforcement per-connection by
+  // default — without this, the schema's ON DELETE CASCADE (folders.parent_id)
+  // and ON DELETE SET NULL (documents.folder_id) are pure documentation, never
+  // actually enforced. Deleting a folder would silently orphan its child
+  // folders and documents instead of cascading/reparenting them as the schema
+  // and DAO doc comments both claim. Must be set before any writes (a
+  // per-connection setting, re-issued on every openDatabase() call — this is
+  // the app's single long-lived connection, so once here covers its lifetime).
+  await connection.execute('PRAGMA foreign_keys = ON;');
   await runMigrations(connection, migrations, onMigrationApplied);
   return connection;
 }
@@ -120,7 +170,13 @@ export async function deleteDatabase(): Promise<void> {
   const { result: isConn } = await sqlite.isConnection(DATABASE_NAME, false);
   const db = isConn
     ? await sqlite.retrieveConnection(DATABASE_NAME, false)
-    : await sqlite.createConnection(DATABASE_NAME, true, 'secret', 1, false);
+    : await sqlite.createConnection(
+        DATABASE_NAME,
+        Capacitor.getPlatform() !== 'web',
+        Capacitor.getPlatform() === 'web' ? 'no-encryption' : 'secret',
+        1,
+        false
+      );
   if (!(await db.isDBOpen()).result) {
     await db.open();
   }

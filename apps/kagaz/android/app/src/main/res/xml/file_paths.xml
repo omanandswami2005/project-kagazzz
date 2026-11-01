@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Every vault document lives under Directory.Data (getFilesDir(), see
+         infrastructure/filesystem/capacitor-fs.ts) — @capacitor/share's
+         FileProvider.getUriForFile() needs this root declared, or it throws
+         "Failed to find configured root" for every file share (F-65). -->
+    <files-path name="documents" path="." />
     <external-path name="my_images" path="." />
     <cache-path name="my_cache_images" path="." />
 </paths>

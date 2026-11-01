@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePageRanges } from '../parse-ranges';
+import { flattenPageRanges, parsePageRanges } from '../parse-ranges';
 
 describe('parsePageRanges', () => {
   it('parses a single page to a 0-based range', () => {
@@ -31,4 +31,24 @@ describe('parsePageRanges', () => {
       expect(parsePageRanges(input)).toBeNull();
     }
   );
+});
+
+describe('flattenPageRanges', () => {
+  it('expands a single range to individual indices', () => {
+    expect(flattenPageRanges([{ start: 0, end: 2 }])).toEqual([0, 1, 2]);
+  });
+
+  it('dedupes overlapping ranges and sorts ascending', () => {
+    expect(
+      flattenPageRanges([
+        { start: 4, end: 4 },
+        { start: 0, end: 2 },
+        { start: 2, end: 3 },
+      ])
+    ).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('returns [] for an empty range list', () => {
+    expect(flattenPageRanges([])).toEqual([]);
+  });
 });

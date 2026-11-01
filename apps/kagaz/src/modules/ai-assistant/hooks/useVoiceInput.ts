@@ -10,7 +10,7 @@ import type { SupportedLanguage } from '@/core/i18n';
 import { speechRecognizer } from '../services/speech-recognition.service';
 
 /** Why a dictation attempt could not run. */
-export type VoiceError = 'permission' | 'failed';
+export type VoiceError = 'permission' | 'failed' | 'no_speech';
 
 /** What {@link useVoiceInput} exposes. */
 export interface UseVoiceInput {
@@ -36,6 +36,12 @@ export function useVoiceInput(onResult: (transcript: string) => void): UseVoiceI
   const [partial, setPartial] = useState('');
   const [error, setError] = useState<VoiceError | null>(null);
   const latest = useRef('');
+  /** A session is starting or live (state `listening` lags a render behind). */
+  const active = useRef(false);
+  /** The recognizer is actually running (start() resolved). */
+  const heardSession = useRef(false);
+  /** stop() arrived before start() finished. */
+  const stopRequested = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,20 +60,28 @@ export function useVoiceInput(onResult: (transcript: string) => void): UseVoiceI
   const finish = useCallback((): void => {
     setListening(false);
     setPartial('');
+    active.current = false;
     const transcript = latest.current.trim();
     latest.current = '';
     if (transcript) {
       onResult(transcript);
+    } else if (heardSession.current) {
+      // The recognizer ran but produced nothing (silence / no match / its own error).
+      setError('no_speech');
     }
+    heardSession.current = false;
   }, [onResult]);
 
   const start = useCallback(async (): Promise<void> => {
-    if (listening) {
+    if (active.current) {
       return;
     }
+    active.current = true;
+    stopRequested.current = false;
     setError(null);
     const granted = await speechRecognizer.ensurePermission();
     if (!granted) {
+      active.current = false;
       setError('permission');
       return;
     }
@@ -82,20 +96,33 @@ export function useVoiceInput(onResult: (transcript: string) => void): UseVoiceI
         },
         onEnd: () => finish(),
       });
+      heardSession.current = true;
       setListening(true);
     } catch {
+      active.current = false;
       setError('failed');
       setListening(false);
+      return;
     }
-  }, [listening, locale, finish]);
+    // The user let go while the permission prompt / recognizer start was still
+    // in flight: honour it now instead of leaving the mic hot.
+    if (stopRequested.current) {
+      await speechRecognizer.stop().catch(() => undefined);
+      finish();
+    }
+  }, [locale, finish]);
 
   const stop = useCallback(async (): Promise<void> => {
-    if (!listening) {
+    if (!active.current) {
+      return;
+    }
+    if (!heardSession.current) {
+      stopRequested.current = true; // start() is still in flight
       return;
     }
     await speechRecognizer.stop().catch(() => undefined);
     finish();
-  }, [listening, finish]);
+  }, [finish]);
 
   // Safety net: never leave the mic hot if the component unmounts mid-listen.
   useEffect(() => {

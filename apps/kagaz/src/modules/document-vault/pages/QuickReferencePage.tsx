@@ -14,12 +14,15 @@ import {
   IonTitle,
   IonToast,
   IonToolbar,
+  useIonViewWillEnter,
 } from '@ionic/react';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Button, Icon, Spinner } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
+import { hapticDestructive, hapticSuccess } from '@/core/haptics';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
+import { useQuickReferenceLockStore } from '@/modules/auth/store/quick-reference-lock.store';
 import { biometricAuthenticator } from '@/modules/auth/services/biometric.service';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 import { QuickReferenceEditSheet } from '../components/QuickReferenceEditSheet';
@@ -40,6 +43,7 @@ export function QuickReferencePage(): ReactNode {
   const { t } = useTranslation('documents');
   const { entries, isLoading, createEntry, updateEntry, deleteEntry } =
     useQuickReference();
+  const lockEnabled = useQuickReferenceLockStore((s) => s.enabled);
 
   const [checkingLock, setCheckingLock] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
@@ -53,22 +57,46 @@ export function QuickReferencePage(): ReactNode {
   );
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Screen-level biometric gate: skip entirely when unavailable (no biometry
-  // AND no device credential set), same graceful-degrade posture as the
-  // rest of the app — there is no lock screen at all on such a device.
-  useEffect(() => {
-    let cancelled = false;
-    void biometricAuthenticator.isAvailable().then((available) => {
-      if (cancelled) {
+  // Screen-level biometric gate: skip when the user turned it off in Settings
+  // (F-84 follow-up — off by user choice) or when unavailable (no biometry AND
+  // no device credential set, same graceful-degrade posture as the rest of the
+  // app) — either way, no lock screen shows.
+  //
+  // [SEC] Bug-audit fix: this used to be a mount-only `useEffect`, which only
+  // ever gated the FIRST visit. This app's routes all share one
+  // `IonRouterOutlet`, and Ionic keeps a page that was left via an ordinary
+  // forward push (e.g. tapping a different bottom tab, not the hardware/
+  // IonBackButton pop) mounted and caches the instance for reuse — so a user
+  // could authenticate once, reveal a value, switch tabs, and come straight
+  // back to find this screen still `unlocked` with the same values still
+  // revealed, no re-prompt at all. `useIonViewWillEnter` fires on every
+  // entry to this view — fresh mount or a cached instance reactivating
+  // alike — which a `useEffect` keyed on `lockEnabled` cannot detect
+  // (`lockEnabled` doesn't change just because the user left and came back).
+  const checkGeneration = useRef(0);
+  useIonViewWillEnter(() => {
+    setRevealedIds(new Set());
+    setCheckingLock(true);
+    setUnlocked(false);
+    const myGeneration = ++checkGeneration.current;
+    // Skip the native check entirely when the user turned the gate off.
+    const check = lockEnabled
+      ? biometricAuthenticator.isAvailable()
+      : Promise.resolve(false);
+    void check.then((available) => {
+      // A newer entry (rapid leave/return) already superseded this check.
+      if (checkGeneration.current !== myGeneration) {
         return;
       }
-      setUnlocked(!available);
+      setUnlocked(!lockEnabled || !available);
       setCheckingLock(false);
     });
-    return (): void => {
-      cancelled = true;
-    };
-  }, []);
+    // `deps` (2nd arg) mirrors useEffect's — without it, useIonViewWillEnter
+    // defaults to `[]` and registers this callback's closure ONCE at mount,
+    // so a later `lockEnabled` change (toggled in Settings, then navigated
+    // back here) would silently re-arm the gate using the STALE value from
+    // first mount instead of the current one.
+  }, [lockEnabled]);
 
   const toggleReveal = (id: string): void => {
     setRevealedIds((prev) => {
@@ -86,6 +114,7 @@ export function QuickReferencePage(): ReactNode {
     const ok = await copyToClipboard(entry.value, {
       autoClearMs: CLIPBOARD_AUTO_CLEAR_MS,
     });
+    if (ok) hapticSuccess();
     setToastMsg(t(ok ? 'quick_reference.copied' : 'quick_reference.copy_failed'));
   };
 
@@ -95,6 +124,7 @@ export function QuickReferencePage(): ReactNode {
     const ok = await copyToClipboard(`${entry.label}: ${entry.value}`, {
       autoClearMs: CLIPBOARD_AUTO_CLEAR_MS,
     });
+    if (ok) hapticSuccess();
     setToastMsg(t(ok ? 'quick_reference.copied' : 'quick_reference.copy_failed'));
   };
 
@@ -112,6 +142,7 @@ export function QuickReferencePage(): ReactNode {
   };
 
   const handleDelete = async (entry: QuickReferenceEntry): Promise<void> => {
+    hapticDestructive();
     await deleteEntry(entry.id);
     setDeleteTarget(null);
   };
@@ -257,18 +288,21 @@ export function QuickReferencePage(): ReactNode {
         buttons={[
           {
             text: t('quick_reference.copy_value'),
+            icon: 'Copy',
             handler: (): void => {
               if (menuEntry) void handleCopyValue(menuEntry);
             },
           },
           {
             text: t('quick_reference.copy_with_label'),
+            icon: 'Copy',
             handler: (): void => {
               if (menuEntry) void handleCopyWithLabel(menuEntry);
             },
           },
           {
             text: t('quick_reference.edit'),
+            icon: 'Pencil',
             handler: (): void => {
               setEditTarget(menuEntry);
             },
@@ -276,6 +310,7 @@ export function QuickReferencePage(): ReactNode {
           {
             text: t('quick_reference.delete'),
             role: 'destructive',
+            icon: 'Trash2',
             handler: (): void => {
               setDeleteTarget(menuEntry);
             },
@@ -284,9 +319,14 @@ export function QuickReferencePage(): ReactNode {
         ]}
       />
 
-      <ActionSheet
+      {/* interaction-patterns.md §Bottom sheets vs modals: delete
+         confirmation is a Modal, not a bottom sheet — also picks up
+         delete_confirm_message, previously translated but never rendered
+         (ActionSheet has no message slot). */}
+      <Alert
         isOpen={deleteTarget !== null}
         header={t('quick_reference.delete_confirm_title')}
+        message={t('quick_reference.delete_confirm_message')}
         agentId="vault.quick-reference.delete-confirm"
         onDidDismiss={() => setDeleteTarget(null)}
         buttons={[

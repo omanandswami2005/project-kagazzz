@@ -78,6 +78,10 @@ export interface QuickReferenceEntry {
   label: string;
   value: string;
   linkedDocumentId?: string;
+  /** Whether this entry lives on the biometric-gated Quick Reference board
+   * (true) or the faster, gate-free Quick Notes board (false) — UX pass,
+   * 2026-07-23, migration 006. Defaults to true for every pre-existing row. */
+  isSecure: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -118,6 +122,8 @@ export interface AiConversationEntity {
   createdAt: string;
   updatedAt: string;
   isPinned: boolean;
+  /** JSON array of skill names loaded in this conversation (migration 007). */
+  activeSkills?: string;
 }
 
 /** ai_messages.role values (§4.7). */
@@ -131,5 +137,7 @@ export interface AiMessageEntity {
   content?: string;
   toolCallsJson?: string;
   toolCallId?: string;
+  /** JSON array of structured parts — attachments, result cards, forms, answers (migration 007). */
+  partsJson?: string;
   createdAt: string;
 }

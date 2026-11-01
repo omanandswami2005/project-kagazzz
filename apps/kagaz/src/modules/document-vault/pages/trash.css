@@ -59,6 +59,16 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* It's a <button> now (F-57 preview: tap to open read-only) — reset it
+     back to looking like the plain row it replaced. */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
 
 .kg-trash__name {

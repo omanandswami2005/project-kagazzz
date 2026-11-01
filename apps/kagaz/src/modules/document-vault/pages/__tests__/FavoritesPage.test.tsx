@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { useFavorites } from '../../hooks/useFavorites';
@@ -53,6 +53,7 @@ beforeEach(() => {
     rename: vi.fn().mockResolvedValue(undefined),
     softDelete: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
+    archive: vi.fn().mockResolvedValue(undefined),
   });
 });
 
@@ -79,5 +80,52 @@ describe('FavoritesPage (F-33)', () => {
     expect(FavoritesPageAgent.id).toBe('vault.favorites');
     expect(FavoritesPageAgent.route).toBe('/favorites');
     expect(FavoritesPageAgent.availableActions).toHaveLength(1);
+  });
+
+  describe('swipe-to-delete confirmation (bug-audit follow-up)', () => {
+    beforeEach(() => {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        width: 300,
+        height: 56,
+        top: 0,
+        left: 0,
+        right: 300,
+        bottom: 56,
+        x: 0,
+        y: 0,
+        toJSON: () => ({}),
+      });
+    });
+
+    it('confirms before calling softDelete', () => {
+      const softDelete = vi.fn().mockResolvedValue(undefined);
+      useVaultMutationsMock.mockReturnValue({
+        toggleFavorite: vi.fn().mockResolvedValue(undefined),
+        setLocked: vi.fn().mockResolvedValue(undefined),
+        markAccessed: vi.fn().mockResolvedValue(undefined),
+        rename: vi.fn().mockResolvedValue(undefined),
+        softDelete,
+        restore: vi.fn().mockResolvedValue(undefined),
+        archive: vi.fn().mockResolvedValue(undefined),
+      });
+      useFavoritesMock.mockReturnValue({ favorites: [favDoc], isLoading: false });
+      render(<FavoritesPage />);
+
+      const content = document
+        .querySelector(`[data-agent-id="vault.home.item-${favDoc.id}.swipe"]`)
+        ?.querySelector('.kg-swipe-row__content') as Element;
+      fireEvent.pointerDown(content, { pointerType: 'touch', pointerId: 1, clientX: 200, clientY: 50 });
+      fireEvent.pointerMove(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+      fireEvent.pointerUp(content, { pointerType: 'touch', pointerId: 1, clientX: 100, clientY: 50 });
+
+      expect(softDelete).not.toHaveBeenCalled();
+      const confirm = document.querySelector(
+        '[data-agent-id="vault.favorites.swipe-delete-confirm"]'
+      ) as HTMLElement;
+      expect(within(confirm).getByText('Delete "Starred Scan"?')).toBeInTheDocument();
+
+      fireEvent.click(within(confirm).getByText('Delete'));
+      expect(softDelete).toHaveBeenCalledWith(expect.objectContaining({ id: favDoc.id }));
+    });
   });
 });

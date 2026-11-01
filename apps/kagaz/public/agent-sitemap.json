@@ -1,9 +1,27 @@
 {
   "$schema": "docs/design-system/agent-interface.md#the-agentsitemap",
   "pages": {
+    "ai.settings": {
+      "route": "/ai-assistant",
+      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~475 MB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
+      "primary": null,
+      "actions": []
+    },
+    "ai.chat": {
+      "route": "/ai-chat",
+      "intent": "Have a conversation with the on-device AI Assistant. Requires the AI model to be downloaded and ready first (see ai.settings) — otherwise this screen gates to a setup prompt instead of a conversation.",
+      "primary": null,
+      "actions": []
+    },
+    "vault.archived": {
+      "route": "/archived",
+      "intent": "Show documents the user has archived — hidden from the main vault list and Recent, but still searchable, favoritable, and included in backups. From here they can unarchive a document (back to the main list) or delete it to Trash. Both are user-only actions.",
+      "primary": null,
+      "actions": []
+    },
     "vault.viewer": {
       "route": "/doc/:id",
-      "intent": "View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction are user-only actions.",
+      "intent": "View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction (including the optional Gemma transcription) are user-only actions.",
       "primary": null,
       "actions": []
     },
@@ -13,6 +31,26 @@
       "primary": null,
       "actions": [
         "vaultActions.toggleFavorite"
+      ]
+    },
+    "vault.quick-notes": {
+      "route": "/quick-notes",
+      "intent": "View, copy, or add personal notes — a key-value list, each entry user-named. Not behind a biometric gate; for non-sensitive data only.",
+      "primary": null,
+      "actions": [
+        "quickNotesActions.copyValue",
+        "quickNotesActions.copyWithLabel",
+        "quickNotesActions.createEntry"
+      ]
+    },
+    "vault.quick-reference": {
+      "route": "/quick-reference",
+      "intent": "View, copy, or add personal saved values (PAN, mobile, bank account, etc.) — a key-value list, each entry user-named. Behind a biometric gate.",
+      "primary": null,
+      "actions": [
+        "quickReferenceActions.copyValue",
+        "quickReferenceActions.copyWithLabel",
+        "quickReferenceActions.createEntry"
       ]
     },
     "vault.storage": {
@@ -35,6 +73,9 @@
         "vaultActions.uploadDocument",
         "toolsActions.openPdfTools",
         "vaultActions.searchDocuments",
+        "vaultActions.openQuickReference",
+        "vaultActions.openQuickNotes",
+        "vaultActions.startQuickNote",
         "vaultActions.openFilters",
         "vaultActions.clearFilters",
         "vaultActions.bulkDelete",
@@ -46,7 +87,8 @@
         "vaultActions.manageTags",
         "vaultActions.tagDocument",
         "vaultActions.setSortBy",
-        "vaultActions.toggleSortDirection"
+        "vaultActions.toggleSortDirection",
+        "vaultActions.archiveDocument"
       ]
     },
     "pdf-tools": {
@@ -70,11 +112,130 @@
       "actions": [
         "settingsActions.openSettings",
         "settingsActions.setTheme",
-        "settingsActions.setLanguage"
+        "settingsActions.setLanguage",
+        "settingsActions.setSwipeAction"
       ]
     }
   },
   "actions": {
+    "ai.mergeDocuments": {
+      "summary": "Merge two or more existing documents (in the given order) into a single new PDF. The originals are untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.splitDocument": {
+      "summary": "Split a PDF into multiple new documents by page ranges (1-indexed, inclusive). The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.compressDocument": {
+      "summary": "Reduce the file size of a PDF, creating a new compressed copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.watermarkDocument": {
+      "summary": "Add a text watermark to every page of a PDF, creating a new watermarked copy.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.convertImagesToPdf": {
+      "summary": "Combine one or more existing image documents into a single new PDF.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.convertPdfToImages": {
+      "summary": "Render every page of a PDF to a separate new image document.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.resizeImage": {
+      "summary": "Resize an image to exact pixel dimensions and compress it under a size limit (e.g. a 200x230 photo under 50 KB for a government form), saving a new copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.enhanceImage": {
+      "summary": "Apply a filter to an image document — grayscale, bw (black & white scan look), enhance (auto contrast) or invert — saving a new copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.runOcr": {
+      "summary": "Read the text in an image or scanned PDF and store it so the document becomes searchable. Returns only how many characters were found — never the text itself.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.openQuickReference": {
+      "summary": "Open Quick Reference, the personal saved-values screen (PAN, mobile, bank account, etc.).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.openQuickNotes": {
+      "summary": "Open Quick Notes, the fast, gate-free personal notes screen for non-sensitive data.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.startQuickNote": {
+      "summary": "Open Quick Notes with the add-note composer already open, ready to type a title and value.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "settings.open": {
+      "summary": "Open the app Settings screen (appearance/theme, and — as they ship — language, security, and about).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "tools.openPdfTools": {
+      "summary": "Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "settings.setTheme": {
+      "summary": "Choose what happens when a document row is swiped left or right (delete, favorite, move, add tag, or nothing).",
+      "voice": [
+        "dark mode",
+        "light mode",
+        "use system theme",
+        "डार्क मोड",
+        "लाइट मोड"
+      ],
+      "requiresConfirmation": false
+    },
+    "ai.listDocuments": {
+      "summary": "List the user\\",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.searchDocuments": {
+      "summary": "Search the user\\",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "quicknotes.copyValue": {
+      "summary": "Copy a Quick Notes entry as \"label: value\" to the clipboard.",
+      "voice": [
+        "copy this note",
+        "copy my wifi password"
+      ],
+      "requiresConfirmation": false
+    },
+    "quicknotes.createEntry": {
+      "summary": "Save a new quick note.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "quickref.copyValue": {
+      "summary": "Copy a Quick Reference entry as \"label: value\" to the clipboard.",
+      "voice": [
+        "copy my PAN number",
+        "copy this value",
+        "इसे कॉपी करो"
+      ],
+      "requiresConfirmation": false
+    },
+    "quickref.createEntry": {
+      "summary": "Save a new labelled value to Quick Reference.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
     "vault.uploadDocument": {
       "summary": "Add a document to the vault from the camera, the photo gallery, the file picker, or the native document scanner (F-2, Android).",
       "voice": [],
@@ -140,23 +301,60 @@
       "voice": [],
       "requiresConfirmation": false
     },
+    "vault.archiveDocument": {
+      "summary": "Archive a document — hides it from the main list and Recent, but keeps it searchable, favoritable, and backed up (F-89).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
     "vault.toggleSortDirection": {
       "summary": "Flip the document sort between ascending and descending.",
-      "voice": [],
-      "requiresConfirmation": false
-    },
-    "tools.openPdfTools": {
-      "summary": "Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.",
-      "voice": [],
-      "requiresConfirmation": false
-    },
-    "settings.open": {
-      "summary": "Open the app Settings screen (appearance/theme, and — as they ship — language, security, and about).",
       "voice": [],
       "requiresConfirmation": false
     }
   },
   "voiceIndex": [
+    {
+      "utterance": "open quick notes",
+      "pages": [
+        "vault.quick-notes"
+      ],
+      "action": "vault.openQuickNotes"
+    },
+    {
+      "utterance": "copy my wifi password",
+      "pages": [
+        "vault.quick-notes"
+      ],
+      "action": "quicknotes.copyValue"
+    },
+    {
+      "utterance": "save a note titled wifi password with value correcthorse",
+      "pages": [
+        "vault.quick-notes"
+      ],
+      "action": "quicknotes.createEntry"
+    },
+    {
+      "utterance": "open quick reference",
+      "pages": [
+        "vault.quick-reference"
+      ],
+      "action": "vault.openQuickReference"
+    },
+    {
+      "utterance": "copy my PAN number",
+      "pages": [
+        "vault.quick-reference"
+      ],
+      "action": "quickref.copyValue"
+    },
+    {
+      "utterance": "save my mobile number as 9876543210",
+      "pages": [
+        "vault.quick-reference"
+      ],
+      "action": "quickref.createEntry"
+    },
     {
       "utterance": "upload a document",
       "pages": [
@@ -256,6 +454,20 @@
       "action": "vault.createStarterFolders"
     },
     {
+      "utterance": "take a quick note",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.startQuickNote"
+    },
+    {
+      "utterance": "एक क्विक नोट लिखो",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.startQuickNote"
+    },
+    {
       "utterance": "edit tags",
       "pages": [
         "vault.home"
@@ -289,6 +501,13 @@
         "vault.home"
       ],
       "action": "vault.toggleSortDirection"
+    },
+    {
+      "utterance": "archive this document",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.archiveDocument"
     },
     {
       "utterance": "merge pdfs",
@@ -443,6 +662,20 @@
         "settings"
       ],
       "action": "settings.open"
+    },
+    {
+      "utterance": "swipe left to delete",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setSwipeAction"
+    },
+    {
+      "utterance": "swipe right to favorite",
+      "pages": [
+        "settings"
+      ],
+      "action": "settings.setSwipeAction"
     }
   ]
 }

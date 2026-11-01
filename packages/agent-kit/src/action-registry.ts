@@ -7,7 +7,7 @@ import { z } from 'zod';
 import type { ActionDefinition } from './define-action';
 import type { ActionResult } from './types';
 
-/** OpenAI-style tool definition consumed by WebLLM. */
+/** OpenAI-style tool definition consumed by the on-device AI assistant (LiteRT-LM, F-13). */
 export interface ToolDefinition {
   type: 'function';
   function: {
@@ -105,8 +105,12 @@ export class ActionRegistry<TCtx = unknown> {
 
   /**
    * Emits the OpenAI/JSON-schema tool definitions the AI assistant
-   * registers with WebLLM at startup (§Auto-generated tool definitions).
-   * Dots become underscores in tool names per OpenAI naming rules.
+   * registers with its on-device engine at startup (LiteRT-LM, F-13;
+   * §Auto-generated tool definitions). `function.name` follows OpenAI's
+   * underscore-only naming rule (dots become underscores) for
+   * compatibility with OpenAI-shaped consumers — LiteRT-LM itself has no
+   * such restriction, so ai-tool-registry.ts registers tools under their
+   * own dotted action id instead of this field.
    */
   toToolDefinitions(): Record<string, ToolDefinition> {
     const tools: Record<string, ToolDefinition> = {};

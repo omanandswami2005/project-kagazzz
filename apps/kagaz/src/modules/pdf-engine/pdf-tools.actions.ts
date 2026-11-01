@@ -7,7 +7,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
-import type { PdfOpId } from './services/pdf-ops-meta';
+import type { PdfOpId } from '@/core/pdf-tools-catalog';
 
 /** Capabilities the wired page provides to PDF Tools action handlers. */
 export interface ToolsActionContext {

@@ -12,6 +12,8 @@ shipped yet.
 | Add a document | `vault.uploadDocument` | Ask the source if unspecified: `source` = `'camera'` \| `'gallery'` \| `'files'`. Omitting `source` opens the picker sheet for the user. |
 | Open PDF tools | `tools.openPdfTools` | Opens the PDF Tools hub (merge, split, compress, PDF↔image, password protect/unlock, fill form). Pass `op` to jump straight to one tool. |
 | Open Quick Reference | `vault.openQuickReference` | Opens the personal saved-values screen (PAN, mobile, bank account, etc.) — behind its own biometric gate. |
+| Open Quick Notes | `vault.openQuickNotes` | Opens the fast, gate-free notes screen. For non-sensitive data only — never suggest storing an ID number, password, or anything sensitive here. |
+| Take a quick note | `vault.startQuickNote` | Opens Quick Notes with the add-note composer already open — for when the user wants to write a note immediately, not just browse the list. Same non-sensitive-data caveat as above. |
 | Find a document | `vault.searchDocuments` | `query` — keywords from the user. Full-text over name/description/OCR; results replace the list while the query is active. |
 | Filter the list | `vault.openFilters` | Opens the filter panel (type / size / tags / favorites). |
 | Remove filters | `vault.clearFilters` | Clears every active filter. |
@@ -25,6 +27,12 @@ shipped yet.
 | Tag a document | `vault.tagDocument` | `documentId` + `tag` (label). Creates the tag if new, then assigns it. |
 | Change sort order | `vault.setSortBy` | `key` = `'createdAt'` \| `'updatedAt'` \| `'lastAccessedAt'` \| `'name'` \| `'fileSize'` \| `'fileType'`. |
 | Reverse sort | `vault.toggleSortDirection` | Flips ascending ↔ descending. |
+| Archive a document | `vault.archiveDocument` | `documentId`. Hides it from the main list and Recent — still searchable, favoritable, and backed up. Reversible from the Archived view (Settings → Data → Archived), no confirmation needed. |
+
+Documents can also be moved between swipe-left/swipe-right by the user in
+Settings → Swipe actions (delete/favorite/move/add-tag/archive/none per
+side) — swiping is a direct manipulation with no dedicated action id of its
+own; it dispatches whichever of the actions above the user configured.
 
 Supported upload formats: PDF, JPG, PNG, HEIC, WEBP. Max 100 MB per
 file.
@@ -41,6 +49,8 @@ file.
 - "take a photo of my document" → `vault.uploadDocument({ source: 'camera' })`
 - "दस्तावेज़ अपलोड करो" → `vault.uploadDocument({})`
 - "गैलरी से फोटो जोड़ो" → `vault.uploadDocument({ source: 'gallery' })`
+- "take a quick note" → `vault.startQuickNote({})`
+- "एक क्विक नोट लिखो" → `vault.startQuickNote({})`
 
 ## Things I must NOT do
 - Read document content — I only see metadata (name, type, size, dates).

@@ -26,6 +26,8 @@ export interface UseVaultMutationsResult {
   softDelete: (document: DocumentEntity) => Promise<void>;
   /** Restores a soft-deleted document (UX-1 Undo); re-added to the list. */
   restore: (document: DocumentEntity) => Promise<void>;
+  /** Archives a document (F-89); removed from the main list/Recent. */
+  archive: (document: DocumentEntity) => Promise<void>;
 }
 
 /** Wires per-document mutations to the DAO + store. */
@@ -176,5 +178,42 @@ export function useVaultMutations(): UseVaultMutationsResult {
     [dao]
   );
 
-  return { toggleFavorite, setLocked, markAccessed, rename, softDelete, restore };
+  const archive = useCallback(
+    async (document: DocumentEntity): Promise<void> => {
+      if (!dao) {
+        return;
+      }
+      // Optimistic: drop from the current (non-archived) list now.
+      useVaultStore.getState().removeDocument(document.id);
+      try {
+        await dao.update(document.id, { isArchived: true });
+        logger.info({ event: 'vault.archive', documentId: document.id });
+      } catch (error) {
+        useVaultStore.getState().prependDocuments([document]);
+        logger.error({
+          event: 'vault.archive.failed',
+          documentId: document.id,
+          err: { message: String(error) },
+        });
+      }
+    },
+    [dao]
+  );
+
+  // No `unarchive` here: only the Archived view (`ArchivedPage`/`useArchive`)
+  // ever unarchives a document, and it needs its own local "items" list kept
+  // in sync too (a document leaving the archived list) — see `useArchive`'s
+  // own `unarchive`, which owns that whole flow end to end instead of
+  // duplicating half of it here (bug-audit follow-up: this used to exist as
+  // a second, unreferenced implementation — dead code, removed).
+
+  return {
+    toggleFavorite,
+    setLocked,
+    markAccessed,
+    rename,
+    softDelete,
+    restore,
+    archive,
+  };
 }

@@ -21,6 +21,23 @@
     "rename_on_add": "Ask to rename after adding",
     "rename_on_add_hint": "Show a name prompt right after you scan or add a document. Turn off to keep the default name."
   },
+  "swipe": {
+    "title": "Swipe actions",
+    "hint": "Swipe a document left or right to fire an action instantly — every action here is also reachable from the row's own menu.",
+    "left": "Swipe left",
+    "right": "Swipe right",
+    "action_delete": "Delete",
+    "action_favorite": "Favorite",
+    "action_move": "Move",
+    "action_tags": "Add tag",
+    "action_archive": "Archive",
+    "action_none": "None"
+  },
+  "haptics": {
+    "title": "Haptic feedback",
+    "enabled": "Vibrate on touch",
+    "enabled_hint": "Feel a light vibration on taps, swipe actions, and scrolling through Recent. Turn off to keep the app silent."
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",
@@ -30,17 +47,36 @@
     "auto_lock_immediate": "Immediately",
     "auto_lock_30s": "30 seconds",
     "auto_lock_1min": "1 minute",
-    "auto_lock_5min": "5 minutes"
+    "auto_lock_5min": "5 minutes",
+    "quickref_lock": "Lock Quick Reference",
+    "quickref_lock_hint": "Require your fingerprint, face, or device PIN every time you open Quick Reference (your saved PAN, bank, and other personal values). On by default."
+  },
+  "ai": {
+    "title": "AI Assistant",
+    "manage": "Manage AI Assistant",
+    "manage_hint": "Download, check the status of, or remove the on-device AI model."
   },
   "data": {
     "title": "Data & Privacy",
     "trash": "Trash",
     "trash_hint": "View documents you've deleted. They're kept for 30 days, then removed for good.",
+    "archived": "Archived",
+    "archived_hint": "View documents you've archived — hidden from your main list, but still searchable and backed up.",
     "backup": "Export encrypted backup",
     "backup_hint": "Save an encrypted archive of all your documents. Only this app, on this device, can open it.",
     "backup_done_one": "Encrypted backup saved — {{count}} document.",
     "backup_done_other": "Encrypted backup saved — {{count}} documents.",
     "backup_error": "Backup failed. Please try again.",
+    "restore": "Restore from backup",
+    "restore_hint": "Add documents and folders back from a backup made on this device.",
+    "restore_reading": "Reading backup…",
+    "restore_confirm_title": "Restore this backup?",
+    "restore_confirm_body_one": "This backup has {{count}} document and {{folders}} folder(s) from {{date}}. It will be added to your vault — nothing existing is removed.",
+    "restore_confirm_body_other": "This backup has {{count}} documents and {{folders}} folder(s) from {{date}}. They will be added to your vault — nothing existing is removed.",
+    "restore_confirm_button": "Restore",
+    "restore_done_one": "Restored {{count}} document.",
+    "restore_done_other": "Restored {{count}} documents.",
+    "restore_error": "Couldn't restore this backup.",
     "delete_all": "Delete all data",
     "delete_all_hint": "Permanently remove every document, folder, tag, and setting from this device.",
     "confirm_title": "Delete everything?",

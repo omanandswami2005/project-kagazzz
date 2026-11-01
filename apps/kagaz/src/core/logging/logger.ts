@@ -94,13 +94,16 @@ function isDev(): boolean {
   }
 }
 
-function envAppVersion(): string | undefined {
-  const value: unknown = import.meta.env?.['VITE_APP_VERSION'];
-  return typeof value === 'string' ? value : undefined;
+function buildAppVersion(): string | undefined {
+  // Injected from package.json by vite.config.ts's `define` — see its
+  // comment for why this replaced a `VITE_APP_VERSION` env var nothing
+  // ever actually set. `typeof` (not a direct reference) so this stays
+  // safe under Vitest, which doesn't define this build-time global.
+  return typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : undefined;
 }
 
 /** App version stamped on every record. */
-export const APP_VERSION: string = envAppVersion() ?? '0.0.0-dev';
+export const APP_VERSION: string = buildAppVersion() ?? '0.0.0-dev';
 
 /**
  * Creates the root logger. Exported for tests; the app uses the

@@ -77,7 +77,30 @@ describe('sortDocuments', () => {
     ];
     expect(
       sortDocuments(docs, 'lastAccessedAt', 'asc').map((d) => d.id)
-    ).toEqual(['never', 'opened']);
+    ).toEqual(['opened', 'never']);
+  });
+
+  it('bug-audit fix: never-opened stays last when descending too, not just ascending', () => {
+    const docs = [
+      doc('never'),
+      doc('opened', { lastAccessedAt: '2026-06-05T00:00:00.000Z' }),
+    ];
+    expect(
+      sortDocuments(docs, 'lastAccessedAt', 'desc').map((d) => d.id)
+    ).toEqual(['opened', 'never']);
+  });
+
+  it('sorts real lastAccessedAt values normally within each direction', () => {
+    const docs = [
+      doc('older', { lastAccessedAt: '2026-06-01T00:00:00.000Z' }),
+      doc('newer', { lastAccessedAt: '2026-06-10T00:00:00.000Z' }),
+    ];
+    expect(
+      sortDocuments(docs, 'lastAccessedAt', 'asc').map((d) => d.id)
+    ).toEqual(['older', 'newer']);
+    expect(
+      sortDocuments(docs, 'lastAccessedAt', 'desc').map((d) => d.id)
+    ).toEqual(['newer', 'older']);
   });
 
   it('is stable via id tiebreaker and does not mutate the input', () => {

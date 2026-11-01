@@ -9,10 +9,12 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/core/i18n';
+import { useAi } from '@/app/providers/AIProvider';
 import { StorageDonut } from '../components/StorageDonut';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
@@ -22,6 +24,8 @@ export function StoragePage(): ReactNode {
   const { t } = useTranslation('documents');
   const { formatFileSize } = useLocale();
   const { stats } = useStorageStats();
+  const ai = useAi();
+  const router = useIonRouter();
 
   return (
     <IonPage data-agent-id="vault.storage">
@@ -91,6 +95,28 @@ export function StoragePage(): ReactNode {
                   ))}
                 </ul>
               </section>
+
+              {ai.status === 'ready' && (
+                <section
+                  className="kg-storage__ai-model"
+                  data-agent-id="vault.storage.ai-model"
+                >
+                  <span className="kg-storage__ai-model-info">
+                    <span className="kg-storage__ai-model-label">{t('storage.ai_model')}</span>
+                    <span className="kg-storage__row-size">
+                      {t('storage.ai_model_size', { size: formatFileSize(ai.modelSizeBytes) })}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="kg-storage__ai-model-manage"
+                    data-agent-id="vault.storage.ai-model.manage"
+                    onClick={() => router.push('/ai-assistant', 'forward', 'push')}
+                  >
+                    {t('storage.ai_model_manage')}
+                  </button>
+                </section>
+              )}
             </>
           )}
         </main>

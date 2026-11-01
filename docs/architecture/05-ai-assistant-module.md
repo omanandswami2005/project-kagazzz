@@ -1,20 +1,20 @@
 # 05 — AI Assistant Module Architecture
 
 > **Module**: `@kagaz/ai-assistant`
-> **Version**: 1.0.0
+> **Version**: 2.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-06-10
+> **Last Updated**: 2026-10-31 (**Gemma 4 everywhere; skills, online mode, GenUI forms, attachments, markdown** — §3.6–§3.8, §4.2.4–§4.2.5; earlier: engine switched from WebLLM to LiteRT-LM, §3.0)
 
 ---
 
 ## 1. Overview
 
-The AI Assistant is Kagaz's on-device conversational interface. It lets users interact with the app using natural language — in Hindi, English, or a mix of both (code-switching). Powered by **WebLLM**, the AI runs entirely on the user's device via WebGPU, ensuring complete privacy: no document content or conversation data ever leaves the device.
+The AI Assistant is Kagaz's on-device conversational interface. It lets users interact with the app using natural language — in Hindi, English, or a mix of both (code-switching). Powered by **LiteRT-LM** (Google AI Edge) running through a **native Capacitor plugin**, the AI runs entirely on the user's device, ensuring complete privacy: no document content or conversation data ever leaves the device.
 
 The AI can perform document operations, navigate the app, manage files, and answer questions about CSC services — all through a simple chat interface with optional voice input/output.
 
 > [!IMPORTANT]
-> The AI model runs **100% on-device** via WebGPU. After the initial model download, the assistant works fully offline. No API keys, no server costs, no data leaks.
+> The AI model runs **100% on-device** via Android's native ML acceleration stack (NNAPI/GPU/CPU delegate). After the initial model download, the assistant works fully offline. No API keys, no server costs, no data leaks.
 
 ---
 
@@ -36,10 +36,11 @@ graph TB
         SP["SystemPromptBuilder"]
     end
 
-    subgraph "WebLLM Runtime"
-        WW["Web Worker<br/>(WebWorkerMLCEngine)"]
-        WG["WebGPU Backend"]
-        MC["Model Cache<br/>(Cache API)"]
+    subgraph "Native LiteRT-LM Runtime (forked @capgo/capacitor-llm)"
+        BR["Capacitor Plugin Bridge<br/>(JS ↔ native)"]
+        ENG["LiteRT-LM Engine<br/>(Kotlin, background executor)"]
+        JBT["JsBridgeTool<br/>(OpenApiTool → JS round-trip)"]
+        MC["Model Cache<br/>(app files dir + SHA-256 verify)"]
     end
 
     subgraph "Tool Providers"
@@ -68,10 +69,13 @@ graph TB
     AIS --> TC
     AIS --> CTX
     AIS --> SP
-    AIS -->|inference| WW
+    AIS -->|plugin call| BR
 
-    WW --> WG
-    WW --> MC
+    BR --> ENG
+    ENG --> MC
+    ENG -.->|tool call, blocks on JS| JBT
+    JBT -.->|toolCallRequested event| TC
+    TC -.->|resolveToolCall| JBT
 
     TC --> DOC
     TC --> NAV
@@ -84,168 +88,237 @@ graph TB
     DOC -->|calls| IMG["Image Engine"]
 
     style AIS fill:#9C27B0,color:#fff
-    style WW fill:#FF5722,color:#fff
+    style ENG fill:#FF5722,color:#fff
     style TC fill:#4CAF50,color:#fff
 ```
 
 ---
 
-## 3. Core AI Engine — WebLLM
+## 3. Core AI Engine — LiteRT-LM (native, forked plugin)
+
+### 3.0 Why LiteRT-LM instead of WebLLM (decided 2026-07-24)
+
+This module originally speced **WebLLM** (`@mlc-ai/web-llm`, `WebWorkerMLCEngine`, WebGPU) — still referenced by the `AIProvider` stub scaffolded in P0-10 and the `@mlc-ai/web-llm` dependency in `package.json` (both now dead weight, remove in the stale-code sweep when F-13 closes). That plan was reconsidered before implementation began, for one concrete reason: **WebGPU support inside Android's System WebView is genuinely unreliable on the API 24+ mid-range fleet this app targets.** A live device check on `Pixel6_API34` (Android 14, Chrome/WebView 150 — a *modern* combination) found `navigator.gpu` present but `navigator.gpu.requestAdapter()` returning `null` — no usable adapter. Emulator GPU passthrough is known-unreliable so this alone isn't proof it fails on real hardware too, but it's a strong enough signal, combined with Chrome's own GPU-driver blocklisting on Android being real and broad, that betting the entire feature on WebGPU-in-WebView was too risky — especially given this codebase already made the identical call once before for the document scanner (ADR-017/ADR-018: OpenCV-in-WebView's WASM/CSP problems → moved to a **native** ML Kit plugin, no WebView involved at all).
+
+**LiteRT-LM** (Google AI Edge's on-device LLM runtime, successor branding to TensorFlow Lite) runs through Android's native ML acceleration stack (NNAPI/GPU/CPU delegates) — the same class of "go native, skip the WebView" move. Integrated via a **forked copy of `@capgo/capacitor-llm`** (npm, MPL-2.0, verified real and actively maintained — v8.1.3 as of 2026-07-11, Capacitor ≥8 compatible, `minSdkVersion 24`, matching this app's target exactly), vendored as a local workspace package rather than an external npm dependency so we can maintain the fork long-term. **Why forked, not used as-is:** the plugin's native Android layer (`ee.forgr.capgo_llm.LLM.java`, verified by reading the real source, not just the README) already depends on `com.google.ai.edge.litertlm:litertlm-android:0.10.0` and that engine natively supports tool calling — but the plugin's JS bridge (`definitions.ts`) never threads a `tools` array through to the native `ConversationConfig`, so tool calling was unreachable from the app layer as shipped. See §4 for the fork's tool-calling bridge design (`JsBridgeTool`).
+
+**License note**: the plugin itself is MPL-2.0 — a weak, file-level copyleft, not in CLAUDE.md's default-allowed list (MIT/Apache-2.0/BSD/ISC) but explicitly accepted for this dependency as a deliberate exception (unlike GPL/AGPL/SSPL, MPL's copyleft doesn't propagate to the surrounding proprietary app — only modifications to the MPL-covered files themselves need to stay disclosed, which our fork already does by keeping the modified files' MPL headers and publishing the fork). The model itself is **Apache-2.0** (Gemma 4, which moved off the old, more restrictive Gemma Terms of Use in April 2026) — clean.
 
 ### 3.1 Library Setup
 
-| Component | Package | Role |
+| Component | Source | Role |
 |---|---|---|
-| **WebLLM** | `@mlc-ai/web-llm` | LLM inference engine via WebGPU |
-| **Worker Engine** | `WebWorkerMLCEngine` | Runs inference in a dedicated Web Worker |
-| **Model Hub** | MLC model repository | Pre-quantized models optimized for browser |
+| **LiteRT-LM engine** | `com.google.ai.edge.litertlm:litertlm-android:0.19.0` (Maven, transitive via the fork; bumped from 0.10.0 on 2026-10-31 — see §3.4's model-load note) | On-device LLM inference (CPU/GPU/NPU backends) |
+| **Plugin fork** | `packages/capacitor-llm-litert` (vendored, forked from `@capgo/capacitor-llm` v8.1.3, MPL-2.0) | Capacitor JS↔native bridge + our added tool-calling support |
+| **Model format** | `.litertlm` | Pre-quantized model bundle, downloaded once and cached |
+| **Model source** | `litert-community` on Hugging Face | Publishes ready-to-download `.litertlm` bundles |
 
-### 3.2 Recommended Models
+### 3.2 Model Choice
 
-| Model | Parameters | Quantization | Size (Download) | Best For | Min VRAM |
-|---|---|---|---|---|---|
-| **Llama-3.2-1B-Instruct-q4f16_1-MLC** | 1B | 4-bit float16 | ~600 MB | Mobile devices, basic tasks | 2 GB |
-| **Qwen2.5-1.5B-Instruct-q4f16_1-MLC** | 1.5B | 4-bit float16 | ~900 MB | Better tool calling, reasoning | 3 GB |
-| **Llama-3.2-3B-Instruct-q4f16_1-MLC** | 3B | 4-bit float16 | ~1.7 GB | Best quality (desktop/high-end) | 4 GB |
+| Model | Size (download) | License | Notes |
+|---|---|---|---|
+| **Gemma 4 E2B** (the on-device model) | ~2.6 GB (2,588,147,712 bytes) | Apache-2.0 | `litert-community/gemma-4-E2B-it-litert-lm` — public, not gated. Text + native function calling. Needs a recent phone with plenty of free memory. **Not yet verified on a physical device** (2026-10-31). |
 
-### 3.3 Model Selection Strategy
+**One model, no fallback (decided 2026-10-31).** Earlier revisions defaulted to Qwen3-0.6B (~0.5 GB) for the small download; it has been removed entirely — Gemma 4 E2B is the only on-device model, matching the Gemma 4 used in the demo's local (Ollama) and online (Vertex AI) engines. The size is far above the original 600 MB–1.7 GB budget, so the Settings screen shows the real size before the user taps Download, and the file is checksum-verified on every load. A smaller tier can be re-added behind the same `MODEL_*` constants if device testing shows the memory cost is too high.
+
+No dynamic VRAM-based model selection — LiteRT-LM's CPU/GPU/NPU backend selection happens per-inference-call, not per-model, and Android doesn't expose a WebGPU-style `adapter.limits` heuristic.
+
+### 3.3 Capability Gating
+
+Same posture as `isScanningSupported()` (document-scanner module) and voice's `supported` flag — a plain, synchronous, no-permission-needed check:
 
 ```typescript
-async function selectModel(): Promise<string> {
-  const gpu = navigator.gpu;
-  if (!gpu) {
-    throw new AiError('WEBGPU_NOT_SUPPORTED', 'WebGPU is not available on this device');
-  }
-
-  const adapter = await gpu.requestAdapter();
-  const info = await adapter?.requestAdapterInfo();
-  
-  // Estimate available VRAM (heuristic)
-  const maxBufferSize = adapter?.limits.maxBufferSize ?? 0;
-  const estimatedVRAM = maxBufferSize / (1024 * 1024 * 1024); // GB
-
-  if (estimatedVRAM >= 4) {
-    return 'Llama-3.2-3B-Instruct-q4f16_1-MLC';
-  } else if (estimatedVRAM >= 3) {
-    return 'Qwen2.5-1.5B-Instruct-q4f16_1-MLC';
-  } else {
-    return 'Llama-3.2-1B-Instruct-q4f16_1-MLC';
-  }
+// ai-assistant/services/ai-engine.service.ts
+export function isAiSupported(): boolean {
+  return Capacitor.getPlatform() === 'android' && Capacitor.isNativePlatform();
 }
 ```
 
-### 3.4 Engine Initialization
+Real capability (whether the *specific device* can actually run the model — RAM, NNAPI/GPU delegate availability) is only knowable once the native `setModel()` call resolves or rejects; `isAiSupported()` only gates whether the feature *attempts* to load at all (hides the entry point on iOS/web, where the fork's Android-only native code isn't present). A load failure past that gate surfaces through the existing `AiStatus = 'error'` state — see §9.
+
+### 3.4 Engine Initialization & Model Lifecycle
+
+Mirrors the design note already in `DEVELOPMENT-CHECKLIST.md` (download → progress → checksum → ready → delete → graceful-degrade), adapted to the fork's real event names:
 
 ```typescript
-import { CreateWebWorkerMLCEngine, WebWorkerMLCEngine } from '@mlc-ai/web-llm';
+// ai-assistant/services/ai-engine.service.ts
+import { CapacitorLlmLiteRT } from '@kagaz/capacitor-llm-litert';
 
 class AiEngineManager {
-  private engine: WebWorkerMLCEngine | null = null;
-
-  async initialize(onProgress?: (progress: InitProgressEvent) => void): Promise<void> {
-    const modelId = await selectModel();
-
-    this.engine = await CreateWebWorkerMLCEngine(
-      new Worker(new URL('./ai.worker.ts', import.meta.url), { type: 'module' }),
-      modelId,
-      {
-        initProgressCallback: (progress) => {
-          onProgress?.({
-            phase: progress.text.includes('Loading') ? 'loading' : 'initializing',
-            percent: progress.progress * 100,
-            message: progress.text,
-          });
-        },
-      }
+  async downloadAndVerify(onProgress: (pct: number) => void): Promise<string> {
+    const sub = await CapacitorLlmLiteRT.addListener('downloadProgress', (e) =>
+      onProgress(e.progress)
     );
-  }
-
-  async chat(messages: ChatMessage[], tools?: ToolDefinition[]): Promise<ChatCompletion> {
-    if (!this.engine) throw new AiError('NOT_INITIALIZED', 'AI engine not initialized');
-    return this.engine.chat.completions.create({
-      messages,
-      tools,
-      tool_choice: 'auto',
-      temperature: 0.7,
-      max_tokens: 1024,
+    const { path } = await CapacitorLlmLiteRT.downloadModel({
+      url: MODEL_URL,
+      filename: MODEL_FILENAME, // gemma-4-E2B-it.litertlm
     });
+    await sub.remove();
+
+    const actualHash = await CapacitorLlmLiteRT.sha256File({ path }); // added in the fork
+    if (actualHash !== EXPECTED_SHA256) {
+      await CapacitorLlmLiteRT.deleteModel({ path }); // added in the fork
+      throw new AiError('MODEL_DOWNLOAD_FAILED', 'Checksum mismatch');
+    }
+    return path;
   }
 
-  async destroy(): Promise<void> {
-    await this.engine?.unload();
-    this.engine = null;
+  async load(path: string, tools: ToolDefinition[]): Promise<void> {
+    await CapacitorLlmLiteRT.setModel({
+      path,
+      modelType: 'litertlm',
+      backend: 'cpu', // see the CPU-only note below — this is NOT the original plan
+      tools, // added in the fork — see §4
+    });
   }
 }
 ```
+
+**⚠️ CPU-only, not GPU-first (discovered 2026-07-25, on-device):** the original plan here was `backend: 'gpu'` with the assumption that the native side "falls back to cpu internally if unavailable" — i.e. no app-level fallback logic needed. A real-device test instead showed a GPU-delegate load **crashing the whole app process** partway through the "loading" state. That is a fatal flaw in the original assumption: a native process crash is not a catchable JS exception, so `ai-engine.service.ts`'s own `loadModel()` (which originally tried `gpu` first and caught a failure down to `cpu`) could never actually run its fallback — the process was already dead before any `catch` block executed. `ai-engine.service.ts` now requests `backend: 'cpu'` directly and never attempts `gpu` at all, matching the plugin's own `ModelOptions.backend` doc comment ("Use `cpu` for stable long generations") and iOS's own documented default (CPU first, GPU as a fallback). Re-enabling GPU needs a real pre-flight capability check (e.g. device RAM headroom) that decides *before* calling into native code — not a reactive JS `try/catch`, which cannot save a crashed process.
+
+**What the fork adds over upstream `@capgo/capacitor-llm`** (full list, kept current as work lands):
+- `sha256File({ path })` — the plugin has no built-in integrity verification; §11 requires it, so it's ours to add (`MessageDigest.getInstance("SHA-256")` over the cached file, off the main thread).
+- `deleteModel({ path })` — upstream has no explicit delete; needed for the Storage-screen "AI model: N MB → Manage" entry the design note requires.
+- `tools` param on `setModel`/`createChat` + `toolCallRequested`/`resolveToolCall` — the actual tool-calling bridge, §4.
+- `getCapabilities()` — reports which backend actually loaded (`cpu`/`gpu`, in practice always `cpu` until the pre-flight check above lands) and total load time, for the Settings screen's "AI model ready" line.
+
+**Model-load failure and download-progress bug (found on a device, 2026-10-31).** The same Gemma 4 E2B file loaded in Google AI Edge Gallery but not in Kagaz, and the download bar stayed at 0. Root causes, all in this repo:
+1. **Progress:** `downloadFile` used `int fileLength = connection.getContentLength()`, which returns **-1 for any file over 2 GiB** (Gemma 4 E2B is 2,588,147,712 bytes), and progress was only reported when the length was positive. The old 0.5 GB model never hit it. Now uses `getContentLengthLong()`, reports only when the percentage changes (it used to emit an event per 4 KB chunk), has connect/read timeouts, and takes an `expectedBytes` fallback from JS.
+2. **Engine config:** `EngineConfig` was given the CPU backend for the *vision and audio* backends too. This chat is text-only, and Gemma 4 has vision/audio sub-models that should not be initialized for it. They are now `null`.
+3. **Runtime too old for the model file:** the plugin shipped LiteRT-LM **0.10.0 (2026-04-02)**; the Gemma 4 E2B file was last re-uploaded **2026-05-04**, after it. Bumped to **0.19.0**; `EngineConfig` and `ConversationConfig.copy` changed shape and were adapted.
+4. **Diagnostics:** a failed load now reports the exception type and root cause (and checks the file exists and is non-empty) instead of a bare message.
+
+None of these was verified on a physical device from this session.
 
 ### 3.5 Model Caching
 
-Models are cached via the **Cache API** for fully offline use:
+Models are cached in the app's native files directory (not the WebView's Cache API — there is no WebView involvement in inference at all):
 
 ```mermaid
 flowchart TD
     START["User opens AI Assistant"]
-    CHECK{"Model in<br/>Cache API?"}
-    LOAD["Load from cache<br/>(instant)"]
-    DOWNLOAD["Download model<br/>(~600 MB – 1.7 GB)"]
-    CACHE["Store in Cache API"]
-    INIT["Initialize WebGPU<br/>+ compile shaders"]
+    CHECK{"Model file<br/>on disk?"}
+    VERIFY{"SHA-256<br/>matches?"}
+    LOAD["Load into LiteRT-LM engine<br/>(native, background executor)"]
+    DOWNLOAD["Download model<br/>(~2.6 GB, Gemma 4 E2B)"]
+    DELETE["Delete corrupt file<br/>+ show MODEL_DOWNLOAD_FAILED"]
     READY["AI Ready"]
 
     START --> CHECK
-    CHECK -->|Yes| LOAD
+    CHECK -->|Yes| VERIFY
     CHECK -->|No| DOWNLOAD
-    DOWNLOAD --> CACHE
-    CACHE --> INIT
-    LOAD --> INIT
-    INIT --> READY
+    DOWNLOAD --> VERIFY
+    VERIFY -->|Yes| LOAD
+    VERIFY -->|No| DELETE
+    DELETE --> DOWNLOAD
+    LOAD --> READY
 ```
 
 > [!NOTE]
-> The first-time model download requires an internet connection. After that, the assistant works fully offline. Users are shown a progress bar during the initial download with estimated time remaining.
+> The first-time model download requires an internet connection. After that, the assistant works fully offline. Users are shown a progress bar during the initial download with estimated time remaining. Every load (not just the first) re-verifies the SHA-256 checksum before handing the file to the engine — a corrupted or tampered cache file must never be loaded silently.
 
 ---
+
+### 3.6 Chat-engine seam and the demo Ollama engine (added 2026-10-31)
+
+`useChat` no longer calls the native plugin directly. It talks to a `ChatEngine` (`services/chat-engine.ts`) whose surface mirrors the plugin's chat calls and events (`createChat`, `sendMessage`, `resolveToolCall`, and the `textFromAi` / `aiFinished` / `generationError` / `toolCallRequested` listeners), so the tool-dispatch and confirmation-card flow is engine-agnostic. The engine is chosen in `services/chat-engine.registry.ts`:
+
+| Engine | `locality` | Selected when | Notes |
+|---|---|---|---|
+| `litertChatEngine` | `on-device` | default | Pure pass-through to `@kagaz/capacitor-llm-litert`; the model lifecycle stays in `ai-engine.service.ts`. |
+| `OllamaChatEngine` | `local-server` | `VITE_OLLAMA_URL` is set (demo builds only) | Gemma 4 E2B (`gemma4:e2b`) on a local Ollama server. Works on any platform, including the desktop browser demo. |
+| hosted API *(planned)* | `cloud` | explicit user opt-in | Must show a PII data-sharing warning and get consent first; not built. |
+
+`locality` exists so the UI can gate anything that is not `on-device` behind a warning.
+
+**Ollama engine behavior.** Ollama is stateless, so the engine keeps the message history per chat (system prompt from `prompts/system-prompt.ts`, trimmed to the last 40 messages and always restarting at a user turn). For each user message it streams `/api/chat` with the registered tools, emits any model tool calls as `toolCallRequested`, and waits for `resolveToolCall` before looping. Safeguards: at most 5 tool rounds per message, a 30 s timeout on an unanswered tool call (resolves to a timeout result instead of hanging; the same limit as the native bridge), one message in flight per chat, an explicit `num_ctx` of 8192 (the default silently truncates ~35 tool schemas), and failures surface as `generationError` events, never rejections. `AIProvider.activate` for this engine only checks that the server is reachable and the model is pulled; there is no download, checksum or local model load.
+
+**Config and network.** All Ollama settings are read in one place, `infrastructure/ollama/` (`VITE_OLLAMA_URL`, `VITE_OLLAMA_CHAT_MODEL`, `VITE_OLLAMA_VISION_MODEL`, `VITE_OLLAMA_EMBEDDING_MODEL`). The shipped CSP is `connect-src 'self'`; `vite-plugins/demo-csp.ts` adds only the Ollama origin when the URL is set, and **fails a production build** that sets it. See [10-security-architecture.md](10-security-architecture.md) §3.5 and [ADR-022](08-tech-stack-decisions.md#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam).
+
+**Gemma vision.** Where native ML Kit is absent (the web build), OCR falls back to Gemma's vision input (`image-engine/services/vision-ocr.service.ts`). Separately, **Transcribe with Gemma** is offered next to **Extract text** in the document viewer and the vault item menu for images and PDFs *even when text was already extracted*: it re-reads every PDF page with the vision model (not only pages lacking a text layer) and replaces the stored text. It is user-only (no Action Registry entry) and appears only when Gemma is configured. Other formats are not offered; audio input is not wired.
+
+**Semantic index (spike, not wired).** `modules/semantic-index/` defines `EmbeddingProvider` and `VectorStore` ports with an Ollama (`embeddinggemma`) adapter and an in-memory cosine store. It is not connected to the assistant or the search bar yet. Retrieving passages into prompts would cross the metadata-only boundary in §11 and needs the security docs, the DPIA and the privacy policy updated first.
+
+---
+
+### 3.7 Skills — tools on demand (added 2026-10-31)
+
+A small model reads every tool schema on every turn, so the tool list is split into **skills**: `skills/pdf-tools.skill.md`, `image-tools`, `text-extraction`, `app-settings`. Each file is a frontmatter block (name, description, English + Hindi trigger words, the tool ids it unlocks) plus a short usage body. **Core tools** are derived — every registry action no skill claims (search, list, open screens, `ai.loadSkill`, `ai.askUser`) — so the action definitions stay the single source of truth; `skill-registry.test.ts` enforces that every listed tool exists and no tool is in two skills.
+
+- **Router (no model call):** before each send, `matchSkills()` substring-matches the user's text against trigger words and pre-loads the matching skills.
+- **`ai.loadSkill` (fallback):** if the model needs a tool that is not in its list it loads the skill itself.
+- **Session:** loaded skills are sticky (changing the tool list invalidates the server's prompt cache) with a cap of 3, least-recently-used evicted.
+- **Guard:** on engines that can change tools per request (Ollama, cloud) a call to a tool whose skill is not loaded is rejected in code and the error tells the model to load it. The native LiteRT engine fixes its tools when the conversation is created, so it keeps all of them (`ChatEngine.setActiveTools` is optional).
+
+Two lessons recorded so nobody repeats them: (1) a core navigation tool named "open PDF Tools" was a look-alike — asked to compress, the model navigated instead and claimed success; moving it into `pdf-tools` fixed the fallback test. (2) Delivering a skill's *rules* to the model as a standing second system message made tool use **worse** in a controlled test (askUser used 3/3 without the rules, 1/6 with), so only the tools are loaded on demand and the rules stay out of the prompt.
+
+### 3.8 Online mode (demo builds) (added 2026-10-31)
+
+One switch in AI settings flips between **offline** (on-device, or a local Ollama server in demos) and **online** (Google Vertex AI). Turning it on first shows a plain-language warning that messages — and any document the user asks the assistant to read — go to Google Cloud and may contain personal information. The choice persists (`kagaz:ai-mode`); the chat header shows an Online/Offline badge.
+
+- **Transport:** `vite-plugins/cloud-ai-proxy.ts` exposes `/api/ai/{health,chat,embed}` on the *dev server only*, using the developer's gcloud application-default credentials. The page never sees a credential; requests must be same-origin JSON; the model is pinned server-side. The build refuses to include it ([ADR-023](08-tech-stack-decisions.md#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)).
+- **Models:** chat and vision use **Gemma 4 26B on Vertex AI** (`CLOUD_CHAT_MODEL` overrides, e.g. to compare with Gemini). Embeddings use `text-embedding-005` because EmbeddingGemma is not offered on Vertex (checked: 404).
+- **Engine:** `CloudChatEngine` and `OllamaChatEngine` both extend `ToolLoopEngine` and differ only in wire format.
+
+### 3.9 On-device semantic search (added 2026-10-31)
+
+`ai.semanticSearch` finds documents by meaning. On Android it uses EmbeddingGemma-300M through the LiteRT-LM `EmbeddingEngine` (see ADR-024): Settings → AI Assistant → **Search model** downloads it (~330 MB, optional, SHA-256 verified). Until it is downloaded the tool returns an error telling the assistant to ask the user to download it. Document text comes from ML Kit OCR / the PDF text layer; vectors are in memory and rebuilt after restart.
+
+### 3.10 Skills on the phone (added 2026-10-31)
+
+The native engine fixes its tools when a conversation is created, so skills are applied there by **rebuilding the conversation**: when the router (or `ai.loadSkill`) activates a skill, the plugin's `setToolSubset` recreates the chat with only core + that skill's tools and replays the chat's transcript (last 16 messages) as initial messages. With no skill active every tool stays registered. If a skill loads while a reply is streaming, the change is queued for the next message. The app never *refuses* tool calls on this engine (the model just is not shown the rest), unlike the Ollama/cloud engines, which gate in JS. Skill rule text is not injected on the phone (it made the small model worse); guidance lives in tool descriptions. Not yet device-verified.
 
 ## 4. Tool Calling System
 
 ### 4.1 Tool Calling Flow
+
+Unlike WebLLM's original plan (tools passed as a JSON array directly into a single JS-side `chat.completions.create()` call), LiteRT-LM's Kotlin API only supports tool calling through **native** `Tool` objects registered on `ConversationConfig` at conversation-creation time — the model itself runs entirely inside the native engine, so a tool call is a native→JS round-trip, not a JS-only one:
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Chat as Chat UI
     participant AI as AiAssistantService
-    participant LLM as WebLLM Engine
-    participant TC as ToolCallingEngine
-    participant Tool as Tool Provider
+    participant Bridge as Plugin Bridge (JS)
+    participant Native as LLM.java (native)
+    participant JBT as JsBridgeTool (native, OpenApiTool)
+    participant TC as ToolCallingEngine (JS)
+    participant Tool as Tool Provider (JS)
     participant Engine as PDF/Image Engine
 
     User->>Chat: "Merge my Aadhaar and PAN card PDFs"
     Chat->>AI: sendMessage(userMessage)
-    AI->>AI: buildMessages(history + systemPrompt)
-    AI->>LLM: chat.completions.create(messages, tools)
-    LLM-->>AI: response with tool_calls
+    AI->>Bridge: sendMessage({ chatId, message })
+    Bridge->>Native: LLM.sendMessage() → conversation.sendMessageAsync()
 
-    Note over AI: AI decides to call merge_documents
+    Note over Native: LiteRT-LM engine decides to call merge_documents<br/>(automaticToolCalling=true drives this internally)
+    Native->>JBT: execute(paramsJsonString)
+    Note over JBT: blocks this background-executor thread<br/>on a CompletableFuture — never the UI thread
 
+    JBT-->>Bridge: emit "toolCallRequested" { requestId, name, argsJson }
+    Bridge-->>TC: forward event
     AI->>Chat: Show "Merging documents..." card
-    AI->>TC: executeTool('merge_documents', args)
     TC->>Tool: DocumentToolProvider.merge_documents()
     Tool->>Engine: pdfEngine.mergePdfs([aadhaar, pan])
     Engine-->>Tool: mergedPdf (Uint8Array)
     Tool-->>TC: { success: true, documentId: 'xyz' }
-    TC-->>AI: toolResult
+    TC->>Bridge: resolveToolCall({ requestId, resultJson })
+    Bridge->>JBT: complete the CompletableFuture with resultJson
+    JBT-->>Native: execute() returns resultJson
 
-    AI->>LLM: chat.completions.create(messages + toolResult)
-    LLM-->>AI: "Done! I've merged your Aadhaar and PAN card into a single PDF."
+    Note over Native: LiteRT-LM automatically feeds the tool result<br/>back to the model and continues generation
 
+    Native-->>Bridge: textFromAi events (streamed)
+    Bridge-->>AI: "Done! I've merged your Aadhaar and PAN card into a single PDF."
     AI->>Chat: Display AI response
     Chat->>User: Show merged document link
 ```
 
+**Why the confirmation gate lives inside `JsBridgeTool.execute()`'s JS round-trip, not as a separate manual step**: LiteRT-LM's `automaticToolCalling=false` mode (§3 upstream docs) exists for apps that want to manually drive the tool-call/result loop, but since our bridge already intercepts every tool call as a JS round-trip regardless, we get the same interception point "for free" under `automaticToolCalling=true` — `TC.executeTool()` (§4.3) is still the one and only place that checks `requiresConfirmation()` before running anything, exactly as originally speced; only the transport underneath it changed.
+
 ### 4.2 Tool Definitions
 
-All tools follow the OpenAI function-calling schema:
+Tool definitions stay exactly as speced below — this shape is engine-agnostic. What changed is only how they reach the engine: at conversation-creation time, each `ToolDefinition.function` is translated into one native `JsBridgeTool(name, openApiJsonSchema)` registered on `ConversationConfig.tools` (§3.4's fork addition), instead of being passed as a `tools` array on every WebLLM `chat.completions.create()` call.
 
 #### 4.2.1 Document Operations
 
@@ -650,6 +723,8 @@ class ToolCallingEngine {
 }
 ```
 
+**Native wiring**: `AIProvider` subscribes to the plugin's `toolCallRequested` event once at startup and pipes each occurrence through this exact `executeTool()` — the `needsConfirmation` branch surfaces a `Confirmation Card` (§5.4) in the chat UI exactly as before; once the user confirms, the app re-invokes `provider.execute()` and calls the plugin's `resolveToolCall({ requestId, resultJson: JSON.stringify(result) })` to unblock the native side. A `needsConfirmation` result is therefore *not* sent back to `resolveToolCall` immediately — the promise stays pending (bridge-side, with a timeout) until the user answers.
+
 ### 4.4 Tool Result Types
 
 ```typescript
@@ -669,6 +744,22 @@ interface ToolProvider {
 ```
 
 ---
+
+### 4.2.4 Image tools and the lock gate (added 2026-10-31)
+
+Three tools reuse the same document-vault hooks the UI uses (`ai-image-ops.actions.ts`): `ai.resizeImage` (exact pixel size + a size budget in KB, F-85), `ai.enhanceImage` (grayscale / bw / enhance / invert, F-29) and `ai.runOcr` (stores the text for search, F-20). All three save a new copy and leave the source untouched, so `requiresConfirmation` is `false`. `ai.runOcr` returns **only a character count**, never the text.
+
+**Lock gate.** Every tool that takes a document id resolves it through one function (`requireDocument` in `useChat.ts`), which refuses a locked document before anything runs. The pdf-engine and image hooks these tools reuse do not check the per-document lock themselves, so without this the model could process a locked file with no biometric prompt. (Before 2026-10-31 only list/search filtered locked documents; the id-based PDF tools did not.)
+
+---
+
+### 4.2.5 GenUI forms, attachments, result cards, markdown (added 2026-10-31)
+
+- **`ai.askUser`** lets the model put a form (1–3 fields: choice, multi, number, text, toggle, date, document) in front of the user instead of asking in prose. The call **ends the model's turn**: the tool returns `waiting_for_user`, the form is stored as an assistant message part (`ai_messages.parts_json`, migration 007) and rendered with validation; the answer goes back as the user's *next message* (a readable summary plus an `answer` part that marks the form answered, so a reloaded form cannot be submitted twice). Ending the turn avoids a pending call that the native bridge would time out after 30 s. The schema is deliberately flat (a `type` enum, not a tagged union) because simple JSON Schema is what every function-calling model handles reliably. Forms that ask for passwords, OTPs, PINs or ID/card numbers are refused; model-written text is rendered as plain text.
+- **Attachments:** the **+** button attaches vault documents (or uploads new ones through the existing upload sheet). Locked documents are never offered. The model receives a metadata-only line per file (`[Attached: "name" (id …, type)]`) so it never needs to ask for an id; `toModelText()` is the one function used for live sends and history replay.
+- **Result cards:** a tool that reports `created > 0` produces a persisted card with an *Open* button (search/list results also carry a `documents` list and must not produce a card).
+- **Markdown:** assistant, streaming and user bubbles render a safe subset through a React-element renderer (no HTML injection; http/https/mailto links only). The message box is a growing multi-line textarea (Enter sends, Shift+Enter newline, IME-safe).
+- **Known weakness (live-tested):** the model sometimes asks in plain text instead of using the form, and may do only the first part of a two-part request.
 
 ## 5. Chat UI Design
 
@@ -1038,13 +1129,13 @@ interface ConversationManager {
 
 ```typescript
 type AiErrorCode =
-  | 'WEBGPU_NOT_SUPPORTED'
-  | 'MODEL_DOWNLOAD_FAILED'
-  | 'MODEL_TOO_LARGE'
+  | 'PLATFORM_NOT_SUPPORTED' // was WEBGPU_NOT_SUPPORTED — native plugin is Android-only
+  | 'MODEL_DOWNLOAD_FAILED' // includes checksum mismatch, see §3.5
+  | 'MODEL_LOAD_FAILED' // native setModel() rejected — bad file, unsupported device, OOM
   | 'INFERENCE_FAILED'
   | 'TOOL_EXECUTION_FAILED'
+  | 'TOOL_CALL_TIMEOUT' // resolveToolCall never arrived (bridge-side timeout, §4.3)
   | 'CONTEXT_TOO_LONG'
-  | 'RATE_LIMITED'
   | 'NOT_INITIALIZED'
   | 'STT_NOT_AVAILABLE'
   | 'TTS_NOT_AVAILABLE'
@@ -1055,60 +1146,64 @@ type AiErrorCode =
 
 | Failure | Fallback |
 |---|---|
-| WebGPU not available | Show message: "AI Assistant requires WebGPU. Please use a supported browser." |
+| Platform not supported (iOS/web) | `isAiSupported()` (§3.3) hides the entry point entirely — same posture as the document scanner |
 | Model download fails | Retry with exponential backoff, offer manual retry button |
+| Checksum mismatch | Delete the corrupt file, force a fresh download, never load an unverified model |
+| Model load fails on-device (low RAM, no accelerator) | Show `MODEL_LOAD_FAILED` with a plain-language message; do not auto-retry with a different model (single fixed model, §3.2) |
 | Inference timeout | Abort after 30s, show error, allow retry |
 | Tool execution fails | AI reports the error naturally: "Sorry, I couldn't merge those files. The PDF might be corrupted." |
+| Tool call never resolved (JS-side bug/crash) | Bridge-side timeout (30s) rejects the native `CompletableFuture` so the executor thread is never blocked forever |
 | STT not available | Hide voice button, text-only mode |
-| Low memory | Use smallest model, warn user about potential slowness |
+| Low memory | Model load itself fails cleanly (`MODEL_LOAD_FAILED`) rather than degrading to a smaller model — there is only one shipped model (§3.2) |
 
 ---
 
 ## 10. Performance Considerations
 
-### 10.1 Inference Performance
+### 10.1 Inference Performance (indicative — re-measure on real target hardware before launch)
 
-| Model | First Token | Tokens/sec (Desktop) | Tokens/sec (Mobile) |
-|---|---|---|---|
-| Llama-3.2-1B | ~1.5 s | 30–50 | 15–25 |
-| Qwen2.5-1.5B | ~2.0 s | 20–40 | 10–20 |
-| Llama-3.2-3B | ~3.0 s | 15–30 | 5–15 |
+| Model | Backend | Notes |
+|---|---|---|
+| Gemma 4 E2B | CPU (current default) | `loadModel()` requests `backend: 'cpu'` directly — see §3.4's CPU-only note. GPU was found to crash the whole process on-device rather than gracefully falling back, so it's not attempted at all right now |
+| Gemma 4 E2B | GPU delegate | Not currently used — would need a pre-flight capability check before this is safe to re-enable (§3.4) |
+
+No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Gemma 4 E2B on the specific mid-range Android range this app targets — unlike the old WebLLM table (which quoted MLC's own desktop/mobile benchmarks), this needs a real device measurement pass once F-13 is implemented, not an assumed number.
 
 ### 10.2 Memory Usage
 
 | Component | Memory |
 |---|---|
-| Model weights (1B, q4) | ~600 MB VRAM |
-| Model weights (1.5B, q4) | ~900 MB VRAM |
-| KV cache (2K context) | ~100 MB VRAM |
+| Model weights (Gemma 4 E2B, .litertlm) | ~2.6 GB on disk |
+| Native engine (Kotlin, background executor) | Runs in the app's own process — no separate Worker process overhead the way a Web Worker has |
 | Chat history (in-memory) | ~1 MB RAM |
-| Web Worker overhead | ~10 MB RAM |
 
 ### 10.3 Optimization Strategies
 
 | Strategy | Description |
 |---|---|
 | Lazy loading | AI engine is only loaded when user first opens the chat |
-| Model unload | Unload model after 5 minutes of inactivity to free VRAM |
+| Model unload | `CapacitorLlmLiteRT`'s native `Engine.close()` frees the loaded model after inactivity (mirrors the old "unload after 5 min" plan, now a native `close()` call instead of `webllm.unload()`) |
 | Context pruning | Keep last 20 messages + system prompt, summarize older context |
-| Streaming | Stream tokens to UI as they're generated for perceived speed |
-| Worker isolation | All inference in a dedicated Web Worker, never blocks UI |
+| Streaming | Stream tokens to UI as they're generated for perceived speed — the fork's `textFromAi` event already streams chunk-by-chunk |
+| Background executor | All inference runs on the plugin's dedicated single-thread `Executor` (`LLM.java`), never the Android main/UI thread — the native equivalent of "Worker isolation" |
 
 ---
 
 ## 11. Privacy & Security
 
 > [!CAUTION]
-> The AI Assistant has access to document metadata but NEVER to document content. This is enforced at the architecture level — tool providers only expose metadata, and the system prompt explicitly forbids content access.
+> The AI Assistant has access to document metadata but NEVER to document content. This is enforced at the architecture level — tool providers only expose metadata, and the system prompt explicitly forbids content access. This boundary is unaffected by the WebLLM→LiteRT-LM engine change: tool *logic* has always lived in TypeScript (§4.3's `ToolProvider`s), never in the LLM engine itself, native or otherwise.
 
 | Principle | Implementation |
 |---|---|
 | No content access | Tools only return metadata (name, type, size, tags) |
-| On-device inference | WebLLM runs locally, no server calls |
+| On-device inference | LiteRT-LM runs locally via Android's native ML stack, no server calls |
 | No telemetry | No conversation data sent anywhere |
 | Chat history encryption | SQLite DB encrypted with device key |
-| Model integrity | SHA-256 checksum verification on cached models |
+| Model integrity | SHA-256 checksum verification on cached models — added by our fork (§3.4), not present upstream |
 | Permission model | Each tool category requires explicit user opt-in |
+| Tool-call bridge safety | `JsBridgeTool.execute()` blocks a background executor thread only, never the UI thread; a bridge-side timeout prevents a stuck JS handler from hanging the native engine indefinitely |
+| Fork provenance | Vendored as `packages/capacitor-llm-litert`, diffed against upstream `@capgo/capacitor-llm` on every version bump — MPL-2.0 requires our modifications to the covered files stay disclosed, which vendoring in this monorepo already satisfies |
 
 ---
 
@@ -1116,10 +1211,11 @@ type AiErrorCode =
 
 | Feature | Version | Notes |
 |---|---|---|
+| Upstream tool-calling support | Whenever available | If `@capgo/capacitor-llm` adds native tool-calling to its own JS bridge, evaluate dropping our fork's `JsBridgeTool` patch in favor of upstream — reduces our maintenance surface |
 | Multi-turn tool calling | V2 | Chain multiple tools in a single conversation turn |
 | Document summarization | V2 | Summarize text extracted from PDFs (opt-in) |
 | Smart tagging | V2 | AI auto-suggests tags based on document name |
+| Model picker | V2 | Let users opt into a larger model (e.g. Gemma4-E2B, §3.2) for better quality at a bigger download/RAM cost |
 | Proactive suggestions | V3 | AI suggests actions based on user patterns |
-| Multi-model support | V3 | Let users choose between available models |
 | Fine-tuned model | V3 | Kagaz-specific fine-tuned model for better accuracy |
-| Multimodal input | V3+ | Accept image input for visual questions |
+| Multimodal input | V3+ | Accept image input for visual questions — LiteRT-LM's `Content.ImageBytes`/`ImageFile` already exist natively (§4.1), unlike WebLLM's text-only original plan |

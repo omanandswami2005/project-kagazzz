@@ -1,0 +1,135 @@
+/* Voice-listening modal (F-15 device-testing follow-up): a big, centered
+   "I'm listening" moment shown while useVoiceInput().listening is true.
+   Built the same way as @kagaz/ui's Alert/ActionSheet — a native <dialog>
+   (see VoiceListeningModal.tsx for why).
+
+   HONESTY NOTE: the ring/core animation below is a canned CSS keyframe
+   pulse, not a real audio-frequency/amplitude visualization — see
+   VoiceListeningModal.tsx's doc comment for the full explanation. Do not
+   read this as reacting to actual voice input. */
+
+.kg-voice-modal {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: var(--space-4);
+  border: none;
+  background: transparent;
+}
+.kg-voice-modal::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.kg-voice-modal[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kg-voice-modal__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 400px;
+  padding: var(--space-8) var(--space-6);
+  background: var(--surface-1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+}
+
+/* ── Orb — canned pulse, see file header ─────────────────────────────── */
+.kg-voice-modal__orb {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kg-voice-modal__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-primary);
+  opacity: 0;
+  animation: kg-voice-modal-ripple 2.4s var(--ease-out) infinite;
+}
+.kg-voice-modal__ring--2 {
+  animation-delay: 0.8s;
+}
+.kg-voice-modal__ring--3 {
+  animation-delay: 1.6s;
+}
+.kg-voice-modal__core {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--color-primary-light),
+    var(--color-primary) 70%
+  );
+  animation: kg-voice-modal-breathe 1.6s ease-in-out infinite;
+}
+@keyframes kg-voice-modal-ripple {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+@keyframes kg-voice-modal-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.14);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kg-voice-modal__ring {
+    animation: none;
+    opacity: 0.35;
+  }
+  .kg-voice-modal__core {
+    animation: none;
+  }
+}
+
+.kg-voice-modal__status {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+.kg-voice-modal__transcript {
+  min-height: calc(var(--text-base) * 1.5);
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+}
+.kg-voice-modal__stop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  padding: 0;
+  background: var(--surface-2);
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.kg-voice-modal__stop:hover {
+  background: var(--surface-3, var(--surface-2));
+}

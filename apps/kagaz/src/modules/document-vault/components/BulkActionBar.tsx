@@ -5,7 +5,8 @@
  */
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Icon } from '@kagaz/ui';
+import { Alert, Icon } from '@kagaz/ui';
+import { hapticDestructive, hapticTap } from '@/core/haptics';
 
 /** Props for {@link BulkActionBar}. */
 export interface BulkActionBarProps {
@@ -15,6 +16,9 @@ export interface BulkActionBarProps {
   onDelete: () => void;
   onMove: () => void;
   onFavorite: () => void;
+  /** Share every selected document in one share sheet. Omit to hide the
+   * button entirely (e.g. on web, where native intents don't exist). */
+  onShare?: () => void;
 }
 
 /** Floating multi-select toolbar. Hidden when nothing is selected. */
@@ -24,6 +28,7 @@ export function BulkActionBar({
   onDelete,
   onMove,
   onFavorite,
+  onShare,
 }: BulkActionBarProps): ReactNode {
   const { t } = useTranslation('documents');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -58,7 +63,10 @@ export function BulkActionBar({
           data-agent-id="vault.home.bulk-favorite"
           data-agent-action="vault.bulkFavorite"
           disabled={count === 0}
-          onClick={onFavorite}
+          onClick={() => {
+            hapticTap();
+            onFavorite();
+          }}
         >
           <Icon name="Star" size={20} />
         </button>
@@ -72,6 +80,21 @@ export function BulkActionBar({
         >
           <Icon name="Move" size={20} />
         </button>
+        {onShare && (
+          // No agentAction: matches the single-document Share… button's own
+          // posture (F-64/F-65) — handing documents to another app stays a
+          // user-tap-only action, not voice/AI-triggerable.
+          <button
+            type="button"
+            className="kg-bulk-bar__action"
+            aria-label={t('intents.share')}
+            data-agent-id="vault.home.bulk-share"
+            disabled={count === 0}
+            onClick={onShare}
+          >
+            <Icon name="Share2" size={20} />
+          </button>
+        )}
         <button
           type="button"
           className="kg-bulk-bar__action kg-bulk-bar__action--danger"
@@ -85,7 +108,11 @@ export function BulkActionBar({
         </button>
       </span>
 
-      <ActionSheet
+      {/* interaction-patterns.md §Bottom sheets vs modals: "delete
+         confirmation" is a Modal (Alert), not a bottom-sheet picker — a
+         2-button ActionSheet here rendered "Delete" list-style left-aligned
+         next to a centered "Cancel" pill, a real reported layout bug. */}
+      <Alert
         isOpen={confirmOpen}
         header={t('bulk.delete_confirm', { count })}
         agentId="vault.home.bulk-delete-confirm"
@@ -94,7 +121,10 @@ export function BulkActionBar({
           {
             text: t('bulk.delete'),
             role: 'destructive',
-            handler: (): void => onDelete(),
+            handler: (): void => {
+              hapticDestructive();
+              onDelete();
+            },
           },
           { text: t('actions.cancel'), role: 'cancel' },
         ]}

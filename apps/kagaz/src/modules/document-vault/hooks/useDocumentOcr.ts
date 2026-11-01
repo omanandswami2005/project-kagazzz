@@ -2,12 +2,20 @@
  * Document text extraction (F-20/ADR-019 + UX-13). Pulls searchable text out of
  * a document and stores it in the encrypted `documents.ocr_text` column, which
  * the FTS index already searches — so the text becomes findable (and, later,
- * usable by on-device AI). Two paths:
+ * usable by on-device AI).
  *   - images → on-device ML Kit OCR (native only);
- *   - PDFs with a text layer → pdfjs `getTextContent` (fast, OCR-free, UX-13).
+ *   - PDFs → pdfjs `getTextContent` PER PAGE (fast, OCR-free, UX-13); any page
+ *     whose native text is too sparse to be real content (a scanned page, or
+ *     a scanned page with just a stamped page-number/watermark on top — see
+ *     MIN_CONFIDENT_PAGE_TEXT_CHARS) is rendered and OCR'd instead, page by
+ *     page, so a stamp elsewhere in the document can't hide missing OCR on
+ *     the pages that actually need it.
  *
  * [SEC] The extracted text is sensitive: it is written only to the encrypted
- * DB and never logged (only its length is).
+ * DB and never logged (only its length is). **Bug-audit fix**: this used to
+ * read a locked document's raw file bytes and run OCR on it with no
+ * biometric check — gated here so the vault list's item-menu can't bypass
+ * the per-document lock (§3.1) for this content-exposing action either.
  */
 import { useCallback, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
@@ -21,13 +29,28 @@ import {
   recognizeDocumentText,
 } from '@/modules/image-engine/services/ocr.service';
 import {
-  extractPdfTextImpl,
+  extractPdfTextPerPageImpl,
   pdfToImagesImpl,
 } from '@/modules/pdf-engine/services/pdf-render-ops';
-import { ocrScannedPdf } from '../services/pdf-ocr';
+import { getConfiguredVisionRecognizer } from '@/modules/image-engine/services/vision-ocr.service';
+import { ocrPdfPages } from '../services/pdf-ocr';
+import { mimeTypeFor } from '../services/upload.service';
 import { isPdf } from './useDocumentFile';
+import { useDocLock } from './useDocLock';
 
 const logger = log('document-vault');
+
+/**
+ * Below this many non-whitespace characters, a page's native text layer is
+ * treated as "not real content" — a stamped page number ("3") or a short
+ * watermark ("CONFIDENTIAL"), not the page's actual text — and OCR'd instead
+ * (F-20 follow-up, 2026-07-21: a scanned PDF with page numbers stamped on
+ * every page previously extracted as just those page numbers, because the
+ * whole-document text was non-empty even though no page had real content).
+ * A heuristic, not a certainty — deliberately conservative (a real page this
+ * short is rare) so it errs toward re-OCRing rather than trusting a stamp.
+ */
+const MIN_CONFIDENT_PAGE_TEXT_CHARS = 20;
 
 /**
  * Image types OCR can read (ML Kit takes a bitmap). Matched against the stored
@@ -42,9 +65,14 @@ export function isOcrableType(fileType: string): boolean {
   return OCR_EXTENSIONS.has(fileType.toLowerCase());
 }
 
-/** Whether ML Kit OCR can run on this document (native platform + image type). */
+/** True when some OCR engine is available: native ML Kit, else the (mode-dependent) vision fallback. */
+function hasOcrEngine(): boolean {
+  return isOcrSupported() || getConfiguredVisionRecognizer() !== null;
+}
+
+/** Whether OCR can run on this document (an engine is available + image type). */
 export function canOcr(document: DocumentEntity): boolean {
-  return isOcrSupported() && isOcrableType(document.fileType);
+  return hasOcrEngine() && isOcrableType(document.fileType);
 }
 
 /**
@@ -56,51 +84,112 @@ export function canExtractText(document: DocumentEntity): boolean {
   return canOcr(document) || isPdf(document.fileType);
 }
 
+/**
+ * Whether the Gemma vision transcription option applies: the fallback is
+ * configured (VITE_OLLAMA_URL) and the document is an image or a PDF — the
+ * formats the vision model is fed (PDF pages are rendered to images first).
+ * Independent of whether text was already extracted: re-running is the point.
+ */
+export function canTranscribeWithVision(document: DocumentEntity): boolean {
+  return getConfiguredVisionRecognizer() !== null && (isOcrableType(document.fileType) || isPdf(document.fileType));
+}
+
+/** Which engine to use: `auto` = ML Kit when native, else the vision fallback; `vision` = always Gemma. */
+export interface ExtractOptions {
+  engine?: 'auto' | 'vision';
+}
+
 /** What {@link useDocumentOcr} exposes. */
 export interface UseDocumentOcr {
   /** Id of the document currently being extracted, or null. */
   runningId: string | null;
-  /** Extracts text (image OCR or PDF text layer), stores it, returns the text. */
-  extractText: (document: DocumentEntity) => Promise<string | null>;
+  /**
+   * Extracts text (image OCR or PDF text layer), stores it, returns the text.
+   * With `{ engine: 'vision' }` every PDF page is transcribed by the vision
+   * model (not just pages lacking a text layer), replacing any stored text.
+   */
+  extractText: (document: DocumentEntity, options?: ExtractOptions) => Promise<string | null>;
 }
 
 /** Extracts + persists document text (image OCR / PDF text layer) for search. */
 export function useDocumentOcr(): UseDocumentOcr {
   const { db } = useDatabase();
   const { locale } = useLocale();
+  const { authorizeView } = useDocLock();
   const [runningId, setRunningId] = useState<string | null>(null);
 
   const extractText = useCallback(
-    async (document: DocumentEntity): Promise<string | null> => {
-      if (!db || !canExtractText(document)) {
+    async (document: DocumentEntity, options?: ExtractOptions): Promise<string | null> => {
+      const forceVision = options?.engine === 'vision';
+      if (!db || (forceVision ? !canTranscribeWithVision(document) : !canExtractText(document))) {
+        return null;
+      }
+      if (!(await authorizeView(document))) {
         return null;
       }
       setRunningId(document.id);
+      // One engine decision for this run: Gemma when forced, or as the fallback where ML Kit is absent.
+      const recognizer = getConfiguredVisionRecognizer();
+      const useVision = recognizer !== null && (forceVision || !isOcrSupported());
       try {
         const lang = locale === 'hi' ? 'hi' : 'en';
         let text: string;
+        let source: 'pdf-layer' | 'pdf-mixed' | 'ocr' | 'vision' = forceVision ? 'vision' : 'ocr';
         if (isPdf(document.fileType)) {
-          // UX-13: read the embedded text layer first (fast, no OCR).
+          // UX-13: read the embedded text layer first (fast, no OCR) — but
+          // per PAGE, not the whole document (see MIN_CONFIDENT_PAGE_TEXT_CHARS
+          // above for why a whole-document check isn't enough).
           const bytes = await createFileStorage().read(document.filePath);
-          text = await extractPdfTextImpl(bytes);
-          // Scanned/image-only PDFs have no text layer — fall back to OCR of the
-          // rendered pages (native only; degrades to '' on web).
-          if (!text.trim() && isOcrSupported()) {
-            text = await ocrScannedPdf(bytes, lang, {
-              renderPages: (pdf) => pdfToImagesImpl(pdf, { format: 'png', scale: 2 }),
-              recognize: recognizeDocumentText,
-              storage: createFileStorage(),
+          const pageTexts = await extractPdfTextPerPageImpl(bytes);
+          const sparsePages = pageTexts
+            .map((pageText, i) => ({ i, chars: pageText.replace(/\s/g, '').length }))
+            .filter(({ chars }) => chars < MIN_CONFIDENT_PAGE_TEXT_CHARS)
+            .map(({ i }) => i);
+          // Scanned pages (whole doc, or just some pages) have no real text
+          // layer — OCR exactly those pages (native only; no-op on web).
+          // Forced vision transcribes every page, even ones with a text layer.
+          const pagesToOcr = forceVision ? pageTexts.map((_, i) => i) : sparsePages;
+          if (pagesToOcr.length > 0 && (forceVision || hasOcrEngine())) {
+            const renderPages = (pdf: Uint8Array, pages?: number[]): Promise<Blob[]> =>
+              pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages });
+            const ocrTexts = await ocrPdfPages(
+              bytes,
+              pagesToOcr,
+              lang,
+              useVision && recognizer
+                ? { renderPages, recognizeImage: recognizer }
+                : { renderPages, recognize: recognizeDocumentText, storage: createFileStorage() }
+            );
+            pagesToOcr.forEach((pageIndex, k) => {
+              // Keep the native (if any) text when OCR itself found nothing —
+              // a stamped page number beats an empty string.
+              pageTexts[pageIndex] = ocrTexts[k] || pageTexts[pageIndex];
             });
           }
+          text = pageTexts.filter((p) => p.length > 0).join('\n\n').trim();
+          source = forceVision
+            ? 'vision'
+            : sparsePages.length === 0
+              ? 'pdf-layer'
+              : sparsePages.length === pageTexts.length
+                ? 'ocr'
+                : 'pdf-mixed';
         } else {
           // Images go straight through native ML Kit OCR.
-          text = await recognizeDocumentText(document.filePath, lang);
+          text =
+            useVision && recognizer
+              ? await recognizer(
+                  new Blob([(await createFileStorage().read(document.filePath)) as BlobPart], {
+                    type: mimeTypeFor(document.fileType),
+                  })
+                )
+              : await recognizeDocumentText(document.filePath, lang);
         }
         await new DocumentDao(db).update(document.id, { ocrText: text });
         logger.info({
           event: 'vault.text.stored',
           documentId: document.id,
-          source: isPdf(document.fileType) ? 'pdf-layer' : 'ocr',
+          source,
           chars: text.length,
         });
         return text;
@@ -115,7 +204,7 @@ export function useDocumentOcr(): UseDocumentOcr {
         setRunningId(null);
       }
     },
-    [db, locale]
+    [db, locale, authorizeView]
   );
 
   return { runningId, extractText };

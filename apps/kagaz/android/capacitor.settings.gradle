@@ -38,5 +38,8 @@ project(':capacitor-preferences').projectDir = new File('../../../node_modules/.
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../../../node_modules/.pnpm/@capacitor+share@8.0.1_@capacitor+core@8.4.0/node_modules/@capacitor/share/android')
 
+include ':kagaz-capacitor-llm-litert'
+project(':kagaz-capacitor-llm-litert').projectDir = new File('../node_modules/@kagaz/capacitor-llm-litert/android')
+
 include ':capacitor-secure-storage-plugin'
 project(':capacitor-secure-storage-plugin').projectDir = new File('../../../node_modules/.pnpm/capacitor-secure-storage-plugin@0.13.0_@capacitor+core@8.4.0/node_modules/capacitor-secure-storage-plugin/android')

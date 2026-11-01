@@ -64,6 +64,34 @@
   color: var(--text-secondary);
 }
 
+/* ── Tool matches in search results (UX pass 2026-07-24) ────────────── */
+.kg-vault__tool-matches {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-vault__tool-match {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--target-min);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--color-primary);
+  font-family: var(--font-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
 /* ── Storage page (F-26) ─────────────────────────────────────────── */
 .kg-storage {
   padding: var(--page-padding);
@@ -138,6 +166,37 @@
   white-space: nowrap;
 }
 
+.kg-storage__ai-model {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.kg-storage__ai-model-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.kg-storage__ai-model-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.kg-storage__ai-model-manage {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
 /* ── Folders (F-9) ──────────────────────────────────────────────── */
 .kg-breadcrumb {
   display: flex;
@@ -164,12 +223,6 @@
   padding: var(--space-1);
   color: var(--color-primary);
   cursor: pointer;
-}
-
-.kg-vault__folder-bar {
-  display: flex;
-  justify-content: flex-end;
-  margin-block: var(--space-2);
 }
 
 .kg-folder-grid {
@@ -267,8 +320,28 @@
   margin-block: var(--space-4);
 }
 
-.kg-recent__title {
+.kg-recent__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: var(--target-min);
+  padding: 0;
   margin: 0 0 var(--space-2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.kg-recent__header .kg-icon {
+  flex-shrink: 0;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.kg-recent__header[aria-expanded='false'] .kg-icon {
+  transform: rotate(-90deg);
+}
+
+.kg-recent__title {
+  margin: 0;
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--text-secondary);
@@ -279,42 +352,75 @@
 .kg-recent__row {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--space-2) var(--space-1);
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-4);
   overflow-x: auto;
+  /* UX-16: native snap-to-center carousel — the row scrolls, the browser
+     settles each card on the center, no custom fling/paging JS needed. */
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: calc(50% - 60px);
 }
 
 .kg-recent__li {
   flex: 0 0 auto;
+  scroll-snap-align: center;
+  /* Written every scroll frame by useCoverflowScroll — no CSS transition
+     here, it would lag a step behind the high-frequency JS updates. */
+  transform-origin: center;
 }
 
 .kg-recent__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  width: 88px;
-  padding: var(--space-3);
+  gap: var(--space-2);
+  width: 120px;
+  padding: var(--space-4) var(--space-3);
   background: var(--surface-1);
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   color: var(--color-primary);
   cursor: pointer;
+  /* UX-16: only native-pan this element horizontally — frees vertical
+     touch input on the card for useSwipeUp (swipe-up → open Tools)
+     instead of racing the page's own vertical scroll for the gesture. */
+  touch-action: pan-x;
 }
 
 .kg-recent__thumb {
-  width: 40px;
-  height: 40px;
+  width: 72px;
+  height: 72px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--surface-2);
   animation: kg-fade-in var(--duration-normal) var(--ease-out);
 }
 
+/* [SEC] §3.1: same blur+lock-icon treatment as .kg-doc-item__locked, sized
+   for the Recent strip's larger 72px thumbnail. */
+.kg-recent__locked {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.kg-recent__thumb--locked {
+  filter: blur(8px);
+  opacity: 0.55;
+}
+.kg-recent__locked > :not(.kg-recent__thumb--locked) {
+  position: absolute;
+}
+
 .kg-recent__name {
   width: 100%;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-primary);
   text-align: center;
   overflow: hidden;
@@ -440,6 +546,41 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* Virtualized list (UX pass, 2026-07-23): the outer <ul> only sets total
+   scroll height (inline style, from the virtualizer) — visual layout stays
+   entirely on the per-row inner .kg-vault__list--* below it, unchanged from
+   the non-virtualized markup. */
+.kg-vault__virtual-outer {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.kg-vault__virtual-row {
+  list-style: none;
+}
+.kg-vault__virtual-row .kg-vault__list {
+  /* Each row already has exactly one row's worth of items (grid: the live
+     column count; list/compact: 1) — no extra vertical gap needed between
+     items that don't visually stack within a row. */
+  gap: 0;
+}
+.kg-vault__virtual-row .kg-vault__list--grid {
+  gap: var(--space-3);
+}
+/* Inter-row spacing: with each row absolutely positioned by measured
+   height, the vertical gap between rows has to be reserved space *inside*
+   each row (padding-bottom, included in what measureElement measures)
+   rather than a CSS `gap`, matching each mode's original inter-item gap. */
+.kg-vault__virtual-row--list {
+  padding-bottom: var(--space-2);
+}
+.kg-vault__virtual-row--compact {
+  padding-bottom: var(--space-1);
+}
+.kg-vault__virtual-row--grid {
+  padding-bottom: var(--space-3);
 }
 
 /* ── UX-7: view modes ─────────────────────────────────────────────────────

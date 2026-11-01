@@ -11,7 +11,7 @@ export const DocumentViewerPageAgent = definePage({
   id: 'vault.viewer',
   route: '/doc/:id',
   intent:
-    'View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction are user-only actions.',
+    'View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction (including the optional Gemma transcription) are user-only actions.',
   surfaces: ['screen'],
   availableActions: [],
   observableState: {},

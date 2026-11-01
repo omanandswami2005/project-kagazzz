@@ -10,14 +10,16 @@ import {
   IonTitle,
   IonToolbar,
   useIonRouter,
-  useIonToast,
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '@kagaz/ui';
+import { Alert, Icon } from '@kagaz/ui';
+import { UndoToast } from '@/core/components/UndoToast';
+import { hapticDestructive, hapticTap } from '@/core/haptics';
+import { usePreferencesStore } from '@/core/preferences';
+import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../components/DocumentListItem';
-import { useDocLock } from '../hooks/useDocLock';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
@@ -29,10 +31,30 @@ export function FavoritesPage(): ReactNode {
   const [reloadKey, setReloadKey] = useState(0);
   const { favorites, isLoading } = useFavorites(reloadKey);
   const { tagsByDocument } = useTags();
-  const { toggleFavorite, markAccessed } = useVaultMutations();
-  const { authorizeView } = useDocLock();
+  const { toggleFavorite, softDelete, restore } = useVaultMutations();
   const router = useIonRouter();
-  const [presentToast] = useIonToast();
+  // F-88: this page has no move/tag sheet, so only delete/favorite are
+  // meaningful swipe targets here regardless of the global Settings choice.
+  const swipeLeftAction = usePreferencesStore((s) =>
+    s.swipeLeftAction === 'delete' || s.swipeLeftAction === 'favorite'
+      ? s.swipeLeftAction
+      : 'none'
+  );
+  const swipeRightAction = usePreferencesStore((s) =>
+    s.swipeRightAction === 'delete' || s.swipeRightAction === 'favorite'
+      ? s.swipeRightAction
+      : 'none'
+  );
+  // Bug-audit follow-up (same fix as VaultHomePage's undoQueue): a single
+  // overwritable slot let a second delete within the first one's 4s toast
+  // window silently clobber its undo. Queued instead — every delete gets
+  // its own turn.
+  const [deleteQueue, setDeleteQueue] = useState<DocumentEntity[]>([]);
+  const pendingUndo = deleteQueue[0] ?? null;
+  // Swipe-to-delete confirms first — same reasoning as VaultHomePage's
+  // swipeDeleteTarget: a swipe is easier to trigger by accident than a
+  // deliberate menu tap.
+  const [swipeDeleteTarget, setSwipeDeleteTarget] = useState<DocumentEntity | null>(null);
 
   const handleToggleFavorite = useCallback(
     (doc: DocumentEntity): void => {
@@ -41,19 +63,25 @@ export function FavoritesPage(): ReactNode {
     [toggleFavorite]
   );
 
+  const handleSwipeAction = useCallback(
+    (doc: DocumentEntity, kind: Exclude<SwipeActionKind, 'none'>): void => {
+      if (kind === 'delete') {
+        setSwipeDeleteTarget(doc);
+      } else if (kind === 'favorite') {
+        hapticTap();
+        handleToggleFavorite(doc);
+      }
+    },
+    [handleToggleFavorite]
+  );
+
+  // [SEC] §3.1, bug-audit hardening: DocumentViewerPage now enforces its own
+  // lock gate + markAccessed stamp — see its doc comment. Plain navigate.
   const handleOpen = useCallback(
     (doc: DocumentEntity): void => {
-      // [SEC] §3.1: authorize a locked document before opening the viewer.
-      void authorizeView(doc).then((allowed) => {
-        if (!allowed) {
-          void presentToast({ message: t('lock.blocked'), duration: 1500, position: 'bottom' });
-          return;
-        }
-        void markAccessed(doc);
-        router.push(`/doc/${doc.id}`);
-      });
+      router.push(`/doc/${doc.id}`);
     },
-    [authorizeView, markAccessed, presentToast, router, t]
+    [router]
   );
 
   const listState = isLoading
@@ -95,11 +123,45 @@ export function FavoritesPage(): ReactNode {
                   tags={tagsByDocument.get(document.id) ?? []}
                   onOpen={handleOpen}
                   onToggleFavorite={handleToggleFavorite}
+                  swipeLeftAction={swipeLeftAction}
+                  swipeRightAction={swipeRightAction}
+                  onSwipeAction={handleSwipeAction}
                 />
               ))}
             </ul>
           )}
         </main>
+        <UndoToast
+          isOpen={pendingUndo !== null}
+          message={t('trash.moved_to_trash')}
+          onUndo={() => {
+            if (pendingUndo) void restore(pendingUndo).then(() => setReloadKey((k) => k + 1));
+          }}
+          onDidDismiss={() => setDeleteQueue((queue) => queue.slice(1))}
+          agentId="vault.favorites.delete-toast"
+        />
+        <Alert
+          key={swipeDeleteTarget?.id ?? 'swipe-delete-none'}
+          isOpen={swipeDeleteTarget !== null}
+          header={t('actions.delete_confirm_title', { name: swipeDeleteTarget?.name ?? '' })}
+          message={t('actions.delete_confirm_message')}
+          agentId="vault.favorites.swipe-delete-confirm"
+          buttons={[
+            {
+              text: t('actions.delete'),
+              role: 'destructive',
+              handler: (): void => {
+                if (swipeDeleteTarget) {
+                  hapticDestructive();
+                  void softDelete(swipeDeleteTarget).then(() => setReloadKey((k) => k + 1));
+                  setDeleteQueue((queue) => [...queue, swipeDeleteTarget]);
+                }
+              },
+            },
+            { text: t('actions.cancel'), role: 'cancel' },
+          ]}
+          onDidDismiss={() => setSwipeDeleteTarget(null)}
+        />
       </IonContent>
     </IonPage>
   );

@@ -6,6 +6,14 @@
  * [SEC]/[LEGAL] The destructive actions (delete-forever, empty-trash) carry a
  * `data-agent-id` for testing but no Action Registry entry, so the AI assistant
  * cannot permanently destroy documents.
+ *
+ * Preview (F-57 device-testing follow-up): tapping a row's name/date opens it
+ * read-only in DocumentViewerPage via `/doc/:id?trashed=1`, so the user can
+ * see a trashed document's content before deciding to restore or delete it
+ * for good — without restoring it first. [SEC] That route enforces the same
+ * per-document lock gate for a trashed document as it does for a live one
+ * (see DocumentViewerPage's own [SEC] doc comment) — this page does nothing
+ * to weaken it, it's just a plain navigate.
  */
 import {
   IonBackButton,
@@ -15,22 +23,40 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Spinner } from '@kagaz/ui';
+import { Alert, Button, Icon, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
+import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useTrash } from '../hooks/useTrash';
 import { TRASH_RETENTION_DAYS } from '../services/trash.service';
 import './trash.css';
 
+/** F-88: fixed swipe actions for Trash — not user-configurable, since
+ * restore/delete-forever are Trash-specific and unrelated to the vault's
+ * delete/favorite/move/tags vocabulary in Settings. Right = restore
+ * (reversible, so it's the "safe" swipe direction, no confirm needed); left
+ * = delete forever, which is irreversible — both this swipe and the row's
+ * own button route through a confirm Alert (bug-audit fix: neither path
+ * used to confirm at all). */
+const RESTORE_REVEAL: SwipeReveal = { icon: 'RotateCw', colorVar: 'var(--color-primary)' };
+const DELETE_FOREVER_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--color-danger)' };
+
 /** The Trash / Recycle Bin screen. */
 export function TrashPage(): ReactNode {
   const { t } = useTranslation('documents');
   const { locale } = useLocale();
+  const router = useIonRouter();
   const trash = useTrash();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [deleteForeverTarget, setDeleteForeverTarget] = useState<DocumentEntity | null>(null);
+
+  const openPreview = (doc: DocumentEntity): void => {
+    router.push(`/doc/${doc.id}?trashed=1`);
+  };
 
   const formatDate = (iso?: string): string =>
     iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(iso)) : '';
@@ -99,31 +125,49 @@ export function TrashPage(): ReactNode {
 
               <ul className="kg-trash__list" data-agent-id="vault.trash.list">
                 {trash.items.map((doc: DocumentEntity) => (
-                  <li key={doc.id} className="kg-trash__item" data-agent-id={`vault.trash.item.${doc.id}`}>
-                    <div className="kg-trash__meta">
-                      <span className="kg-trash__name">{doc.name}</span>
-                      <span className="kg-trash__deleted">
-                        {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
-                      </span>
-                    </div>
-                    <div className="kg-trash__actions">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => void trash.restore(doc)}
-                        agentId={`vault.trash.restore.${doc.id}`}
-                      >
-                        {t('trash.restore')}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void trash.deleteForever(doc)}
-                        agentId={`vault.trash.delete.${doc.id}`}
-                      >
-                        {t('trash.delete_forever')}
-                      </Button>
-                    </div>
+                  <li key={doc.id} className="kg-trash__li">
+                    <SwipeableRow
+                      leftReveal={DELETE_FOREVER_REVEAL}
+                      rightReveal={RESTORE_REVEAL}
+                      onCommit={(side) => {
+                        if (side === 'right') void trash.restore(doc);
+                        else setDeleteForeverTarget(doc);
+                      }}
+                      agentId={`vault.trash.item.${doc.id}.swipe`}
+                    >
+                      <div className="kg-trash__item" data-agent-id={`vault.trash.item.${doc.id}`}>
+                        <button
+                          type="button"
+                          className="kg-trash__meta"
+                          onClick={() => openPreview(doc)}
+                          aria-label={t('trash.preview', { name: doc.name })}
+                          data-agent-id={`vault.trash.preview.${doc.id}`}
+                        >
+                          <span className="kg-trash__name">{doc.name}</span>
+                          <span className="kg-trash__deleted">
+                            {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
+                          </span>
+                        </button>
+                        <div className="kg-trash__actions">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => void trash.restore(doc)}
+                            agentId={`vault.trash.restore.${doc.id}`}
+                          >
+                            {t('trash.restore')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteForeverTarget(doc)}
+                            agentId={`vault.trash.delete.${doc.id}`}
+                          >
+                            {t('trash.delete_forever')}
+                          </Button>
+                        </div>
+                      </div>
+                    </SwipeableRow>
                   </li>
                 ))}
               </ul>
@@ -131,6 +175,27 @@ export function TrashPage(): ReactNode {
           )}
         </main>
       </IonContent>
+
+      {/* bug-audit fix: delete-forever is irreversible but previously fired
+         with zero confirmation from either the swipe or the row button. */}
+      <Alert
+        key={deleteForeverTarget?.id ?? 'trash-delete-forever-none'}
+        isOpen={deleteForeverTarget !== null}
+        header={t('trash.delete_forever_confirm_title', { name: deleteForeverTarget?.name ?? '' })}
+        message={t('trash.delete_forever_confirm_message')}
+        agentId="vault.trash.delete-forever-confirm"
+        onDidDismiss={() => setDeleteForeverTarget(null)}
+        buttons={[
+          {
+            text: t('trash.delete_forever'),
+            role: 'destructive',
+            handler: (): void => {
+              if (deleteForeverTarget) void trash.deleteForever(deleteForeverTarget);
+            },
+          },
+          { text: t('trash.cancel'), role: 'cancel' },
+        ]}
+      />
     </IonPage>
   );
 }

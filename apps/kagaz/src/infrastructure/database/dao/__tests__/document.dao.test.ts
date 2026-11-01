@@ -73,6 +73,13 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.params).toEqual(['f-1']);
   });
 
+  it('findByFolder excludes archived documents (F-89)', async () => {
+    await dao.findByFolder(null);
+    expect(db.calls[0]?.sql).toContain('is_archived = 0');
+    await dao.findByFolder('f-1');
+    expect(db.calls[1]?.sql).toContain('is_archived = 0');
+  });
+
   it('getStorageTotals sums size and counts (F-26)', async () => {
     db.onQuery(/SUM\(file_size\)/, [{ total: 5000, n: 3 }]);
     const totals = await dao.getStorageTotals();
@@ -113,6 +120,7 @@ describe('DocumentDao', () => {
     expect(docs).toHaveLength(1);
     expect(docs[0]?.lastAccessedAt).toBe('2026-06-11T00:00:00.000Z');
     expect(db.calls[0]?.sql).toContain('ORDER BY last_accessed_at DESC');
+    expect(db.calls[0]?.sql).toContain('is_archived = 0');
     expect(db.calls[0]?.params).toEqual([5]);
   });
 
@@ -237,16 +245,64 @@ describe('DocumentDao', () => {
   });
 
   it('search joins documents_fts, excludes deleted, binds limit', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
     db.onQuery(/documents_fts MATCH/, [docRow()]);
     const results = await dao.search('pan*', 5);
     expect(results).toHaveLength(1);
-    expect(db.calls[0]?.sql).toContain('ORDER BY rank');
-    expect(db.calls[0]?.params).toEqual(['pan*', 5]);
+    const searchCall = db.calls[1];
+    expect(searchCall?.sql).toContain('ORDER BY rank');
+    expect(searchCall?.params).toEqual(['pan*', 5]);
   });
 
   it('search defaults to 20 results', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
     await dao.search('aadhaar');
-    expect(db.calls[0]?.params).toEqual(['aadhaar', 20]);
+    expect(db.calls[1]?.params).toEqual(['aadhaar', 20]);
+  });
+
+  it('search falls back to a LIKE scan when documents_fts is absent', async () => {
+    // No sqlite_master row served → hasFts() reads false.
+    db.onQuery(/FROM documents/, [docRow()]);
+    const results = await dao.search('pan* card*', 5);
+    expect(results).toHaveLength(1);
+    const fallbackCall = db.calls[1];
+    expect(fallbackCall?.sql).toContain('LIKE');
+    expect(fallbackCall?.sql).not.toContain('documents_fts');
+    expect(fallbackCall?.params).toEqual([
+      '%pan%',
+      '%pan%',
+      '%pan%',
+      '%card%',
+      '%card%',
+      '%card%',
+      5,
+    ]);
+  });
+
+  it('search fallback returns nothing for an empty match query', async () => {
+    const results = await dao.search('', 5);
+    expect(results).toEqual([]);
+  });
+
+  it('search unions FTS prefix matches with a LIKE substring scan, deduping by id', async () => {
+    // FTS5 prefix matching alone misses this: "AadharCard" tokenizes as one
+    // token, so a "card*" prefix query never matches it — real bug report,
+    // fixed by also running the substring-correct LIKE scan and merging.
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
+    db.onQuery(/documents_fts MATCH/, [docRow({ id: 'doc-1', name: 'PAN Card' })]);
+    db.onQuery(/FROM documents\s+WHERE deleted_at IS NULL\s+AND/, [
+      docRow({ id: 'doc-1', name: 'PAN Card' }), // same doc — must be deduped
+      docRow({ id: 'doc-2', name: 'AadharCard' }),
+    ]);
+    const results = await dao.search('card*', 5);
+    expect(results.map((d) => d.id)).toEqual(['doc-1', 'doc-2']);
+  });
+
+  it('search skips the LIKE completeness scan once FTS alone fills the limit', async () => {
+    db.onQuery(/sqlite_master/, [{ 1: 1 }]);
+    db.onQuery(/documents_fts MATCH/, [docRow()]);
+    await dao.search('pan*', 1);
+    expect(db.calls).toHaveLength(2); // sqlite_master check + FTS query only
   });
 
   it('findTrashed lists soft-deleted rows, newest-deleted first', async () => {
@@ -257,10 +313,37 @@ describe('DocumentDao', () => {
     expect(db.calls[0]?.sql).toContain('ORDER BY deleted_at DESC');
   });
 
+  it('findTrashedById returns a soft-deleted row by id', async () => {
+    db.onQuery(
+      /WHERE id = \? AND deleted_at IS NOT NULL/,
+      [docRow({ id: 'doc-1', deleted_at: '2026-07-01T00:00:00.000Z', is_locked: 1 })]
+    );
+    const doc = await dao.findTrashedById('doc-1');
+    expect(doc).toMatchObject({ id: 'doc-1', isLocked: true, deletedAt: '2026-07-01T00:00:00.000Z' });
+    expect(db.calls[0]?.sql).toContain('WHERE id = ? AND deleted_at IS NOT NULL');
+    expect(db.calls[0]?.params).toEqual(['doc-1']);
+  });
+
+  it('findTrashedById returns null when not found', async () => {
+    expect(await dao.findTrashedById('missing')).toBeNull();
+  });
+
   it('hardDelete removes trashed rows only', async () => {
     await dao.hardDelete('doc-1');
     expect(db.calls[0]?.sql).toContain('DELETE FROM documents');
     expect(db.calls[0]?.sql).toContain('deleted_at IS NOT NULL');
     expect(db.calls[0]?.params).toEqual(['doc-1']);
+  });
+
+  it('findArchived lists archived, non-deleted rows, most-recently-updated first (F-89)', async () => {
+    db.onQuery(/is_archived = 1/, [
+      docRow({ is_archived: 1, updated_at: '2026-07-23T00:00:00.000Z' }),
+    ]);
+    const archived = await dao.findArchived();
+    expect(archived).toHaveLength(1);
+    expect(archived[0]?.isArchived).toBe(true);
+    expect(db.calls[0]?.sql).toContain('deleted_at IS NULL');
+    expect(db.calls[0]?.sql).toContain('is_archived = 1');
+    expect(db.calls[0]?.sql).toContain('ORDER BY updated_at DESC');
   });
 });

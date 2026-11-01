@@ -1,5 +1,5 @@
 {
-  "title": "My Documents",
+  "title": "My Kagazzz",
   "empty_state": {
     "message": "No documents yet",
     "hint": "Scan or upload your first document to get started"
@@ -15,8 +15,12 @@
     "unfavorite": "Remove from favorites",
     "lock": "Lock document",
     "unlock": "Unlock document",
+    "archive": "Archive",
     "extract_text": "Extract text",
+    "transcribe_gemma": "Transcribe with Gemma",
     "delete": "Delete",
+    "delete_confirm_title": "Delete \"{{name}}\"?",
+    "delete_confirm_message": "It moves to Trash and can be restored later.",
     "more": "More actions",
     "cancel": "Cancel"
   },
@@ -24,7 +28,8 @@
     "open_with": "Open with…",
     "share": "Share…",
     "open_failed": "Couldn't open this document in another app.",
-    "share_failed": "Couldn't share this document."
+    "share_failed": "Couldn't share this document.",
+    "share_failed_bulk": "Couldn't share the selected documents."
   },
   "copy_text": {
     "action": "Copy text",
@@ -69,6 +74,35 @@
     "failed": "Couldn't resize this image.",
     "invalid_dimensions": "Enter a width, height, and max size greater than zero."
   },
+  "page_image": {
+    "action": "Save page as image",
+    "title": "Save Page as Image",
+    "hint": "Save one or more pages as separate image files — exactly as the page looks, watermarks and all.",
+    "pages": "Pages",
+    "pages_placeholder": "e.g. 1, 3-4",
+    "invalid_pages": "Enter a page number or range within this document, e.g. 1, 3-4.",
+    "page_count_one": "{{count}} page will be saved as an image",
+    "page_count_other": "{{count}} pages will be saved as images",
+    "run": "Save as image",
+    "running": "Rendering…",
+    "done_one": "Saved {{count}} image",
+    "done_other": "Saved {{count}} images",
+    "failed": "Couldn't save this page as an image."
+  },
+  "pdf_compress": {
+    "action": "Compress",
+    "done": "Compressed — saved as a new document",
+    "failed": "Couldn't compress this PDF."
+  },
+  "pdf_extract_pages": {
+    "action": "Extract pages",
+    "title": "Extract Pages",
+    "hint": "Save selected pages as a new PDF document.",
+    "run": "Extract",
+    "running": "Extracting…",
+    "done": "Extracted — saved as a new document",
+    "failed": "Couldn't extract these pages."
+  },
   "quick_reference": {
     "title": "Quick Reference",
     "empty_state": "No saved values yet",
@@ -103,6 +137,33 @@
     "copy_failed": "Couldn't copy.",
     "more_actions": "More actions"
   },
+  "quick_notes": {
+    "title": "Quick Notes",
+    "banner": "Not locked — anyone who picks up your unlocked phone can read these. For Aadhaar, PAN, passwords, or anything sensitive, use Quick Reference instead.",
+    "empty_state": "No notes yet",
+    "empty_hint": "Save small things you want fast, no-lock access to — a Wi-Fi password, a locker combination, a reminder.",
+    "add": "Add",
+    "new_note": "New quick note",
+    "add_title": "Add Quick Note",
+    "edit_title": "Edit Quick Note",
+    "label_field": "Title",
+    "value_field": "Note",
+    "save": "Save",
+    "copy_value": "Copy",
+    "copy_with_label": "Copy with title",
+    "edit": "Edit",
+    "delete": "Delete",
+    "delete_confirm_title": "Delete this note?",
+    "delete_confirm_message": "This can't be undone.",
+    "cancel": "Cancel",
+    "copied": "Copied to clipboard",
+    "copy_failed": "Couldn't copy.",
+    "more_actions": "More actions",
+    "selected": "{{count}} selected",
+    "cancel_selection": "Cancel selection",
+    "delete_selected_title": "Delete {{count}} note(s)?",
+    "copied_selected": "Copied {{count}} note(s)"
+  },
   "details": {
     "title": "Details",
     "name": "Name",
@@ -115,6 +176,7 @@
     "status": "Status",
     "locked": "Locked",
     "favorite": "Favorite",
+    "archived": "Archived",
     "none": "—",
     "hash": "Integrity hash"
   },
@@ -122,11 +184,16 @@
     "running": "Reading text…",
     "done": "Text saved — now searchable",
     "none": "No text found in this image",
-    "failed": "Couldn't read text. Please try again."
+    "failed": "Couldn't read text. Please try again.",
+    "vision_hint": "Sends this document to your local Gemma server (demo setup) and replaces the saved text.",
+    "vision_hint_online": "Sends this document to Google Cloud (Gemma on Vertex AI) and replaces the saved text."
   },
   "lock": {
     "reason": "Unlock this document",
     "blocked": "Unlock to open this document"
+  },
+  "fab": {
+    "label": "Add"
   },
   "folders": {
     "root": "My Vault",
@@ -156,6 +223,9 @@
     "progress_label": "Uploading documents",
     "success_one": "{{count}} document added",
     "success_other": "{{count}} documents added",
+    "combine_photos_title": "Combine {{count}} photos into one PDF?",
+    "combine_action": "Combine",
+    "keep_separate_action": "Keep separate",
     "errors": {
       "invalid_file_type": "Unsupported file format. Supported: PDF, JPG, PNG, HEIC, WEBP",
       "file_too_large": "File exceeds the maximum size of 100 MB",
@@ -179,7 +249,8 @@
     "copied": "Text copied",
     "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
     "detected_numbers": "Detected numbers",
-    "copy_number": "Copy {{number}}"
+    "copy_number": "Copy {{number}}",
+    "trashed_banner": "Previewing from Trash — restore it to make changes."
   },
   "detail": {
     "size": "Size",
@@ -212,7 +283,9 @@
     "skip": "Keep default"
   },
   "recent": {
-    "title": "Recent"
+    "title": "Recent",
+    "collapse": "Collapse recent documents",
+    "expand": "Expand recent documents"
   },
   "favorites": {
     "title": "Favorites",
@@ -225,7 +298,9 @@
     "voice": {
       "start": "Search by voice",
       "stop": "Stop listening",
-      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice."
+      "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice.",
+      "no_speech": "Didn't catch that. Tap the mic and try again.",
+      "failed": "Voice input couldn't start. Check that Google speech services are installed and try again."
     }
   },
   "templates": {
@@ -244,7 +319,10 @@
     "used": "{{count}} document(s)",
     "by_type": "By file type",
     "largest": "Largest documents",
-    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed"
+    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed",
+    "ai_model": "AI model",
+    "ai_model_size": "{{size}} on device",
+    "ai_model_manage": "Manage"
   },
   "bulk": {
     "select": "Select",
@@ -252,7 +330,9 @@
     "cancel": "Cancel selection",
     "selected": "{{count}} selected",
     "delete": "Delete",
-    "delete_confirm": "Delete {{count}} document(s)?"
+    "delete_confirm": "Delete {{count}} document(s)?",
+    "deleted_one": "{{count}} document moved to Trash",
+    "deleted_other": "{{count}} documents moved to Trash"
   },
   "filters": {
     "title": "Filter",
@@ -278,6 +358,13 @@
     "new_placeholder": "New tag name",
     "create": "Create"
   },
+  "archived": {
+    "title": "Archived",
+    "note": "Archived documents are hidden from your main list but stay searchable, favoritable, and included in backups.",
+    "empty_state": "No archived documents",
+    "updated_on": "Archived {{date}}",
+    "unarchive": "Unarchive"
+  },
   "trash": {
     "moved_to_trash": "Document moved to Trash",
     "undo": "Undo",
@@ -287,11 +374,13 @@
     "deleted_on": "Deleted {{date}}",
     "restore": "Restore",
     "delete_forever": "Delete forever",
+    "delete_forever_confirm_title": "Delete \"{{name}}\" forever?",
+    "delete_forever_confirm_message": "This can't be undone — the document will be gone for good.",
+    "preview": "Preview {{name}}",
     "empty_trash": "Empty Trash",
     "empty_confirm": "Permanently delete everything in Trash?",
     "empty_confirm_yes": "Delete all",
     "cancel": "Cancel"
   },
-  "pdf_tools": "Tools",
   "settings": "Settings"
 }

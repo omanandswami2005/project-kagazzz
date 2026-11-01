@@ -19,6 +19,26 @@ import {
  * `core/polyfills/pdfjs-runtime-polyfills` (imported once in `main.tsx`) is
  * enough on its own; see that file's doc comment for the full story.
  */
+/**
+ * Bug-audit fix: a password-protected PDF's `loadingTask.promise` rejection
+ * used to be mapped to the same generic `INVALID_PDF` code as an actually
+ * corrupt file — pdfjs throws its own `PasswordException` (`name ===
+ * 'PasswordException'`, see pdfjs-dist's `shared/util.js`) for this exact
+ * case, so it's detectable without guessing from the message text.
+ */
+function classifyPdfLoadError(e: unknown, op: string): PdfEngineException {
+  const error = e instanceof Error ? e : new Error(String(e));
+  if (error.name === 'PasswordException') {
+    return new PdfEngineException(
+      'This PDF is password-protected — unlock it first',
+      'PASSWORD_REQUIRED',
+      op,
+      error
+    );
+  }
+  return new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+}
+
 let pdfjsReady: Promise<typeof import('pdfjs-dist')> | null = null;
 async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
   pdfjsReady ??= (async (): Promise<typeof import('pdfjs-dist')> => {
@@ -32,16 +52,23 @@ async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
 }
 
 /**
- * Extracts the embedded text layer from a PDF (UX-13) via pdfjs `getTextContent`
- * — fast and OCR-free for PDFs that carry real text (most generated/exported
- * PDFs). Scanned/image-only PDFs have no text layer and return "" (the caller
- * can fall back to image OCR). Runs on the MAIN thread with pdfjs, but needs no
+ * Extracts the embedded text layer from a PDF, one entry per page (index
+ * 0-based, in page order; a page with no text is `''`) via pdfjs
+ * `getTextContent` — fast and OCR-free for PDFs that carry real text (most
+ * generated/exported PDFs). Runs on the MAIN thread with pdfjs, but needs no
  * canvas, so it is lighter than rasterising. WebView/web only.
+ *
+ * Callers needing scan-vs-text detection **per page** (rather than for the
+ * document as a whole) should use this instead of {@link extractPdfTextImpl}
+ * — see `useDocumentOcr.ts` for why: a PDF can be scanned pages with a
+ * stamped page-number/watermark (real, but tiny, vector text) on every page,
+ * which makes the whole-document text non-empty even though no real content
+ * was extracted from any page.
  *
  * [SEC] the returned text is document content — the caller stores it only in
  * the encrypted DB and never logs it.
  */
-export async function extractPdfTextImpl(pdf: Uint8Array): Promise<string> {
+export async function extractPdfTextPerPageImpl(pdf: Uint8Array): Promise<string[]> {
   const op = 'extractPdfText';
   if (!pdf || pdf.length === 0) {
     throw new PdfEngineException('Empty or missing PDF data', 'INVALID_PDF', op);
@@ -54,8 +81,7 @@ export async function extractPdfTextImpl(pdf: Uint8Array): Promise<string> {
     doc = await loadingTask.promise;
   } catch (e: unknown) {
     await loadingTask.destroy().catch(() => undefined);
-    const error = e instanceof Error ? e : new Error(String(e));
-    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+    throw classifyPdfLoadError(e, op);
   }
 
   try {
@@ -68,14 +94,24 @@ export async function extractPdfTextImpl(pdf: Uint8Array): Promise<string> {
         .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
-      if (pageText) {
-        pages.push(pageText);
-      }
+      pages.push(pageText);
     }
-    return pages.join('\n\n').trim();
+    return pages;
   } finally {
     await loadingTask.destroy().catch(() => undefined);
   }
+}
+
+/**
+ * The whole document's text layer as one string (UX-13) — pages joined in
+ * order, blank pages dropped. For scan-vs-text detection use
+ * {@link extractPdfTextPerPageImpl} instead; this is for callers that only
+ * ever want "all the real text this PDF carries" (e.g. the standalone
+ * Extract Text tool).
+ */
+export async function extractPdfTextImpl(pdf: Uint8Array): Promise<string> {
+  const pages = await extractPdfTextPerPageImpl(pdf);
+  return pages.filter((p) => p.length > 0).join('\n\n').trim();
 }
 
 /** Renders the requested pages of `pdf` to image blobs. */
@@ -100,16 +136,32 @@ export async function pdfToImagesImpl(
     doc = await loadingTask.promise;
   } catch (e: unknown) {
     await loadingTask.destroy().catch(() => undefined);
-    const error = e instanceof Error ? e : new Error(String(e));
-    throw new PdfEngineException(`Invalid PDF: ${error.message}`, 'INVALID_PDF', op, error);
+    throw classifyPdfLoadError(e, op);
   }
 
   try {
     const total = doc.numPages;
     // RenderOptions.pages are 0-indexed; pdfjs pages are 1-indexed.
+    // Bug-audit fix: this used to silently drop any out-of-range page
+    // instead of rejecting it, the one render op that didn't match
+    // splitPdf/organizePages/stampImage's PAGE_OUT_OF_RANGE convention for
+    // the same class of error — a "1,5" request on a 3-page PDF used to
+    // quietly render just page 1 and report success, or (if every
+    // requested page was out of range) return zero images with no
+    // indication why.
+    if (options.pages) {
+      const outOfRange = options.pages.filter((p) => p < 0 || p + 1 > total);
+      if (outOfRange.length > 0) {
+        throw new PdfEngineException(
+          `Page ${outOfRange[0] + 1} is out of range (1–${total})`,
+          'PAGE_OUT_OF_RANGE',
+          op
+        );
+      }
+    }
     const pageNumbers =
       options.pages && options.pages.length > 0
-        ? options.pages.map((p) => p + 1).filter((n) => n >= 1 && n <= total)
+        ? options.pages.map((p) => p + 1)
         : Array.from({ length: total }, (_, i) => i + 1);
 
     const blobs: Blob[] = [];

@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-18
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-25
 
 ---
 
@@ -958,6 +958,27 @@ interface VaultStore {
 - Every time a document is previewed/opened, `lastAccessedAt` is updated
 - "Recent" section on vault home shows the last 10 accessed documents
 - Sorted by `lastAccessedAt DESC`
+- Collapsible (persisted in `core/preferences`)
+
+#### Redesigned strip (UX-16): large cards, coverflow drag, swipe-up-to-Tools
+
+Larger cards (72px thumbnails, up from 40px) in a native horizontal
+scroll-snap carousel (`scroll-snap-type: x proximity` + `scroll-snap-align:
+center` per card — the browser handles fling/snap, no custom paging JS).
+As the row scrolls, `useCoverflowScroll`
+(`document-vault/hooks/useCoverflowScroll.ts`) reads the row's own scroll
+position on a rAF-throttled `scroll` listener and applies a `scale` +
+`opacity` falloff to each card by its distance from the row's center —
+transform/opacity only (no `rotateY` perspective coverflow), staying cheap
+on the mid-range Android performance budget (CONTRIBUTING.md).
+
+Swiping up on a card opens PDF Tools (`useSwipeUp`, `core/gestures/` — the
+vertical counterpart to F-88's horizontal swipe-to-act gesture). Kept
+strictly on the vertical axis so it never competes with the horizontal
+carousel drag for the same pointer input; each card sets `touch-action:
+pan-x` so the browser only native-scrolls it horizontally, leaving
+vertical touch input on the card free for the gesture instead of racing
+the page's own vertical scroll.
 
 ```mermaid
 graph LR
@@ -1119,8 +1140,32 @@ overflow button on a list row) and the **viewer menu** (opened from
 | **Convert format** | F-8 | image document in a Canvas-decodable format (`canConvertImageFormat`: jpg/jpeg/png/webp) | opens a target-format action sheet → `useImageFormatConversion.convert` |
 | **Enhance photo** | F-29 | same gate as Convert format (`canApplyImageFilter`) | opens a filter-preset action sheet → `useImageEnhancement.applyFilter` |
 | **Resize & compress** | F-85 | same gate as Convert format (`canConvertImageFormat`) | opens a dimensions + size-target sheet → `useResizeCompress.run` |
-| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` |
+| **Compress** | F-5 UX follow-up | PDF document (`isPdf`) | one-tap, no sheet → `usePdfEngine().compressPdf(doc, 'medium')` |
+| **Extract pages** | F-66 UX follow-up | PDF document (`isPdf`) | opens a page-range sheet → `usePdfEngine().extractPages` |
+| **Save page as image** | F-86 | PDF document (`isPdf`) | opens a page-range sheet → `usePdfEngine().pdfToImages` |
+| Extract text (OCR) | F-20 | image document, native platform (`canOcr`) | runs OCR, stores `ocrText` — for PDFs (triggered elsewhere; `canExtractText` also covers them), per-page OCR fallback fixed 2026-07-21, see below |
 | Delete | — | always | soft-delete → Trash (recoverable) |
+
+#### Item-menu-first PDF tools (UX follow-up, 2026-07-21)
+
+Compress, Extract pages, and Save Page as Image (F-86) are reachable directly
+from a PDF's own item-menu, not only through the Tools hub's tool-first flow
+(`/pdf-tools` → pick an op card → pick a document from an in-sheet picker —
+2 screens, 3+ taps, and the document you already tapped to get here has to be
+found again). Promoted these three specifically because they're the
+highest-frequency single-document PDF operations (shrinking a scan under a
+government-portal size limit; pulling a subset of pages out; grabbing one
+page as a shareable image) — the item-menu already has 12 entries for a PDF
+document, so promoting all 14 Tools-hub ops here instead of a deliberate
+subset would trade one kind of friction for another. The remaining ops
+(Merge, Watermark, Encrypt/Decrypt, Fill form, format exports, …) stay
+Tools-hub-only: either inherently multi-document (Merge) or infrequent
+enough that the extra hop doesn't cost most users much. Each promoted action
+calls the *same* engine method the Tools-hub card already used — no new
+pdf-engine code, only a faster door to it. Compress runs at a fixed 'medium'
+quality with no confirmation sheet at all (one tap, matching this app's
+one-primary-action design principle); a different quality still requires the
+Tools hub.
 
 ### Viewer menu (`DocumentViewerPage`)
 
@@ -1138,18 +1183,64 @@ actions as above, plus an inline **Copy** button under the extracted-text panel
 | **Open with…** | `@capacitor-community/file-opener` (MIT) — `open({ filePath, contentType, openWithDefault: false })` | `ACTION_VIEW` | Shows the OS **"Open with"** app chooser for every app that can view the document's MIME type |
 | **Share…** | `@capacitor/share` (already a dependency) — `Share.share({ url })` | `ACTION_SEND` | Shows the OS share sheet for every app that accepts the file |
 
-Both resolve a `content://` URI via `Filesystem.getUri` (`Directory.Data`) —
-the document's real on-disk path is never exposed to the receiving app,
-consistent with the FileProvider pattern used everywhere else the vault hands
-a file to the OS (`10-security-architecture.md` §3). MIME type comes from
-`mimeTypeFor(document.fileType)`. `useDocumentIntents` is the React hook: it
-resolves `supported = Capacitor.getPlatform() !== 'web'` once, and both actions
-swallow user-cancellation (dismissing the chooser/share sheet is not an error —
-only a genuine failure surfaces a toast).
+`Filesystem.getUri` (`Directory.Data`) itself returns a plain `file://` URI —
+correction (2026-07-21): an earlier revision of this doc claimed it returns
+`content://` directly, which is wrong. The `file://` → `content://` conversion
+happens later, natively, inside each plugin via `FileProvider.getUriForFile`
+(so the document's real on-disk path is still never exposed to the receiving
+app) — `@capacitor-community/file-opener` mints its own FileProvider
+(`${applicationId}.file.opener.provider`) for **Open with…**, while
+**Share…** goes through `@capacitor/share`'s call into the app's *own*
+FileProvider (`${applicationId}.fileprovider`, declared in
+`AndroidManifest.xml`), whose allowed roots are `android/app/src/main/res/xml/file_paths.xml`.
+**Bug fixed 2026-07-21**: that file was missing a `<files-path>` entry, so
+`FileProvider.getUriForFile` threw `IllegalArgumentException: Failed to find
+configured root` for every document (all of which live under `Directory.Data`)
+— **Share… failed for every target, including WhatsApp**, while Open with…
+kept working (different provider, whose paths file already covered it). MIME
+type comes from `mimeTypeFor(document.fileType)`. `useDocumentIntents` is the
+React hook: it resolves `supported = Capacitor.getPlatform() !== 'web'` once,
+and both actions swallow user-cancellation (dismissing the chooser/share sheet
+is not an error — only a genuine failure surfaces a toast).
 
 **[SEC]** Both are user-initiated (the user explicitly picked the action from
 the menu) and read-only from the vault's perspective — no network call is made
 by the app; the receiving app's own behaviour is outside Kagaz's boundary.
+
+### Receive Share (F-108)
+
+The inbound counterpart to F-64/F-65: Kagaz appears in Android's native
+share sheet from *any* other app (Gallery, WhatsApp, a file manager, …) and
+imports what's shared straight into the vault.
+
+Android has no equivalent of `@capacitor/share` for the *receiving* side, so
+this is a small custom plugin rather than a third-party dependency —
+`ShareReceiverPlugin.java` (`apps/kagaz/android/app/src/main/java/in/kagaz/app/`,
+same app-local pattern as `RootCheckPlugin`/`OcrPlugin`, not a standalone
+`packages/` plugin package, since this is very Kagaz-specific integration
+rather than a reusable one). `AndroidManifest.xml` declares `ACTION_SEND` /
+`ACTION_SEND_MULTIPLE` intent-filters on `MainActivity` scoped to the types
+the upload pipeline already accepts (PDF, images, txt/md/csv, doc/docx,
+xls/xlsx) — not a catch-all `*/*`, so Kagaz doesn't show up for every share on
+the device (audio, video, arbitrary APKs, …).
+
+| Layer | Piece | Responsibility |
+|---|---|---|
+| Native | `ShareReceiverPlugin.java` | Resolves the pending/incoming `Intent`'s `EXTRA_STREAM` (single or `ArrayList<Uri>`) + `EXTRA_TEXT` into a plain JS payload (`{ items: [{uri, mimeType, name}], text }`); consumes the intent after reading so backgrounding/resuming doesn't re-import the same share twice |
+| Native | `MainActivity.onNewIntent` | `launchMode="singleTask"` means a share arriving while the app is already running lands here (not a fresh `onCreate`) — forwards it to the plugin, which emits a `shareReceived` event |
+| Service | `share-receive.service.ts` | `getPendingShare()` (cold-start poll), `onShareReceived()` (warm-start event), `sharedItemToIncomingFile()` — reads the shared `content://` URI via `Capacitor.convertFileSrc` (resolves through the WebView's content-resolver bridge against the **sending app's own FileProvider** — no native copy step, no change needed to Kagaz's own `file_paths.xml`) and turns it into an `IncomingFile` |
+| Hook | `useShareIntent()` | Mounted once at the app root (`routes/index.tsx`, same posture as the hardware-back handler) — checks for a pending share on mount, subscribes to live shares, feeds every converted item through the **existing** `useUpload().ingestFiles()` pipeline (F-1's validate → hash → store → thumbnail → DB-row path — no new upload logic), then navigates to `/vault` and toasts the result |
+
+**Scope decision — text-only shares are ignored.** A share with `EXTRA_TEXT`
+but no `EXTRA_STREAM` (e.g. sharing a link or a chat message, not a file) is
+dropped silently — this is a document-import surface, not a general text
+capture one. `source_type` for a share-imported document is `file_picker`
+(no new DB enum value / migration — a shared file is, functionally, a file
+the user picked from another app rather than this app's own file picker).
+
+**[SEC]** No network call: the shared bytes come from the sending app's own
+FileProvider via an OS-granted URI permission, entirely on-device, then flow
+through the same validated/hashed upload pipeline every other source uses.
 
 ### Copy text (F-68)
 
@@ -1233,6 +1324,35 @@ the target format regardless of the source name), but its own tests shared
 the same unrealistic fixture (`name: 'photo.jpg'` instead of `'photo'`),
 which had been masking exactly this class of bug — fixed in both test files.
 
+### Save Page as Image (F-86)
+
+`PdfPageImageSheet.tsx` — a quick, single-document entry point into the
+existing F-6 `pdfToImages` renderer, reached directly from the PDF
+item-menu (`isPdf(document.fileType)` gate) rather than the Tools hub's
+tool-first flow: a page-range text field (reusing `parse-ranges.ts`'s
+`parsePageRanges`, the same "1, 3-4" syntax as Split/Extract pages) defaults
+to `"1"` so the common single-page case is one tap; `flattenPageRanges` (new)
+expands the parsed ranges into the flat, deduped, ascending page-index array
+`RenderOptions.pages` needs. Running it calls `usePdfEngine().pdfToImages`
+unchanged — no new engine code, this is purely a faster UI path onto an
+already-shipped capability.
+
+**Deliberately whole-page rasterisation, not "extract the embedded
+picture"**: a scanned PDF page can carry a stamped page-number or watermark
+on top (via Stamp/Page Numbers), composited over the actual scan content.
+Only rendering the complete page (pdfjs `page.render()`, exactly what F-6's
+renderer already does) guarantees the saved image matches what the page
+visually shows; pulling out "the" embedded image object by content-stream
+inspection would risk grabbing the wrong element or missing the composited
+result entirely. Same reasoning as `useDocumentOcr`'s per-page OCR fix
+(§Extract text below) — anywhere this module decides "what's really on this
+page," it renders the page rather than trusting a single embedded object or
+text-layer fragment.
+
+No Action Registry entry beyond the existing `agentAction="vault.savePageAsImage"`
+string on the Run button (unregistered, matching F-85's `vault.resizeCompress`
+— an existing gap in this codebase's own convention, not introduced here).
+
 ### Select text & Detected numbers (F-83)
 
 The viewer's extracted-text panel is explicitly selectable
@@ -1259,6 +1379,102 @@ action (F-84, see the section below) — pre-fills a new Quick Reference entry's
 value with the tapped number and links it to the source document, so the
 common "I want to keep grabbing this one number later without reopening the
 document" case is one tap instead of a manual copy-paste round trip.
+
+---
+
+### Swipe-to-act gestures (F-88)
+
+Gmail-style swipe-left/swipe-right on a document row, revealing a colored
+action behind it (icon + `var(--color-*)` background) that fires once the
+drag passes a commit threshold (`SWIPE_COMMIT_PX = 88px`, or 40% of the
+row's own width if that's smaller). Built on `core/gestures/`:
+
+- `useSwipeGesture` — the pointer-events primitive (pointerdown/move/up,
+  axis-lock between horizontal-swipe and vertical-scroll after a 10px
+  deadzone, `setPointerCapture` once locked). No new dependency — mirrors
+  the long-press pointer-capture pattern `DocumentListItem` already used
+  for entering multi-select (F-25).
+- `SwipeableRow` — the visual wrapper (1:1 finger tracking, spring-back
+  transition on release). Deliberately **action-vocabulary-agnostic**: it
+  takes a resolved `{ icon, colorVar } | null` reveal per side, not an
+  enum. This lets Trash reuse the exact same primitive for a completely
+  different action pair (restore / delete forever) without inheriting the
+  vault's own vocabulary.
+- `SwipeActionKind` / `SWIPE_ACTION_META` (`core/gestures/vault-swipe-
+  actions.ts`) — the vault's own action vocabulary: `delete | favorite |
+  move | tags | none`. Lives in `core/` (not this module) because
+  `core/preferences` — which must stay module-agnostic — persists the
+  two Settings choices.
+
+**Configuration**: Settings → Documents → Swipe actions lets the user pick
+the action for swipe-left and swipe-right independently (`settings.
+setSwipeAction`, persisted via `usePreferencesStore.swipeLeftAction` /
+`swipeRightAction`). Defaults: left = delete, right = favorite.
+
+**Where it's wired**: the vault list, search results, and Favorites (all
+via `DocumentListItem`'s optional `swipeLeftAction`/`swipeRightAction`/
+`onSwipeAction` props — every handler delegates to the exact same mutation
+path the row's own menu/star button already uses, so swipe is purely an
+accelerator, never a second code path). Trash gets its own **fixed**,
+non-configurable swipe actions (restore / delete forever) since that
+vocabulary doesn't fit the vault's Settings enum. Multi-select mode
+disables swipe entirely (`disabled` prop) to avoid two conflicting
+gestures on the same row.
+
+**[SEC]/Accessibility**: every swipe action also has a non-swipe path (the
+row's own tap-menu or star button) — WCAG 2.1 AA has no reliable swipe
+equivalent for switch/keyboard users, so swipe must never be the *only*
+way to reach an action.
+
+**Undo**: swipe-delete and bulk-delete both show a generalized
+`UndoToast` (`core/components/UndoToast.tsx`, 4s duration) offering
+Undo → `restore()`. This closed a real gap — bulk delete previously had
+no undo at all, unlike the single-row delete path (UX-1).
+
+### Archive (F-89)
+
+`is_archived` (§4.1 of the database doc — `DEFAULT 0`, "Soft archive —
+hidden from default views") existed in the schema from V1's original
+design but was never wired to any query or UI until this item — the DAO
+already read/wrote the column via the generic `update()` patch, but
+nothing filtered on it and no screen surfaced it.
+
+**Archive vs. delete — the distinction that drives every query decision
+below**: archiving hides a document from the *active browsing surfaces*
+without treating it as gone. Concretely:
+
+| Surface | Filters out archived? |
+|---|---|
+| Main list (`findByFolder`) | **Yes** — the core "get this out of my daily view" behavior |
+| Recent (`findRecent`) | **Yes** — a document the user just archived shouldn't immediately resurface as "recent" |
+| Search (`search`) | No — still fully findable |
+| Favorites (`findFavorites`) | No — an archived-but-starred document still shows in Favorites |
+| Storage stats / duplicates | No — archived documents still occupy disk space |
+| Backup export (`findAll`) | No — archiving is not a reason to drop a document from the encrypted backup |
+
+`DocumentDao.findArchived()` is the one query that filters *to*
+`is_archived = 1` (mirrors `findTrashed()`'s shape/posture, but archiving
+has no retention window or file cleanup, so it needed no dedicated service
+file — `useArchive` calls the DAO directly).
+
+**Where it's reachable**: `archive`/`unarchive` on `useVaultMutations`
+(optimistic, same pattern as `softDelete`/`restore`) — used by (a) the
+vault item-menu's new **Archive** entry, (b) `SwipeActionKind`'s new
+`'archive'` member (`core/gestures/vault-swipe-actions.ts`, `Archive` icon
+added to `@kagaz/ui`'s curated Lucide set), selectable per-side in
+Settings → Swipe actions same as delete/favorite/move/tags. New
+**Archived** page (`ArchivedPage.tsx`, reached from Settings → Data &
+Privacy → Archived, mirroring the existing Trash entry point) lists
+archived documents with fixed (non-configurable) swipe actions — right =
+unarchive, left = delete straight to Trash — the same "Trash gets its own
+vocabulary, doesn't inherit the vault's Settings enum" posture F-88
+established. `vault.archiveDocument` is a real Action Registry entry
+(reversible, `requiresConfirmation: false`); unarchive/delete-to-trash on
+the Archived page are user-only, same posture as Trash's own
+restore/delete-forever (no registry entries).
+
+`DocumentDetailsSheet`'s status row now includes "Archived" alongside
+Locked/Favorite when `document.isArchived` is true.
 
 ---
 
@@ -1390,7 +1606,7 @@ Multi-select mode enables batch operations on multiple documents at once.
 | **Tag** | 🏷️ | Add/remove tags from all selected | No |
 | **Merge** | 📎 | Merge selected PDFs into one (PDFs only) | No |
 | **Compress** | 📦 | Compress all selected documents | No |
-| **Export** | 📤 | Export/share selected documents | No |
+| **Share** | 📤 | Share selected documents in one OS share sheet (F-65 bulk-select follow-up, 2026-07-21) — `document-intent.service.shareDocuments`, one `files[]` share for 2+, delegates to the single-document `url` shape for exactly 1. Native-only (hidden on web); no Action Registry entry, same posture as the single-document Share… button. | No |
 | **Favorite** | ⭐ | Toggle favorite on all selected | No |
 | **Lock** | 🔒 | Toggle lock on all selected | Biometric required |
 

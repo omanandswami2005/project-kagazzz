@@ -54,13 +54,20 @@ export async function compressPdfImpl(
       }))
     );
     const result = await imagesToPdfImpl(images);
+    // Bug-audit fix: rasterising every page and rebuilding an image-only PDF
+    // has no size-safety net at all — for a mostly-text/vector input (the
+    // case this trade-off isn't meant for; see the file's own doc comment)
+    // this routinely produces an output several times LARGER than the
+    // original while "Compress" reports success. Never hand back something
+    // bigger than what was passed in.
+    const finalResult = result.length < pdf.length ? result : pdf;
     onProgress?.({
       operationId: 'compress',
       operation: op,
       percent: 100,
       message: 'Done',
     });
-    return result;
+    return finalResult;
   } catch (e: unknown) {
     if (e instanceof PdfEngineException) {
       throw e;

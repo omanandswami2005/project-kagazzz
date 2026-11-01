@@ -5,7 +5,7 @@ import type { DocumentEntity } from '@/infrastructure/database/types';
 const {
   isOcrSupported,
   recognizeDocumentText,
-  extractPdfText,
+  extractPdfTextPerPage,
   pdfToImages,
   readFile,
   writeFile,
@@ -15,7 +15,7 @@ const {
 } = vi.hoisted(() => ({
   isOcrSupported: vi.fn(() => true),
   recognizeDocumentText: vi.fn(),
-  extractPdfText: vi.fn(),
+  extractPdfTextPerPage: vi.fn(),
   pdfToImages: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('@/modules/image-engine/services/ocr.service', () => ({
   recognizeDocumentText,
 }));
 vi.mock('@/modules/pdf-engine/services/pdf-render-ops', () => ({
-  extractPdfTextImpl: extractPdfText,
+  extractPdfTextPerPageImpl: extractPdfTextPerPage,
   pdfToImagesImpl: pdfToImages,
 }));
 vi.mock('@/infrastructure/filesystem', () => ({
@@ -63,7 +63,7 @@ beforeEach(() => {
   locale.value = 'en';
   useDatabase.mockReturnValue({ db: {}, status: 'ready' });
   recognizeDocumentText.mockResolvedValue('AADHAAR 1234 5678');
-  extractPdfText.mockResolvedValue('INVOICE #42 total 999');
+  extractPdfTextPerPage.mockResolvedValue(['INVOICE #42 total 999 — plenty of real page text']);
   pdfToImages.mockResolvedValue([new Blob([new Uint8Array([1])])]);
   readFile.mockResolvedValue(new Uint8Array([1, 2, 3]));
   writeFile.mockResolvedValue(undefined);
@@ -142,15 +142,17 @@ describe('useDocumentOcr (F-20)', () => {
         doc({ filePath: 'documents/d1.pdf', fileType: 'pdf' })
       );
     });
-    expect(text).toBe('INVOICE #42 total 999');
+    expect(text).toBe('INVOICE #42 total 999 — plenty of real page text');
     expect(readFile).toHaveBeenCalledWith('documents/d1.pdf');
-    expect(extractPdfText).toHaveBeenCalled();
+    expect(extractPdfTextPerPage).toHaveBeenCalled();
     expect(recognizeDocumentText).not.toHaveBeenCalled();
-    expect(update).toHaveBeenCalledWith('d1', { ocrText: 'INVOICE #42 total 999' });
+    expect(update).toHaveBeenCalledWith('d1', {
+      ocrText: 'INVOICE #42 total 999 — plenty of real page text',
+    });
   });
 
   it('falls back to page OCR when a PDF has no text layer (scanned)', async () => {
-    extractPdfText.mockResolvedValue(''); // scanned PDF → empty text layer
+    extractPdfTextPerPage.mockResolvedValue(['']); // scanned PDF → empty text layer
     recognizeDocumentText.mockResolvedValue('SCANNED PAGE TEXT');
     const { result } = renderHook(() => useDocumentOcr());
     let text: string | null = null;
@@ -160,7 +162,10 @@ describe('useDocumentOcr (F-20)', () => {
       );
     });
     expect(text).toBe('SCANNED PAGE TEXT');
-    expect(pdfToImages).toHaveBeenCalled(); // pages were rendered
+    expect(pdfToImages).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pages: [0] })
+    );
     expect(recognizeDocumentText).toHaveBeenCalled(); // then OCR'd
     expect(update).toHaveBeenCalledWith('d1', { ocrText: 'SCANNED PAGE TEXT' });
   });
@@ -174,6 +179,47 @@ describe('useDocumentOcr (F-20)', () => {
     expect(recognizeDocumentText).not.toHaveBeenCalled();
   });
 
+  it('OCRs only the sparse pages — a stamped page number no longer hides missing OCR (F-20 regression)', async () => {
+    // Page 1 is real, extractable content; page 2 is a scanned image with
+    // just "3" stamped on it by the Page Numbers tool — non-empty, but not
+    // real content. The bug: the OLD whole-document check saw *some* text
+    // ("… \n\n 3") and never OCR'd page 2 at all.
+    extractPdfTextPerPage.mockResolvedValue([
+      'This is a full real page of invoice content, easily over the threshold.',
+      '3',
+    ]);
+    recognizeDocumentText.mockResolvedValue('Scanned attachment page content');
+    const { result } = renderHook(() => useDocumentOcr());
+    let text: string | null = null;
+    await act(async () => {
+      text = await result.current.extractText(
+        doc({ filePath: 'documents/mixed.pdf', fileType: 'pdf' })
+      );
+    });
+    // Only page index 1 (the sparse one) gets rendered/OCR'd.
+    expect(pdfToImages).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ pages: [1] })
+    );
+    expect(recognizeDocumentText).toHaveBeenCalledTimes(1);
+    expect(text).toBe(
+      'This is a full real page of invoice content, easily over the threshold.\n\nScanned attachment page content'
+    );
+  });
+
+  it('keeps the native sparse text (e.g. a page number) when OCR itself finds nothing', async () => {
+    extractPdfTextPerPage.mockResolvedValue(['3']);
+    recognizeDocumentText.mockResolvedValue(''); // OCR found nothing on the page
+    const { result } = renderHook(() => useDocumentOcr());
+    let text: string | null = null;
+    await act(async () => {
+      text = await result.current.extractText(
+        doc({ filePath: 'documents/blank-scan.pdf', fileType: 'pdf' })
+      );
+    });
+    expect(text).toBe('3');
+  });
+
   it('is a no-op on a document whose text cannot be extracted', async () => {
     const { result } = renderHook(() => useDocumentOcr());
     let out: string | null = 'x';
@@ -182,7 +228,7 @@ describe('useDocumentOcr (F-20)', () => {
     });
     expect(out).toBeNull();
     expect(recognizeDocumentText).not.toHaveBeenCalled();
-    expect(extractPdfText).not.toHaveBeenCalled();
+    expect(extractPdfTextPerPage).not.toHaveBeenCalled();
   });
 
   it('returns null (no throw) when recognition fails', async () => {

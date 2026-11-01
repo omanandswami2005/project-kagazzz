@@ -19,6 +19,7 @@ export const SettingsPageAgent = definePage({
     settingsActions.openSettings,
     settingsActions.setTheme,
     settingsActions.setLanguage,
+    settingsActions.setSwipeAction,
   ],
   observableState: {},
   voiceExamples: [
@@ -41,5 +42,15 @@ export const SettingsPageAgent = definePage({
       args: { language: 'en' },
     },
     { utterance: 'open settings', action: 'settings.open' },
+    {
+      utterance: 'swipe left to delete',
+      action: 'settings.setSwipeAction',
+      args: { side: 'left', action: 'delete' },
+    },
+    {
+      utterance: 'swipe right to favorite',
+      action: 'settings.setSwipeAction',
+      args: { side: 'right', action: 'favorite' },
+    },
   ],
 });

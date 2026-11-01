@@ -49,6 +49,19 @@ describe('useBulkActions (F-25)', () => {
     expect(useVaultStore.getState().documents).toHaveLength(0);
   });
 
+  it('bulkMove does NOT drop selected docs when the destination is the folder already being viewed (bug-audit fix)', async () => {
+    const db = new FakeDb();
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    seedSelection(['a']);
+    useVaultStore.setState({
+      folderPath: [{ id: 'f-1', name: 'Taxes', sortOrder: 0, createdAt: '', updatedAt: '' }],
+    });
+    const { result } = renderHook(() => useBulkActions());
+
+    await result.current.bulkMove('f-1');
+    expect(useVaultStore.getState().documents).toHaveLength(1);
+  });
+
   it('bulkFavorite patches docs (keeps them in the list)', async () => {
     const db = new FakeDb();
     useDatabaseMock.mockReturnValue({ status: 'ready', db });

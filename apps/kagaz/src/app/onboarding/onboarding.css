@@ -26,6 +26,9 @@
   justify-content: center;
   gap: var(--space-4);
   text-align: center;
+  /* Let our own pointer handlers own horizontal drags (swipe next/back);
+     vertical scroll/pinch-zoom still work normally. */
+  touch-action: pan-y;
 }
 
 .kg-onboarding__icon {

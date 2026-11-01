@@ -28,3 +28,8 @@ export {
   type AlertInput,
 } from './atoms/Alert';
 export { Search, type SearchProps } from './atoms/Search';
+export {
+  closeDialog,
+  openDialog,
+  useDialogBackButton,
+} from './dialog-utils';

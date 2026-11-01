@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
+  // Tests exercise the demo-only code paths; a production build sets this to false (vite.config.ts).
+  define: { __KAGAZ_DEMO__: true },
   plugins: [react()],
   test: {
     environment: 'jsdom',
@@ -78,7 +80,7 @@ export default defineConfig({
       },
     },
 
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'vite-plugins/**/*.test.ts'],
     exclude: [
       'node_modules',
       'dist',

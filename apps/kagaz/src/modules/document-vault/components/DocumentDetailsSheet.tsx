@@ -91,6 +91,7 @@ export function DocumentDetailsSheet({
               value={[
                 document.isLocked ? t('details.locked') : null,
                 document.isFavorite ? t('details.favorite') : null,
+                document.isArchived ? t('details.archived') : null,
               ]
                 .filter(Boolean)
                 .join(' · ') || t('details.none')}

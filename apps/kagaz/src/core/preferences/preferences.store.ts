@@ -9,15 +9,55 @@
  * more app-wide toggles appear.
  */
 import { create } from 'zustand';
+import type { SwipeActionKind } from '@/core/gestures';
 
 /** The persisted preference shape. */
 export interface AppPreferences {
   /** UX-8: prompt to rename each document just after it is added. */
   renameOnAdd: boolean;
+  /** UX pass (2026-07-23): collapse the vault home "Recent" strip — the
+   * row itself is already height-bounded (single horizontal scroller,
+   * F-32), this is purely "let me reclaim the vertical space." */
+  recentSectionCollapsed: boolean;
+  /** F-88: action fired when a document row is swiped left. */
+  swipeLeftAction: SwipeActionKind;
+  /** F-88: action fired when a document row is swiped right. */
+  swipeRightAction: SwipeActionKind;
+  /** UX pass (2026-07-24): whether `core/haptics` fires at all. On by
+   * default (native only regardless — haptics is already a no-op on web). */
+  hapticsEnabled: boolean;
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
-const DEFAULTS: AppPreferences = { renameOnAdd: true };
+const DEFAULTS: AppPreferences = {
+  renameOnAdd: true,
+  recentSectionCollapsed: false,
+  // Gmail-style defaults: the destructive action on one side, the most
+  // common toggle on the other. Both remain reversible from the row's own
+  // menu/star button — swipe is only ever an accelerator (F-88).
+  swipeLeftAction: 'delete',
+  swipeRightAction: 'favorite',
+  hapticsEnabled: true,
+};
+
+const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
+  'delete',
+  'favorite',
+  'move',
+  'tags',
+  'archive',
+  'none',
+];
+
+function readSwipeAction(
+  value: unknown,
+  fallback: SwipeActionKind
+): SwipeActionKind {
+  return typeof value === 'string' &&
+    (SWIPE_ACTION_VALUES as readonly string[]).includes(value)
+    ? (value as SwipeActionKind)
+    : fallback;
+}
 
 /** Reads persisted preferences, tolerating missing/corrupt values. */
 export function readPreferences(): AppPreferences {
@@ -30,7 +70,16 @@ export function readPreferences(): AppPreferences {
       return DEFAULTS;
     }
     const parsed = JSON.parse(raw) as Partial<AppPreferences>;
-    return { renameOnAdd: parsed.renameOnAdd !== false };
+    return {
+      renameOnAdd: parsed.renameOnAdd !== false,
+      recentSectionCollapsed: parsed.recentSectionCollapsed === true,
+      swipeLeftAction: readSwipeAction(parsed.swipeLeftAction, DEFAULTS.swipeLeftAction),
+      swipeRightAction: readSwipeAction(
+        parsed.swipeRightAction,
+        DEFAULTS.swipeRightAction
+      ),
+      hapticsEnabled: parsed.hapticsEnabled !== false,
+    };
   } catch {
     return DEFAULTS;
   }
@@ -48,13 +97,49 @@ function writePreferences(prefs: AppPreferences): void {
 interface PreferencesStore extends AppPreferences {
   /** Sets the rename-on-add toggle (UX-8) and persists it. */
   setRenameOnAdd: (enabled: boolean) => void;
+  /** Sets whether the Recent strip is collapsed and persists it. */
+  setRecentSectionCollapsed: (collapsed: boolean) => void;
+  /** Sets which action fires on swipe-left/right (F-88) and persists it. */
+  setSwipeAction: (side: 'left' | 'right', action: SwipeActionKind) => void;
+  /** Sets whether haptic feedback fires app-wide and persists it. */
+  setHapticsEnabled: (enabled: boolean) => void;
 }
 
 /** App-wide UI preference store (persisted). */
-export const usePreferencesStore = create<PreferencesStore>((set, get) => ({
-  ...readPreferences(),
-  setRenameOnAdd: (renameOnAdd): void => {
-    set({ renameOnAdd });
-    writePreferences({ renameOnAdd: get().renameOnAdd });
-  },
-}));
+export const usePreferencesStore = create<PreferencesStore>((set, get) => {
+  const persist = (): void => {
+    const {
+      renameOnAdd,
+      recentSectionCollapsed,
+      swipeLeftAction,
+      swipeRightAction,
+      hapticsEnabled,
+    } = get();
+    writePreferences({
+      renameOnAdd,
+      recentSectionCollapsed,
+      swipeLeftAction,
+      swipeRightAction,
+      hapticsEnabled,
+    });
+  };
+  return {
+    ...readPreferences(),
+    setRenameOnAdd: (renameOnAdd): void => {
+      set({ renameOnAdd });
+      persist();
+    },
+    setRecentSectionCollapsed: (recentSectionCollapsed): void => {
+      set({ recentSectionCollapsed });
+      persist();
+    },
+    setSwipeAction: (side, action): void => {
+      set(side === 'left' ? { swipeLeftAction: action } : { swipeRightAction: action });
+      persist();
+    },
+    setHapticsEnabled: (hapticsEnabled): void => {
+      set({ hapticsEnabled });
+      persist();
+    },
+  };
+});

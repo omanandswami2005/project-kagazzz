@@ -9,6 +9,8 @@ import { addFts } from './002-add-fts';
 import { addLogging } from './003-add-logging';
 import { addLastAccessed } from './004-add-last-accessed';
 import { addQuickReference } from './005-add-quick-reference';
+import { addQuickReferenceSecurityFlag } from './006-add-quick-reference-security-flag';
+import { addAiMessageParts } from './007-add-ai-message-parts';
 
 /** All known migrations in ascending version order. */
 export const migrations: Migration[] = [
@@ -17,4 +19,6 @@ export const migrations: Migration[] = [
   addLogging,
   addLastAccessed,
   addQuickReference,
+  addQuickReferenceSecurityFlag,
+  addAiMessageParts,
 ];

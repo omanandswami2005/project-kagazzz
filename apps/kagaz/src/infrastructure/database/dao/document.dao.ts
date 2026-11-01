@@ -46,6 +46,29 @@ function mapRow(row: SqlRow): DocumentEntity {
 export class DocumentDao {
   constructor(private readonly db: DbConnection) {}
 
+  // Cached across calls on this instance — `hasFts()` is called on every
+  // keystroke's search via useSearch, and the answer never changes for the
+  // lifetime of a connection (§6, and the fallback note on `search()` below).
+  private ftsAvailable: boolean | null = null;
+
+  /**
+   * Whether `documents_fts` exists. Some Android SQLCipher builds omit the
+   * FTS5 module at runtime even when the DDL is well-formed ("no such
+   * module: fts5" — a known gap, not specific to this app); migration 002
+   * catches that and skips creating the table rather than failing the whole
+   * migration chain, so its absence is a real, on-device possibility to
+   * check for, not just a defensive test case.
+   */
+  private async hasFts(): Promise<boolean> {
+    if (this.ftsAvailable === null) {
+      const rows = await this.db.query(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'documents_fts'"
+      );
+      this.ftsAvailable = rows.length > 0;
+    }
+    return this.ftsAvailable;
+  }
+
   /** Returns a non-deleted document by id, or null. */
   async findById(id: string): Promise<DocumentEntity | null> {
     const rows = await this.db.query(
@@ -56,14 +79,18 @@ export class DocumentDao {
   }
 
   /**
-   * Lists non-deleted documents in a folder (null = vault root),
-   * newest first.
+   * Lists non-deleted, non-archived documents in a folder (null = vault
+   * root), newest first — the main browsing list (F-89: archived
+   * documents are deliberately excluded here, the same way trashed ones
+   * already are, but stay visible via `findArchived`/Search/Favorites).
    */
   async findByFolder(folderId: string | null): Promise<DocumentEntity[]> {
     const sql = folderId
-      ? `SELECT * FROM documents WHERE folder_id = ? AND deleted_at IS NULL
+      ? `SELECT * FROM documents
+         WHERE folder_id = ? AND deleted_at IS NULL AND is_archived = 0
          ORDER BY created_at DESC`
-      : `SELECT * FROM documents WHERE folder_id IS NULL AND deleted_at IS NULL
+      : `SELECT * FROM documents
+         WHERE folder_id IS NULL AND deleted_at IS NULL AND is_archived = 0
          ORDER BY created_at DESC`;
     const rows = await this.db.query(sql, folderId ? [folderId] : []);
     return rows.map(mapRow);
@@ -136,11 +163,17 @@ export class DocumentDao {
     return { groups, wastedBytes };
   }
 
-  /** Most-recently-opened non-deleted documents (F-32). */
+  /**
+   * Most-recently-opened non-deleted, non-archived documents (F-32).
+   * Archived documents are excluded (F-89) — Recent is a shortcut back
+   * into the active working set, and a document the user just deliberately
+   * archived shouldn't immediately resurface there.
+   */
   async findRecent(limit = 10): Promise<DocumentEntity[]> {
     const rows = await this.db.query(
       `SELECT * FROM documents
        WHERE last_accessed_at IS NOT NULL AND deleted_at IS NULL
+         AND is_archived = 0
        ORDER BY last_accessed_at DESC
        LIMIT ?`,
       [limit]
@@ -299,6 +332,38 @@ export class DocumentDao {
   }
 
   /**
+   * Lists archived, non-deleted documents (F-89), most-recently-updated
+   * first. Archiving only hides a document from the main browsing list and
+   * Recent (`findByFolder`/`findRecent`) — unlike Trash, it's still fully
+   * counted in storage stats, still returned by `search()`/`findFavorites`,
+   * and still included in `findAll()`'s backup export. This is the only
+   * view that filters *to* `is_archived = 1`.
+   */
+  async findArchived(): Promise<DocumentEntity[]> {
+    const rows = await this.db.query(
+      `SELECT * FROM documents WHERE deleted_at IS NULL AND is_archived = 1
+       ORDER BY updated_at DESC`
+    );
+    return rows.map(mapRow);
+  }
+
+  /**
+   * Returns a single soft-deleted document by id, or null (Trash preview,
+   * F-57 device-testing follow-up: let the user preview a trashed
+   * document's content before restoring/deleting it for good). The mirror
+   * image of {@link findById} — scoped to `deleted_at IS NOT NULL` instead
+   * of `IS NULL` — so it can only ever surface a row already in Trash, never
+   * double as a backdoor to a live document.
+   */
+  async findTrashedById(id: string): Promise<DocumentEntity | null> {
+    const rows = await this.db.query(
+      'SELECT * FROM documents WHERE id = ? AND deleted_at IS NOT NULL',
+      [id]
+    );
+    return rows[0] ? mapRow(rows[0]) : null;
+  }
+
+  /**
    * Permanently removes a document row (F-57). Guarded to trashed rows only, so
    * a live document can never be hard-deleted without first going to Trash. The
    * caller is responsible for deleting the associated files.
@@ -311,9 +376,33 @@ export class DocumentDao {
     return result.changes;
   }
 
-  /** FTS5 search across name/description/ocr_text (§6), rank order. */
+  /**
+   * FTS5 search across name/description/ocr_text (§6), rank order, UNIONed
+   * with a plain `LIKE` substring scan and deduplicated.
+   *
+   * FTS5's `unicode61` tokenizer only supports *prefix* queries (`token*`
+   * matches a token starting with "token") — it cannot match a substring
+   * that starts mid-token. That silently breaks very ordinary searches: a
+   * compound filename like "AadharCard.pdf" tokenizes as one token
+   * "aadharcard", so searching "card" (real, common bug report — matches
+   * neither the filename nor a mid-word OCR hit) returns nothing via FTS5
+   * alone even though the term is plainly *in* the document. The `LIKE
+   * '%term%'` scan (already required as the no-FTS5 fallback, see
+   * {@link hasFts}) is substring-correct by construction, so running it
+   * alongside FTS5 — FTS5 results first for relevance ranking, then any
+   * additional substring-only matches — gets both correctness and (for the
+   * common prefix case) ranking, without depending on a trigram tokenizer
+   * this SQLite/SQLCipher build may not have compiled in.
+   *
+   * `query` is the already-built FTS5 match string from `buildFtsMatchQuery`
+   * (e.g. `"aadh* card*"`); the LIKE scan re-derives its tokens from it
+   * rather than taking raw input, so callers don't need a second code path.
+   */
   async search(query: string, limit = 20): Promise<DocumentEntity[]> {
-    const rows = await this.db.query(
+    if (!(await this.hasFts())) {
+      return this.searchByLike(query, limit);
+    }
+    const ftsRows = await this.db.query(
       `SELECT d.* FROM documents d
        JOIN documents_fts fts ON d.rowid = fts.rowid
        WHERE documents_fts MATCH ?
@@ -321,6 +410,43 @@ export class DocumentDao {
        ORDER BY rank
        LIMIT ?`,
       [query, limit]
+    );
+    const ftsMatches = ftsRows.map(mapRow);
+    if (ftsMatches.length >= limit) {
+      return ftsMatches;
+    }
+    const likeMatches = await this.searchByLike(query, limit);
+    const seen = new Set(ftsMatches.map((doc) => doc.id));
+    const merged = ftsMatches.concat(likeMatches.filter((doc) => !seen.has(doc.id)));
+    return merged.slice(0, limit);
+  }
+
+  /** Substring `LIKE` scan across name/description/ocr_text — see {@link search}. */
+  private async searchByLike(
+    query: string,
+    limit: number
+  ): Promise<DocumentEntity[]> {
+    const tokens = query
+      .split(' ')
+      .map((token) => token.replace(/\*$/, ''))
+      .filter((token) => token.length > 0);
+    if (tokens.length === 0) {
+      return [];
+    }
+    const perToken = tokens.map(
+      () => '(name LIKE ? OR description LIKE ? OR ocr_text LIKE ?)'
+    );
+    const params: SqlValue[] = tokens.flatMap((token) => {
+      const pattern = `%${token}%`;
+      return [pattern, pattern, pattern];
+    });
+    const rows = await this.db.query(
+      `SELECT * FROM documents
+       WHERE deleted_at IS NULL
+         AND ${perToken.join(' AND ')}
+       ORDER BY updated_at DESC
+       LIMIT ?`,
+      [...params, limit]
     );
     return rows.map(mapRow);
   }

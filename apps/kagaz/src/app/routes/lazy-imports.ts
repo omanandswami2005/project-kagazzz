@@ -21,8 +21,16 @@ export const LazyTrashPage = lazy(
   () => import('@/modules/document-vault/pages/TrashPage')
 );
 
+export const LazyArchivedPage = lazy(
+  () => import('@/modules/document-vault/pages/ArchivedPage')
+);
+
 export const LazyQuickReferencePage = lazy(
   () => import('@/modules/document-vault/pages/QuickReferencePage')
+);
+
+export const LazyQuickNotesPage = lazy(
+  () => import('@/modules/document-vault/pages/QuickNotesPage')
 );
 
 export const LazyDocumentViewerPage = lazy(
@@ -39,4 +47,12 @@ export const LazySettingsPage = lazy(
 
 export const LazyLegalPage = lazy(
   () => import('@/modules/settings/pages/LegalPage')
+);
+
+export const LazyAiAssistantPage = lazy(
+  () => import('@/modules/ai-assistant/pages/AiAssistantPage')
+);
+
+export const LazyChatPage = lazy(
+  () => import('@/modules/ai-assistant/pages/ChatPage')
 );
