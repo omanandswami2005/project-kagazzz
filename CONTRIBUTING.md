@@ -353,16 +353,19 @@ the app. Design rationale + color tokens:
 (icon: [#app-icon](docs/design-system/design-tokens.md#app-icon), splash:
 [#splash-screen](docs/design-system/design-tokens.md#splash-screen)).
 
-After editing a source SVG, regenerate every density for both platforms
-(one command does icon **and** splash):
+The SVG sources are **generated** from the approved mark in
+`scripts/brand/build-logo-concepts.mjs` (concept `tick-k-doc`, "Kagazzz Docs",
+2026-11-18); edit the script, never the SVGs. Then regenerate every density
+for both platforms (one command does icon **and** splash):
 
 ```bash
+node scripts/brand/build-logo-concepts.mjs --app-assets   # rewrites apps/kagaz/assets/*.svg from the approved mark
 pnpm --filter kagaz exec capacitor-assets generate --android \
-  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
-  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
+  --iconBackgroundColor '#F25C05' --iconBackgroundColorDark '#C2410C' \
+  --splashBackgroundColor '#F25C05' --splashBackgroundColorDark '#C2410C'
 pnpm --filter kagaz exec capacitor-assets generate --ios \
-  --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' \
-  --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'
+  --iconBackgroundColor '#F25C05' --iconBackgroundColorDark '#C2410C' \
+  --splashBackgroundColor '#F25C05' --splashBackgroundColorDark '#C2410C'
 ```
 
 > Gotcha: SVG `<!-- -->` comments can't contain a literal `--` (e.g. a CSS
