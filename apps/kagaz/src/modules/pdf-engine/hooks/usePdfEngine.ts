@@ -183,6 +183,11 @@ export function usePdfEngine(): UsePdfEngineResult {
       setState((s) => ({ ...s, percent: 100, saving: true }));
       const { uploaded, documents } = await ingestFiles(files);
       createdRef.current = [...createdRef.current, ...documents];
+      // A produced file that couldn't be saved is a failure, not a silent 0:
+      // the sheet must show an error and history must record it (audit TS-1).
+      if (files.length > 0 && uploaded === 0) {
+        throw new PdfEngineException('The result could not be saved', 'SAVE_FAILED', 'save');
+      }
       return uploaded;
     },
     [ingestFiles]

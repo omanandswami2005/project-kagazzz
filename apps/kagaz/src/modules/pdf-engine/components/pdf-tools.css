@@ -177,7 +177,7 @@
 }
 
 .kg-pdf-op__error {
-  color: var(--color-danger);
+  color: var(--text-danger);
   font-size: var(--text-sm);
   margin: 0;
 }
@@ -331,7 +331,7 @@
 .kg-tool-history__failed {
   margin: 0;
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 
 .kg-tool-history__outputs {

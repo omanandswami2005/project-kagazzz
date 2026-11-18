@@ -13,6 +13,7 @@ export type PdfErrorMessageKey =
   | 'errors.invalid_pdf'
   | 'errors.no_text_layer'
   | 'errors.page_out_of_range'
+  | 'errors.save_failed'
   | 'errors.failed';
 
 /**
@@ -37,6 +38,8 @@ export function pdfErrorMessageKey(
     case 'CORRUPTED_FILE':
     case 'UNSUPPORTED_FORMAT':
       return 'errors.invalid_pdf';
+    case 'SAVE_FAILED':
+      return 'errors.save_failed';
     case 'NO_TEXT_LAYER':
       return 'errors.no_text_layer';
     case 'PAGE_OUT_OF_RANGE':

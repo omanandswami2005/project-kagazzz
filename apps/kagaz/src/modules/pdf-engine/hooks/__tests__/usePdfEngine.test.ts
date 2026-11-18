@@ -70,6 +70,18 @@ describe('usePdfEngine result + history (2026-11-19)', () => {
     );
   });
 
+  it('a result that could not be saved is an error, not a silent 0 (audit TS-1)', async () => {
+    ingestFiles.mockResolvedValue({ uploaded: 0, documents: [] });
+    const { result } = renderHook(() => usePdfEngine());
+    let count = -1;
+    await act(async () => {
+      count = await result.current.mergePdfs([doc('a'), doc('b')]);
+    });
+    expect(count).toBe(0);
+    expect(result.current.state.errorCode).toBe('SAVE_FAILED');
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed', errorCode: 'SAVE_FAILED' }));
+  });
+
   it('records a failed run with its error code and no outputs', async () => {
     mergePdfs.mockRejectedValue(new Error('boom'));
     const { result } = renderHook(() => usePdfEngine());

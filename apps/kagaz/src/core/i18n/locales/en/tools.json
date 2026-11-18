@@ -135,7 +135,8 @@
     "need_password": "Enter a password.",
     "need_watermark": "Enter the watermark text.",
     "need_image": "Choose an image to place.",
-    "bad_page": "Enter a valid page number."
+    "bad_page": "Enter a valid page number.",
+    "save_failed": "The result couldn't be saved to your vault. Check free space and try again."
   },
   "history": {
     "title_tool": "Recent runs of this tool",
