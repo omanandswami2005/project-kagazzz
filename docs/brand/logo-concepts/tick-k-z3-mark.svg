@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs Tick-K z³ mark">
+      <path d="M12 16 H25 L33 24 V88 H12 Z" fill="#E4570A"/>
+      <path d="M25 16 L33 24 H25 Z" fill="#FFC9A8"/>
+      <path d="M33 54 L49 72 L79 22" fill="none" stroke="#E4570A" stroke-width="13" stroke-linejoin="miter" stroke-miterlimit="10"/>
+      <path d="M82 3 H94 L82 17 H94" fill="none" stroke="#E4570A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="96.5" y="8" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="9.5" fill="#E4570A">3</text></svg>
