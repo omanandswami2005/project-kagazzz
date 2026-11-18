@@ -17,6 +17,13 @@ vi.mock('@/app/providers/DatabaseProvider', () => ({
   useDatabase: vi.fn(),
 }));
 
+// Auto-extraction after upload is exercised in useDocumentOcr's own tests.
+const ocr = vi.hoisted(() => ({ extractText: vi.fn(), canExtract: true }));
+vi.mock('../useDocumentOcr', () => ({
+  canExtractText: () => ocr.canExtract,
+  useDocumentOcr: () => ({ runningId: null, extractText: ocr.extractText }),
+}));
+
 vi.mock('../../services/upload-sources', () => ({
   pickFiles: vi.fn(),
 }));
@@ -31,6 +38,8 @@ const useDatabaseMock = vi.mocked(useDatabase);
 const pickFilesMock = vi.mocked(pickFiles);
 
 beforeEach(() => {
+  ocr.canExtract = false;
+  ocr.extractText.mockReset().mockResolvedValue(null);
   storage.files.clear();
   useVaultStore.setState({
     documents: [],
@@ -54,10 +63,7 @@ describe('useUpload', () => {
   });
 
   it('uploads picked files and updates the store', async () => {
-    const db = new FakeDb().onQuery(
-      /SELECT \* FROM documents WHERE id = \?/,
-      [docRow()]
-    );
+    const db = new FakeDb().onQuery(/SELECT \* FROM documents WHERE id = \?/, [docRow()]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     pickFilesMock.mockResolvedValue([incoming('Aadhaar.pdf', pdfBytes())]);
 
@@ -78,17 +84,25 @@ describe('useUpload', () => {
     expect(storage.files.size).toBe(1);
   });
 
+  it('reads the text of each uploaded document in the background', async () => {
+        ocr.canExtract = true;
+    const db = new FakeDb().onQuery(/SELECT \* FROM documents WHERE id = \?/, [docRow()]);
+    useDatabaseMock.mockReturnValue({ status: 'ready', db });
+    pickFilesMock.mockResolvedValue([incoming('Rover card.pdf', pdfBytes())]);
+
+    const { result } = renderHook(() => useUpload());
+    await act(async () => {
+      await result.current.uploadFrom('files');
+    });
+    await vi.waitFor(() => expect(ocr.extractText).toHaveBeenCalledOnce());
+  });
+
   it('uploads into the current folder so the doc persists there', async () => {
-    const db = new FakeDb().onQuery(
-      /SELECT \* FROM documents WHERE id = \?/,
-      [docRow()]
-    );
+    const db = new FakeDb().onQuery(/SELECT \* FROM documents WHERE id = \?/, [docRow()]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     pickFilesMock.mockResolvedValue([incoming('In Folder.pdf', pdfBytes())]);
     useVaultStore.setState({
-      folderPath: [
-        { id: 'fld-1', name: 'Taxes', sortOrder: 0, createdAt: '', updatedAt: '' },
-      ],
+      folderPath: [{ id: 'fld-1', name: 'Taxes', sortOrder: 0, createdAt: '', updatedAt: '' }],
     });
 
     const { result } = renderHook(() => useUpload());
@@ -104,10 +118,7 @@ describe('useUpload', () => {
   });
 
   it('records per-file failures as error message keys', async () => {
-    const db = new FakeDb().onQuery(
-      /SELECT \* FROM documents WHERE id = \?/,
-      [docRow()]
-    );
+    const db = new FakeDb().onQuery(/SELECT \* FROM documents WHERE id = \?/, [docRow()]);
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     pickFilesMock.mockResolvedValue([incoming('nope.exe', pdfBytes())]);
 
@@ -118,9 +129,7 @@ describe('useUpload', () => {
       });
     });
 
-    expect(useVaultStore.getState().lastUploadErrors).toEqual([
-      'upload.errors.invalid_file_type',
-    ]);
+    expect(useVaultStore.getState().lastUploadErrors).toEqual(['upload.errors.invalid_file_type']);
   });
 
   it('does nothing when the picker is cancelled', async () => {
@@ -143,9 +152,7 @@ describe('useUpload', () => {
     pickFilesMock.mockRejectedValue(new Error('picker exploded'));
 
     const { result } = renderHook(() => useUpload());
-    await expect(result.current.uploadFrom('gallery')).rejects.toThrow(
-      'picker exploded'
-    );
+    await expect(result.current.uploadFrom('gallery')).rejects.toThrow('picker exploded');
     expect(useVaultStore.getState().isUploading).toBe(false);
   });
 
@@ -153,14 +160,10 @@ describe('useUpload', () => {
     const db = new FakeDb();
     useDatabaseMock.mockReturnValue({ status: 'ready', db });
     pickFilesMock.mockResolvedValue([incoming('a.pdf', pdfBytes())]);
-    vi.spyOn(UploadService.prototype, 'uploadFiles').mockRejectedValue(
-      new Error('batch crashed')
-    );
+    vi.spyOn(UploadService.prototype, 'uploadFiles').mockRejectedValue(new Error('batch crashed'));
 
     const { result } = renderHook(() => useUpload());
-    await expect(result.current.uploadFrom('files')).rejects.toThrow(
-      'batch crashed'
-    );
+    await expect(result.current.uploadFrom('files')).rejects.toThrow('batch crashed');
     const state = useVaultStore.getState();
     expect(state.isUploading).toBe(false);
     expect(state.lastUploadErrors).toEqual(['upload.errors.file_read_error']);

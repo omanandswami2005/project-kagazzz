@@ -1,7 +1,7 @@
 # Compliance Evidence Index & Audit Checklist — Kagaz (Omni Docs)
 
 > Location: docs/compliance/index.md
-> Last updated: 2026-06-08
+> Last updated: 2026-11-18
 
 Purpose
 
@@ -33,6 +33,8 @@ Audit evidence manifest (master table)
 | 2 | Terms & Conditions (published + historic) | Legal / auditors | Full text + change log | `2026-06-08_terms_v1.0.md` | Legal | Permanent (archive)
 | 3 | DPIA(s) / Privacy Impact Assessments | DPDP / auditors | DPIA document, version history, sign-off | `2026-06-08_dpia_digilocker.md` | DPO | 5 years
 | 3a | Play Data Safety declaration (V1) | Google Play / Users | Console mapping + reviewer notes (V1: no data collected/shared) | `play-data-safety.md` | Legal / Product | Until replaced (V2 re-declare) |
+| 3b | App Store App Privacy + privacy manifest (V1) | Apple / Users | Nutrition-label answers, `PrivacyInfo.xcprivacy` reasons, usage strings | `app-store-privacy.md` | Legal / Product | Until replaced |
+| 3c | Store release checklist | Release lead | Per-store gates, signing, permissions, known gaps | `store-release-checklist.md` | Release lead | Per release |
 | 4 | Penetration Test Report(s) | NeGD / DigiLocker / CERT‑In auditors | Full report, executive summary, remediation plan + verification | `2026-06-01_pentest_report.pdf` | Security | 3 years
 | 5 | SAST / Static Analysis Results (CodeQL) | Security auditors | Snapshot of results per release/commit | `2026-06-05_codeql_results.json` | Security | 3 years
 | 6 | DAST / Application Scans (reports) | Security auditors | Scan reports & remediation tickets | `2026-06-01_dast_report.pdf` | Security | 3 years

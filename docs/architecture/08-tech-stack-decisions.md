@@ -28,6 +28,10 @@
 - [ADR-019: OCR — bundled native ML Kit Text Recognition](#adr-019-ocr--bundled-native-ml-kit-text-recognition)
 - [ADR-020: Client-side Office interop (PDF ↔ Word/Excel) — pure-JS permissive libs only](#adr-020-client-side-office-interop-pdf--wordexcel--pure-js-permissive-libs-only)
 - [ADR-021: On-Device AI — LiteRT-LM (supersedes WebLLM)](#adr-021-on-device-ai--litert-lm-supersedes-webllm)
+- [ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)
+- [ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine](#adr-024-on-device-semantic-search--embeddinggemma-via-litert-lm-embeddingengine)
+- [ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy](#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)
+- [ADR-025: Browser web demo — dev-server only, testing only](#adr-025-browser-web-demo--dev-server-only-testing-only)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -57,6 +61,8 @@
 | 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
 | 020 | Office interop (PDF↔Word/Excel) | **`docx` + SheetJS `xlsx` + `mammoth`** (pure-JS, lazy-loaded) | LibreOffice-WASM, commercial SDKs | ✅ Accepted |
 | 021 | On-Device AI | **LiteRT-LM** (Google AI Edge, forked `@capgo/capacitor-llm` bridge, native tool calling) | WebLLM (ADR-006), Transformers.js, Cloud API | ✅ Accepted |
+| 023 | Online AI mode (demo) | **Gemma 4 26B on Vertex AI** through a same-origin dev proxy; one user switch with a data-sharing warning | Direct browser→Google calls, API keys in the app, Gemini | ✅ Accepted (demo-only) |
+| 022 | Demo AI engine | **Local Ollama (Gemma 4 E2B + EmbeddingGemma)** behind a `ChatEngine` seam; demo builds only | Hosted API (later, with consent), LiteRT on desktop (no Intel-Mac build) | ✅ Accepted (demo-only) |
 
 ---
 
@@ -1189,7 +1195,7 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
 | **Status** | ✅ Accepted |
 | **Date** | 2026-07-24 |
 | **Supersedes** | [ADR-006](#adr-006-webllm-for-on-device-ai) (WebLLM). |
-| **Decision** | **F-13/F-14** run the on-device LLM via **LiteRT-LM** (Google AI Edge, `com.google.ai.edge.litertlm:litertlm-android:0.10.0`) through a **forked, vendored copy of `@capgo/capacitor-llm`** (`packages/capacitor-llm-litert`, `@kagaz/capacitor-llm-litert`, MPL-2.0 — an explicit permissive-license-policy exception; MPL-2.0's file-level copyleft doesn't force disclosure of Kagaz's own source, unlike the GPL/AGPL/SSPL the policy actually forbids) instead of WebLLM. Inference runs through Android's native ML stack (NNAPI/GPU/CPU delegate) — **no WebView/WebGPU involvement at all**. Model: **Qwen3-0.6B** (`litert-community/Qwen3-0.6B`, `qwen3_0_6b_mixed_int4.litertlm`, ~586 MB, Apache-2.0). |
+| **Decision** | **F-13/F-14** run the on-device LLM via **LiteRT-LM** (Google AI Edge, `com.google.ai.edge.litertlm:litertlm-android:0.19.0` (was 0.10.0 until 2026-10-31 — too old for the current Gemma 4 E2B file)) through a **forked, vendored copy of `@capgo/capacitor-llm`** (`packages/capacitor-llm-litert`, `@kagaz/capacitor-llm-litert`, MPL-2.0 — an explicit permissive-license-policy exception; MPL-2.0's file-level copyleft doesn't force disclosure of Kagaz's own source, unlike the GPL/AGPL/SSPL the policy actually forbids) instead of WebLLM. Inference runs through Android's native ML stack (NNAPI/GPU/CPU delegate) — **no WebView/WebGPU involvement at all**. Model: **Qwen3-0.6B** (`litert-community/Qwen3-0.6B`, `qwen3_0_6b_mixed_int4.litertlm`, ~586 MB, Apache-2.0). |
 
 ### Context
 
@@ -1235,6 +1241,68 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
+## ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam
+
+| | |
+|---|---|
+| **Status** | ⏸️ **Withdrawn from `develop` (2026-11-18)** — the Ollama engine lives only on branch `feature/ai-ollama-embeddings`. The `ChatEngine` seam it introduced **stays** (05 §3.6). Was: accepted for demo builds only (2026-10-31). |
+| **Supplements** | [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) (LiteRT-LM stays the shipped engine) |
+
+**Context.** The demo has to run on an Intel Mac (i9, 16 GB, no Apple Silicon). LiteRT-LM's published Python wheels are macOS ARM64 only and its docs show no Intel-Mac build, so the native engine cannot be shown on that machine, and the Android emulator has no GPU and little RAM. Ollama ships an x86_64 macOS binary (v0.40.13 verified) and serves `gemma4:e2b` (text + vision, tool calling, structured output) and `embeddinggemma`.
+
+**Decision.** Put a `ChatEngine` interface (the native plugin's chat surface) in front of the assistant and add an `OllamaChatEngine`. LiteRT remains the default and is a pure pass-through. Ollama is selected only when `VITE_OLLAMA_URL` is set. One module, `infrastructure/ollama/`, owns the config and HTTP client for chat, vision OCR and embeddings. New `semantic-index` module: `EmbeddingProvider` and `VectorStore` ports, an Ollama adapter and an in-memory cosine store. Swapping any of these for a hosted API means adding one adapter, not changing callers.
+
+**Guardrails.** `ChatEngine.locality` is `on-device` | `local-server` | `cloud`; anything but `on-device` must be gated by a warning (user data leaves the device). `vite-plugins/demo-csp.ts` widens `connect-src` to the Ollama origin only when the URL is set and fails any `production` build that sets it, so the strict offline CSP ([ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels)) is unchanged in shipped builds. Gemma terms apply to Gemma weights (EmbeddingGemma is gated on Hugging Face); this has not been cleared against the permissive-licence rule in CLAUDE.md, which is why this is demo-only.
+
+**Consequences.**
+- A hosted-API fallback is a third engine behind the same seam, with a PII consent step before it can be enabled. Not built.
+- Measured on the Intel i9: ~22 tokens/s generation, ~19 s to transcribe one image page with vision; a 2B model choosing among ~35 tools needs live testing (see `infrastructure/ollama/__tests__/ollama.live.test.ts`, run with `OLLAMA_LIVE=1`).
+- Not yet wired: the semantic index into search / the assistant.
+
+---
+
+## ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine
+
+**Status:** ⏸️ **Deferred (2026-11-18)**. Removed from `develop` before the store release; tracked as [AI-X1](../roadmap/future-extensions.md#ai-x1--semantic-search-embeddinggemma). The code remains on `feature/ai-ollama-embeddings`. Blockers before it comes back: an EmbeddingGemma licence review (Gemma Terms, not Apache-2.0), an official or self-converted model artifact instead of the community conversion, and persisted vectors. Was: accepted 2026-10-31, never device-verified.
+
+**Decision:** The Android app embeds document text and queries with **EmbeddingGemma-300M** using the `EmbeddingEngine` already present in `litertlm-android` 0.19.0 (CPU backend, 768-d, L2-normalised, 512-token input). The model is an **optional, separate ~330 MB download** (`embeddinggemma_300m.litertlm`) so chat works without it. The plugin gained `embedTexts` (lazy engine on its own executor) and a `tag` on download-progress events so the two downloads cannot drive each other's bars.
+
+**Provenance and licence:** a community conversion (`kasimtmc/embeddinggemma-litertlm`), not an official Google artifact. The URL is pinned to commit `9a66a1cf…`, size and SHA-256 (`1238108b…1136`) are checked after download. Licence: Gemma Terms of Use (not Apache-2.0) — acceptable for the hackathon MVP; needs legal review before a store release.
+
+**Consequences:** vectors are held in memory only, so documents are re-embedded after an app restart (persisted vectors are a follow-up). Backend order: online (Vertex, demo) → Ollama (demo) → on-device. On a phone, scanned PDFs are read by ML Kit OCR, then embedded. Retrieved passages go to the on-device model only, so the metadata-only boundary is not crossed on this path.
+
+**Alternatives rejected:** hashing-trick lexical embeddings (not semantic); a phone→Mac Ollama call (breaks offline-first); `localagents-rag` (Gecko, not EmbeddingGemma).
+
+## ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy
+
+| | |
+|---|---|
+| **Status** | ⏸️ **Deferred (2026-11-18)**. Removed from `develop`; tracked as [AI-X2](../roadmap/future-extensions.md#ai-x2--online-mode-hosted-model-fallback). A real product needs a backend (India data residency), a DPIA update and consent logging first. The browser database part moved to [ADR-025](#adr-025-browser-web-demo--dev-server-only-testing-only). Was: accepted for demo builds only (2026-10-31). |
+| **Supplements** | [ADR-022](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam), [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) |
+
+**Context.** Local Gemma 4 E2B on a CPU-only laptop takes tens of seconds for a first answer, too slow to demo comfortably, and a phone cannot run it unattended on every device. Google serves Gemma 4 (and Gemini) on Vertex AI behind an OpenAI-compatible endpoint, authenticated with the developer's application-default credentials — which must never reach a browser or an APK.
+
+**Decision.** Add a third `ChatEngine` (`CloudChatEngine`) that talks to a **same-origin dev proxy** (`/api/ai/*`, a Vite dev-server plugin) forwarding to Vertex AI. The user gets **one online/offline switch**; turning it on shows a data-sharing warning first. Default online model: **Gemma 4 26B** (`google/gemma-4-26b-a4b-it-maas`), so the app stays one model family; `CLOUD_CHAT_MODEL` overrides it. Vision follows the same model. Embeddings use `text-embedding-005` because EmbeddingGemma is not published on Vertex in this project (404). The browser demo also needs a database, so a demo-only unencrypted sql.js store (pinned `sql.js@1.11.0`, the binary that matches `jeep-sqlite` 2.8.0's bundled glue) is mounted when a demo flag is set.
+
+**Guardrails.** The proxy exists only under `vite serve`; same-origin JSON only; model pinned server-side; bodies never logged; tokens never returned. `vite-plugins/demo-csp.ts` fails any `production` build with `VITE_CLOUD_AI` or `VITE_OLLAMA_URL` set, and only then widens the CSP (`'wasm-unsafe-eval'`, plus the Ollama origin). A real product needs a real backend in the proxy's place, a DPIA update, and per-user consent logging.
+
+**Consequences.** Gemma 4 26B passed the shared live suite 15/16, 14/16, 15/16 across three runs (the failing scenario is a two-part request); Gemini 2.5 Flash scored 14/16 three times, and on form-asking scenarios Gemma did better. Billing goes to the developer's GCP project.
+
+## ADR-025: Browser web demo — dev-server only, testing only
+
+| | |
+|---|---|
+| **Status** | ✅ Accepted (2026-11-18) |
+| **Supplements** | [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels) (the release CSP is unchanged) |
+
+**Context.** Testing the vault UI in a desktop browser needs a database, and a browser has no SQLCipher. The store builds must keep the strict offline CSP (no `wasm-unsafe-eval`) and must never contain an unencrypted store.
+
+**Decision.** `pnpm --filter kagaz dev:web-demo` (`VITE_WEB_DEMO=1 vite`) mounts an unencrypted sql.js store through `jeep-sqlite` (pinned `sql.js@1.11.0` as a dev dependency, the binary that matches `jeep-sqlite` 2.8.0's bundled glue). `vite-plugins/web-demo.ts` is `apply: 'serve'`: it serves the WASM and adds `'wasm-unsafe-eval'` to the **dev server's** HTML only. `__KAGAZ_DEMO__` is `command === 'serve' && VITE_WEB_DEMO === '1'`, so it is the constant `false` in every `vite build` and the demo store is tree-shaken out. Any build with `VITE_WEB_DEMO` set throws. On-device AI is Android-only, so the AI screens show "not available on this platform" in the browser.
+
+**Verification (2026-11-18).** `pnpm build` was run and `dist/index.html`'s CSP was diffed against the source `index.html`: identical. A grep of `dist` for `wasm-unsafe-eval`, `sql-wasm`, Ollama/Vertex endpoints and `embedTexts` found nothing. The only `jeep-sqlite` strings are the licence-attribution list and the `@capacitor-community/sqlite` web shim, which was already present on `develop`.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1249,4 +1317,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-07-24 · Kagaz Architecture Decision Records v1.3 (ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-11-18 · Kagaz Architecture Decision Records v1.7 (ADR-025 dev-server-only web demo; ADR-022/023/024 withdrawn or deferred for the store release; ADR-021 LiteRT-LM supersedes WebLLM)*

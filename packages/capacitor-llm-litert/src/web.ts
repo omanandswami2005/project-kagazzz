@@ -47,6 +47,10 @@ export class CapgoLLMWeb extends WebPlugin implements LLMPlugin {
     return this.notSupported();
   }
 
+  setToolSubset(): ReturnType<LLMPlugin['setToolSubset']> {
+    return this.notSupported();
+  }
+
   getPluginVersion(): ReturnType<LLMPlugin['getPluginVersion']> {
     return Promise.resolve({ version: 'web-unsupported' });
   }

@@ -21,7 +21,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
-import type { AiToolContext } from './ai-tools.actions';
+import type { AiToolContext, CreatedDocuments } from './ai-tools.actions';
 
 const qualitySchema = z.enum(['low', 'medium', 'high']);
 const imageFormatSchema = z.enum(['jpeg', 'png']);
@@ -37,8 +37,8 @@ export const aiDocumentOpsActions = {
       documentIds: z.array(z.string()).min(2, 'Merging needs at least 2 documents'),
     }),
     requiresConfirmation: false,
-    handler: (args: { documentIds: string[] }, ctx: AiToolContext): Promise<{ created: number }> =>
-      ctx.mergeDocuments(args.documentIds).then((created) => ({ created })),
+    handler: (args: { documentIds: string[] }, ctx: AiToolContext): Promise<CreatedDocuments> =>
+      ctx.mergeDocuments(args.documentIds),
   }),
 
   splitDocument: defineAction({
@@ -61,8 +61,8 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentId: string; ranges: { start: number; end: number }[] },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.splitDocument(args.documentId, args.ranges).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.splitDocument(args.documentId, args.ranges),
   }),
 
   compressDocument: defineAction({
@@ -78,8 +78,8 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentId: string; quality: 'low' | 'medium' | 'high' },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.compressDocument(args.documentId, args.quality).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.compressDocument(args.documentId, args.quality),
   }),
 
   watermarkDocument: defineAction({
@@ -94,8 +94,8 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentId: string; text: string },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.watermarkDocument(args.documentId, args.text).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.watermarkDocument(args.documentId, args.text),
   }),
 
   convertImagesToPdf: defineAction({
@@ -109,8 +109,8 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentIds: string[] },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.convertImagesToPdf(args.documentIds).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.convertImagesToPdf(args.documentIds),
   }),
 
   convertPdfToImages: defineAction({
@@ -125,8 +125,8 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentId: string; format: 'jpeg' | 'png' },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.convertPdfToImages(args.documentId, args.format).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.convertPdfToImages(args.documentId, args.format),
   }),
 
   exportPdfText: defineAction({
@@ -142,7 +142,7 @@ export const aiDocumentOpsActions = {
     handler: (
       args: { documentId: string; format: 'txt' | 'md' },
       ctx: AiToolContext
-    ): Promise<{ created: number }> =>
-      ctx.exportPdfText(args.documentId, args.format).then((created) => ({ created })),
+    ): Promise<CreatedDocuments> =>
+      ctx.exportPdfText(args.documentId, args.format),
   }),
 };

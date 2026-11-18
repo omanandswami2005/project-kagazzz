@@ -52,7 +52,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':capacitor-android')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
-    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.10.0'
+    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.19.0'
     // com.google.mediapipe:tasks-genai kept as upstream's own legacy .task
     // compatibility path (unused by this app, which always requests
     // litertlm, but not a build blocker like Gemini Nano was — see LLM.java's

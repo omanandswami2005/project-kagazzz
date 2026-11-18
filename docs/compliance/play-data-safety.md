@@ -1,6 +1,6 @@
 # Google Play — Data Safety declaration (Kagaz V1)
 
-> **Launch gate G1-6** (see also **G1.5-4**) · Last updated: 2026-07-24 · Scope: **V1 (offline vault)**, with a **V1.5 addendum** below for the on-device AI model download.
+> **Launch gate G1-6** (see also **G1.5-4**) · Last updated: 2026-11-18 · Scope: **V1 (offline vault)**, with a **V1.5 addendum** below for the on-device AI model download.
 >
 > This maps Kagaz V1's *actual* data behaviour to the fields of the Play Console
 > **Data safety** form. V1 collects and shares **no user data** — everything
@@ -73,9 +73,9 @@ data-type matrix, the correct entries are:
 - **What happens:** the user explicitly taps "Download" on the Settings → AI
   Assistant screen (never automatic/background). The app performs a single
   HTTPS GET to Hugging Face
-  (`huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm`,
-  ~586 MB, one host) for a **public, pre-trained model file** — LiteRT-LM's
-  Qwen3-0.6B, Apache-2.0. The response is verified against a hardcoded SHA-256
+  (`huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm`,
+  ~2.6 GB, one host) for a **public, pre-trained model file** — LiteRT-LM's
+  Gemma 4 E2B, Apache-2.0. The response is verified against a hardcoded SHA-256
   before use ([ADR-021](../architecture/08-tech-stack-decisions.md#adr-021-on-device-ai--litert-lm-supersedes-webllm),
   `[SEC]` §5).
 - **No user data leaves the device for this request.** The GET carries no
@@ -99,13 +99,20 @@ data-type matrix, the correct entries are:
 **Reviewer notes addendum (append to the V1 paragraph above once V1.5 ships):**
 
 > Kagaz's optional on-device AI assistant (Settings → AI Assistant) requires a
-> one-time, user-initiated download (~586 MB) of a public, open-weights model
-> file (LiteRT-LM Qwen3-0.6B, Apache-2.0) from Hugging Face, verified by
+> one-time, user-initiated download (~2.6 GB) of a public, open-weights model
+> file (LiteRT-LM Gemma 4 E2B, Apache-2.0) from Hugging Face, verified by
 > SHA-256 checksum before use. This is the only network request the app
 > performs, and it carries no user data — no identifiers, no document
 > content, no analytics. After download, the AI assistant runs fully
 > on-device with no further network activity. Users can delete the model at
 > any time from Settings → AI Assistant or the Storage screen.
+
+## 2026-11-18 update — store-release scope
+
+- **Removed before release:** online mode (Vertex AI) and semantic search were on a feature branch only and **never shipped**. The answers above already assume an on-device-only assistant. Re-declare if either comes back ([future-extensions](../roadmap/future-extensions.md)).
+- **Permissions:** the LiteRT plugin's unneeded `READ/WRITE_EXTERNAL_STORAGE` were removed. Expected merged release permissions: `RECORD_AUDIO`, `INTERNET`, `ACCESS_NETWORK_STATE` (plus normal ones added by the libraries). Confirm with `aapt dump permissions` on the release AAB/APK before submitting.
+- **Voice input:** speech goes through the system `RecognitionService` (usually Google), which may process audio on Google's servers. Kagaz does not receive or transmit the audio. Under Play's definitions this is processing by the OS service, not collection by the app. If Play review asks, say so, and point to privacy policy §3A. An on-device-only alternative is tracked as AI-X8.
+- **AI content:** Play requires that generative-AI apps let users report offensive output. Tracked in [store-release-checklist.md](store-release-checklist.md).
 
 ## When this must change (V2)
 

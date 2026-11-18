@@ -32,7 +32,9 @@ import {
   extractPdfTextPerPageImpl,
   pdfToImagesImpl,
 } from '@/modules/pdf-engine/services/pdf-render-ops';
+import { getConfiguredVisionRecognizer } from '@/modules/image-engine/services/vision-ocr.service';
 import { ocrPdfPages } from '../services/pdf-ocr';
+import { mimeTypeFor } from '../services/upload.service';
 import { isPdf } from './useDocumentFile';
 import { useDocLock } from './useDocLock';
 
@@ -63,9 +65,14 @@ export function isOcrableType(fileType: string): boolean {
   return OCR_EXTENSIONS.has(fileType.toLowerCase());
 }
 
-/** Whether ML Kit OCR can run on this document (native platform + image type). */
+/** True when some OCR engine is available: native ML Kit, else a vision recognizer (AI-X3). */
+function hasOcrEngine(): boolean {
+  return isOcrSupported() || getConfiguredVisionRecognizer() !== null;
+}
+
+/** Whether OCR can run on this document (an engine is available + image type). */
 export function canOcr(document: DocumentEntity): boolean {
-  return isOcrSupported() && isOcrableType(document.fileType);
+  return hasOcrEngine() && isOcrableType(document.fileType);
 }
 
 /**
@@ -77,12 +84,31 @@ export function canExtractText(document: DocumentEntity): boolean {
   return canOcr(document) || isPdf(document.fileType);
 }
 
+/**
+ * Whether the Gemma vision transcription option applies: a recognizer exists
+ * (none in V1 — future item AI-X3, see vision-ocr.service.ts) and the document is an image or a PDF — the
+ * formats the vision model is fed (PDF pages are rendered to images first).
+ * Independent of whether text was already extracted: re-running is the point.
+ */
+export function canTranscribeWithVision(document: DocumentEntity): boolean {
+  return getConfiguredVisionRecognizer() !== null && (isOcrableType(document.fileType) || isPdf(document.fileType));
+}
+
+/** Which engine to use: `auto` = ML Kit when native, else the vision fallback; `vision` = always Gemma. */
+export interface ExtractOptions {
+  engine?: 'auto' | 'vision';
+}
+
 /** What {@link useDocumentOcr} exposes. */
 export interface UseDocumentOcr {
   /** Id of the document currently being extracted, or null. */
   runningId: string | null;
-  /** Extracts text (image OCR or PDF text layer), stores it, returns the text. */
-  extractText: (document: DocumentEntity) => Promise<string | null>;
+  /**
+   * Extracts text (image OCR or PDF text layer), stores it, returns the text.
+   * With `{ engine: 'vision' }` every PDF page is transcribed by the vision
+   * model (not just pages lacking a text layer), replacing any stored text.
+   */
+  extractText: (document: DocumentEntity, options?: ExtractOptions) => Promise<string | null>;
 }
 
 /** Extracts + persists document text (image OCR / PDF text layer) for search. */
@@ -93,18 +119,22 @@ export function useDocumentOcr(): UseDocumentOcr {
   const [runningId, setRunningId] = useState<string | null>(null);
 
   const extractText = useCallback(
-    async (document: DocumentEntity): Promise<string | null> => {
-      if (!db || !canExtractText(document)) {
+    async (document: DocumentEntity, options?: ExtractOptions): Promise<string | null> => {
+      const forceVision = options?.engine === 'vision';
+      if (!db || (forceVision ? !canTranscribeWithVision(document) : !canExtractText(document))) {
         return null;
       }
       if (!(await authorizeView(document))) {
         return null;
       }
       setRunningId(document.id);
+      // One engine decision for this run: Gemma when forced, or as the fallback where ML Kit is absent.
+      const recognizer = getConfiguredVisionRecognizer();
+      const useVision = recognizer !== null && (forceVision || !isOcrSupported());
       try {
         const lang = locale === 'hi' ? 'hi' : 'en';
         let text: string;
-        let source: 'pdf-layer' | 'pdf-mixed' | 'ocr' = 'ocr';
+        let source: 'pdf-layer' | 'pdf-mixed' | 'ocr' | 'vision' = forceVision ? 'vision' : 'ocr';
         if (isPdf(document.fileType)) {
           // UX-13: read the embedded text layer first (fast, no OCR) — but
           // per PAGE, not the whole document (see MIN_CONFIDENT_PAGE_TEXT_CHARS
@@ -117,29 +147,43 @@ export function useDocumentOcr(): UseDocumentOcr {
             .map(({ i }) => i);
           // Scanned pages (whole doc, or just some pages) have no real text
           // layer — OCR exactly those pages (native only; no-op on web).
-          if (sparsePages.length > 0 && isOcrSupported()) {
-            const ocrTexts = await ocrPdfPages(bytes, sparsePages, lang, {
-              renderPages: (pdf, pages) =>
-                pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages }),
-              recognize: recognizeDocumentText,
-              storage: createFileStorage(),
-            });
-            sparsePages.forEach((pageIndex, k) => {
+          // Forced vision transcribes every page, even ones with a text layer.
+          const pagesToOcr = forceVision ? pageTexts.map((_, i) => i) : sparsePages;
+          if (pagesToOcr.length > 0 && (forceVision || hasOcrEngine())) {
+            const renderPages = (pdf: Uint8Array, pages?: number[]): Promise<Blob[]> =>
+              pdfToImagesImpl(pdf, { format: 'png', scale: 2, pages });
+            const ocrTexts = await ocrPdfPages(
+              bytes,
+              pagesToOcr,
+              lang,
+              useVision && recognizer
+                ? { renderPages, recognizeImage: recognizer }
+                : { renderPages, recognize: recognizeDocumentText, storage: createFileStorage() }
+            );
+            pagesToOcr.forEach((pageIndex, k) => {
               // Keep the native (if any) text when OCR itself found nothing —
               // a stamped page number beats an empty string.
               pageTexts[pageIndex] = ocrTexts[k] || pageTexts[pageIndex];
             });
           }
           text = pageTexts.filter((p) => p.length > 0).join('\n\n').trim();
-          source =
-            sparsePages.length === 0
+          source = forceVision
+            ? 'vision'
+            : sparsePages.length === 0
               ? 'pdf-layer'
               : sparsePages.length === pageTexts.length
                 ? 'ocr'
                 : 'pdf-mixed';
         } else {
           // Images go straight through native ML Kit OCR.
-          text = await recognizeDocumentText(document.filePath, lang);
+          text =
+            useVision && recognizer
+              ? await recognizer(
+                  new Blob([(await createFileStorage().read(document.filePath)) as BlobPart], {
+                    type: mimeTypeFor(document.fileType),
+                  })
+                )
+              : await recognizeDocumentText(document.filePath, lang);
         }
         await new DocumentDao(db).update(document.id, { ocrText: text });
         logger.info({

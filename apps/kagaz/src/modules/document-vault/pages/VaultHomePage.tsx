@@ -46,7 +46,7 @@ import { UploadFAB } from '../components/UploadFAB';
 import { UploadOptionsSheet } from '../components/UploadOptionsSheet';
 import { useBulkActions } from '../hooks/useBulkActions';
 import { useDocLock } from '../hooks/useDocLock';
-import { canOcr, useDocumentOcr } from '../hooks/useDocumentOcr';
+import { canOcr, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useCopyDocumentText } from '../hooks/useCopyDocumentText';
 import {
@@ -216,8 +216,11 @@ export function VaultHomePage(): ReactNode {
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
 
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
-  const handleOcr = async (document: DocumentEntity): Promise<void> => {
-    const text = await extractText(document);
+  const handleOcr = async (
+    document: DocumentEntity,
+    engine: 'auto' | 'vision' = 'auto'
+  ): Promise<void> => {
+    const text = await extractText(document, { engine });
     if (text !== null && text.trim()) hapticSuccess();
     setOcrMsg(text === null ? t('ocr.failed') : text.trim() ? t('ocr.done') : t('ocr.none'));
   };
@@ -899,6 +902,18 @@ export function VaultHomePage(): ReactNode {
                     icon: 'FileText' as const,
                     handler: (): void => {
                       if (moreDoc) void handleOcr(moreDoc);
+                    },
+                  },
+                ]
+              : []),
+            // Gemma transcription: images + PDFs, even if text was already extracted.
+            ...(moreDoc && canTranscribeWithVision(moreDoc)
+              ? [
+                  {
+                    text: t('actions.transcribe_gemma'),
+                    icon: 'FileText' as const,
+                    handler: (): void => {
+                      if (moreDoc) void handleOcr(moreDoc, 'vision');
                     },
                   },
                 ]

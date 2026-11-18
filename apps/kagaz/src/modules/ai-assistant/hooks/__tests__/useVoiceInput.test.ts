@@ -102,4 +102,36 @@ describe('useVoiceInput (F-15)', () => {
     expect(result.current.error).toBe('failed');
     expect(result.current.listening).toBe(false);
   });
+
+  it('honours a release that arrives while the permission prompt is still open', async () => {
+    let grant: (v: boolean) => void = () => undefined;
+    stt.ensurePermission.mockReturnValue(new Promise<boolean>((r) => (grant = r)));
+    const { result } = renderHook(() => useVoiceInput(vi.fn()));
+
+    let starting: Promise<void> = Promise.resolve();
+    act(() => {
+      starting = result.current.start();
+    });
+    await act(async () => {
+      await result.current.stop(); // finger lifted while the dialog is up
+    });
+    await act(async () => {
+      grant(true);
+      await starting;
+    });
+    expect(stt.stop).toHaveBeenCalled();
+    expect(result.current.listening).toBe(false);
+  });
+
+  it('reports no_speech when the recognizer ends without a transcript', async () => {
+    const onResult = vi.fn();
+    const { result } = renderHook(() => useVoiceInput(onResult));
+    await act(async () => {
+      await result.current.start();
+    });
+    act(() => handlers.onEnd());
+    expect(onResult).not.toHaveBeenCalled();
+    expect(result.current.error).toBe('no_speech');
+    expect(result.current.listening).toBe(false);
+  });
 });

@@ -38,7 +38,7 @@ export interface LLMPlugin {
    * Creates a new chat session
    * @returns Promise with chat id and optional instructions
    */
-  createChat(): Promise<{ id: string; instructions?: string }>;
+  createChat(options?: { systemPrompt?: string }): Promise<{ id: string; instructions?: string }>;
 
   /**
    * Sends a message to the AI in a specific chat session
@@ -71,6 +71,13 @@ export interface LLMPlugin {
    * @returns Promise with download result including the saved path
    */
   downloadModel(options: DownloadModelOptions): Promise<DownloadModelResult>;
+
+  /**
+   * Restricts which tools one chat may call (skills); the conversation is rebuilt with its history replayed.
+   * `tools` omitted = every tool. Kagaz addition.
+   */
+  setToolSubset(options: { chatId: string; tools?: string[] }): Promise<void>;
+
 
   /**
    * Adds a listener for text received from AI
@@ -218,6 +225,10 @@ export interface GenerationErrorEvent {
  * Only `url` is required. `companionUrl` and `filename` are optional.
  */
 export interface DownloadModelOptions {
+  /**
+   * Expected size in bytes. Used for progress when the server sends no Content-Length (Kagaz addition).
+   */
+  expectedBytes?: number;
   /** URL of the model file to download */
   url: string;
   /** Optional: URL of a companion file for legacy model formats */

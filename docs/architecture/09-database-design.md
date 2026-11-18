@@ -1181,3 +1181,9 @@ When cloud sync is introduced in V2, the SQL-based schema makes migration straig
 ---
 
 *This document defines the complete data layer for Kagaz. All schema changes must go through the migration system. Direct database manipulation outside of DAOs is prohibited.*
+
+---
+
+## Migration 007 — chat message parts (2026-10-31)
+
+`ai_messages.parts_json TEXT NULL` stores structured pieces of a message that plain `content` cannot: documents the user attached, result cards for documents a tool created, assistant forms (GenUI) and the answers to them. `ai_conversations.active_skills TEXT NULL` remembers which tool groups were loaded. Both are nullable and additive (existing rows stay plain text). Parts are validated with zod on read — a corrupt row degrades to a plain message. Chat content: encrypted DB only, never logged.

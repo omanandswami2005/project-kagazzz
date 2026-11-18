@@ -6,6 +6,20 @@ import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../../hooks/useChat';
 import { ChatPage } from '../ChatPage';
 
+// The attach flow needs the vault database and upload pipeline; the page's own
+// behavior is what's under test here, so both hooks are mocked at their boundary.
+const attach = vi.hoisted(() => ({
+  state: { documents: [] as unknown[], lockedCount: 0 },
+  ingestFiles: vi.fn(),
+}));
+vi.mock('../../hooks/useAttachableDocuments', () => ({ useAttachableDocuments: () => attach.state }));
+vi.mock('@/modules/document-vault/hooks/useUpload', () => ({ useUpload: () => ({ ingestFiles: attach.ingestFiles }) }));
+
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('@ionic/react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@ionic/react')>()),
+  useIonRouter: () => ({ push: routerPush }),
+}));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 vi.mock('../../hooks/useChat', () => ({ useChat: vi.fn() }));
 vi.mock('../../components/MicButton', () => ({ MicButton: () => null }));
@@ -21,6 +35,12 @@ function chatValue(overrides: Partial<ReturnType<typeof useChat>> = {}): ReturnT
     error: null,
     isLoading: false,
     sendMessage: vi.fn(),
+    newChat: vi.fn(),
+    conversations: [],
+    activeConversationId: null,
+    loadConversations: vi.fn(),
+    openConversation: vi.fn(),
+    deleteConversation: vi.fn(),
     pendingConfirmation: null,
     confirmPendingToolCall: vi.fn(),
     rejectPendingToolCall: vi.fn(),
@@ -35,6 +55,8 @@ function aiValue(overrides: Partial<ReturnType<typeof useAi>> = {}): ReturnType<
     downloadProgress: 0,
     errorMessage: null,
     capabilities: null,
+    modelOnDisk: true,
+    download: vi.fn(),
     modelSizeBytes: 497_664_000,
     preferGpu: false,
     setPreferGpu: vi.fn(),
@@ -56,11 +78,32 @@ beforeEach(() => {
 });
 
 describe('ChatPage (F-13)', () => {
-  it('gates to a setup prompt when the model is not ready', () => {
-    useAiMock.mockReturnValue(aiValue({ status: 'not-downloaded' }));
+  it('gates to the management page link when no model is downloaded (no Download in chat)', () => {
+    const activate = vi.fn();
+    useAiMock.mockReturnValue(aiValue({ status: 'not-downloaded', modelOnDisk: false, activate }));
     render(<ChatPage />);
     expect(document.querySelector('[data-agent-id="ai.chat.gate"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeInTheDocument();
     expect(document.querySelector('[data-agent-id="ai.chat.content"]')).not.toBeInTheDocument();
+    expect(activate).not.toHaveBeenCalled();
+  });
+
+  it('auto-loads an already-downloaded model when the chat opens, once', () => {
+    const activate = vi.fn();
+    useAiMock.mockReturnValue(aiValue({ status: 'downloaded', activate }));
+    const { rerender } = render(<ChatPage />);
+    expect(activate).toHaveBeenCalledOnce();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate"]')).toHaveAttribute('data-agent-state', 'downloaded');
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeNull();
+    rerender(<ChatPage />);
+    expect(activate).toHaveBeenCalledOnce();
+  });
+
+  it('a failed load of a downloaded model offers Retry plus the management link', () => {
+    useAiMock.mockReturnValue(aiValue({ status: 'error', errorMessage: 'Out of memory', modelOnDisk: true }));
+    render(<ChatPage />);
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-retry"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeInTheDocument();
   });
 
   it('shows a loading state while the conversation history loads', () => {
@@ -106,7 +149,7 @@ describe('ChatPage (F-13)', () => {
     await userEvent.type(input, 'How many documents do I have?');
     await userEvent.click(document.querySelector('[data-agent-id="ai.chat.send"]') as Element);
 
-    expect(sendMessage).toHaveBeenCalledWith('How many documents do I have?');
+    expect(sendMessage).toHaveBeenCalledWith('How many documents do I have?', { attachments: [] });
     expect(input.value).toBe('');
   });
 
@@ -199,5 +242,170 @@ describe('ChatPage (F-13)', () => {
     expect(document.querySelector('[data-agent-id="ai.chat.confirm-approve"]')).not.toBeInTheDocument();
     await userEvent.click(document.querySelector('[data-agent-id="ai.chat.confirm-dismiss"]') as Element);
     expect(dismissExpiredConfirmation).toHaveBeenCalledOnce();
+  });
+});
+
+describe('ChatPage attachments and result cards (chat journey)', () => {
+  const doc = (id: string, name: string, fileType = 'pdf'): Record<string, unknown> => ({ id, name, fileType, isLocked: false });
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+
+  beforeEach(() => {
+    useAiMock.mockReturnValue(aiValue());
+    attach.state = { documents: [doc('doc-a', 'Rent agreement.pdf'), doc('doc-c', 'Photo.jpg', 'jpg')], lockedCount: 0 };
+    routerPush.mockClear();
+  });
+
+  it('attaching documents shows chips, sends them with the message, then clears them', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ sendMessage }));
+    render(<ChatPage />);
+
+    await userEvent.click(q('ai.chat.attach') as Element);
+    await userEvent.click(await screen.findByRole('button', { name: /Rent agreement\.pdf/ }));
+    await userEvent.click(q('ai.chat.attach-confirm') as Element);
+
+    expect(q('ai.chat.attachment-doc-a')).toHaveTextContent('Rent agreement.pdf');
+    await userEvent.type(q('ai.chat.input') as HTMLInputElement, 'compress this');
+    await userEvent.click(q('ai.chat.send') as Element);
+
+    expect(sendMessage).toHaveBeenCalledWith('compress this', {
+      attachments: [{ id: 'doc-a', name: 'Rent agreement.pdf', fileType: 'pdf' }],
+    });
+    expect(q('ai.chat.attachment-doc-a')).toBeNull();
+  });
+
+  it('a chip can be removed, and attachments alone (no text) can be sent', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ sendMessage }));
+    render(<ChatPage />);
+    const attachDoc = async (name: RegExp): Promise<void> => {
+      await userEvent.click(q('ai.chat.attach') as Element);
+      await userEvent.click(await screen.findByRole('button', { name }));
+      await userEvent.click(q('ai.chat.attach-confirm') as Element);
+    };
+
+    await attachDoc(/Rent agreement\.pdf/);
+    await userEvent.click(q('ai.chat.attachment-remove-doc-a') as Element);
+    expect(q('ai.chat.attachment-doc-a')).toBeNull();
+    expect(q('ai.chat.send')).toBeDisabled();
+
+    await attachDoc(/Photo\.jpg/);
+    expect(q('ai.chat.send')).not.toBeDisabled();
+    await userEvent.click(q('ai.chat.send') as Element);
+    expect(sendMessage).toHaveBeenCalledWith('', { attachments: [{ id: 'doc-c', name: 'Photo.jpg', fileType: 'jpg' }] });
+  });
+
+  it('says how many locked documents are hidden from the picker', async () => {
+    attach.state = { documents: [], lockedCount: 2 };
+    useChatMock.mockReturnValue(chatValue());
+    render(<ChatPage />);
+    await userEvent.click(q('ai.chat.attach') as Element);
+    expect(await screen.findByText(/2 locked documents aren't shown/)).toBeInTheDocument();
+  });
+
+  it('shows a sent message with its attached documents, and a tool result as an openable card', async () => {
+    const parts = (p: unknown): string => JSON.stringify(p);
+    useChatMock.mockReturnValue(
+      chatValue({
+        messages: [
+          { id: 'm1', conversationId: 'c', role: 'user', content: 'merge these', createdAt: '', partsJson: parts([{ type: 'attachments', documents: [{ id: 'doc-a', name: 'Rent agreement.pdf', fileType: 'pdf' }] }]) },
+          { id: 'm2', conversationId: 'c', role: 'tool', content: 'Merged.pdf', createdAt: '', partsJson: parts([{ type: 'documents', documents: [{ id: 'new-1', name: 'Merged.pdf', fileType: 'pdf' }] }]) },
+        ] as never,
+      })
+    );
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-m1')).toHaveTextContent('Rent agreement.pdf');
+    expect(q('ai.chat.message-m1')).toHaveTextContent('merge these');
+    expect(q('ai.chat.result-card')).toHaveTextContent('Merged.pdf');
+
+    await userEvent.click(q('ai.chat.result-open-new-1') as Element);
+    expect(routerPush).toHaveBeenCalledWith('/doc/new-1', 'forward', 'push');
+  });
+
+  it('a plain tool message without a documents part renders nothing', () => {
+    useChatMock.mockReturnValue(
+      chatValue({ messages: [{ id: 'm3', conversationId: 'c', role: 'tool', content: 'x', createdAt: '' }] as never })
+    );
+    render(<ChatPage />);
+    expect(q('ai.chat.message-m3')).toBeNull();
+  });
+});
+
+describe('ChatPage forms from the assistant (GenUI)', () => {
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+  const spec = {
+    question: 'How should I resize it?',
+    fields: [{ id: 'width', label: 'Width', type: 'number', required: true, min: 16, max: 8000, unit: 'px', default: 200 }],
+  };
+  const formMessage = { id: 'f1', conversationId: 'c', role: 'assistant', content: spec.question, createdAt: '', partsJson: JSON.stringify([{ type: 'form', formId: 'form-1', spec }]) };
+  const answerMessage = { id: 'a1', conversationId: 'c', role: 'user', content: 'Width: 200 px', createdAt: '', partsJson: JSON.stringify([{ type: 'answer', formId: 'form-1' }]) };
+
+  beforeEach(() => {
+    useAiMock.mockReturnValue(aiValue());
+    attach.state = { documents: [], lockedCount: 0 };
+  });
+
+  it('shows the question with its form, and submitting sends the readable answer tagged with the form id', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage] as never, sendMessage }));
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    await userEvent.click(q('ai.chat.form-submit') as Element);
+
+    expect(sendMessage).toHaveBeenCalledWith('Width: 200 px', { parts: [{ type: 'answer', formId: 'form-1' }] });
+  });
+
+  it('an answered form shows only its question and the answer — it cannot be submitted twice', () => {
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage, answerMessage] as never }));
+    render(<ChatPage />);
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    expect(q('ai.chat.form')).toBeNull();
+    expect(q('ai.chat.message-a1')).toHaveTextContent('Width: 200 px');
+  });
+
+  it('a form is inert while the assistant is answering', () => {
+    useChatMock.mockReturnValue(chatValue({ messages: [formMessage] as never, isStreaming: true }));
+    render(<ChatPage />);
+    expect(q('ai.chat.form-submit')).toBeDisabled();
+  });
+
+  it('a form with a corrupt spec degrades to a plain message (no crash, no form)', () => {
+    const corrupt = { ...formMessage, partsJson: JSON.stringify([{ type: 'form', formId: 'x', spec: { question: 'q', fields: 'nope' } }]) };
+    useChatMock.mockReturnValue(chatValue({ messages: [corrupt] as never }));
+    render(<ChatPage />);
+    expect(q('ai.chat.message-f1')).toHaveTextContent('How should I resize it?');
+    expect(q('ai.chat.form')).toBeNull();
+  });
+});
+
+describe('ChatPage markdown in messages', () => {
+  const q = (id: string): HTMLElement | null => document.querySelector(`[data-agent-id="${id}"]`);
+
+  it('renders assistant markdown (bold, lists) and the user\'s own markdown, as elements not symbols', () => {
+    useAiMock.mockReturnValue(aiValue());
+    useChatMock.mockReturnValue(
+      chatValue({
+        messages: [
+          { id: 'u1', conversationId: 'c', role: 'user', content: 'make **this** bold', createdAt: '' },
+          { id: 'a1', conversationId: 'c', role: 'assistant', content: 'Found **Rent agreement.pdf**:\n- 120 KB\n- 2 pages', createdAt: '' },
+        ] as never,
+      })
+    );
+    render(<ChatPage />);
+
+    expect(q('ai.chat.message-a1')?.querySelector('strong')?.textContent).toBe('Rent agreement.pdf');
+    expect([...(q('ai.chat.message-a1')?.querySelectorAll('li') ?? [])].map((li) => li.textContent)).toEqual(['120 KB', '2 pages']);
+    expect(q('ai.chat.message-a1')?.textContent).not.toContain('**');
+    expect(q('ai.chat.message-u1')?.querySelector('strong')?.textContent).toBe('this');
+  });
+
+  it('renders the in-progress streamed reply as markdown too, and never executes injected markup', () => {
+    useAiMock.mockReturnValue(aiValue());
+    useChatMock.mockReturnValue(chatValue({ isStreaming: true, streamingText: 'Working on **it** <img src=x onerror=alert(1)>' }));
+    render(<ChatPage />);
+    expect(q('ai.chat.streaming')?.querySelector('strong')?.textContent).toBe('it');
+    expect(q('ai.chat.streaming')?.querySelector('img')).toBeNull();
   });
 });

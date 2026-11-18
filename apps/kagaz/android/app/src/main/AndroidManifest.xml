@@ -55,15 +55,19 @@
 
     <!-- Permissions -->
 
-    <!-- [SEC] 10-security-architecture.md §3.5: V1 is 100% offline.
-         This manifest must request NO network permission (INTERNET removed;
-         debug builds get it from src/debug/AndroidManifest.xml for live
-         reload only). Re-adding it here is a release-blocking defect until
-         V2 sharing ships with its consent + E2E requirements. -->
+    <!-- [SEC] 10-security-architecture.md §3.5: the app makes no network calls
+         of its own except the user-tapped, one-time AI model download. This
+         manifest declares no network permission itself; the merged release
+         manifest still carries INTERNET + ACCESS_NETWORK_STATE, from the
+         Play-Services ML Kit scanner (ADR-018) and the LiteRT plugin (model
+         download). Anything else that needs the network is a release-blocking
+         defect until V2 sharing ships with its consent + E2E requirements. -->
 
-    <!-- [SEC] F-15 voice input (05-ai-assistant-module.md §6.1): on-device
-         speech-to-text. RECORD_AUDIO is a hardware (mic) permission, NOT a
-         network one — audio and transcripts stay on the device. Also merged
+    <!-- [SEC] F-15 voice input (05-ai-assistant-module.md §6.1): speech-to-text
+         through the platform RecognitionService. RECORD_AUDIO is a hardware (mic)
+         permission; the app itself never sends audio anywhere, but the system
+         recogniser (usually Google) may process audio on its servers — disclosed
+         in the privacy policy and store forms; offline-only is future item AI-X8. Also merged
          from @capacitor-community/speech-recognition; declared here so the
          permission is intentional and auditable. The <queries> lets Android 11+
          resolve the on-device RecognitionService. -->

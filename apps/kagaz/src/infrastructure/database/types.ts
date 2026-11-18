@@ -122,6 +122,8 @@ export interface AiConversationEntity {
   createdAt: string;
   updatedAt: string;
   isPinned: boolean;
+  /** JSON array of skill names loaded in this conversation (migration 007). */
+  activeSkills?: string;
 }
 
 /** ai_messages.role values (§4.7). */
@@ -135,5 +137,7 @@ export interface AiMessageEntity {
   content?: string;
   toolCallsJson?: string;
   toolCallId?: string;
+  /** JSON array of structured parts — attachments, result cards, forms, answers (migration 007). */
+  partsJson?: string;
   createdAt: string;
 }

@@ -1,8 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Permission for downloading LLM models -->
+    <!-- The one app-initiated network request: the user-tapped model download
+         (10-security-architecture.md §3.5). -->
     <uses-permission android:name="android.permission.INTERNET" />
-    
-    <!-- Optional permissions for model storage -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Kagaz fork: upstream also declared READ/WRITE_EXTERNAL_STORAGE "for model
+         storage". The model lives in app-private filesDir, which needs no permission,
+         and broad storage permissions draw Play policy review — removed. -->
 </manifest>

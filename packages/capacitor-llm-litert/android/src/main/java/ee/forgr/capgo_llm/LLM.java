@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -189,6 +190,13 @@ public class LLM {
 
                 android.util.Log.d("LLM", "Resolved model path: " + actualPath + " using backend: " + backend);
 
+                // A missing or empty file otherwise surfaces as an opaque native init failure.
+                File modelOnDisk = new File(actualPath);
+                if (!modelOnDisk.isFile() || modelOnDisk.length() == 0) {
+                    throw new IllegalStateException("Model file is missing or empty: " + actualPath);
+                }
+                android.util.Log.d("LLM", "Model file size: " + modelOnDisk.length() + " bytes");
+
                 if (backend == BackendType.LITERT) {
                     Engine loadedEngine = initializeLiteRtModel(actualPath, request);
                     if (!isCurrentLoad(request.loadId)) {
@@ -221,10 +229,33 @@ public class LLM {
                 resetModelState();
 
                 if (callback != null) {
-                    callback.onError(exception.getMessage());
+                    callback.onError(describeFailure(exception));
                 }
             }
         });
+    }
+
+    /**
+     * "null" or a bare native message is useless in a bug report. Include the exception type and the root
+     * cause (native init failures usually carry the real reason one level down).
+     */
+    static String describeFailure(Throwable error) {
+        StringBuilder out = new StringBuilder(error.getClass().getSimpleName());
+        if (error.getMessage() != null) {
+            out.append(": ").append(error.getMessage());
+        }
+        Throwable root = error;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root != error) {
+            out.append(" (caused by ").append(root.getClass().getSimpleName());
+            if (root.getMessage() != null) {
+                out.append(": ").append(root.getMessage());
+            }
+            out.append(")");
+        }
+        return out.toString();
     }
 
     private void notifySupersededLoad(ModelLoadCallback callback) {
@@ -254,12 +285,18 @@ public class LLM {
 
     private Engine initializeLiteRtModel(String actualPath, ModelLoadRequest request) {
         Backend primaryBackend = resolveLiteRtBackend(request.backend);
+        // Kagaz fix: vision and audio backends used to be set to the primary backend. This app's chat is
+        // text-only; asking the engine for Gemma 4's vision/audio sub-models too (on CPU) can make
+        // initialization fail, and wastes memory when it does not. Gallery and the LiteRT-LM docs leave
+        // them unset for text-only use (they are optional).
+        // (modelPath, backend, visionBackend, audioBackend, maxNumTokens, maxNumImages, cacheDir)
         EngineConfig config = new EngineConfig(
             actualPath,
             primaryBackend,
-            primaryBackend,
-            primaryBackend,
+            null,
+            null,
             request.maxTokens,
+            null,
             context.getCacheDir().getAbsolutePath()
         );
         Engine loadedEngine = new Engine(config);
@@ -358,7 +395,7 @@ public class LLM {
         }
     }
 
-    public synchronized String createChat() {
+    public synchronized String createChat(String systemPrompt) {
         if (!isReady) {
             throw new IllegalStateException("Model not ready");
         }
@@ -370,7 +407,8 @@ public class LLM {
             if (engine == null) {
                 throw new IllegalStateException("LiteRT-LM engine not initialized");
             }
-            session = ChatSession.forLiteRt(createLiteRtConversation());
+            session = ChatSession.forLiteRt(createLiteRtConversation(systemPrompt, null, null));
+            session.systemPrompt = systemPrompt;
         } else {
             if (llmInference == null) {
                 throw new IllegalStateException("MediaPipe model not initialized");
@@ -382,16 +420,86 @@ public class LLM {
         return chatId;
     }
 
-    private Conversation createLiteRtConversation() {
+    /** Last messages replayed into a rebuilt conversation — bounds the prefill cost. */
+    private static final int MAX_REPLAY_MESSAGES = 16;
+
+    private List<Message> replayMessages(List<String[]> transcript, List<Message> fallback) {
+        if (transcript == null || transcript.isEmpty()) {
+            return fallback;
+        }
+        List<Message> out = new ArrayList<>();
+        int from = Math.max(0, transcript.size() - MAX_REPLAY_MESSAGES);
+        // A replay must start with a user turn.
+        while (from < transcript.size() && !"user".equals(transcript.get(from)[0])) {
+            from++;
+        }
+        for (int i = from; i < transcript.size(); i++) {
+            String[] entry = transcript.get(i);
+            out.add("user".equals(entry[0]) ? Message.Companion.user(entry[1]) : Message.Companion.model(entry[1]));
+        }
+        return out;
+    }
+
+    /**
+     * Kagaz addition: restricts the tools a chat can call (skills). null = all tools. The conversation is
+     * rebuilt with the chat's transcript replayed, because LiteRT-LM fixes tools at conversation creation.
+     * While a reply is streaming the change is queued and applied before the next message.
+     */
+    public synchronized void setToolSubset(String chatId, List<String> names) {
+        ChatSession session = chatSessions.get(chatId);
+        if (session == null || session.backendType != BackendType.LITERT) {
+            return;
+        }
+        Set<String> next = names == null ? null : new java.util.HashSet<>(names);
+        if (java.util.Objects.equals(next, session.toolSubset)) {
+            return;
+        }
+        session.toolSubset = next;
+        session.subsetDirty = true;
+        if (!session.busy) {
+            rebuildConversation(session);
+        }
+    }
+
+    private synchronized void rebuildConversation(ChatSession session) {
+        if (engine == null || !session.subsetDirty) {
+            return;
+        }
+        Conversation previous = session.conversation;
+        session.conversation = createLiteRtConversation(session.systemPrompt, session.transcript, session.toolSubset);
+        session.subsetDirty = false;
+        if (previous != null) {
+            try {
+                previous.close();
+            } catch (Exception ignored) {
+                // The old conversation is being discarded either way.
+            }
+        }
+    }
+
+    private Conversation createLiteRtConversation(String systemPrompt, List<String[]> transcript, Set<String> toolSubset) {
         ConversationConfig defaults = new ConversationConfig();
         SamplerConfig samplerConfig = new SamplerConfig(topk, DEFAULT_TOP_P, temperature.doubleValue(), randomSeed);
+        // LiteRT-LM 0.19 added fields to ConversationConfig; copy() takes all of them, so everything
+        // we do not customize is passed through from the defaults.
         ConversationConfig config = defaults.copy(
-            defaults.getSystemInstruction(),
-            defaults.getInitialMessages(),
-            buildToolProviders(),
+            systemPrompt != null && !systemPrompt.trim().isEmpty()
+                ? com.google.ai.edge.litertlm.Contents.Companion.of(systemPrompt)
+                : defaults.getSystemInstruction(),
+            replayMessages(transcript, defaults.getInitialMessages()),
+            buildToolProviders(toolSubset),
             samplerConfig,
             defaults.getAutomaticToolCalling(), // true by default — see JsBridgeTool.java's doc comment
-            defaults.getChannels()
+            defaults.getChannels(),
+            defaults.getExtraContext(),
+            defaults.getLoraConfig(),
+            defaults.getPrefillPrefaceOnInit(),
+            defaults.getMaxOutputToken(),
+            defaults.getThinkingConfig(),
+            defaults.getEnableResponseFormat(),
+            defaults.getEnableSpeculativeDecoding(),
+            defaults.getChatTemplate(),
+            defaults.getSpeculativeDecodingConfig()
         );
         return engine.createConversation(config);
     }
@@ -400,9 +508,12 @@ public class LLM {
     // ToolSpec passed to setModel() — each wraps the shared
     // ToolCallBridge, which is what actually notifies JS and awaits a
     // resolveToolCall().
-    private List<ToolProvider> buildToolProviders() {
+    private List<ToolProvider> buildToolProviders(Set<String> subset) {
         List<ToolProvider> providers = new ArrayList<>(tools.size());
         for (ToolSpec spec : tools) {
+            if (subset != null && !subset.contains(spec.name)) {
+                continue;
+            }
             JsBridgeTool bridgeTool = new JsBridgeTool(spec.name, spec.descriptionJson, toolCallBridge);
             providers.add(ToolKt.tool(bridgeTool));
         }
@@ -489,9 +600,16 @@ public class LLM {
     }
 
     private void sendMessageWithLiteRt(String chatId, String message, ChatSession session, MessageCallback callback) {
+        if (session.subsetDirty && !session.busy) {
+            rebuildConversation(session);
+        }
         if (session.conversation == null) {
             throw new IllegalStateException("LiteRT-LM conversation not found");
         }
+
+        session.busy = true;
+        session.transcript.add(new String[] { "user", message });
+        final StringBuilder reply = new StringBuilder();
 
         session.conversation.sendMessageAsync(
             message,
@@ -500,17 +618,23 @@ public class LLM {
                 public void onMessage(Message responseMessage) {
                     String chunk = extractText(responseMessage);
                     if (!chunk.isEmpty()) {
+                        reply.append(chunk);
                         callback.onTextReceived(chatId, chunk, true);
                     }
                 }
 
                 @Override
                 public void onDone() {
+                    if (reply.length() > 0) {
+                        session.transcript.add(new String[] { "model", reply.toString() });
+                    }
+                    session.busy = false;
                     callback.onComplete(chatId);
                 }
 
                 @Override
                 public void onError(Throwable throwable) {
+                    session.busy = false;
                     callback.onError(throwable.getMessage());
                 }
             },
@@ -735,8 +859,16 @@ public class LLM {
     private static class ChatSession {
 
         private final BackendType backendType;
-        private final Conversation conversation;
+        // Kagaz addition: replaced when the tool subset changes (see setToolSubset); history is replayed.
+        private Conversation conversation;
         private final StringBuilder history;
+        /** (role, text) pairs, "user" / "model", replayed into a rebuilt conversation. */
+        final List<String[]> transcript = new ArrayList<>();
+        String systemPrompt;
+        /** Names of the tools this chat may call; null = every registered tool. */
+        Set<String> toolSubset;
+        boolean subsetDirty;
+        volatile boolean busy;
 
         private ChatSession(BackendType backendType, Conversation conversation) {
             this.backendType = backendType;

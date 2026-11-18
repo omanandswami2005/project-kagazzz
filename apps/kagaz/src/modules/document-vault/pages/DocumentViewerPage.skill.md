@@ -18,6 +18,9 @@ Action Registry entries).
 - Still loading / rendering pages → tell the user to wait.
 - No extracted text yet + it's an image or a PDF → point to the "Extract text"
   button (images use OCR; PDFs read their embedded text layer, UX-13).
+- A "Transcribe with Gemma" button may also appear (only when a local Gemma
+  server is set up). It works on images and PDFs, even when text already
+  exists, and replaces the stored text. Tell the user what it does; never press it.
 - No extracted text + the "Extract text" button is absent → the type can't be
   extracted; tell the user text isn't available.
 

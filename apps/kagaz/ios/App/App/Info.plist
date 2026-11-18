@@ -24,13 +24,25 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Kagaz uses the camera to photograph documents you choose to add to your vault. Photos stay on this device.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kagaz lets you pick photos from your library to add to your vault. They stay on this device.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kagaz saves an exported document or image to your photo library only when you ask it to.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Kagaz uses the microphone only while you hold or tap the mic button, to turn your speech into a message for the assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Kagaz converts what you say into text for the assistant, only while the mic button is active.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Kagaz uses Face ID to unlock the app and your locked documents.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

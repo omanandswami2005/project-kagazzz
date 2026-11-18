@@ -3,12 +3,13 @@
  * builds the UploadService over the app's DbConnection + FileStorage,
  * runs the source pickers, and mirrors progress into the vault store.
  */
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import { createFileStorage } from '@/infrastructure/filesystem';
 import { currentFolderId, useVaultStore } from '../store/vault.store';
 import { UploadService } from '../services/upload.service';
+import { canExtractText, useDocumentOcr } from './useDocumentOcr';
 import { pickFiles, type UploadSource } from '../services/upload-sources';
 import { generateThumbnail } from '../services/thumbnail.service';
 import type { IncomingFile } from '../types/document.types';
@@ -40,6 +41,12 @@ export interface UseUploadResult {
 /** Wires the upload pipeline into React state. */
 export function useUpload(): UseUploadResult {
   const { status, db } = useDatabase();
+  const { extractText } = useDocumentOcr();
+  // Always call the latest extractText without making ingestFiles change identity.
+  const extractRef = useRef(extractText);
+  useEffect(() => {
+    extractRef.current = extractText;
+  }, [extractText]);
 
   const service = useMemo(() => {
     if (!db) {
@@ -61,9 +68,7 @@ export function useUpload(): UseUploadResult {
       }
       store.startUpload();
       try {
-        service.onProgress((progress) =>
-          useVaultStore.getState().setUploadProgress(progress)
-        );
+        service.onProgress((progress) => useVaultStore.getState().setUploadProgress(progress));
         // Persist into the folder the user is currently viewing (null =
         // root) so the document appears where they are.
         const result = await service.uploadFiles(files, {
@@ -75,9 +80,17 @@ export function useUpload(): UseUploadResult {
         useVaultStore.getState().prependDocuments(created);
         useVaultStore
           .getState()
-          .finishUpload(
-            result.failures.map(({ error }) => error.userMessage)
-          );
+          .finishUpload(result.failures.map(({ error }) => error.userMessage));
+        // Read the text of every new image / PDF in the background (ML Kit OCR on device, the PDF
+        // text layer otherwise), so search and the AI assistant can see what the document says.
+        // One at a time: OCR is heavy, and the upload itself is already done.
+        void (async (): Promise<void> => {
+          for (const doc of created) {
+            if (canExtractText(doc)) {
+              await extractRef.current(doc).catch(() => null);
+            }
+          }
+        })();
         return { uploaded: created.length, documents: created };
       } catch (error) {
         useVaultStore.getState().finishUpload(['upload.errors.file_read_error']);

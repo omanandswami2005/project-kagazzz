@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
@@ -49,85 +49,106 @@ function renderPage(): void {
   );
 }
 
+const q = (id: string): Element | null => document.querySelector(`[data-agent-id="${id}"]`);
+const find = (id: string): Promise<Element> =>
+  waitFor(() => {
+    const el = q(id);
+    expect(el).not.toBeNull();
+    return el as Element;
+  });
+
 describe('AiAssistantPage (F-13)', () => {
-  it('shows the download button when no model is present', () => {
+  it('shows the download button when no model is present', async () => {
     renderPage();
-    expect(
-      document.querySelector('[data-agent-id="ai.settings.content"]')
-    ).toHaveAttribute('data-agent-state', 'not-downloaded');
-    expect(document.querySelector('[data-agent-id="ai.settings.download-button"]')).toBeInTheDocument();
+    await find('ai.settings.download-button');
+    expect(q('ai.settings.content')).toHaveAttribute('data-agent-state', 'not-downloaded');
+    expect(q('ai.settings.delete-button')).toBeNull();
   });
 
   it('shows an unsupported message when the platform cannot run the model', () => {
     engine.isAiSupported.mockReturnValue(false);
     renderPage();
-    expect(document.querySelector('[data-agent-id="ai.settings.unsupported"]')).toBeInTheDocument();
+    expect(q('ai.settings.unsupported')).toBeInTheDocument();
   });
 
-  it('tapping download drives the lifecycle through to ready', async () => {
+  it('remembers a downloaded model after a restart: Load + Delete, never Download again', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
     renderPage();
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
-    );
+    await find('ai.settings.downloaded');
+    expect(q('ai.settings.content')).toHaveAttribute('data-agent-state', 'downloaded');
+    expect(q('ai.settings.download-button')).toBeNull();
+    expect(q('ai.settings.load-button')).toBeInTheDocument();
+    expect(q('ai.settings.delete-button')).toBeInTheDocument();
+  });
+
+  it('tapping download downloads and verifies, but does not load the model', async () => {
+    renderPage();
+    await userEvent.click(await find('ai.settings.download-button'));
+
+    await find('ai.settings.downloaded');
+    expect(engine.downloadAndVerify).toHaveBeenCalledOnce();
+    expect(engine.loadModel).not.toHaveBeenCalled();
+  });
+
+  it('Load now loads a downloaded model through to ready', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
+    renderPage();
+    await userEvent.click(await find('ai.settings.load-button'));
 
     expect(await screen.findByText(/ready/i)).toBeInTheDocument();
-    expect(
-      document.querySelector('[data-agent-id="ai.settings.content"]')
-    ).toHaveAttribute('data-agent-state', 'ready');
-    expect(document.querySelector('[data-agent-id="ai.settings.delete-button"]')).toBeInTheDocument();
+    expect(q('ai.settings.content')).toHaveAttribute('data-agent-state', 'ready');
+    expect(q('ai.settings.delete-button')).toBeInTheDocument();
   });
 
-  it('shows an error state with a retry button when activation fails', async () => {
+  it('shows an error state with a retry button when the download fails', async () => {
     engine.downloadAndVerify.mockRejectedValue(new AiError('MODEL_DOWNLOAD_FAILED', 'No internet connection'));
     renderPage();
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
-    );
+    await userEvent.click(await find('ai.settings.download-button'));
 
     expect(await screen.findByText('No internet connection')).toBeInTheDocument();
-    expect(document.querySelector('[data-agent-id="ai.settings.retry-button"]')).toBeInTheDocument();
+    expect(q('ai.settings.retry-button')).toBeInTheDocument();
   });
 
-  it('deleting the model returns to the not-downloaded state', async () => {
+  it('keeps Delete reachable when a downloaded model fails to load', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
+    engine.loadModel.mockRejectedValue(new AiError('MODEL_LOAD_FAILED', 'Out of memory'));
     renderPage();
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
-    );
-    await screen.findByText(/ready/i);
+    await userEvent.click(await find('ai.settings.load-button'));
 
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.delete-button"]') as Element
-    );
-
-    expect(engine.deleteDownloadedModel).toHaveBeenCalledOnce();
-    expect(await screen.findByText(/download ai assistant/i)).toBeInTheDocument();
+    expect(await screen.findByText('Out of memory')).toBeInTheDocument();
+    expect(q('ai.settings.delete-button')).toBeInTheDocument();
   });
 
-  it('shows the GPU toggle off by default and forwards preferGpu=false on activate', async () => {
+  it('deleting asks for confirmation first, then returns to not-downloaded', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
     renderPage();
-    const toggle = document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]');
-    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await userEvent.click(await find('ai.settings.delete-button'));
+    expect(engine.deleteDownloadedModel).not.toHaveBeenCalled();
 
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
-    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(engine.deleteDownloadedModel).toHaveBeenCalledOnce());
+    await find('ai.settings.download-button');
+  });
+
+  it('shows the GPU toggle off by default and forwards preferGpu=false on load', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
+    renderPage();
+    expect(q('ai.settings.gpu-toggle-switch')).toHaveAttribute('aria-checked', 'false');
+
+    await userEvent.click(await find('ai.settings.load-button'));
     await screen.findByText(/ready/i);
     expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', expect.anything(), false);
   });
 
-  it('enabling the GPU toggle persists it and forwards preferGpu=true on the next activate', async () => {
+  it('enabling the GPU toggle persists it and forwards preferGpu=true on the next load', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
     renderPage();
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]') as Element
-    );
-    expect(
-      document.querySelector('[data-agent-id="ai.settings.gpu-toggle-switch"]')
-    ).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(q('ai.settings.gpu-toggle-switch') as Element);
+    expect(q('ai.settings.gpu-toggle-switch')).toHaveAttribute('aria-checked', 'true');
     expect(localStorage.getItem('kagaz:ai-gpu-experimental')).toBe('true');
 
-    await userEvent.click(
-      document.querySelector('[data-agent-id="ai.settings.download-button"]') as Element
-    );
+    await userEvent.click(await find('ai.settings.load-button'));
     await screen.findByText(/ready/i);
     expect(engine.loadModel).toHaveBeenCalledWith('/data/model.litertlm', expect.anything(), true);
   });
@@ -135,6 +156,6 @@ describe('AiAssistantPage (F-13)', () => {
   it('hides the GPU toggle when the platform is unsupported', () => {
     engine.isAiSupported.mockReturnValue(false);
     renderPage();
-    expect(document.querySelector('[data-agent-id="ai.settings.gpu-toggle"]')).not.toBeInTheDocument();
+    expect(q('ai.settings.gpu-toggle')).not.toBeInTheDocument();
   });
 });

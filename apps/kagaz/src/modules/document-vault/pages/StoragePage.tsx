@@ -96,7 +96,7 @@ export function StoragePage(): ReactNode {
                 </ul>
               </section>
 
-              {ai.status === 'ready' && (
+              {ai.modelOnDisk && (
                 <section
                   className="kg-storage__ai-model"
                   data-agent-id="vault.storage.ai-model"

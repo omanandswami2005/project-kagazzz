@@ -1,5 +1,6 @@
 {
   "title": "Kagaz AI",
+  "new_chat": "New chat",
   "input_placeholder": "Ask me anything about your documents...",
   "listening": "Listening...",
   "voice_modal": {
@@ -31,9 +32,60 @@
     "delete_button": "Delete AI model",
     "retry_button": "Try again",
     "gpu_toggle_label": "Experimental GPU acceleration",
-    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads."
+    "gpu_toggle_warning": "Faster, but may crash the app on some devices while loading. Turn this off if the app closes unexpectedly after enabling it — takes effect the next time the assistant loads.",
+    "checking": "Checking for the AI model...",
+    "downloaded": "The AI model is on this phone ({{size}}). It loads automatically when you open the chat.",
+    "load_button": "Load now",
+    "delete_confirm_title": "Delete the AI model?",
+    "delete_confirm_body": "This frees {{size}}. Your saved conversations stay. To use the assistant again you will need to download the model again.",
+    "delete_confirm_ok": "Delete",
+    "delete_confirm_cancel": "Cancel",
+    "storage_hint": "Stored only in this app's private storage. Downloaded once from Hugging Face — no documents or messages are sent."
   },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."
+  },
+  "attach": {
+    "button": "Attach documents",
+    "title": "Attach documents",
+    "upload_new": "Upload new…",
+    "pick_hint": "Or pick from your vault",
+    "empty": "No documents in your vault yet.",
+    "locked_hint_one": "1 locked document isn't shown — open it yourself to use it.",
+    "locked_hint_other": "{{count}} locked documents aren't shown — open them yourself to use them.",
+    "confirm_one": "Attach 1 document",
+    "confirm_other": "Attach {{count}} documents",
+    "remove": "Remove {{name}}"
+  },
+  "result": {
+    "title": "Created",
+    "open": "Open"
+  },
+  "form": {
+    "submit": "Send",
+    "no_documents": "No matching documents in your vault.",
+    "errors": {
+      "required": "Required",
+      "min": "Must be at least {{min}}",
+      "max": "Must be at most {{max}}",
+      "invalid": "Enter a valid value"
+    }
+  },
+  "tool": {
+    "failed": "Tool failed"
+  },
+  "history": {
+    "title": "Conversations",
+    "close": "Close",
+    "empty": "No saved conversations yet.",
+    "untitled": "New conversation",
+    "delete": "Delete {{name}}"
+  },
+  "gate": {
+    "not_downloaded": "To chat, download the AI model once. It runs fully on your phone — nothing you type leaves it.",
+    "downloading": "The AI model is downloading ({{percent}}%). You can chat when it finishes.",
+    "loading": "Loading the AI model...",
+    "error": "The assistant could not start.",
+    "manage_button": "Manage AI model"
   }
 }

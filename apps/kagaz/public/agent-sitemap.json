@@ -3,7 +3,7 @@
   "pages": {
     "ai.settings": {
       "route": "/ai-assistant",
-      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~475 MB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
+      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~2.6 GB), load it, see its status, or delete it (confirmed) to free storage. A downloaded model is remembered across restarts and the AI chat loads it automatically.",
       "primary": null,
       "actions": []
     },
@@ -21,7 +21,7 @@
     },
     "vault.viewer": {
       "route": "/doc/:id",
-      "intent": "View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction are user-only actions.",
+      "intent": "View one document — its image or PDF pages — and read or copy the text extracted from it (OCR). Deleting the document and running text extraction (including the optional Gemma transcription) are user-only actions.",
       "primary": null,
       "actions": []
     },
@@ -75,6 +75,7 @@
         "vaultActions.searchDocuments",
         "vaultActions.openQuickReference",
         "vaultActions.openQuickNotes",
+        "vaultActions.startQuickNote",
         "vaultActions.openFilters",
         "vaultActions.clearFilters",
         "vaultActions.bulkDelete",
@@ -117,6 +118,117 @@
     }
   },
   "actions": {
+    "ai.askUser": {
+      "summary": "ALWAYS use this — never plain text — whenever you must ask the user for something to finish a task: a form (1-3 fields: choice, multi, number, text, toggle, date, document) appears in the chat. Examples: photo size missing → ai.askUser({question:\"What size should the photo be?\", fields:[{id:\"width\",label:\"Width\",type:\"number\",unit:\"px\"},{id:\"height\",label:\"Height\",type:\"number\",unit:\"px\"},{id:\"maxSizeKb\",label:\"Max file size\",type:\"number\",unit:\"KB\"}]}); watermark text missing → ai.askUser({question:\"What should the watermark say?\", fields:[{id:\"text\",label:\"Watermark text\",type:\"text\"}]}). After calling it, STOP: write nothing more; their answer arrives as their next message. Never ask for passwords, OTPs or ID numbers.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.mergeDocuments": {
+      "summary": "Merge two or more existing documents (in the given order) into a single new PDF. The originals are untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.splitDocument": {
+      "summary": "Split a PDF into multiple new documents by page ranges (1-indexed, inclusive). The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.compressDocument": {
+      "summary": "Reduce the file size of a PDF, creating a new compressed copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.watermarkDocument": {
+      "summary": "Add a text watermark to every page of a PDF, creating a new watermarked copy.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.convertImagesToPdf": {
+      "summary": "Combine one or more existing image documents into a single new PDF.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.convertPdfToImages": {
+      "summary": "Render every page of a PDF to a separate new image document.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.findInDocuments": {
+      "summary": "Find documents whose TEXT contains a word or name (for example \"rover\" or a person\\",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.readDocumentText": {
+      "summary": "Read the extracted text of one document (images and scanned PDFs are read first if needed) so you can answer questions about what it says. Answer only from this text and name the document; if the answer is not in it, say so.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.resizeImage": {
+      "summary": "Resize an image to exact pixel dimensions and compress it under a size limit (e.g. a 200x230 photo under 50 KB for a government form), saving a new copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.enhanceImage": {
+      "summary": "Apply a filter to an image document — grayscale, bw (black & white scan look), enhance (auto contrast) or invert — saving a new copy. The original is untouched.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.runOcr": {
+      "summary": "Read the text in an image or scanned PDF and store it so the document becomes searchable. Returns only how many characters were found — never the text itself.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.openQuickReference": {
+      "summary": "Open Quick Reference, the personal saved-values screen (PAN, mobile, bank account, etc.).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.openQuickNotes": {
+      "summary": "Open Quick Notes, the fast, gate-free personal notes screen for non-sensitive data.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "vault.startQuickNote": {
+      "summary": "Open Quick Notes with the add-note composer already open, ready to type a title and value.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "settings.open": {
+      "summary": "Open the app Settings screen (appearance/theme, and — as they ship — language, security, and about).",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "tools.openPdfTools": {
+      "summary": "Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "settings.setTheme": {
+      "summary": "Choose what happens when a document row is swiped left or right (delete, favorite, move, add tag, or nothing).",
+      "voice": [
+        "dark mode",
+        "light mode",
+        "use system theme",
+        "डार्क मोड",
+        "लाइट मोड"
+      ],
+      "requiresConfirmation": false
+    },
+    "ai.loadSkill": {
+      "summary": "Load a skill: makes its tools available and returns its usage rules. Call this when you need tools that are not in your tool list.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.listDocuments": {
+      "summary": "List the user\\",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.searchDocuments": {
+      "summary": "Find documents by a name OR by words inside their extracted text (a person, a company, \"rover\"…); pass a short keyword, not a sentence. Each result has a snippet of the matching text when the match was inside it. To answer what a document says (a phone number, date, amount), call ai.readDocumentText with its id next.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
     "quicknotes.copyValue": {
       "summary": "Copy a Quick Notes entry as \"label: value\" to the clipboard.",
       "voice": [
@@ -174,16 +286,6 @@
       "voice": [],
       "requiresConfirmation": false
     },
-    "vault.openQuickReference": {
-      "summary": "Open Quick Reference, the personal saved-values screen (PAN, mobile, bank account, etc.).",
-      "voice": [],
-      "requiresConfirmation": false
-    },
-    "vault.openQuickNotes": {
-      "summary": "Open Quick Notes, the fast, gate-free personal notes screen for non-sensitive data.",
-      "voice": [],
-      "requiresConfirmation": false
-    },
     "vault.openFilters": {
       "summary": "Open the filter panel to narrow the document list.",
       "voice": [],
@@ -227,27 +329,6 @@
     "vault.toggleSortDirection": {
       "summary": "Flip the document sort between ascending and descending.",
       "voice": [],
-      "requiresConfirmation": false
-    },
-    "tools.openPdfTools": {
-      "summary": "Open the PDF Tools hub to merge, split, compress, convert PDFs and images, watermark a PDF, password-protect/unlock a PDF, or fill a PDF form.",
-      "voice": [],
-      "requiresConfirmation": false
-    },
-    "settings.open": {
-      "summary": "Open the app Settings screen (appearance/theme, and — as they ship — language, security, and about).",
-      "voice": [],
-      "requiresConfirmation": false
-    },
-    "settings.setTheme": {
-      "summary": "Choose what happens when a document row is swiped left or right (delete, favorite, move, add tag, or nothing).",
-      "voice": [
-        "dark mode",
-        "light mode",
-        "use system theme",
-        "डार्क मोड",
-        "लाइट मोड"
-      ],
       "requiresConfirmation": false
     }
   },
@@ -391,6 +472,20 @@
         "vault.home"
       ],
       "action": "vault.createStarterFolders"
+    },
+    {
+      "utterance": "take a quick note",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.startQuickNote"
+    },
+    {
+      "utterance": "एक क्विक नोट लिखो",
+      "pages": [
+        "vault.home"
+      ],
+      "action": "vault.startQuickNote"
     },
     {
       "utterance": "edit tags",

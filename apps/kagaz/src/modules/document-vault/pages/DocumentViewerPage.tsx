@@ -51,7 +51,7 @@ import { useDocument } from '../hooks/useDocument';
 import { useDocLock } from '../hooks/useDocLock';
 import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
-import { canExtractText, useDocumentOcr } from '../hooks/useDocumentOcr';
+import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive } from '@/core/haptics';
@@ -136,12 +136,15 @@ export function DocumentViewerPage(): ReactNode {
   const detectedNumbers = useMemo(() => extractNumberSequences(text ?? ''), [text]);
 
   const running = document != null && runningId === document.id;
+  // Which engine the in-flight extraction uses, so only its own button spins.
+  const [runningEngine, setRunningEngine] = useState<'auto' | 'vision'>('auto');
 
-  const handleExtract = async (): Promise<void> => {
+  const handleExtract = async (engine: 'auto' | 'vision' = 'auto'): Promise<void> => {
     if (!document) {
       return;
     }
-    const out = await extractText(document);
+    setRunningEngine(engine);
+    const out = await extractText(document, { engine });
     setExtracted(out);
     setToast(out === null ? t('ocr.failed') : out.trim() ? t('ocr.done') : t('ocr.none'));
   };
@@ -290,7 +293,7 @@ export function DocumentViewerPage(): ReactNode {
                   <Button
                     variant="secondary"
                     size="sm"
-                    loading={running}
+                    loading={running && runningEngine === 'auto'}
                     onClick={() => void handleExtract()}
                     agentId="vault.viewer.extract-text"
                   >
@@ -298,6 +301,21 @@ export function DocumentViewerPage(): ReactNode {
                   </Button>
                 ) : (
                   <p className="kg-viewer__text-empty">{t('viewer.no_text')}</p>
+                )}
+                {/* Gemma transcription: offered even when text already exists (re-run replaces it). */}
+                {canTranscribeWithVision(document) && (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={running && runningEngine === 'vision'}
+                      onClick={() => void handleExtract('vision')}
+                      agentId="vault.viewer.transcribe-gemma"
+                    >
+                      {t('actions.transcribe_gemma')}
+                    </Button>
+                    <p className="kg-viewer__text-empty">{t('ocr.vision_hint')}</p>
+                  </>
                 )}
               </section>
             </>

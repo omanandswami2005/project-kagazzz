@@ -21,12 +21,17 @@
  */
 import type { SupportedLanguage } from '@/core/i18n';
 import { STORAGE_DIRS } from '@/infrastructure/filesystem';
+import type { ImageTextRecognizer } from '@/modules/image-engine/services/vision-ocr.service';
 
-/** Everything {@link ocrPdfPages} needs, injected. */
-export interface PdfOcrDeps {
+/** Renders pages; shared by both recognition paths. */
+interface PdfOcrBaseDeps {
   /** Renders the given 0-indexed pages of a PDF to image blobs, in order
    * (all pages when `pages` is omitted — e.g. pdf-engine's pdfToImages). */
   renderPages: (pdf: Uint8Array, pages?: number[]) => Promise<Blob[]>;
+}
+
+/** Native path: write each page to temp storage and read it with ML Kit. */
+export interface PdfOcrNativeDeps extends PdfOcrBaseDeps {
   /** Recognises text in a stored (app-relative) image path via ML Kit. */
   recognize: (storagePath: string, language: SupportedLanguage) => Promise<string>;
   /** Temp file I/O (write a page image, delete it after). */
@@ -37,6 +42,14 @@ export interface PdfOcrDeps {
   /** UUID generator (injected so tests are deterministic). */
   uuid?: () => string;
 }
+
+/** Fallback path (no ML Kit): hand each rendered page blob straight to a vision model. */
+interface PdfOcrBlobDeps extends PdfOcrBaseDeps {
+  recognizeImage: ImageTextRecognizer;
+}
+
+/** Everything {@link ocrPdfPages} needs, injected — one recognition path or the other. */
+export type PdfOcrDeps = PdfOcrNativeDeps | PdfOcrBlobDeps;
 
 /**
  * OCRs exactly the given 0-indexed `pageIndices` (rendered in that order) and
@@ -54,9 +67,16 @@ export async function ocrPdfPages(
   if (pageIndices.length === 0) {
     return [];
   }
-  const newId = deps.uuid ?? ((): string => crypto.randomUUID());
   const blobs = await deps.renderPages(pdf, pageIndices);
   const texts: string[] = [];
+
+  if ('recognizeImage' in deps) {
+    for (const blob of blobs) {
+      texts.push((await deps.recognizeImage(blob)).trim());
+    }
+    return texts;
+  }
+  const newId = deps.uuid ?? ((): string => crypto.randomUUID());
 
   for (const blob of blobs) {
     const path = `${STORAGE_DIRS.temp}/pdf-ocr-${newId()}.png`;

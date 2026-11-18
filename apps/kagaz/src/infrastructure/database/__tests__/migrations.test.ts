@@ -11,7 +11,7 @@ import { migrations } from '../migrations';
 describe('migration registry', () => {
   it('contains all migrations in ascending, gapless version order', () => {
     const versions = migrations.map((m) => m.version);
-    expect(versions).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(versions).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 });
 

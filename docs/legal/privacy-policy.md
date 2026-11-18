@@ -1,6 +1,6 @@
 # Privacy Policy — Kagaz (Omni Docs)
 
-Last updated: 2026-06-08
+Last updated: 2026-11-18 (draft — section 3A on-device AI and voice input added; counsel review pending)
 
 Short summary
 
@@ -27,6 +27,15 @@ Categories:
 - Usage & diagnostics: app version, crash logs, anonymized usage telemetry (opt-in)
 - Metadata: document names, file hashes, tags, folder names, expiry dates you set
 - Consent records and audit logs (timestamp, UA)
+
+3A. On-device AI assistant and voice input (Android app; draft for counsel review)
+
+- The AI assistant (Kagaz AI) runs entirely on your phone using the Gemma 4 model. Your messages, the assistant's replies and any document text it reads stay on your device. We do not receive them.
+- To use the assistant you must first download the model (about 2.6 GB) by tapping Download. This is the only network request the app itself makes. It fetches a public file from Hugging Face and sends no information about you or your documents. You can delete the model at any time from Settings → AI Assistant or the Storage screen.
+- When you ask about what a document says, the assistant may read the text already extracted from that document, on your device only. It never reads documents you have locked.
+- The assistant asks you to confirm before it deletes or changes anything.
+- Voice input: when you use the mic button, the app uses your phone's built-in speech recognition service (Google on Android, Apple on iOS) to turn speech into text. That service may process the audio on its provider's servers under the provider's own privacy terms. Kagaz does not record, store or send the audio. Type instead if you prefer.
+- Chat history is stored in the app's encrypted database on your device. You can delete conversations, or all data, in the app.
 
 4. How we collect data
 

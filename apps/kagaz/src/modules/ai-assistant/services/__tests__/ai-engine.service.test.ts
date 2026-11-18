@@ -27,6 +27,8 @@ import {
   isAiSupported,
   loadModel,
   MODEL_SHA256,
+  MODEL_SIZE_BYTES,
+  ON_DEVICE_MAX_TOKENS,
   modelSizeOnDiskBytes,
 } from '../ai-engine.service';
 
@@ -62,10 +64,15 @@ describe('isAiSupported (F-13)', () => {
 });
 
 describe('hasDownloadedModel / modelSizeOnDiskBytes', () => {
-  it('true + size when the file stats successfully', async () => {
-    filesystemMock.stat.mockResolvedValue({ size: 497_664_000 });
+  it('true + size when a complete file is on disk', async () => {
+    filesystemMock.stat.mockResolvedValue({ size: MODEL_SIZE_BYTES });
     expect(await hasDownloadedModel()).toBe(true);
-    expect(await modelSizeOnDiskBytes()).toBe(497_664_000);
+    expect(await modelSizeOnDiskBytes()).toBe(MODEL_SIZE_BYTES);
+  });
+
+  it('false for a truncated file (an interrupted download must not count as downloaded)', async () => {
+    filesystemMock.stat.mockResolvedValue({ size: 497_664_000 });
+    expect(await hasDownloadedModel()).toBe(false);
   });
 
   it('false + null when stat throws (no file yet)', async () => {
@@ -86,12 +93,15 @@ describe('downloadAndVerify (F-13)', () => {
 
     expect(path).toBe('/data/model.litertlm');
     expect(plugin.downloadModel).toHaveBeenCalledOnce();
+    // The expected size lets the native side report progress even without a Content-Length — and for a
+    // file over 2 GiB (Gemma 4) the old int length was -1, which left the progress bar at 0.
+    expect(plugin.downloadModel).toHaveBeenCalledWith(expect.objectContaining({ expectedBytes: MODEL_SIZE_BYTES }));
     listeners.downloadProgress?.({ progress: 55 });
     expect(onProgress).toHaveBeenCalledWith(55);
   });
 
   it('skips the download when a model file already exists, but still verifies', async () => {
-    filesystemMock.stat.mockResolvedValue({ size: 1 }); // already present
+    filesystemMock.stat.mockResolvedValue({ size: MODEL_SIZE_BYTES }); // already present
     plugin.sha256File.mockResolvedValue({ hash: MODEL_SHA256 });
 
     await downloadAndVerify(vi.fn());
@@ -135,6 +145,8 @@ describe('loadModel (F-13)', () => {
       path: '/data/model.litertlm',
       modelType: 'litertlm',
       backend: 'cpu',
+      // Not the plugin's 2,048 default: the tool schemas alone overflow it ("2196 >= 2048" on a phone).
+      maxTokens: ON_DEVICE_MAX_TOKENS,
       tools: [],
     });
   });
@@ -191,6 +203,10 @@ describe('deleteDownloadedModel', () => {
     await deleteDownloadedModel();
     expect(plugin.deleteModel).toHaveBeenCalledWith({
       path: '/data/user/0/in.kagaz.app/files/model.litertlm',
+    });
+    // A leftover partial download is cleaned up too.
+    expect(plugin.deleteModel).toHaveBeenCalledWith({
+      path: '/data/user/0/in.kagaz.app/files/model.litertlm.part',
     });
   });
 });

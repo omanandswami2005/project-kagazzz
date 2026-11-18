@@ -16,12 +16,26 @@ import { log } from '@/core/logging';
 
 const logger = log('ai-assistant');
 
-/** litert-community/Qwen3-0.6B's mixed-INT4 artifact — Apache-2.0, ~498 MB. */
-export const MODEL_FILENAME = 'qwen3_0_6b_mixed_int4.litertlm';
+/**
+ * Gemma 4 E2B (text + tool calling) as a LiteRT-LM file from litert-community —
+ * public (not gated), Apache-2.0, ~2.6 GB, so it needs a recent phone with
+ * plenty of free memory. SHA-256 is the repository's published LFS checksum and
+ * is verified on every load, not just after download.
+ */
+export const MODEL_FILENAME = 'gemma-4-E2B-it.litertlm';
 export const MODEL_URL =
-  'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm';
-export const MODEL_SHA256 = 'b1baab462f6be49d70eada79d715c2c52cd9ece0cad00bddf6a2c097d23498e9';
-export const MODEL_SIZE_BYTES = 497_664_000;
+  'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm';
+export const MODEL_SHA256 = '181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c';
+export const MODEL_SIZE_BYTES = 2_588_147_712;
+
+/**
+ * Context window requested from the engine. The plugin's own default is 2,048 tokens, and this chat
+ * overflows it on its own: the native engine registers every tool up front (about 2,000 tokens of
+ * schemas) before the first word is typed, which failed on a phone with "input token ids are too
+ * long ... 2196 >= 2048". Gemma 4 E2B supports up to 32k; 8,192 leaves room for a real conversation
+ * and tool results without a large KV-cache cost.
+ */
+export const ON_DEVICE_MAX_TOKENS = 8192;
 
 /** Mirrors 05-ai-assistant-module.md §9.1 (renamed from the old WebGPU-era set). */
 export type AiErrorCode =
@@ -54,11 +68,16 @@ async function resolveModelPath(): Promise<string> {
   return uri.replace(/^file:\/\//, '');
 }
 
-/** File exists at the expected on-disk path — existence only, not checksum-verified. */
+/**
+ * A complete model file is on disk: present AND exactly {@link MODEL_SIZE_BYTES} long. Size, not
+ * checksum (hashing 2.6 GB at every app start would be slow) — the checksum is still verified
+ * before every load. The size check rejects a truncated file from an interrupted download
+ * (older builds wrote straight to the final name; the native side now uses `<name>.part`).
+ */
 export async function hasDownloadedModel(): Promise<boolean> {
   try {
-    await Filesystem.stat({ path: MODEL_FILENAME, directory: Directory.Data });
-    return true;
+    const stat = await Filesystem.stat({ path: MODEL_FILENAME, directory: Directory.Data });
+    return stat.size === MODEL_SIZE_BYTES;
   } catch {
     return false;
   }
@@ -90,7 +109,11 @@ export async function downloadAndVerify(onProgress: (percent: number) => void): 
       onProgress(event.progress);
     });
     try {
-      const result = await CapacitorLlmLiteRT.downloadModel({ url: MODEL_URL, filename: MODEL_FILENAME });
+      const result = await CapacitorLlmLiteRT.downloadModel({
+        url: MODEL_URL,
+        filename: MODEL_FILENAME,
+        expectedBytes: MODEL_SIZE_BYTES,
+      });
       path = result.path;
     } catch (error) {
       logger.warn({ event: 'ai.model.download_failed', err: { message: String(error) } });
@@ -146,7 +169,13 @@ export async function loadModel(
 ): Promise<LoadResult> {
   if (preferGpu) {
     try {
-      await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'gpu', tools });
+      await CapacitorLlmLiteRT.setModel({
+        path,
+        modelType: 'litertlm',
+        backend: 'gpu',
+        maxTokens: ON_DEVICE_MAX_TOKENS,
+        tools,
+      });
       return logLoaded();
     } catch (gpuError) {
       // A genuine native crash never reaches this catch — see the doc
@@ -156,7 +185,13 @@ export async function loadModel(
   }
 
   try {
-    await CapacitorLlmLiteRT.setModel({ path, modelType: 'litertlm', backend: 'cpu', tools });
+    await CapacitorLlmLiteRT.setModel({
+      path,
+      modelType: 'litertlm',
+      backend: 'cpu',
+      maxTokens: ON_DEVICE_MAX_TOKENS,
+      tools,
+    });
   } catch (cpuError) {
     // Surface the native engine's real message (e.g. an out-of-memory or
     // engine-init failure reason) instead of a generic string — it was
@@ -180,8 +215,10 @@ async function logLoaded(): Promise<LoadResult> {
   return capabilities;
 }
 
+/** Deletes the model file and any leftover partial download (`<name>.part`). */
 export async function deleteDownloadedModel(): Promise<void> {
   const path = await resolveModelPath();
   await CapacitorLlmLiteRT.deleteModel({ path });
+  await CapacitorLlmLiteRT.deleteModel({ path: `${path}.part` }).catch(() => undefined);
   logger.info({ event: 'ai.model.deleted' });
 }
