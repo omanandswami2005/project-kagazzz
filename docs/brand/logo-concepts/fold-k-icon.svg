@@ -1,10 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100" role="img" aria-label="Kagazzz app icon — Folded K">
-  <defs><linearGradient id="g-fold-k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect width="100" height="100" rx="23" fill="url(#g-fold-k)"/>
-  <g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#C4B5FD"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#C4B5FD"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#EDE9FE"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0D1117"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g></svg>

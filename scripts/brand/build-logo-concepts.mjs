@@ -1,222 +1,222 @@
 #!/usr/bin/env node
 /**
- * Generates the Kagazzz logo concepts as SVG + a preview page.
+ * Generates the Kagazzz logo concepts (round 2) as SVG + a preview page.
  *
  *   node scripts/brand/build-logo-concepts.mjs
  *   open docs/brand/logo-concepts/index.html
  *
- * Every concept is one function `(p) => svgMarkup` drawn on a 100×100 grid, rendered in
- * three palettes (on the brand gradient, on light, on dark). Colors are the brand tokens
- * from docs/design-system/design-tokens.md (brand gradient + accent green). Output per
- * concept: `<id>-icon.svg` (1024 px app-icon tile), `<id>-mark.svg` (mark only, light
- * background), `<id>-lockup.svg` (icon + wordmark). Review-only: nothing here ships.
+ * Round 2 follows how the best-known app marks work (GitHub, Claude, Spotify, WhatsApp,
+ * Instagram): ONE bold silhouette, ONE owned color, at most one accent, no text in the
+ * icon, crisp edges, and it must still read as a black silhouette at 24 px. Each concept
+ * therefore has its own color story instead of sharing one gradient.
+ *
+ * Each mark is `draw({ fg, cut, accent })` on a 100×100 grid: `fg` = the symbol, `cut` =
+ * negative space punched through it (normally the tile color), `accent` = the one optional
+ * highlight. Output per concept: `<id>-icon.svg` (1024 px tile), `<id>-mark.svg`,
+ * `<id>-mono.svg` (single color, for tinted/monochrome icons), `<id>-lockup.svg`.
+ * Review-only: nothing here ships until a concept is chosen.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../docs/brand/logo-concepts');
-
-/** Brand tokens (design-tokens.md). */
-const BRAND = { start: '#4F46E5', mid: '#7C3AED', end: '#A21CAF', ink: '#1E1B4B', accent: '#10B981' };
+const SANS = "'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif";
 
 /**
- * Palettes a mark is drawn in. `main` = the dominant shape, `fold` = the shaded side of a
- * fold, `soft` = secondary shapes, `accent` = the green "safe / verified" touch,
- * `cut` = color punched through the main shape (letters, keyholes).
+ * The concepts. `tile` is the icon background (a color or a {from,to} gradient); `fg` the
+ * symbol color on it; `cutOnTile` the negative-space color on the tile; `ink` the brand
+ * color used when the mark sits on white; `accent` its one highlight.
  */
-const PALETTES = {
-  gradient: { main: '#FFFFFF', fold: '#EDE9FE', soft: '#C4B5FD', accent: '#6EE7B7', cut: BRAND.start },
-  light: { main: BRAND.start, fold: BRAND.mid, soft: '#A78BFA', accent: BRAND.accent, cut: '#FFFFFF' },
-  dark: { main: '#FFFFFF', fold: '#DDD6FE', soft: '#A78BFA', accent: '#34D399', cut: '#0F172A' },
-};
-
-const DEVANAGARI = "'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif";
-
-/** The concepts. `draw(p)` returns SVG children on a 0–100 grid; `small(p)` is the simplified ≤40 px form. */
 const CONCEPTS = [
   {
     id: 'kashti',
-    name: 'Kashti — the paper boat',
-    tagline: '“Kaagaz ki kashti”',
-    meaning:
-      'Every Indian child has folded a paper boat. A boat made of paper that safely carries what matters across the water, like your documents carried safely on your phone.',
-    notes: 'Strongest cultural story and instantly recognisable. The folds say "paper"; the green wave is the accent. Reduces to two shapes at 24 px.',
-    draw: (p) => `
-      <polygon points="18,58 30,40 40,58" fill="${p.soft}"/>
-      <polygon points="60,58 70,40 82,58" fill="${p.soft}"/>
-      <polygon points="36,58 50,20 64,58" fill="${p.main}"/>
-      <polygon points="50,20 64,58 50,58" fill="${p.fold}"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="${p.main}"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="${p.fold}"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="${p.accent}" stroke-width="4.5" stroke-linecap="round"/>`,
-    small: (p) => `
-      <polygon points="36,60 50,18 64,60" fill="${p.main}"/>
-      <polygon points="10,60 90,60 77,82 23,82" fill="${p.main}"/>`,
-  },
-  {
-    id: 'ka',
-    name: 'क — the first letter of कागज़',
-    tagline: 'Paper + India in one glance',
-    meaning:
-      'A sheet with a dog-eared corner carrying the Devanagari क. It reads as "paper" and "India" at once, for Hindi and English users alike.',
-    notes: 'Closest to the current icon, so the switch is gentle. Outline the letter as a vector path before production (live text depends on installed fonts).',
-    draw: (p) => `
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="${p.main}"/>
-      <path d="M62 12 V28 H78 Z" fill="${p.soft}"/>
-      <text x="52" y="70" text-anchor="middle" font-family="${DEVANAGARI}" font-weight="700" font-size="44" fill="${p.cut}">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="${p.accent}"/>`,
-    small: (p) => `
-      <path d="M24 10 H64 L80 26 V90 H24 Z" fill="${p.main}"/>
-      <text x="52" y="76" text-anchor="middle" font-family="${DEVANAGARI}" font-weight="700" font-size="56" fill="${p.cut}">क</text>`,
+    name: 'Kashti',
+    color: 'Saffron',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFFFFF',
+    wordBg: '#FFF7F0',
+    story: '“Kaagaz ki kashti”: the paper boat every Indian child has folded. Paper that carries what matters safely.',
+    why: 'Warm and confident, like Claude’s terracotta. Saffron is bright, Indian and nothing like the blue or green of most document apps. One white silhouette; the fold line is the only detail.',
+    draw: ({ fg, cut }) => `
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="${fg}"/>
+      <path d="M8 56 H92" stroke="${cut}" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="${cut}" stroke-width="3.5"/>`,
   },
   {
     id: 'fold-k',
     name: 'Folded K',
-    tagline: 'A monogram folded from paper strips',
-    meaning:
-      'The K of Kagazzz built from three paper strips. One strip folds over another, and the shading shows the crease. Simple, geometric and ownable.',
-    notes: 'Works best as a pure monogram for the app icon, the splash and the notification icon. Least literal, so it needs the wordmark nearby at first.',
-    draw: (p) => `
-      <path d="M26 16 H42 V84 H26 Z" fill="${p.main}"/>
-      <path d="M42 16 L34 24 H42 Z" fill="${p.soft}"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="${p.soft}"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="${p.main}"/>
-      <polygon points="42,50 54,58 46,62" fill="${p.fold}"/>`,
-    small: (p) => `
-      <path d="M24 14 H42 V86 H24 Z" fill="${p.main}"/>
-      <polygon points="42,50 66,14 86,14 56,58" fill="${p.main}"/>
-      <polygon points="48,56 60,48 84,86 64,86" fill="${p.main}"/>`,
+    color: 'Graphite',
+    tile: '#0D1117',
+    fg: '#FFFFFF',
+    cutOnTile: '#0D1117',
+    ink: '#0D1117',
+    accent: '#7EE787',
+    wordBg: '#F6F8FA',
+    story: 'The K of Kagazzz, folded from paper. The top-right corner of the stem is a dog-ear.',
+    why: 'GitHub-style restraint: white on near-black, one tiny accent. Reads like serious developer-grade software, and works in any single color.',
+    draw: ({ fg, cut, accent }) => `
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="${fg}"/>
+      <path d="M33 14 L41 22 H33 Z" fill="${accent}"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="${fg}"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="${fg}"/>
+      <path d="M45 50 L58 58" stroke="${cut}" stroke-width="3"/>`,
   },
   {
     id: 'mohar',
-    name: 'Mohar — the verified seal',
-    tagline: 'Official, stamped, safe',
-    meaning:
-      'A document carrying a round मोहर (stamp) with a tick. Indian paperwork lives and dies by the seal; here the seal means verified and protected.',
-    notes: 'Most "government documents" in feel and builds trust quickly. Watch that it does not look like an official government emblem; keep the seal generic, with no Ashoka or state symbols.',
-    draw: (p) => `
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="${p.main}"/>
-      <path d="M60 12 V24 H72 Z" fill="${p.soft}"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="${p.soft}"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="${p.soft}"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="${p.soft}"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="${p.accent}" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="${p.accent}"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`,
-    small: (p) => `
-      <path d="M20 10 H62 L74 22 V90 H20 Z" fill="${p.main}"/>
-      <circle cx="66" cy="70" r="20" fill="${p.accent}"/>
-      <path d="M57 70.5 l6.5 6.5 l11 -12" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`,
+    name: 'Mohar',
+    color: 'Seal green on paper',
+    tile: '#F4EEE1',
+    fg: '#0F5B45',
+    cutOnTile: '#F4EEE1',
+    ink: '#0F5B45',
+    accent: '#0F5B45',
+    wordBg: '#F4EEE1',
+    story: 'A round मोहर (rubber stamp) with a folded page inside: verified, official, kept safe.',
+    why: 'Paper-colored tile plus deep ink green, like a stamped certificate. It looks trustworthy for ID documents and stands out on a home screen full of saturated colors. Generic seal only, with no state emblems.',
+    draw: ({ fg, cut }) => `
+      <circle cx="50" cy="50" r="42" fill="none" stroke="${fg}" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="${fg}"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="${cut}"/>
+      <path d="M57 28 V37 H66 Z" fill="${fg}" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="${fg}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   {
-    id: 'shield',
-    name: 'Paper shield',
-    tagline: 'Privacy-first, literally',
-    meaning:
-      'A shield whose corner folds like a sheet of paper, with a keyhole in the middle. Your documents, locked, on your phone, with nothing leaving it.',
-    notes: 'Says "privacy and security" fastest, the core promise of the app. Shields are common in security apps, so the paper fold is what makes it ours.',
-    draw: (p) => `
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="${p.main}"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="${p.soft}"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="${p.fold}"/>
-      <circle cx="50" cy="45" r="8" fill="${p.cut}"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="${p.cut}"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="${p.accent}"/>`,
-    small: (p) => `
-      <path d="M50 8 L82 20 V48 C82 69 68 82 50 92 C32 82 18 69 18 48 V20 Z" fill="${p.main}"/>
-      <circle cx="50" cy="44" r="10" fill="${p.cut}"/>
-      <path d="M44 50 H56 L59 72 H41 Z" fill="${p.cut}"/>`,
+    id: 'corner',
+    name: 'Corner',
+    color: 'Cobalt on white',
+    tile: '#FFFFFF',
+    fg: '#1F4FFF',
+    cutOnTile: '#FFFFFF',
+    ink: '#1F4FFF',
+    accent: '#9DB4FF',
+    wordBg: '#FFFFFF',
+    story: 'Just a sheet of paper with a big folded corner. The simplest possible way to say "kagaz".',
+    why: 'Dropbox and Notion-style minimalism: a white tile with one cobalt shape and one lighter shade. Calm and premium, and it survives as a single color.',
+    draw: ({ fg, accent }) => `
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="${fg}"/>
+      <path d="M58 12 V38 H84 Z" fill="${accent}"/>`,
+  },
+  {
+    id: 'vault',
+    name: 'Vault',
+    color: 'Midnight navy',
+    tile: '#0A2540',
+    fg: '#FFFFFF',
+    cutOnTile: '#0A2540',
+    ink: '#0A2540',
+    accent: '#00D4B5',
+    wordBg: '#F6F9FC',
+    story: 'A shield whose corner folds like paper, with a keyhole: your documents, locked, on your phone.',
+    why: 'Bank-grade navy with one teal accent, the way fintech apps signal trust. It says privacy, the app’s core promise, in a single shape.',
+    draw: ({ fg, cut, accent }) => `
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="${fg}"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="${accent}"/>
+      <circle cx="50" cy="44" r="9" fill="${cut}"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="${cut}"/>`,
   },
   {
     id: 'zzz',
-    name: 'Zzz stack',
-    tagline: 'Sleep easy: your papers are sorted',
-    meaning:
-      'Three stacked sheets, like the zzz in Kagazzz, with a bold Z on top. It makes the name memorable and promises calm: your documents are in order, so you can relax.',
-    notes: 'The most playful and the most memorable for the "Kagazzz" spelling. Less serious than Mohar or Shield, which suits a friendly consumer app.',
-    draw: (p) => `
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="${p.soft}" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="${p.fold}" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="${p.main}"/>
-      <path d="M74 14 V24 H84 Z" fill="${p.soft}"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="${p.cut}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="${p.accent}"/>`,
-    small: (p) => `
-      <rect x="18" y="30" width="48" height="58" rx="8" fill="${p.soft}" transform="rotate(-10 42 59)"/>
-      <rect x="34" y="12" width="52" height="66" rx="8" fill="${p.main}"/>
-      <path d="M48 30 H72 L48 60 H72" fill="none" stroke="${p.cut}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`,
+    name: 'Zzz',
+    color: 'Sunset gradient',
+    tile: { from: '#FF8A3D', via: '#FF3D6E', to: '#9B3DFF' },
+    fg: '#FFFFFF',
+    cutOnTile: '#FF3D6E',
+    ink: '#FF3D6E',
+    accent: '#FFFFFF',
+    wordBg: '#FFF5F7',
+    story: 'A stack of sheets with a bold Z: the zzz in Kagazzz. Sleep easy, your papers are sorted.',
+    why: 'Instagram-style energy: the only gradient concept, warm to violet, with a white glyph. The most playful and memorable for the name; best if the brand leans consumer and friendly.',
+    draw: ({ fg, cut }) => `
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="${fg}" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="${fg}"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="${cut}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
 ];
 
-const gradientDef = (id) =>
-  `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${BRAND.start}"/><stop offset="0.55" stop-color="${BRAND.mid}"/><stop offset="1" stop-color="${BRAND.end}"/></linearGradient>`;
+/** Neighbouring "apps" on the home-screen mock: plain colour tiles only (no third-party marks). */
+const NEIGHBOURS = ['#25D366', '#FF0000', { from: '#FEDA75', via: '#D62976', to: '#4F5BD5' }, '#1DB954', '#FFFFFF', '#0866FF'];
 
-/** A rounded app-icon tile: gradient background + the mark at 72% (Android adaptive-icon safe zone). */
-function iconSvg(c, size = 1024) {
-  const g = `g-${c.id}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100" role="img" aria-label="Kagazzz app icon — ${c.name}">
-  <defs>${gradientDef(g)}</defs>
-  <rect width="100" height="100" rx="23" fill="url(#${g})"/>
-  <g transform="translate(14 14) scale(0.72)">${c.draw(PALETTES.gradient)}</g>
-</svg>
-`;
+let gid = 0;
+/** Fill + optional <defs> for a tile background (solid or gradient). */
+function paint(bg) {
+  if (typeof bg === 'string') {
+    return { defs: '', fill: bg };
+  }
+  const id = `g${gid++}`;
+  return {
+    defs: `<defs><linearGradient id="${id}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="${bg.from}"/><stop offset="0.5" stop-color="${bg.via}"/><stop offset="1" stop-color="${bg.to}"/></linearGradient></defs>`,
+    fill: `url(#${id})`,
+  };
+}
+
+/** One rounded icon tile with the mark at ~70% (inside Android's adaptive-icon safe zone). */
+function tileSvg(c, px, variant = 'primary') {
+  const v = {
+    primary: { bg: c.tile, fg: c.fg, cut: c.cutOnTile, accent: c.accent },
+    light: { bg: '#FFFFFF', fg: c.ink, cut: '#FFFFFF', accent: c.accent === '#FFFFFF' ? c.ink : c.accent },
+    dark: { bg: '#111111', fg: '#FFFFFF', cut: '#111111', accent: c.accent === '#FFFFFF' ? '#FFFFFF' : c.accent },
+    silhouette: { bg: '#FFFFFF', fg: '#111111', cut: '#FFFFFF', accent: '#111111' },
+  }[variant];
+  const { defs, fill } = paint(v.bg);
+  const border = v.bg === '#FFFFFF' || v.bg === '#F4EEE1' ? ' stroke="#D0D7DE" stroke-width="0.8"' : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} icon (${variant})">${defs}<rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="${fill}"${border}/><g transform="translate(15 15) scale(0.7)">${c.draw(v)}</g></svg>`;
 }
 
 function markSvg(c) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz mark — ${c.name}">
-${c.draw(PALETTES.light)}
-</svg>
-`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} mark">${c.draw({ fg: c.ink, cut: '#FFFFFF', accent: c.accent === '#FFFFFF' ? c.ink : c.accent })}</svg>\n`;
 }
 
-function lockupSvg(c) {
-  const g = `gl-${c.id}`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — ${c.name}">
-  <defs>${gradientDef(g)}</defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#${g})"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">${c.draw(PALETTES.gradient)}</g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="${BRAND.ink}">Kagazzz</text>
-  <text x="106" y="84" font-family="${DEVANAGARI}" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
-`;
+function monoSvg(c) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} mark, single colour">${c.draw({ fg: '#000000', cut: '#FFFFFF', accent: '#000000' })}</svg>\n`;
 }
 
-/** Inline tile for the preview page (each with its own gradient id). */
-function tile(c, px, radius, bg, palette, simple, key) {
-  const id = `t-${c.id}-${key}`;
-  const fill = bg === 'gradient' ? `url(#${id})` : bg;
-  const body = simple ? c.small(palette) : c.draw(palette);
-  return `<svg width="${px}" height="${px}" viewBox="0 0 100 100" aria-hidden="true">${bg === 'gradient' ? `<defs>${gradientDef(id)}</defs>` : ''}<rect width="100" height="100" rx="${radius}" fill="${fill}" ${bg === '#FFFFFF' ? 'stroke="#E5E7EB" stroke-width="1"' : ''}/><g transform="translate(14 14) scale(0.72)">${body}</g></svg>`;
+/** Icon + lowercase wordmark, on light or dark. */
+function lockupSvg(c, dark = false) {
+  const { defs, fill } = paint(c.tile);
+  const text = dark ? '#FFFFFF' : '#111111';
+  const bg = dark ? '#111111' : c.wordBg;
+  const border = c.tile === '#FFFFFF' || c.tile === '#F4EEE1' ? ' stroke="#D0D7DE" stroke-width="0.8"' : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz ${c.name} logo">${defs}<rect width="400" height="100" rx="14" fill="${bg}"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="${fill}"${border}/><g transform="translate(27.6 27.6) scale(0.448)">${c.draw({ fg: c.fg, cut: c.cutOnTile, accent: c.accent })}</g><text x="100" y="64" font-family="${SANS}" font-weight="700" font-size="42" letter-spacing="-1.5" fill="${text}">kagazzz</text></svg>\n`;
+}
+
+function homeScreen(c) {
+  const apps = [...NEIGHBOURS.slice(0, 3), 'self', ...NEIGHBOURS.slice(3)];
+  const cells = apps
+    .map((a) => {
+      if (a === 'self') {
+        return `<div class="cell">${tileSvg(c, 52)}<span>Kagazzz</span></div>`;
+      }
+      const { defs, fill } = paint(a);
+      return `<div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true">${defs}<rect width="100" height="100" rx="22.5" fill="${fill}"/></svg><span>&nbsp;</span></div>`;
+    })
+    .join('');
+  return `<div class="home">${cells}</div>`;
 }
 
 function card(c, i) {
+  const swatch = typeof c.tile === 'string' ? c.tile : `linear-gradient(45deg, ${c.tile.from}, ${c.tile.via}, ${c.tile.to})`;
   return `<article class="card">
-    <header><span class="num">${i + 1}</span><div><h2>${c.name}</h2><p class="tag">${c.tagline}</p></div></header>
-    <div class="row">
-      ${tile(c, 200, 23, 'gradient', PALETTES.gradient, false, 'hero')}
-      <div class="col">
-        <div class="row">
-          ${tile(c, 92, 23, '#FFFFFF', PALETTES.light, false, 'light')}
-          ${tile(c, 92, 23, '#0F172A', PALETTES.dark, false, 'dark')}
-        </div>
-        <div class="row end">
-          ${tile(c, 64, 23, 'gradient', PALETTES.gradient, false, 's64')}
-          ${tile(c, 40, 23, 'gradient', PALETTES.gradient, true, 's40')}
-          ${tile(c, 24, 23, 'gradient', PALETTES.gradient, true, 's24')}
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup">${lockupSvg(c).replace(/width="1200" height="320"/, 'width="100%" height="auto"')}</div>
-    <div class="phone">
-      <div class="home">${['#F59E0B', '#0EA5E9', 'self', '#22C55E'].map((x, k) => (x === 'self' ? tile(c, 52, 23, 'gradient', PALETTES.gradient, false, `home${k}`) : `<span class="app" style="background:${x}"></span>`)).join('')}</div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>${c.meaning}</p>
-    <p class="note">${c.notes}</p>
-    <p class="files">Files: <a href="${c.id}-icon.svg">${c.id}-icon.svg</a> · <a href="${c.id}-mark.svg">${c.id}-mark.svg</a> · <a href="${c.id}-lockup.svg">${c.id}-lockup.svg</a></p>
-  </article>`;
+  <header>
+    <span class="num">${i + 1}</span>
+    <div><h2>${c.name}</h2><p class="tag"><span class="sw" style="background:${swatch}"></span>${c.color}</p></div>
+  </header>
+  <div class="hero">${tileSvg(c, 180)}</div>
+  <div class="variants">
+    <figure>${tileSvg(c, 72, 'light')}<figcaption>On white</figcaption></figure>
+    <figure>${tileSvg(c, 72, 'dark')}<figcaption>Dark mode</figcaption></figure>
+    <figure>${tileSvg(c, 72, 'silhouette')}<figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes">${tileSvg(c, 40)}${tileSvg(c, 24)}<figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups">${lockupSvg(c)}${lockupSvg(c, true)}</div>
+  ${homeScreen(c)}
+  <p class="story">${c.story}</p>
+  <p class="why">${c.why}</p>
+  <p class="files"><a href="${c.id}-icon.svg">icon</a> · <a href="${c.id}-mark.svg">mark</a> · <a href="${c.id}-mono.svg">mono</a> · <a href="${c.id}-lockup.svg">lockup</a></p>
+</article>`;
 }
 
 function indexHtml() {
@@ -226,50 +226,54 @@ function indexHtml() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kagazzz Logo Concepts</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+Devanagari:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#F8F7FF; --card:#FFFFFF; --ink:#1E1B4B; --muted:#4B5563; --line:#E5E7EB; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0B1020; --card:#111827; --ink:#F8FAFC; --muted:#CBD5E1; --line:#1F2937; } }
+  :root { --bg:#FAFAF9; --card:#FFFFFF; --ink:#111111; --muted:#57534E; --line:#E7E5E4; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0C0A09; --card:#1C1917; --ink:#FAFAF9; --muted:#D6D3D1; --line:#292524; } }
   body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,system-ui,sans-serif; }
-  main { max-width:1320px; margin:0 auto; padding:40px 16px 80px; }
-  h1 { font-family:'Space Grotesk',sans-serif; font-size:40px; margin:0 0 8px; letter-spacing:-0.02em; }
-  .lead { color:var(--muted); max-width:820px; line-height:1.6; margin:0 0 28px; }
-  .principles { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:0 0 36px; padding:0; list-style:none; }
-  .principles li { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.5; color:var(--muted); }
-  .principles b { color:var(--ink); display:block; margin-bottom:2px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:24px; }
+  main { max-width:1360px; margin:0 auto; padding:48px 16px 96px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-size:44px; letter-spacing:-0.03em; margin:0 0 10px; }
+  .lead { color:var(--muted); max-width:860px; line-height:1.6; margin:0 0 28px; font-size:16px; }
+  .rules { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; list-style:none; padding:0; margin:0 0 40px; }
+  .rules li { border:1px solid var(--line); background:var(--card); border-radius:12px; padding:12px 14px; font-size:13.5px; line-height:1.5; color:var(--muted); }
+  .rules b { color:var(--ink); display:block; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:20px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:24px; display:flex; flex-direction:column; gap:18px; }
-  .card header { display:flex; gap:12px; align-items:center; }
-  .num { width:32px; height:32px; border-radius:50%; background:#EDE9FE; color:#4F46E5; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  h2 { font-family:'Space Grotesk',sans-serif; font-size:21px; margin:0; }
-  .tag { margin:2px 0 0; color:var(--muted); font-size:14px; }
-  .row { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
-  .row.end { align-items:flex-end; }
-  .col { display:flex; flex-direction:column; gap:14px; }
-  .dim { font-size:12px; color:var(--muted); }
-  .lockup { background:#FFFFFF; border:1px solid #E5E7EB; border-radius:16px; padding:12px 16px; }
-  .lockup svg { display:block; width:100%; height:auto; }
-  .phone { display:flex; flex-direction:column; gap:8px; }
-  .home { display:flex; gap:14px; padding:14px; border-radius:18px; background:linear-gradient(160deg,#1E293B,#334155); width:max-content; }
-  .app { width:52px; height:52px; border-radius:12px; display:block; opacity:.85; }
-  .card p { margin:0; line-height:1.55; font-size:15px; }
-  .card .note { font-size:13px; color:var(--muted); }
-  .files { font-size:12px; color:var(--muted); }
-  a { color:#7C3AED; }
-  @media (max-width:480px) { .grid { grid-template-columns:1fr; } h1 { font-size:30px; } }
+  header { display:flex; gap:12px; align-items:center; }
+  .num { width:30px; height:30px; border-radius:50%; border:1.5px solid var(--ink); font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  h2 { font-family:'Space Grotesk',sans-serif; font-size:24px; margin:0; letter-spacing:-0.02em; }
+  .tag { margin:2px 0 0; color:var(--muted); font-size:13px; display:flex; align-items:center; gap:6px; }
+  .sw { width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid rgba(0,0,0,.15); }
+  .hero { display:flex; justify-content:center; padding:24px 0; border-radius:18px; background:repeating-linear-gradient(45deg, transparent 0 10px, rgba(127,127,127,.06) 10px 20px); }
+  .hero svg { filter:drop-shadow(0 10px 24px rgba(0,0,0,.18)); }
+  .variants { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; }
+  figure { margin:0; display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .sizes { flex-direction:row; flex-wrap:wrap; align-items:flex-end; gap:8px; max-width:90px; justify-content:center; }
+  .sizes figcaption { width:100%; text-align:center; }
+  figcaption { font-size:11.5px; color:var(--muted); }
+  .lockups { display:grid; gap:8px; }
+  .lockups svg { width:100%; height:auto; display:block; border-radius:12px; border:1px solid var(--line); }
+  .home { display:grid; grid-template-columns:repeat(4, 52px); gap:12px 18px; padding:16px; border-radius:18px; background:linear-gradient(160deg,#2B2F36,#14161A); justify-content:center; overflow-x:auto; }
+  .cell { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .cell span { font-size:10px; color:#E5E7EB; }
+  .story { margin:0; font-size:15px; line-height:1.55; }
+  .why { margin:0; font-size:13.5px; line-height:1.55; color:var(--muted); }
+  .files { margin:0; font-size:12px; color:var(--muted); }
+  a { color:inherit; }
+  @media (max-width:480px) { .grid { grid-template-columns:1fr; } h1 { font-size:32px; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Kagazzz — logo concepts</h1>
-  <p class="lead">Six directions, each drawn as code (<code>scripts/brand/build-logo-concepts.mjs</code>) in the brand gradient (indigo → violet → fuchsia) with the green "safe" accent. Each one is shown as the app icon, on light and dark, at small sizes, as a wordmark lockup, and on a home screen. Pick one or two to refine.</p>
-  <ul class="principles">
-    <li><b>One idea</b>Great product marks say one thing (Dropbox: an open box; Google Drive: the drive triangle). Each concept here carries one story.</li>
-    <li><b>Works at 24 px</b>App icons live as small tiles, so every concept has a simplified small form, shown at 40 and 24 px.</li>
-    <li><b>Ownable meaning</b>Generic "document + check" icons all look alike. Kagazzz has unique hooks: कागज़, the paper boat, the zzz.</li>
-    <li><b>Fits the brand</b>Uses the existing gradient tokens and the green accent, so the app UI does not change.</li>
-    <li><b>Trust for ID documents</b>The app holds Aadhaar and PAN, so the mark must feel safe and calm, not playful only.</li>
-    <li><b>No official symbols</b>No Ashoka emblem or national flag. Using them on a private app is restricted, and it would mislead users.</li>
+  <h1>kagazzz — logo concepts, round 2</h1>
+  <p class="lead">Six directions, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
+  <ul class="rules">
+    <li><b>One silhouette</b>Recognisable from the outline alone; see each card's black "silhouette test".</li>
+    <li><b>One owned colour</b>A dominant background, one symbol colour, at most one accent.</li>
+    <li><b>No text in the icon</b>Text is unreadable at icon size; the name goes in the wordmark.</li>
+    <li><b>Crisp edges</b>Flat shapes, no soft glows, so iOS and Android effects and tinted modes render cleanly.</li>
+    <li><b>Works at 24 px</b>Notification icons, settings lists and share sheets are tiny.</li>
+    <li><b>No official symbols</b>No national emblem or flag on a private app.</li>
   </ul>
   <div class="grid">
 ${CONCEPTS.map(card).join('\n')}
@@ -281,9 +285,13 @@ ${CONCEPTS.map(card).join('\n')}
 }
 
 mkdirSync(OUT, { recursive: true });
+for (const f of readdirSync(OUT)) {
+  rmSync(path.join(OUT, f)); // regenerate cleanly: no stale files from older rounds
+}
 for (const c of CONCEPTS) {
-  writeFileSync(path.join(OUT, `${c.id}-icon.svg`), iconSvg(c));
+  writeFileSync(path.join(OUT, `${c.id}-icon.svg`), `${tileSvg(c, 1024)}\n`);
   writeFileSync(path.join(OUT, `${c.id}-mark.svg`), markSvg(c));
+  writeFileSync(path.join(OUT, `${c.id}-mono.svg`), monoSvg(c));
   writeFileSync(path.join(OUT, `${c.id}-lockup.svg`), lockupSvg(c));
 }
 writeFileSync(path.join(OUT, 'index.html'), indexHtml());

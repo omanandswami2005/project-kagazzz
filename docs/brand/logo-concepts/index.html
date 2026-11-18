@@ -4,498 +4,374 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kagazzz Logo Concepts</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+Devanagari:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#F8F7FF; --card:#FFFFFF; --ink:#1E1B4B; --muted:#4B5563; --line:#E5E7EB; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0B1020; --card:#111827; --ink:#F8FAFC; --muted:#CBD5E1; --line:#1F2937; } }
+  :root { --bg:#FAFAF9; --card:#FFFFFF; --ink:#111111; --muted:#57534E; --line:#E7E5E4; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0C0A09; --card:#1C1917; --ink:#FAFAF9; --muted:#D6D3D1; --line:#292524; } }
   body { margin:0; background:var(--bg); color:var(--ink); font-family:Inter,system-ui,sans-serif; }
-  main { max-width:1320px; margin:0 auto; padding:40px 16px 80px; }
-  h1 { font-family:'Space Grotesk',sans-serif; font-size:40px; margin:0 0 8px; letter-spacing:-0.02em; }
-  .lead { color:var(--muted); max-width:820px; line-height:1.6; margin:0 0 28px; }
-  .principles { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:0 0 36px; padding:0; list-style:none; }
-  .principles li { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; font-size:14px; line-height:1.5; color:var(--muted); }
-  .principles b { color:var(--ink); display:block; margin-bottom:2px; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:24px; }
+  main { max-width:1360px; margin:0 auto; padding:48px 16px 96px; }
+  h1 { font-family:'Space Grotesk',sans-serif; font-size:44px; letter-spacing:-0.03em; margin:0 0 10px; }
+  .lead { color:var(--muted); max-width:860px; line-height:1.6; margin:0 0 28px; font-size:16px; }
+  .rules { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; list-style:none; padding:0; margin:0 0 40px; }
+  .rules li { border:1px solid var(--line); background:var(--card); border-radius:12px; padding:12px 14px; font-size:13.5px; line-height:1.5; color:var(--muted); }
+  .rules b { color:var(--ink); display:block; font-size:14px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); gap:20px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:24px; display:flex; flex-direction:column; gap:18px; }
-  .card header { display:flex; gap:12px; align-items:center; }
-  .num { width:32px; height:32px; border-radius:50%; background:#EDE9FE; color:#4F46E5; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  h2 { font-family:'Space Grotesk',sans-serif; font-size:21px; margin:0; }
-  .tag { margin:2px 0 0; color:var(--muted); font-size:14px; }
-  .row { display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
-  .row.end { align-items:flex-end; }
-  .col { display:flex; flex-direction:column; gap:14px; }
-  .dim { font-size:12px; color:var(--muted); }
-  .lockup { background:#FFFFFF; border:1px solid #E5E7EB; border-radius:16px; padding:12px 16px; }
-  .lockup svg { display:block; width:100%; height:auto; }
-  .phone { display:flex; flex-direction:column; gap:8px; }
-  .home { display:flex; gap:14px; padding:14px; border-radius:18px; background:linear-gradient(160deg,#1E293B,#334155); width:max-content; }
-  .app { width:52px; height:52px; border-radius:12px; display:block; opacity:.85; }
-  .card p { margin:0; line-height:1.55; font-size:15px; }
-  .card .note { font-size:13px; color:var(--muted); }
-  .files { font-size:12px; color:var(--muted); }
-  a { color:#7C3AED; }
-  @media (max-width:480px) { .grid { grid-template-columns:1fr; } h1 { font-size:30px; } }
+  header { display:flex; gap:12px; align-items:center; }
+  .num { width:30px; height:30px; border-radius:50%; border:1.5px solid var(--ink); font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  h2 { font-family:'Space Grotesk',sans-serif; font-size:24px; margin:0; letter-spacing:-0.02em; }
+  .tag { margin:2px 0 0; color:var(--muted); font-size:13px; display:flex; align-items:center; gap:6px; }
+  .sw { width:12px; height:12px; border-radius:3px; display:inline-block; border:1px solid rgba(0,0,0,.15); }
+  .hero { display:flex; justify-content:center; padding:24px 0; border-radius:18px; background:repeating-linear-gradient(45deg, transparent 0 10px, rgba(127,127,127,.06) 10px 20px); }
+  .hero svg { filter:drop-shadow(0 10px 24px rgba(0,0,0,.18)); }
+  .variants { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; }
+  figure { margin:0; display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .sizes { flex-direction:row; flex-wrap:wrap; align-items:flex-end; gap:8px; max-width:90px; justify-content:center; }
+  .sizes figcaption { width:100%; text-align:center; }
+  figcaption { font-size:11.5px; color:var(--muted); }
+  .lockups { display:grid; gap:8px; }
+  .lockups svg { width:100%; height:auto; display:block; border-radius:12px; border:1px solid var(--line); }
+  .home { display:grid; grid-template-columns:repeat(4, 52px); gap:12px 18px; padding:16px; border-radius:18px; background:linear-gradient(160deg,#2B2F36,#14161A); justify-content:center; overflow-x:auto; }
+  .cell { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .cell span { font-size:10px; color:#E5E7EB; }
+  .story { margin:0; font-size:15px; line-height:1.55; }
+  .why { margin:0; font-size:13.5px; line-height:1.55; color:var(--muted); }
+  .files { margin:0; font-size:12px; color:var(--muted); }
+  a { color:inherit; }
+  @media (max-width:480px) { .grid { grid-template-columns:1fr; } h1 { font-size:32px; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Kagazzz — logo concepts</h1>
-  <p class="lead">Six directions, each drawn as code (<code>scripts/brand/build-logo-concepts.mjs</code>) in the brand gradient (indigo → violet → fuchsia) with the green "safe" accent. Each one is shown as the app icon, on light and dark, at small sizes, as a wordmark lockup, and on a home screen. Pick one or two to refine.</p>
-  <ul class="principles">
-    <li><b>One idea</b>Great product marks say one thing (Dropbox: an open box; Google Drive: the drive triangle). Each concept here carries one story.</li>
-    <li><b>Works at 24 px</b>App icons live as small tiles, so every concept has a simplified small form, shown at 40 and 24 px.</li>
-    <li><b>Ownable meaning</b>Generic "document + check" icons all look alike. Kagazzz has unique hooks: कागज़, the paper boat, the zzz.</li>
-    <li><b>Fits the brand</b>Uses the existing gradient tokens and the green accent, so the app UI does not change.</li>
-    <li><b>Trust for ID documents</b>The app holds Aadhaar and PAN, so the mark must feel safe and calm, not playful only.</li>
-    <li><b>No official symbols</b>No Ashoka emblem or national flag. Using them on a private app is restricted, and it would mislead users.</li>
+  <h1>kagazzz — logo concepts, round 2</h1>
+  <p class="lead">Six directions, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
+  <ul class="rules">
+    <li><b>One silhouette</b>Recognisable from the outline alone; see each card's black "silhouette test".</li>
+    <li><b>One owned colour</b>A dominant background, one symbol colour, at most one accent.</li>
+    <li><b>No text in the icon</b>Text is unreadable at icon size; the name goes in the wordmark.</li>
+    <li><b>Crisp edges</b>Flat shapes, no soft glows, so iOS and Android effects and tinted modes render cleanly.</li>
+    <li><b>Works at 24 px</b>Notification icons, settings lists and share sheets are tiny.</li>
+    <li><b>No official symbols</b>No national emblem or flag on a private app.</li>
   </ul>
   <div class="grid">
 <article class="card">
-    <header><span class="num">1</span><div><h2>Kashti — the paper boat</h2><p class="tag">“Kaagaz ki kashti”</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-kashti-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-kashti-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="18,58 30,40 40,58" fill="#C4B5FD"/>
-      <polygon points="60,58 70,40 82,58" fill="#C4B5FD"/>
-      <polygon points="36,58 50,20 64,58" fill="#FFFFFF"/>
-      <polygon points="50,20 64,58 50,58" fill="#EDE9FE"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#FFFFFF"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#EDE9FE"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#6EE7B7" stroke-width="4.5" stroke-linecap="round"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <polygon points="18,58 30,40 40,58" fill="#A78BFA"/>
-      <polygon points="60,58 70,40 82,58" fill="#A78BFA"/>
-      <polygon points="36,58 50,20 64,58" fill="#4F46E5"/>
-      <polygon points="50,20 64,58 50,58" fill="#7C3AED"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#4F46E5"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#7C3AED"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#10B981" stroke-width="4.5" stroke-linecap="round"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="18,58 30,40 40,58" fill="#A78BFA"/>
-      <polygon points="60,58 70,40 82,58" fill="#A78BFA"/>
-      <polygon points="36,58 50,20 64,58" fill="#FFFFFF"/>
-      <polygon points="50,20 64,58 50,58" fill="#DDD6FE"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#FFFFFF"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#DDD6FE"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#34D399" stroke-width="4.5" stroke-linecap="round"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-kashti-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-kashti-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="18,58 30,40 40,58" fill="#C4B5FD"/>
-      <polygon points="60,58 70,40 82,58" fill="#C4B5FD"/>
-      <polygon points="36,58 50,20 64,58" fill="#FFFFFF"/>
-      <polygon points="50,20 64,58 50,58" fill="#EDE9FE"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#FFFFFF"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#EDE9FE"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#6EE7B7" stroke-width="4.5" stroke-linecap="round"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-kashti-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-kashti-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="36,60 50,18 64,60" fill="#FFFFFF"/>
-      <polygon points="10,60 90,60 77,82 23,82" fill="#FFFFFF"/></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-kashti-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-kashti-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="36,60 50,18 64,60" fill="#FFFFFF"/>
-      <polygon points="10,60 90,60 77,82 23,82" fill="#FFFFFF"/></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Kashti — the paper boat">
-  <defs><linearGradient id="gl-kashti" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-kashti)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <polygon points="18,58 30,40 40,58" fill="#C4B5FD"/>
-      <polygon points="60,58 70,40 82,58" fill="#C4B5FD"/>
-      <polygon points="36,58 50,20 64,58" fill="#FFFFFF"/>
-      <polygon points="50,20 64,58 50,58" fill="#EDE9FE"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#FFFFFF"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#EDE9FE"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#6EE7B7" stroke-width="4.5" stroke-linecap="round"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">1</span>
+    <div><h2>Kashti</h2><p class="tag"><span class="sw" style="background:#F25C05"></span>Saffron</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F25C05"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#E4570A"/>
+      <path d="M8 56 H92" stroke="#FFFFFF" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#FFFFFF" stroke-width="3.5"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#111111" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#111111" stroke-width="3.5"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#111111"/>
+      <path d="M8 56 H92" stroke="#FFFFFF" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#FFFFFF" stroke-width="3.5"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F25C05"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F25C05"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Kashti logo"><rect width="400" height="100" rx="14" fill="#FFF7F0"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#F25C05"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Kashti logo"><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#F25C05"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-kashti-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-kashti-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <polygon points="18,58 30,40 40,58" fill="#C4B5FD"/>
-      <polygon points="60,58 70,40 82,58" fill="#C4B5FD"/>
-      <polygon points="36,58 50,20 64,58" fill="#FFFFFF"/>
-      <polygon points="50,20 64,58 50,58" fill="#EDE9FE"/>
-      <polygon points="12,58 50,58 50,78 24,78" fill="#FFFFFF"/>
-      <polygon points="50,58 88,58 76,78 50,78" fill="#EDE9FE"/>
-      <path d="M16 88 q8.5 -5 17 0 t17 0 t17 0 t17 0" fill="none" stroke="#6EE7B7" stroke-width="4.5" stroke-linecap="round"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>Every Indian child has folded a paper boat. A boat made of paper that safely carries what matters across the water, like your documents carried safely on your phone.</p>
-    <p class="note">Strongest cultural story and instantly recognisable. The folds say "paper"; the green wave is the accent. Reduces to two shapes at 24 px.</p>
-    <p class="files">Files: <a href="kashti-icon.svg">kashti-icon.svg</a> · <a href="kashti-mark.svg">kashti-mark.svg</a> · <a href="kashti-lockup.svg">kashti-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g2)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Kashti icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F25C05"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="#FFFFFF"/>
+      <path d="M8 56 H92" stroke="#F25C05" stroke-width="3.5"/>
+      <path d="M50 56 V80" stroke="#F25C05" stroke-width="3.5"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">“Kaagaz ki kashti”: the paper boat every Indian child has folded. Paper that carries what matters safely.</p>
+  <p class="why">Warm and confident, like Claude’s terracotta. Saffron is bright, Indian and nothing like the blue or green of most document apps. One white silhouette; the fold line is the only detail.</p>
+  <p class="files"><a href="kashti-icon.svg">icon</a> · <a href="kashti-mark.svg">mark</a> · <a href="kashti-mono.svg">mono</a> · <a href="kashti-lockup.svg">lockup</a></p>
+</article>
 <article class="card">
-    <header><span class="num">2</span><div><h2>क — the first letter of कागज़</h2><p class="tag">Paper + India in one glance</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-ka-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-ka-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#FFFFFF"/>
-      <path d="M62 12 V28 H78 Z" fill="#C4B5FD"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#4F46E5">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#6EE7B7"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#4F46E5"/>
-      <path d="M62 12 V28 H78 Z" fill="#A78BFA"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#FFFFFF">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#10B981"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#FFFFFF"/>
-      <path d="M62 12 V28 H78 Z" fill="#A78BFA"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#0F172A">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#34D399"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-ka-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-ka-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#FFFFFF"/>
-      <path d="M62 12 V28 H78 Z" fill="#C4B5FD"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#4F46E5">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#6EE7B7"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-ka-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-ka-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M24 10 H64 L80 26 V90 H24 Z" fill="#FFFFFF"/>
-      <text x="52" y="76" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="56" fill="#4F46E5">क</text></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-ka-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-ka-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M24 10 H64 L80 26 V90 H24 Z" fill="#FFFFFF"/>
-      <text x="52" y="76" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="56" fill="#4F46E5">क</text></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — क — the first letter of कागज़">
-  <defs><linearGradient id="gl-ka" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-ka)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#FFFFFF"/>
-      <path d="M62 12 V28 H78 Z" fill="#C4B5FD"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#4F46E5">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#6EE7B7"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">2</span>
+    <div><h2>Folded K</h2><p class="tag"><span class="sw" style="background:#0D1117"></span>Graphite</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0D1117"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#0D1117"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#0D1117"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#0D1117"/>
+      <path d="M45 50 L58 58" stroke="#FFFFFF" stroke-width="3"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#111111" stroke-width="3"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#111111"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#111111"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#111111"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#111111"/>
+      <path d="M45 50 L58 58" stroke="#FFFFFF" stroke-width="3"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0D1117"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0D1117"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Folded K logo"><rect width="400" height="100" rx="14" fill="#F6F8FA"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#0D1117"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Folded K logo"><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#0D1117"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-ka-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-ka-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 12 H62 L78 28 V88 H26 Z" fill="#FFFFFF"/>
-      <path d="M62 12 V28 H78 Z" fill="#C4B5FD"/>
-      <text x="52" y="70" text-anchor="middle" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="700" font-size="44" fill="#4F46E5">क</text>
-      <rect x="38" y="77" width="28" height="4" rx="2" fill="#6EE7B7"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>A sheet with a dog-eared corner carrying the Devanagari क. It reads as "paper" and "India" at once, for Hindi and English users alike.</p>
-    <p class="note">Closest to the current icon, so the switch is gentle. Outline the letter as a vector path before production (live text depends on installed fonts).</p>
-    <p class="files">Files: <a href="ka-icon.svg">ka-icon.svg</a> · <a href="ka-mark.svg">ka-mark.svg</a> · <a href="ka-lockup.svg">ka-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g3)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Folded K icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0D1117"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M20 14 H33 L41 22 V86 H20 Z" fill="#FFFFFF"/>
+      <path d="M33 14 L41 22 H33 Z" fill="#7EE787"/>
+      <path d="M45 50 L67 14 H87 L58 58 Z" fill="#FFFFFF"/>
+      <path d="M53 58 L62 52 L87 86 H67 Z" fill="#FFFFFF"/>
+      <path d="M45 50 L58 58" stroke="#0D1117" stroke-width="3"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">The K of Kagazzz, folded from paper. The top-right corner of the stem is a dog-ear.</p>
+  <p class="why">GitHub-style restraint: white on near-black, one tiny accent. Reads like serious developer-grade software, and works in any single color.</p>
+  <p class="files"><a href="fold-k-icon.svg">icon</a> · <a href="fold-k-mark.svg">mark</a> · <a href="fold-k-mono.svg">mono</a> · <a href="fold-k-lockup.svg">lockup</a></p>
+</article>
 <article class="card">
-    <header><span class="num">3</span><div><h2>Folded K</h2><p class="tag">A monogram folded from paper strips</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-fold-k-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-fold-k-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#C4B5FD"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#C4B5FD"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#EDE9FE"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#4F46E5"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#A78BFA"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#A78BFA"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#4F46E5"/>
-      <polygon points="42,50 54,58 46,62" fill="#7C3AED"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#A78BFA"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#A78BFA"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#DDD6FE"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-fold-k-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-fold-k-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#C4B5FD"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#C4B5FD"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#EDE9FE"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-fold-k-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-fold-k-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M24 14 H42 V86 H24 Z" fill="#FFFFFF"/>
-      <polygon points="42,50 66,14 86,14 56,58" fill="#FFFFFF"/>
-      <polygon points="48,56 60,48 84,86 64,86" fill="#FFFFFF"/></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-fold-k-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-fold-k-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M24 14 H42 V86 H24 Z" fill="#FFFFFF"/>
-      <polygon points="42,50 66,14 86,14 56,58" fill="#FFFFFF"/>
-      <polygon points="48,56 60,48 84,86 64,86" fill="#FFFFFF"/></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Folded K">
-  <defs><linearGradient id="gl-fold-k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-fold-k)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#C4B5FD"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#C4B5FD"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#EDE9FE"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">3</span>
+    <div><h2>Mohar</h2><p class="tag"><span class="sw" style="background:#F4EEE1"></span>Seal green on paper</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#FFFFFF"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#FFFFFF"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#111111"/>
+      <path d="M57 28 V37 H66 Z" fill="#FFFFFF" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#111111" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#111111"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#FFFFFF"/>
+      <path d="M57 28 V37 H66 Z" fill="#111111" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#111111" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Mohar logo"><rect width="400" height="100" rx="14" fill="#F4EEE1"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Mohar logo"><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-fold-k-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-fold-k-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M26 16 H42 V84 H26 Z" fill="#FFFFFF"/>
-      <path d="M42 16 L34 24 H42 Z" fill="#C4B5FD"/>
-      <polygon points="46,54 58,46 80,84 62,84" fill="#C4B5FD"/>
-      <polygon points="42,50 66,16 84,16 54,58" fill="#FFFFFF"/>
-      <polygon points="42,50 54,58 46,62" fill="#EDE9FE"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>The K of Kagazzz built from three paper strips. One strip folds over another, and the shading shows the crease. Simple, geometric and ownable.</p>
-    <p class="note">Works best as a pure monogram for the app icon, the splash and the notification icon. Least literal, so it needs the wordmark nearby at first.</p>
-    <p class="files">Files: <a href="fold-k-icon.svg">fold-k-icon.svg</a> · <a href="fold-k-mark.svg">fold-k-mark.svg</a> · <a href="fold-k-lockup.svg">fold-k-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g4" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g4)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Mohar icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F4EEE1" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="#0F5B45" stroke-width="4" stroke-dasharray="5.5 4"/>
+      <circle cx="50" cy="50" r="34" fill="#0F5B45"/>
+      <path d="M36 28 H57 L66 37 V72 H36 Z" fill="#F4EEE1"/>
+      <path d="M57 28 V37 H66 Z" fill="#0F5B45" opacity="0.35"/>
+      <path d="M42 53 L48.5 59.5 L60 47" fill="none" stroke="#0F5B45" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">A round मोहर (rubber stamp) with a folded page inside: verified, official, kept safe.</p>
+  <p class="why">Paper-colored tile plus deep ink green, like a stamped certificate. It looks trustworthy for ID documents and stands out on a home screen full of saturated colors. Generic seal only, with no state emblems.</p>
+  <p class="files"><a href="mohar-icon.svg">icon</a> · <a href="mohar-mark.svg">mark</a> · <a href="mohar-mono.svg">mono</a> · <a href="mohar-lockup.svg">lockup</a></p>
+</article>
 <article class="card">
-    <header><span class="num">4</span><div><h2>Mohar — the verified seal</h2><p class="tag">Official, stamped, safe</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-mohar-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-mohar-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#FFFFFF"/>
-      <path d="M60 12 V24 H72 Z" fill="#C4B5FD"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#C4B5FD"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#6EE7B7" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#6EE7B7"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#4F46E5"/>
-      <path d="M60 12 V24 H72 Z" fill="#A78BFA"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#A78BFA"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#A78BFA"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#A78BFA"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#10B981" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#10B981"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#FFFFFF"/>
-      <path d="M60 12 V24 H72 Z" fill="#A78BFA"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#A78BFA"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#A78BFA"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#A78BFA"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#34D399" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#34D399"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-mohar-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-mohar-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#FFFFFF"/>
-      <path d="M60 12 V24 H72 Z" fill="#C4B5FD"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#C4B5FD"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#6EE7B7" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#6EE7B7"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-mohar-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-mohar-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M20 10 H62 L74 22 V90 H20 Z" fill="#FFFFFF"/>
-      <circle cx="66" cy="70" r="20" fill="#6EE7B7"/>
-      <path d="M57 70.5 l6.5 6.5 l11 -12" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-mohar-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-mohar-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M20 10 H62 L74 22 V90 H20 Z" fill="#FFFFFF"/>
-      <circle cx="66" cy="70" r="20" fill="#6EE7B7"/>
-      <path d="M57 70.5 l6.5 6.5 l11 -12" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Mohar — the verified seal">
-  <defs><linearGradient id="gl-mohar" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-mohar)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#FFFFFF"/>
-      <path d="M60 12 V24 H72 Z" fill="#C4B5FD"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#C4B5FD"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#6EE7B7" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#6EE7B7"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">4</span>
+    <div><h2>Corner</h2><p class="tag"><span class="sw" style="background:#FFFFFF"></span>Cobalt on white</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#FFFFFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#111111"/>
+      <path d="M58 12 V38 H84 Z" fill="#111111"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Corner logo"><rect width="400" height="100" rx="14" fill="#FFFFFF"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Corner logo"><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-mohar-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-mohar-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M22 12 H60 L72 24 V88 H22 Z" fill="#FFFFFF"/>
-      <path d="M60 12 V24 H72 Z" fill="#C4B5FD"/>
-      <rect x="31" y="30" width="26" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="41" width="32" height="5" rx="2.5" fill="#C4B5FD"/>
-      <rect x="31" y="52" width="18" height="5" rx="2.5" fill="#C4B5FD"/>
-      <circle cx="66" cy="70" r="19" fill="none" stroke="#6EE7B7" stroke-width="2.5" stroke-dasharray="3 3.2"/>
-      <circle cx="66" cy="70" r="14.5" fill="#6EE7B7"/>
-      <path d="M59 70.5 l5 5 l9 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>A document carrying a round मोहर (stamp) with a tick. Indian paperwork lives and dies by the seal; here the seal means verified and protected.</p>
-    <p class="note">Most "government documents" in feel and builds trust quickly. Watch that it does not look like an official government emblem; keep the seal generic, with no Ashoka or state symbols.</p>
-    <p class="files">Files: <a href="mohar-icon.svg">mohar-icon.svg</a> · <a href="mohar-mark.svg">mohar-mark.svg</a> · <a href="mohar-lockup.svg">mohar-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g5" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g5)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Corner icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M18 12 H58 L84 38 V88 H18 Z" fill="#1F4FFF"/>
+      <path d="M58 12 V38 H84 Z" fill="#9DB4FF"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">Just a sheet of paper with a big folded corner. The simplest possible way to say "kagaz".</p>
+  <p class="why">Dropbox and Notion-style minimalism: a white tile with one cobalt shape and one lighter shade. Calm and premium, and it survives as a single color.</p>
+  <p class="files"><a href="corner-icon.svg">icon</a> · <a href="corner-mark.svg">mark</a> · <a href="corner-mono.svg">mono</a> · <a href="corner-lockup.svg">lockup</a></p>
+</article>
 <article class="card">
-    <header><span class="num">5</span><div><h2>Paper shield</h2><p class="tag">Privacy-first, literally</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-shield-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-shield-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#FFFFFF"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#C4B5FD"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#EDE9FE"/>
-      <circle cx="50" cy="45" r="8" fill="#4F46E5"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#4F46E5"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#6EE7B7"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#4F46E5"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#A78BFA"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#7C3AED"/>
-      <circle cx="50" cy="45" r="8" fill="#FFFFFF"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#FFFFFF"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#10B981"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#FFFFFF"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#A78BFA"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#DDD6FE"/>
-      <circle cx="50" cy="45" r="8" fill="#0F172A"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#0F172A"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#34D399"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-shield-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-shield-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#FFFFFF"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#C4B5FD"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#EDE9FE"/>
-      <circle cx="50" cy="45" r="8" fill="#4F46E5"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#4F46E5"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#6EE7B7"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-shield-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-shield-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 8 L82 20 V48 C82 69 68 82 50 92 C32 82 18 69 18 48 V20 Z" fill="#FFFFFF"/>
-      <circle cx="50" cy="44" r="10" fill="#4F46E5"/>
-      <path d="M44 50 H56 L59 72 H41 Z" fill="#4F46E5"/></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-shield-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-shield-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 8 L82 20 V48 C82 69 68 82 50 92 C32 82 18 69 18 48 V20 Z" fill="#FFFFFF"/>
-      <circle cx="50" cy="44" r="10" fill="#4F46E5"/>
-      <path d="M44 50 H56 L59 72 H41 Z" fill="#4F46E5"/></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Paper shield">
-  <defs><linearGradient id="gl-shield" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-shield)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#FFFFFF"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#C4B5FD"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#EDE9FE"/>
-      <circle cx="50" cy="45" r="8" fill="#4F46E5"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#4F46E5"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#6EE7B7"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">5</span>
+    <div><h2>Vault</h2><p class="tag"><span class="sw" style="background:#0A2540"></span>Midnight navy</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0A2540"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#0A2540"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#FFFFFF"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#FFFFFF"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#111111"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#111111"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#111111"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#111111"/>
+      <circle cx="50" cy="44" r="9" fill="#FFFFFF"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#FFFFFF"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0A2540"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0A2540"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Vault logo"><rect width="400" height="100" rx="14" fill="#F6F9FC"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#0A2540"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Vault logo"><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#0A2540"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-shield-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-shield-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <path d="M50 10 L80 21 V48 C80 68 67 81 50 90 C33 81 20 68 20 48 V21 Z" fill="#FFFFFF"/>
-      <path d="M66 15.9 L80 21 V35 Z" fill="#C4B5FD"/>
-      <path d="M66 15.9 L80 35 L70 33 Z" fill="#EDE9FE"/>
-      <circle cx="50" cy="45" r="8" fill="#4F46E5"/>
-      <path d="M45.5 50 H54.5 L57 68 H43 Z" fill="#4F46E5"/>
-      <rect x="40" y="76" width="20" height="3.5" rx="1.75" fill="#6EE7B7"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>A shield whose corner folds like a sheet of paper, with a keyhole in the middle. Your documents, locked, on your phone, with nothing leaving it.</p>
-    <p class="note">Says "privacy and security" fastest, the core promise of the app. Shields are common in security apps, so the paper fold is what makes it ours.</p>
-    <p class="files">Files: <a href="shield-icon.svg">shield-icon.svg</a> · <a href="shield-mark.svg">shield-mark.svg</a> · <a href="shield-lockup.svg">shield-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g6" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g6)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Vault icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#0A2540"/><g transform="translate(15 15) scale(0.7)">
+      <path d="M50 8 L84 20 V48 C84 70 69 83 50 92 C31 83 16 70 16 48 V20 Z" fill="#FFFFFF"/>
+      <path d="M68 13.6 L84 20 V36 Z" fill="#00D4B5"/>
+      <circle cx="50" cy="44" r="9" fill="#0A2540"/>
+      <path d="M45 50 H55 L58 70 H42 Z" fill="#0A2540"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">A shield whose corner folds like paper, with a keyhole: your documents, locked, on your phone.</p>
+  <p class="why">Bank-grade navy with one teal accent, the way fintech apps signal trust. It says privacy, the app’s core promise, in a single shape.</p>
+  <p class="files"><a href="vault-icon.svg">icon</a> · <a href="vault-mark.svg">mark</a> · <a href="vault-mono.svg">mono</a> · <a href="vault-lockup.svg">lockup</a></p>
+</article>
 <article class="card">
-    <header><span class="num">6</span><div><h2>Zzz stack</h2><p class="tag">Sleep easy: your papers are sorted</p></div></header>
-    <div class="row">
-      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-zzz-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-zzz-hero)" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#C4B5FD" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#EDE9FE" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
-      <path d="M74 14 V24 H84 Z" fill="#C4B5FD"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#6EE7B7"/></g></svg>
-      <div class="col">
-        <div class="row">
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1"/><g transform="translate(14 14) scale(0.72)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#A78BFA" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#7C3AED" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#4F46E5"/>
-      <path d="M74 14 V24 H84 Z" fill="#A78BFA"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#10B981"/></g></svg>
-          <svg width="92" height="92" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="23" fill="#0F172A" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#A78BFA" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#DDD6FE" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
-      <path d="M74 14 V24 H84 Z" fill="#A78BFA"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#0F172A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#34D399"/></g></svg>
-        </div>
-        <div class="row end">
-          <svg width="64" height="64" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-zzz-s64" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-zzz-s64)" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#C4B5FD" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#EDE9FE" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
-      <path d="M74 14 V24 H84 Z" fill="#C4B5FD"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#6EE7B7"/></g></svg>
-          <svg width="40" height="40" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-zzz-s40" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-zzz-s40)" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="18" y="30" width="48" height="58" rx="8" fill="#C4B5FD" transform="rotate(-10 42 59)"/>
-      <rect x="34" y="12" width="52" height="66" rx="8" fill="#FFFFFF"/>
-      <path d="M48 30 H72 L48 60 H72" fill="none" stroke="#4F46E5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-zzz-s24" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-zzz-s24)" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="18" y="30" width="48" height="58" rx="8" fill="#C4B5FD" transform="rotate(-10 42 59)"/>
-      <rect x="34" y="12" width="52" height="66" rx="8" fill="#FFFFFF"/>
-      <path d="M48 30 H72 L48 60 H72" fill="none" stroke="#4F46E5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
-          <span class="dim">64 · 40 · 24 px</span>
-        </div>
-      </div>
-    </div>
-    <div class="lockup"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="auto" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Zzz stack">
-  <defs><linearGradient id="gl-zzz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
-  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-zzz)"/>
-  <g transform="translate(15.2 21.2) scale(0.576)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#C4B5FD" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#EDE9FE" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
-      <path d="M74 14 V24 H84 Z" fill="#C4B5FD"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#6EE7B7"/></g>
-  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
-  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
-</svg>
+  <header>
+    <span class="num">6</span>
+    <div><h2>Zzz</h2><p class="tag"><span class="sw" style="background:linear-gradient(45deg, #FF8A3D, #FF3D6E, #9B3DFF)"></span>Sunset gradient</p></div>
+  </header>
+  <div class="hero"><svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (primary)"><defs><linearGradient id="g7" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="url(#g7)"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+  <div class="variants">
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (light)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FF3D6E" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FF3D6E"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>On white</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (dark)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#111111"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>Dark mode</figcaption></figure>
+    <figure><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (silhouette)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#FFFFFF" stroke="#D0D7DE" stroke-width="0.8"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#111111" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#111111"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>Silhouette test</figcaption></figure>
+    <figure class="sizes"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (primary)"><defs><linearGradient id="g8" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="url(#g8)"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (primary)"><defs><linearGradient id="g9" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="url(#g9)"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><figcaption>40 · 24 px</figcaption></figure>
+  </div>
+  <div class="lockups"><svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Zzz logo"><defs><linearGradient id="g10" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect width="400" height="100" rx="14" fill="#FFF5F7"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="url(#g10)"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#111111">kagazzz</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz Zzz logo"><defs><linearGradient id="g11" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect width="400" height="100" rx="14" fill="#111111"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="url(#g11)"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.5" fill="#FFFFFF">kagazzz</text></svg>
 </div>
-    <div class="phone">
-      <div class="home"><span class="app" style="background:#F59E0B"></span><span class="app" style="background:#0EA5E9"></span><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t-zzz-home2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs><rect width="100" height="100" rx="23" fill="url(#t-zzz-home2)" /><g transform="translate(14 14) scale(0.72)">
-      <rect x="16" y="34" width="44" height="54" rx="7" fill="#C4B5FD" transform="rotate(-10 38 61)"/>
-      <rect x="26" y="24" width="44" height="54" rx="7" fill="#EDE9FE" transform="rotate(-4 48 51)"/>
-      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
-      <path d="M74 14 V24 H84 Z" fill="#C4B5FD"/>
-      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="80" cy="84" r="5" fill="#6EE7B7"/></g></svg><span class="app" style="background:#22C55E"></span></div>
-      <span class="dim">On a home screen next to other apps</span>
-    </div>
-    <p>Three stacked sheets, like the zzz in Kagazzz, with a bold Z on top. It makes the name memorable and promises calm: your documents are in order, so you can relax.</p>
-    <p class="note">The most playful and the most memorable for the "Kagazzz" spelling. Less serious than Mohar or Shield, which suits a friendly consumer app.</p>
-    <p class="files">Files: <a href="zzz-icon.svg">zzz-icon.svg</a> · <a href="zzz-mark.svg">zzz-mark.svg</a> · <a href="zzz-lockup.svg">zzz-lockup.svg</a></p>
-  </article>
+  <div class="home"><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#25D366"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FF0000"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g12" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FEDA75"/><stop offset="0.5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="100" height="100" rx="22.5" fill="url(#g12)"/></svg><span>&nbsp;</span></div><div class="cell"><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Zzz icon (primary)"><defs><linearGradient id="g13" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#FF8A3D"/><stop offset="0.5" stop-color="#FF3D6E"/><stop offset="1" stop-color="#9B3DFF"/></linearGradient></defs><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="url(#g13)"/><g transform="translate(15 15) scale(0.7)">
+      <rect x="12" y="30" width="50" height="58" rx="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-12 37 59)"/>
+      <rect x="32" y="12" width="56" height="70" rx="10" fill="#FFFFFF"/>
+      <path d="M47 31 H73 L47 63 H73" fill="none" stroke="#FF3D6E" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span>Kagazzz</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#1DB954"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#FFFFFF"/></svg><span>&nbsp;</span></div><div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="22.5" fill="#0866FF"/></svg><span>&nbsp;</span></div></div>
+  <p class="story">A stack of sheets with a bold Z: the zzz in Kagazzz. Sleep easy, your papers are sorted.</p>
+  <p class="why">Instagram-style energy: the only gradient concept, warm to violet, with a white glyph. The most playful and memorable for the name; best if the brand leans consumer and friendly.</p>
+  <p class="files"><a href="zzz-icon.svg">icon</a> · <a href="zzz-mark.svg">mark</a> · <a href="zzz-mono.svg">mono</a> · <a href="zzz-lockup.svg">lockup</a></p>
+</article>
   </div>
 </main>
 </body>
