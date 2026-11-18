@@ -30,21 +30,21 @@ const SANS = "'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif";
  */
 const CONCEPTS = [
   {
-    id: 'kashti',
-    name: 'Kashti',
+    id: 'safe-page',
+    name: 'Safe Page',
     color: 'Saffron',
     tile: '#F25C05',
     fg: '#FFFFFF',
     cutOnTile: '#F25C05',
     ink: '#E4570A',
-    accent: '#FFFFFF',
+    accent: '#FFC9A8',
     wordBg: '#FFF7F0',
-    story: '“Kaagaz ki kashti”: the paper boat every Indian child has folded. Paper that carries what matters safely.',
-    why: 'Warm and confident, like Claude’s terracotta. Saffron is bright, Indian and nothing like the blue or green of most document apps. One white silhouette; the fold line is the only detail.',
-    draw: ({ fg, cut }) => `
-      <path d="M8 56 H30 L38 34 L45 48 L50 18 L55 48 L62 34 L70 56 H92 L77 80 H23 Z" fill="${fg}"/>
-      <path d="M8 56 H92" stroke="${cut}" stroke-width="3.5"/>
-      <path d="M50 56 V80" stroke="${cut}" stroke-width="3.5"/>`,
+    story: 'A document with a folded corner and a bold tick cut through it: your document, saved and safe.',
+    why: 'Instantly reads as "document" and "done". Saffron makes it warm, Indian and unlike the blue or green of most document apps; the white page and the tick cut out of it are the whole mark.',
+    draw: ({ fg, cut, accent }) => `
+      <path d="M20 10 H60 L82 32 V90 H20 Z" fill="${fg}"/>
+      <path d="M60 10 V32 H82 Z" fill="${accent}"/>
+      <path d="M34 59 L46 71 L68 46" fill="none" stroke="${cut}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   {
     id: 'fold-k',
