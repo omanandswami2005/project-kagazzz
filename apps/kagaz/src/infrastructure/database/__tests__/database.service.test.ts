@@ -208,7 +208,7 @@ describe('openDatabase', () => {
   it('web (normal build): refuses to open an unencrypted database', async () => {
     mockedGetPlatform.mockReturnValue('web');
     mocks.demo.value = false;
-    await expect(openDatabase([])).rejects.toThrow('only available in demo builds');
+    await expect(openDatabase([])).rejects.toThrow('only available on the web-demo dev server');
     expect(mocks.sqliteApi.createConnection).not.toHaveBeenCalled();
   });
 });

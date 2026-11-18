@@ -2,16 +2,16 @@
  * Demo-only browser database (jeep-sqlite = sql.js in the WebView, persisted to
  * IndexedDB). The shipped app is an Android APK with SQLCipher; a browser has
  * no SQLCipher, so this store is **unencrypted** and exists only so the app can
- * be demoed from `vite dev`. It is compiled in only when a demo env var is set
- * (see {@link isWebDemo}), so a normal production build tree-shakes it out.
+ * be tested from the web-demo dev server (`pnpm --filter kagaz dev:web-demo`).
+ * `__KAGAZ_DEMO__` is `false` in every build, so a release tree-shakes it out.
  *
  * [SEC] Never enable for a release build — documents' metadata and OCR text
  * would sit unencrypted in the browser profile (10-security-architecture.md §3.2).
  */
 
-/** True in demo builds (a local/cloud AI demo env var is set). Compile-time constant. */
+/** True only on the web-demo dev server. Compile-time constant (`false` in every build). */
 export function isWebDemo(): boolean {
-  return __KAGAZ_DEMO__ && Boolean(import.meta.env.VITE_OLLAMA_URL || import.meta.env.VITE_CLOUD_AI);
+  return __KAGAZ_DEMO__ && import.meta.env.VITE_WEB_DEMO === '1';
 }
 
 /** Registers and mounts the `<jeep-sqlite>` element and waits until it is ready. */
@@ -31,5 +31,5 @@ export async function mountWebStore(): Promise<void> {
     await customElements.whenDefined('jeep-sqlite');
     return;
   }
-  throw new Error('The browser database is only available in demo builds');
+  throw new Error('The browser database is only available on the web-demo dev server');
 }

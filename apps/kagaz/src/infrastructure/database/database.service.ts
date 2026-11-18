@@ -118,7 +118,7 @@ export async function openDatabase(
   const web = Capacitor.getPlatform() === 'web';
   if (web) {
     if (!isWebDemo()) {
-      throw new Error('The browser database is only available in demo builds');
+      throw new Error('The browser database is only available on the web-demo dev server');
     }
     await mountWebStore();
     await sqlite.initWebStore();

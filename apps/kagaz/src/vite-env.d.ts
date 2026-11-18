@@ -8,8 +8,8 @@ declare module '@kagaz/ui/styles.css';
 declare const __APP_VERSION__: string;
 
 /**
- * Compile-time flag: true only in demo builds (VITE_OLLAMA_URL or VITE_CLOUD_AI set) and in
- * tests. In a normal/production build it is the constant `false`, so the bundler removes all
- * demo-only code (browser database, cloud and Ollama engines, vision fallbacks).
+ * Compile-time flag: true only on the web-demo dev server (`VITE_WEB_DEMO=1 vite`) and in
+ * tests. In every `vite build` it is the constant `false`, so the bundler removes all
+ * demo-only code (the unencrypted browser database). See vite-plugins/web-demo.ts.
  */
 declare const __KAGAZ_DEMO__: boolean;

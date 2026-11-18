@@ -1,9 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { defineConfig, loadEnv, type PluginOption } from 'vite';
-import { demoCsp } from './vite-plugins/demo-csp';
-import { cloudAiProxy } from './vite-plugins/cloud-ai-proxy';
-import { webSqliteWasm } from './vite-plugins/web-sqlite-wasm';
+import { isWebDemoServe, webDemo } from './vite-plugins/web-demo';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -25,17 +23,14 @@ const appVersion = (
   }
 ).version;
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, __dirname, 'VITE_');
-  const plugins: PluginOption[] = [
-    react(),
-    tailwindcss(),
-    demoCsp({ ollamaUrl: env.VITE_OLLAMA_URL, cloudAi: env.VITE_CLOUD_AI }, mode),
-  ];
-  if (env.VITE_OLLAMA_URL || env.VITE_CLOUD_AI) {
-    plugins.push(webSqliteWasm());
+  // Browser web demo: dev server only, never a build (vite-plugins/web-demo.ts).
+  const webDemoOn = isWebDemoServe(command, env.VITE_WEB_DEMO);
+  const plugins: PluginOption[] = [react(), tailwindcss()];
+  if (webDemoOn) {
+    plugins.push(webDemo());
   }
-  plugins.push(cloudAiProxy(Boolean(env.VITE_CLOUD_AI)));
 
   if (mode === 'analyze') {
     plugins.push(
@@ -52,11 +47,12 @@ export default defineConfig(({ mode }) => {
     plugins,
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
-      __KAGAZ_DEMO__: JSON.stringify(Boolean(env.VITE_OLLAMA_URL || env.VITE_CLOUD_AI)),
+      // Constant `false` in every build, so demo-only code (the browser database) is removed.
+      __KAGAZ_DEMO__: JSON.stringify(webDemoOn),
     },
     // Dev only. These are first imported by a lazy PDF chunk, so Vite used to discover them
-    // mid-session, re-optimize and RELOAD the page — dropping in-memory state such as the
-    // AI connection (found while rehearsing the demo). Declaring them up front avoids that.
+    // mid-session, re-optimize and RELOAD the page, dropping in-memory state. Declaring
+    // them up front avoids that.
     optimizeDeps: { include: ['@pdfsmaller/pdf-encrypt', '@pdfsmaller/pdf-decrypt'] },
     resolve: {
       alias: {
