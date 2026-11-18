@@ -23,9 +23,9 @@ const allCss = [
   .map(read)
   .join('\n');
 
-describe('token definitions (design-tokens.md v2.0)', () => {
+describe('token definitions (design-tokens.md v2.1)', () => {
   it('defines the brand palette verbatim', () => {
-    expect(allCss).toContain('--color-primary: #1e3a5f');
+    expect(allCss).toContain('--color-primary: #c2410c');
     expect(allCss).toContain('--color-secondary: #f59e0b');
     expect(allCss).toContain('--color-accent: #10b981');
     expect(allCss).toContain('--color-danger: #f43f5e');
@@ -68,7 +68,7 @@ describe('token definitions (design-tokens.md v2.0)', () => {
     expect(dark).toContain("[data-theme='dark']");
     expect(dark).toContain('--surface-1: #0f172a');
     expect(dark).toContain('--text-primary: #f8fafc');
-    expect(dark).toContain('--border-focus: #60a5fa');
+    expect(dark).toContain('--border-focus: #fb923c');
   });
 
   it('respects prefers-reduced-motion', () => {
