@@ -11,6 +11,12 @@
   --ion-toolbar-color: var(--text-primary);
   --ion-item-background: var(--surface-1);
   --ion-color-primary: var(--color-primary);
+  /* Ionic derives ripples, focus tints, toggles and pressed states from
+     these; left unset they stay Ionic's default blue (#3880ff). */
+  --ion-color-primary-rgb: var(--color-primary-rgb);
+  --ion-color-primary-contrast: var(--text-on-primary);
+  --ion-color-primary-shade: var(--color-primary-dark);
+  --ion-color-primary-tint: var(--color-primary-light);
 }
 
 .kg-crash {

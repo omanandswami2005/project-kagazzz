@@ -28,11 +28,21 @@
 
 ### Brand Colors
 
+> **Saffron since 2026-11-19** — the whole UI follows the Kagazzz Docs app
+> icon (see [App Icon](#app-icon)). Previously navy `#1E3A5F` plus an
+> indigo→violet→fuchsia gradient. The icon's own `#F25C05` is **not** used
+> in the UI: white text on it is only 3.33:1 (fails AA). The UI uses the
+> deeper orange-700 `#C2410C` (white text 5.18:1). In dark mode the primary
+> brightens to `#F97316` and text on it turns dark (`#0F172A`, 6.37:1) —
+> see [Dark mode brand](#dark-mode-brand).
+
 | Token | Hex | RGB | Purpose |
 |---|---|---|---|
-| `--color-primary` | `#1E3A5F` | `30, 58, 95` | Trust, Security — primary actions, headers, navigation |
-| `--color-primary-light` | `#2D5486` | `45, 84, 134` | Primary hover states |
-| `--color-primary-dark` | `#142842` | `20, 40, 66` | Primary active/pressed states |
+| `--color-primary` | `#C2410C` | `194, 65, 12` | Saffron — primary actions, links, focus, navigation |
+| `--color-primary-light` | `#EA580C` | `234, 88, 12` | Decorative highlights only (white text on it is 3.56:1 — never put text on it) |
+| `--color-primary-dark` | `#9A3412` | `154, 52, 18` | Primary active/pressed states |
+| `--color-primary-rgb` | `194, 65, 12` (dark `249, 115, 22`) | — | Comma triplet for `rgba()` consumers; bridged to Ionic's `--ion-color-primary-rgb` in `app.css` |
+| `--color-primary-subtle` | `color-mix(primary 14%, surface-1)` | derived | Tinted background behind a `--color-primary` icon (onboarding circles); follows dark mode |
 | `--color-secondary` | `#F59E0B` | `245, 158, 11` | Accessibility, Warmth — highlights, CTAs, badges |
 | `--color-secondary-light` | `#FBBF24` | `251, 191, 36` | Secondary hover states |
 | `--color-secondary-dark` | `#D97706` | `217, 119, 6` | Secondary active/pressed states |
@@ -45,8 +55,8 @@
 | `--color-accent-light` | `#34D399` | Success hover | Lighter success backgrounds |
 | `--color-danger` | `#F43F5E` | Destructive actions | Delete, remove, error states |
 | `--color-danger-light` | `#FB7185` | Danger hover | Error backgrounds, soft alerts |
-| `--color-warning` | `#FB923C` | Caution | Expiring documents, quota warnings |
-| `--color-warning-light` | `#FDBA74` | Warning hover | Warning backgrounds |
+| `--color-warning` | `#F59E0B` | Caution | Expiring documents, quota warnings (amber, not orange: orange is the brand, a warning must not look like a brand button) |
+| `--color-warning-light` | `#FBBF24` | Warning hover | Warning backgrounds |
 | `--color-info` | `#0EA5E9` | Informational | Tips, AI suggestions, help text |
 | `--color-info-light` | `#38BDF8` | Info hover | Info backgrounds |
 
@@ -54,48 +64,38 @@
 
 ## Brand Gradient
 
-> **Added 2026-07-21** ("Gradient Premium" direction, user-selected from a
-> set of options). A signature gradient reserved for a **deliberately
-> small set of high-impact spots** — primary CTA buttons, the upload FAB,
-> the in-progress ProgressBar fill, the app icon, and the splash screen.
-> **This is additive, not a replacement for `--color-primary`** — the navy
-> "trust and security" palette above stays exactly as it was for
-> structural UI (borders, focus rings, secondary-button outlines, body
-> text emphasis). The design goal is a premium, modern accent (Stripe/
-> Linear-like) without turning every screen into a light show, and without
-> touching the muted, WCAG-AA-validated palette that gives this
-> government-ID vault its trustworthy tone everywhere else.
+> **Saffron since 2026-11-19** (replaces the 2026-07-21 indigo→violet→fuchsia
+> "Gradient Premium" stops; same tokens, same consumers). A subtle
+> orange-700 → orange-800 sweep reserved for a **deliberately small set of
+> high-impact spots** — primary CTA buttons, the upload FAB, the in-progress
+> ProgressBar fill. The app icon and splash use the flat icon saffron
+> `#F25C05` instead (see [App Icon](#app-icon)).
 
-| Token | Hex | Purpose |
-|---|---|---|
-| `--color-brand-start` | `#4F46E5` (indigo-600) | Gradient start stop |
-| `--color-brand-mid` | `#7C3AED` (violet-600) | Gradient middle stop |
-| `--color-brand-end` | `#A21CAF` (fuchsia-700) | Gradient end stop |
-| `--gradient-brand` | `linear-gradient(135deg, ...)` | The composed gradient — use this, not the individual stops, everywhere except SVG sources (which need literal stop colors) |
-| `--shadow-glow-brand` | `0 0 20px rgba(124, 58, 237, 0.35)` | Resting glow on gradient surfaces |
-| `--shadow-glow-brand-lg` | `0 0 36px rgba(124, 58, 237, 0.45)` | Hover/emphasis glow |
+| Token | Light | Dark | Purpose |
+|---|---|---|---|
+| `--color-brand-start` | `#C2410C` (orange-700) | `#FB923C` (orange-400) | Gradient start stop |
+| `--color-brand-mid` | `#A8380C` | `#F97316` (orange-500) | Gradient middle stop |
+| `--color-brand-end` | `#9A3412` (orange-800) | `#EA580C` (orange-600) | Gradient end stop |
+| `--gradient-brand` | `linear-gradient(135deg, ...)` | same | The composed gradient — use this, not the individual stops |
+| `--shadow-glow-brand` | `0 0 20px rgba(194, 65, 12, 0.35)` | `rgba(249, 115, 22, 0.35)` | Resting glow on gradient surfaces |
+| `--shadow-glow-brand-lg` | `0 0 36px rgba(194, 65, 12, 0.45)` | `rgba(249, 115, 22, 0.45)` | Hover/emphasis glow |
 
 ### Contrast validation (WCAG 2.1 AA)
 
-Every consumer of `--gradient-brand` renders white text (`--text-on-primary`)
-on top of it — `.kg-btn--primary`, the upload FAB. Each stop, **and the
-interpolated visual midpoint**, was checked against white
-(relative-luminance method, `(L1+0.05)/(L2+0.05)`) before being chosen:
+Every consumer of `--gradient-brand` renders `--text-on-primary` on top of
+it — white in light mode, `#0F172A` in dark mode. Each stop was checked
+(relative-luminance method, `(L1+0.05)/(L2+0.05)`):
 
-| Point | Hex | Contrast vs. white | AA (≥4.5:1)? |
+| Stop | Light (white text) | Dark (`#0F172A` text) | AA (≥4.5:1)? |
 |---|---|---|---|
-| Start (`--color-brand-start`) | `#4F46E5` | 6.29:1 | ✅ |
-| Mid (`--color-brand-mid`) | `#7C3AED` | 5.70:1 | ✅ |
-| End (`--color-brand-end`) | `#A21CAF` | 6.32:1 | ✅ |
-| Interpolated midpoint (start↔end, no explicit stop) | ≈`#7852CA` | 6.78:1 | ✅ |
+| Start | `#C2410C` — 5.18:1 | `#FB923C` — 7.89:1 | ✅ |
+| Mid | `#A8380C` — 6.49:1 | `#F97316` — 6.37:1 | ✅ |
+| End | `#9A3412` — 7.31:1 | `#EA580C` — 5.02:1 | ✅ |
 
-An earlier candidate mid-stop, `#8B5CF6` (violet-500, one shade lighter),
-measured **4.23:1 — below AA** and was rejected for exactly that reason;
-`#7C3AED` (violet-600) was chosen instead. **Simple Mode** (density
-tokens, below) sets `--shadow-glow-brand`/`-lg` to `none`, matching how it
-already suppresses `--shadow-default` — glow is visual flourish, not
-information, so Simple Mode's reduced-complexity posture drops it exactly
-like any other shadow.
+Rejected: the icon's `#F25C05` (3.33:1 with white) and `#EA580C` with white
+(3.56:1). **Simple Mode** (density tokens, below) sets
+`--shadow-glow-brand`/`-lg` to `none` — glow is visual flourish, not
+information.
 
 ### Where it's used (and, as importantly, where it isn't)
 
@@ -104,8 +104,8 @@ like any other shadow.
 | Primary buttons (`.kg-btn--primary`), upload FAB | ✅ background + glow shadow |
 | ProgressBar, default variant (in-progress) | ✅ fill + animated shimmer sweep |
 | ProgressBar, success/danger variants | ❌ stays flat `--color-accent`/`--color-danger` — those signal a specific state, not brand identity |
-| App icon, splash screen | ✅ background |
-| Everything else — surfaces, text, borders, secondary/ghost/danger buttons, focus rings | ❌ unchanged navy/neutral system |
+| App icon, splash screen | ❌ flat icon saffron `#F25C05` (icon colours below) |
+| Everything else — surfaces, text, borders, secondary/ghost/danger buttons, focus rings | ❌ flat `--color-primary` saffron + neutral slate system |
 
 ---
 
@@ -136,13 +136,12 @@ like any other shadow.
 > | K (cut-out) | Brand saffron | `#F25C05` |
 > | Folded corner | Saffron light | `#FFC9A8` |
 >
-> These are icon-only brand colours, written as literal hex in the generated SVG sources (SVG needs literal stops); they are **not** CSS tokens yet. Add them as tokens if and when the in-app UI adopts saffron.
+> These are icon-only brand colours, written as literal hex in the generated SVG sources (SVG needs literal stops). The in-app UI adopted saffron on 2026-11-19 through the `--color-primary` / `--gradient-brand` tokens, using the deeper `#C2410C` because `#F25C05` fails white-text contrast. The native Android theme colours (`android/app/src/main/res/values/colors.xml`) mirror the UI tokens.
 >
 > **Safe zone (re-checked):** the adaptive foreground is placed at scale 5,
 > so the farthest points (z³, page corners) sit about 308 px from centre,
 > inside the ~313 px safe circle (66/108 of 1024); the round launcher variant
-> shows no clipping. The in-app UI still uses the brand gradient below;
-> whether the UI moves to saffron is an open brand decision.
+> shows no clipping.
 >
 > The rest of this section describes the **previous** (2026-07-18 → 2026-11-18) icon, kept for history.
 
@@ -265,8 +264,10 @@ graph LR
 | `--text-primary` | `#0F172A` | `#F8FAFC` | Headings, body text, primary labels |
 | `--text-secondary` | `#475569` | `#CBD5E1` | Descriptions, captions, metadata |
 | `--text-muted` | `#94A3B8` | `#64748B` | Placeholders, disabled text, hints |
-| `--text-on-primary` | `#FFFFFF` | `#FFFFFF` | Text on primary-colored backgrounds |
+| `--text-on-primary` | `#FFFFFF` | `#0F172A` | Text on brand surfaces (`--color-primary`, `--gradient-brand`); flips dark in dark mode |
+| `--text-on-color` | `#FFFFFF` | `#FFFFFF` | Text on semantic fills (danger, success, info badges/buttons); never flips |
 | `--text-on-secondary` | `#0F172A` | `#0F172A` | Text on secondary-colored backgrounds |
+| `--text-inverse` | `#F8FAFC` | `#0F172A` | Text on `--surface-inverse` (tooltips, toasts) |
 
 ### Border Colors
 
@@ -274,7 +275,26 @@ graph LR
 |---|---|---|
 | `--border-default` | `#E2E8F0` | `#334155` |
 | `--border-strong` | `#CBD5E1` | `#475569` |
-| `--border-focus` | `#1E3A5F` | `#60A5FA` |
+| `--border-focus` | `#C2410C` | `#FB923C` |
+
+### Lines, overlays, touch targets, stacking
+
+> **Added 2026-11-19** in the DRY sweep that came with the saffron retheme:
+> these values were repeated as literals (or as undefined token names with
+> literal fallbacks) across the app's CSS.
+
+| Token | Value | Usage |
+|---|---|---|
+| `--border-width` | `1px` | Default hairline borders |
+| `--border-width-thick` | `2px` | Selected/emphasised borders, focus-style outlines |
+| `--border-width-accent` | `3px` | Left accent bars (quotes, callouts) |
+| `--overlay-scrim` | `rgba(0, 0, 0, 0.4)` | Modal/sheet backdrops |
+| `--overlay-shine` | `rgba(255, 255, 255, 0.4)` | Shimmer highlight sweeps |
+| `--touch-target` | `44px` | Fixed platform minimum (WCAG 2.5.5, iOS HIG); does **not** scale with density |
+| `--touch-target-lg` | `48px` | Fixed Android/Material minimum. Use `--target-min` (below) when the size should follow density mode |
+| `--z-sticky` | `20` | Sticky headers/toolbars |
+| `--z-modal` | `1000` | Full-screen overlays above Ionic content |
+| `--space-half` | `0.125rem` | 2px nudge (half of `--space-1`) |
 
 ---
 
@@ -532,7 +552,10 @@ Kagaz uses a **mobile-first** responsive design system.
 | `#0F172A` (text-primary) | `#F8FAFC` (surface-1) | **15.4:1** | ✅ AAA |
 | `#475569` (text-secondary) | `#F8FAFC` (surface-1) | **7.1:1** | ✅ AA |
 | `#94A3B8` (text-muted) | `#F8FAFC` (surface-1) | **3.3:1** | ✅ Large text only |
-| `#FFFFFF` (text-on-primary) | `#1E3A5F` (primary) | **9.8:1** | ✅ AAA |
+| `#FFFFFF` (text-on-primary) | `#C2410C` (primary) | **5.18:1** | ✅ AA |
+| `#C2410C` (primary, links) | `#F8FAFC` (surface-1) | **4.95:1** | ✅ AA |
+| `#0F172A` (text-on-primary dark) | `#F97316` (primary dark) | **6.37:1** | ✅ AA |
+| `#F97316` (primary dark, links) | `#0F172A` (surface-1 dark) | **6.37:1** | ✅ AA |
 | `#F8FAFC` (text-primary dark) | `#0F172A` (surface-1 dark) | **15.4:1** | ✅ AAA |
 | `#CBD5E1` (text-secondary dark) | `#0F172A` (surface-1 dark) | **9.5:1** | ✅ AAA |
 
@@ -559,7 +582,7 @@ Kagaz uses a **mobile-first** responsive design system.
 /* Dark mode focus ring */
 @media (prefers-color-scheme: dark) {
   :focus-visible {
-    outline-color: #60A5FA;  /* Brighter blue for dark backgrounds */
+    outline-color: #FB923C;  /* --border-focus dark: brighter saffron */
   }
 }
 
@@ -598,11 +621,11 @@ Kagaz uses a **mobile-first** responsive design system.
 ```css
 :root {
   /* Colors */
-  --color-primary: #1E3A5F;
+  --color-primary: #C2410C;
   --color-secondary: #F59E0B;
   --color-accent: #10B981;
   --color-danger: #F43F5E;
-  --color-warning: #FB923C;
+  --color-warning: #F59E0B;
   --color-info: #0EA5E9;
 
   /* Surfaces — Light mode */
@@ -659,8 +682,15 @@ Kagaz uses a **mobile-first** responsive design system.
   --text-muted: #64748B;
   --border-default: #334155;
   --border-strong: #475569;
+  --color-primary: #F97316;
+  --text-on-primary: #0F172A;
 }
 ```
+
+<a id="dark-mode-brand"></a>**Dark mode brand:** no single saffron both passes
+4.5:1 under white text *and* stays visible on `#0F172A`, so dark mode
+brightens the primary to `#F97316` and flips `--text-on-primary` to dark.
+Semantic fills keep white text through `--text-on-color`.
 
 ---
 
@@ -784,4 +814,4 @@ The original `--ease-out`, `--ease-in`, `--ease-in-out` remain unchanged. Prefer
 
 ---
 
-*Last updated: 2026-07-18 · Kagaz Design System v2.0*
+*Last updated: 2026-11-19 · Kagazzz Docs Design System v2.1 (saffron)*

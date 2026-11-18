@@ -6,7 +6,7 @@
 .kg-lock {
   position: fixed;
   inset: 0;
-  z-index: var(--z-modal, 1000);
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14,7 +14,7 @@
   gap: var(--space-4);
   padding: var(--page-padding);
   text-align: center;
-  background: var(--surface-0, var(--surface-1));
+  background: var(--surface-1);
   color: var(--color-primary);
 }
 
