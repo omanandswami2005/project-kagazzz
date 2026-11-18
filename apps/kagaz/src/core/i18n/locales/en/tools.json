@@ -75,7 +75,7 @@
     "sheet_format_csv": "CSV (.csv)",
     "excel_note": "Form fields become rows; otherwise text lines are split into columns. Complex tables may not line up perfectly.",
     "password": "Password",
-    "password_hint": "You'll need this to open the file later — Kagaz cannot recover it.",
+    "password_hint": "You'll need this to open the file later — Kagazzz Docs cannot recover it.",
     "fields_none": "This PDF has no fillable fields.",
     "fields_loading": "Reading form fields…",
     "watermark_text": "Watermark text",

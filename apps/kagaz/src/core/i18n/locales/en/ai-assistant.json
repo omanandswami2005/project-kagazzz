@@ -1,5 +1,5 @@
 {
-  "title": "Kagaz AI",
+  "title": "Kagazzz AI",
   "new_chat": "New chat",
   "input_placeholder": "Ask me anything about your documents...",
   "listening": "Listening...",
@@ -23,7 +23,7 @@
   },
   "lifecycle": {
     "unsupported": "The AI Assistant needs on-device AI support, which isn't available on this platform.",
-    "intro": "Kagaz AI runs entirely on your device — nothing you type or ask ever leaves your phone.",
+    "intro": "Kagazzz AI runs entirely on your device — nothing you type or ask ever leaves your phone.",
     "download_button": "Download AI Assistant ({{size}})",
     "wifi_hint": "One-time download. Wi-Fi recommended.",
     "downloading": "Downloading the AI model...",

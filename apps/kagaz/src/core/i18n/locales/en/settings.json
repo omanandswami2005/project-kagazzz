@@ -41,7 +41,7 @@
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",
-    "biometric_lock_hint": "Require your fingerprint, face, or device PIN to open Kagaz.",
+    "biometric_lock_hint": "Require your fingerprint, face, or device PIN to open Kagazzz Docs.",
     "biometric_unavailable": "Set up a screen lock (fingerprint, face, or PIN) on your device first.",
     "auto_lock": "Auto-lock after",
     "auto_lock_immediate": "Immediately",
@@ -91,7 +91,7 @@
     "privacy_policy": "Privacy Policy",
     "terms": "Terms & Conditions",
     "licenses": "Open-source licenses",
-    "licenses_intro": "Kagaz is built with these open-source libraries. Thank you to their authors.",
+    "licenses_intro": "Kagazzz Docs is built with these open-source libraries. Thank you to their authors.",
     "version": "Version {{version}}"
   }
 }

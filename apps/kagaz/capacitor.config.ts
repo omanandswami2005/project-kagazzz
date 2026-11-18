@@ -7,7 +7,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // entries, and AndroidManifest.xml requests no network permissions.
 const config: CapacitorConfig = {
   appId: 'in.kagaz.app',
-  appName: 'Kagaz',
+  appName: 'Kagazzz Docs',
   webDir: 'dist',
   android: {
     // Defense in depth on top of the manifest having no INTERNET permission.
