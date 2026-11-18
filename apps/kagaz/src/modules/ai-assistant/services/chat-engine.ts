@@ -33,9 +33,9 @@ export interface ChatEngine {
   readonly kind: 'litert';
   readonly locality: EngineLocality;
   /**
-   * Native engine only: narrows the tools the current chat can call to a skill-sized subset
-   * (`null` = all tools). Unlike `setActiveTools` it never makes the app refuse a tool call — the
-   * model simply isn't shown the rest — because the native conversation is rebuilt, not filtered.
+   * Narrows the tools the current chat can call to a skill-sized subset (`null` = all tools).
+   * The app never refuses a tool call: the model simply isn't shown the rest, because the
+   * native conversation is rebuilt with only those tools (05 §3.10).
    */
   setToolSubset?(toolIds: string[] | null): void;
   createChat(): Promise<{ id: string }>;
