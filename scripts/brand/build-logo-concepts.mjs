@@ -48,6 +48,23 @@ const z3 = ({ fg }, x = 82, y = 1) => `
 
 const CONCEPTS = [
   {
+    id: 'tick-k-doc',
+    name: 'Tick-K z³ on a document',
+    color: 'Saffron · Safe Page mix',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'The Safe Page document with the tick-K on it and z³ in the corner: a document, a K, a tick for "verified", and zzz for Kagazzz.',
+    why: 'Combines card 1 and the Safe Page card: the page says "documents" at a glance, the tick-K says Kagazzz and "verified", the dog-ear says paper. The most self-explanatory of the set.',
+    draw: (p) => `
+      <path d="M14 10 H56 L76 30 V92 H14 Z" fill="${p.fg}"/>
+      <path d="M56 10 V30 H76 Z" fill="${p.accent}"/>
+      <g transform="translate(13 22) scale(0.66)">${kTick({ fg: p.cut, accent: p.cut })}</g>${z3(p, 80, 0)}`,
+  },
+  {
     id: 'tick-k-z3',
     name: 'Tick-K z³',
     color: 'Saffron · featured',
@@ -368,8 +385,8 @@ function indexHtml() {
 </head>
 <body>
 <main>
-  <h1>Kagazzz Docs — logo, round 5</h1>
-  <p class="lead"><b>New in round 5:</b> cards 1–3. The tick (✓) now forms the K's upper arm and the K keeps its lower leg, so it reads as both K and ✓, with <b>z³</b> (z cubed = zzz) in the top corner, so the mark spells Kagazzz. Card 1 is the pure mark, card 2 mixes it with the Mohar seal, and card 3 with the Vault shield. Round-3 Paper Kz cards follow. The earlier directions follow for comparison, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
+  <h1>Kagazzz Docs — logo, round 6</h1>
+  <p class="lead"><b>New in round 6:</b> card 1 puts the tick-K on the Safe Page document. Cards 2–4 are round 5: The tick (✓) now forms the K's upper arm and the K keeps its lower leg, so it reads as both K and ✓, with <b>z³</b> (z cubed = zzz) in the top corner, so the mark spells Kagazzz. Card 1 is the pure mark, card 2 mixes it with the Mohar seal, and card 3 with the Vault shield. Round-3 Paper Kz cards follow. The earlier directions follow for comparison, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
   <ul class="rules">
     <li><b>One silhouette</b>Recognisable from the outline alone; see each card's black "silhouette test".</li>
     <li><b>One owned colour</b>A dominant background, one symbol colour, at most one accent.</li>
