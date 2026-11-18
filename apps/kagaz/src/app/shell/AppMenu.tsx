@@ -7,6 +7,7 @@
  */
 import { IonContent, IonHeader, IonMenu, IonMenuToggle, IonTitle, IonToolbar, useIonRouter } from '@ionic/react';
 import type { ReactNode } from 'react';
+import type { ParseKeys } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { Icon, type IconName } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
@@ -15,17 +16,21 @@ import './shell.css';
 /** The id of the element the drawer overlays (IonRouterOutlet). */
 export const MAIN_CONTENT_ID = 'kg-main';
 
+/** Namespaces the drawer reads labels from (it reuses each screen's own title). */
+const NAMESPACES = ['common', 'documents', 'settings'] as const;
+type MenuKey = ParseKeys<typeof NAMESPACES>;
+
 interface MenuItem {
   id: string;
   icon: IconName;
   /** i18n key, namespaced when it reuses another screen's title. */
-  labelKey: string;
+  labelKey: MenuKey;
   route: string;
   /** Action Registry id this item performs, when one exists. */
   action?: string;
 }
 
-const SECTIONS: { titleKey: string; items: MenuItem[] }[] = [
+const SECTIONS: { titleKey: MenuKey; items: MenuItem[] }[] = [
   {
     titleKey: 'menu.quick_access',
     items: [
@@ -52,7 +57,7 @@ const SECTIONS: { titleKey: string; items: MenuItem[] }[] = [
 
 /** The app's side drawer. Render once, beside the tabs. */
 export function AppMenu(): ReactNode {
-  const { t } = useTranslation(['common', 'documents', 'settings']);
+  const { t } = useTranslation(NAMESPACES);
   const router = useIonRouter();
   const ai = useAi();
   return (
