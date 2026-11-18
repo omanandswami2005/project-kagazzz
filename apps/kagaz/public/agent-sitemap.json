@@ -3,7 +3,7 @@
   "pages": {
     "ai.settings": {
       "route": "/ai-assistant",
-      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~475 MB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
+      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~2.6 GB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
       "primary": null,
       "actions": []
     },
@@ -118,6 +118,11 @@
     }
   },
   "actions": {
+    "ai.askUser": {
+      "summary": "ALWAYS use this — never plain text — whenever you must ask the user for something to finish a task: a form (1-3 fields: choice, multi, number, text, toggle, date, document) appears in the chat. Examples: photo size missing → ai.askUser({question:\"What size should the photo be?\", fields:[{id:\"width\",label:\"Width\",type:\"number\",unit:\"px\"},{id:\"height\",label:\"Height\",type:\"number\",unit:\"px\"},{id:\"maxSizeKb\",label:\"Max file size\",type:\"number\",unit:\"KB\"}]}); watermark text missing → ai.askUser({question:\"What should the watermark say?\", fields:[{id:\"text\",label:\"Watermark text\",type:\"text\"}]}). After calling it, STOP: write nothing more; their answer arrives as their next message. Never ask for passwords, OTPs or ID numbers.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
     "ai.mergeDocuments": {
       "summary": "Merge two or more existing documents (in the given order) into a single new PDF. The originals are untouched.",
       "voice": [],
@@ -145,6 +150,16 @@
     },
     "ai.convertPdfToImages": {
       "summary": "Render every page of a PDF to a separate new image document.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.findInDocuments": {
+      "summary": "Find documents whose TEXT contains a word or name (for example \"rover\" or a person\\",
+      "voice": [],
+      "requiresConfirmation": false
+    },
+    "ai.readDocumentText": {
+      "summary": "Read the extracted text of one document (images and scanned PDFs are read first if needed) so you can answer questions about what it says. Answer only from this text and name the document; if the answer is not in it, say so.",
       "voice": [],
       "requiresConfirmation": false
     },
@@ -199,13 +214,18 @@
       ],
       "requiresConfirmation": false
     },
+    "ai.loadSkill": {
+      "summary": "Load a skill: makes its tools available and returns its usage rules. Call this when you need tools that are not in your tool list.",
+      "voice": [],
+      "requiresConfirmation": false
+    },
     "ai.listDocuments": {
       "summary": "List the user\\",
       "voice": [],
       "requiresConfirmation": false
     },
     "ai.searchDocuments": {
-      "summary": "Search the user\\",
+      "summary": "Find documents by a name OR by words inside their extracted text (a person, a company, \"rover\"…); pass a short keyword, not a sentence. Each result has a snippet of the matching text when the match was inside it. To answer what a document says (a phone number, date, amount), call ai.readDocumentText with its id next.",
       "voice": [],
       "requiresConfirmation": false
     },
