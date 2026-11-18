@@ -1,45 +1,49 @@
 /**
- * Kagaz design tokens — single source of truth.
+ * Kagazzz Docs design tokens — single source of truth.
  * Values verbatim from docs/design-system/design-tokens.md (v2.0).
  * Never hardcode a visual value in app code — there is a token for it.
  * Default theme is light; dark-mode.css overrides via [data-theme="dark"].
  */
 :root {
   /* ── Brand colors ─────────────────────────────────────────────── */
-  --color-primary: #1e3a5f;
-  --color-primary-light: #2d5486;
-  --color-primary-dark: #142842;
+  /* Saffron (2026-11-19), matching the Kagazzz Docs app icon. The icon's own
+     #F25C05 fails white-text contrast (3.3:1), so UI surfaces use the deeper
+     orange-700 shade: white text 5.18:1 on it, and 5.18:1 as text on white. */
+  --color-primary: #c2410c;
+  --color-primary-light: #ea580c;
+  --color-primary-dark: #9a3412;
+  /* Tinted brand background for icons/chips that carry --color-primary on
+     top. Derived, so it follows dark mode (data-theme sits on <html>). */
+  --color-primary-subtle: color-mix(in srgb, var(--color-primary) 14%, var(--surface-1));
   --color-secondary: #f59e0b;
   --color-secondary-light: #fbbf24;
   --color-secondary-dark: #d97706;
 
-  /* ── Brand gradient ("Gradient Premium", 2026-07-21) ────────────
-     A signature gradient reserved for high-impact spots — primary CTA
-     buttons, the upload FAB, progress bars, the app icon, and the splash
-     screen. NOT a replacement for --color-primary, which stays the
-     structural "trust" navy (borders, focus rings, secondary-button
-     outlines) — see design-tokens.md for the full rationale and the
-     WCAG contrast validation (white text ≥4.5:1 at every stop, incl. the
-     interpolated midpoint). */
-  --color-brand-start: #4f46e5; /* indigo-600 */
-  --color-brand-mid: #7c3aed; /* violet-600 */
-  --color-brand-end: #a21caf; /* fuchsia-700 */
+  /* ── Brand gradient (saffron, 2026-11-19; was indigo-violet "Gradient
+     Premium") ── Reserved for high-impact spots: primary CTA buttons, the
+     upload FAB, progress bars. Every stop keeps white text >= 5.18:1 (see
+     design-tokens.md for the contrast table). */
+  --color-brand-start: #c2410c; /* orange-700 */
+  --color-brand-mid: #a8380c;
+  --color-brand-end: #9a3412; /* orange-800 */
   --gradient-brand: linear-gradient(
     135deg,
     var(--color-brand-start) 0%,
     var(--color-brand-mid) 50%,
     var(--color-brand-end) 100%
   );
-  --shadow-glow-brand: 0 0 20px rgba(124, 58, 237, 0.35);
-  --shadow-glow-brand-lg: 0 0 36px rgba(124, 58, 237, 0.45);
+  --shadow-glow-brand: 0 0 20px rgba(194, 65, 12, 0.35);
+  --shadow-glow-brand-lg: 0 0 36px rgba(194, 65, 12, 0.45);
 
   /* ── Semantic colors ──────────────────────────────────────────── */
   --color-accent: #10b981;
   --color-accent-light: #34d399;
   --color-danger: #f43f5e;
   --color-danger-light: #fb7185;
-  --color-warning: #fb923c;
-  --color-warning-light: #fdba74;
+  /* Amber, not orange: orange is now the brand colour, and a warning must not
+     look like a brand button. */
+  --color-warning: #f59e0b;
+  --color-warning-light: #fbbf24;
   --color-info: #0ea5e9;
   --color-info-light: #38bdf8;
 
@@ -65,13 +69,31 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
+  /* Text on brand surfaces (primary, the brand gradient). Dark mode flips it. */
   --text-on-primary: #ffffff;
   --text-on-secondary: #0f172a;
+  /* Text on semantic colour fills (danger, success, info): always white. */
+  --text-on-color: #ffffff;
+  /* Text on --surface-inverse. */
+  --text-inverse: #f8fafc;
 
   /* ── Borders (light) ──────────────────────────────────────────── */
   --border-default: #e2e8f0;
   --border-strong: #cbd5e1;
-  --border-focus: #1e3a5f;
+  --border-focus: #c2410c;
+
+  /* ── Lines, overlays, touch targets ───────────────────────────── */
+  --border-width: 1px;
+  --border-width-thick: 2px;
+  --border-width-accent: 3px;
+  --overlay-scrim: rgba(0, 0, 0, 0.4);
+  --overlay-shine: rgba(255, 255, 255, 0.4);
+  --touch-target: 44px; /* WCAG 2.5.5 / platform minimum */
+  --touch-target-lg: 48px;
+
+  /* ── Stacking ─────────────────────────────────────────────────── */
+  --z-sticky: 20;
+  --z-modal: 1000;
 
   /* ── Typography ───────────────────────────────────────────────── */
   --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
@@ -106,6 +128,7 @@
   --tracking-wide: 0.025em;
 
   /* ── Spacing (4px base grid) ──────────────────────────────────── */
+  --space-half: 0.125rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
