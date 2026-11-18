@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs Tick-K z³ in a seal icon (primary)"><rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="#F25C05"/><g transform="translate(15 15) scale(0.7)">
+      <circle cx="47" cy="53" r="38" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-dasharray="5 3.6"/>
+      <circle cx="47" cy="53" r="31" fill="#FFFFFF"/>
+      <g transform="translate(22 28) scale(0.5)">
+      <path d="M12 16 H25 L33 24 V88 H12 Z" fill="#F25C05"/>
+      <path d="M25 16 L33 24 H25 Z" fill="#FFC9A8"/>
+      <path d="M33 54 L49 72 L79 22" fill="none" stroke="#F25C05" stroke-width="13" stroke-linejoin="miter" stroke-miterlimit="10"/></g>
+      <path d="M78 4 H90 L78 18 H90" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="92.5" y="9" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="9.5" fill="#FFFFFF">3</text></g></svg>

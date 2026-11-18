@@ -28,7 +28,67 @@ const SANS = "'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif";
  * symbol color on it; `cutOnTile` the negative-space color on the tile; `ink` the brand
  * color used when the mark sits on white; `accent` its one highlight.
  */
+/**
+ * Shared pieces of the round-4 marks.
+ * kTick: the paper K whose arms are a tick (✓): a stem with a dog-eared corner, then a short
+ * stroke down and a long stroke up. z3: "z³" (z cubed = zzz) for the top-right corner.
+ */
+const kTick = ({ fg, accent }) => `
+      <path d="M12 16 H25 L33 24 V88 H12 Z" fill="${fg}"/>
+      <path d="M25 16 L33 24 H25 Z" fill="${accent}"/>
+      <path d="M33 54 L49 72 L79 22" fill="none" stroke="${fg}" stroke-width="13" stroke-linejoin="miter" stroke-miterlimit="10"/>`;
+const z3 = ({ fg }, x = 82, y = 1) => `
+      <path d="M${x} ${y + 2} H${x + 12} L${x} ${y + 16} H${x + 12}" fill="none" stroke="${fg}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="${x + 14.5}" y="${y + 7}" font-family="${SANS}" font-weight="700" font-size="9.5" fill="${fg}">3</text>`;
+
 const CONCEPTS = [
+  {
+    id: 'tick-k-z3',
+    name: 'Tick-K z³',
+    color: 'Saffron · featured',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'The paper K whose arms are a tick (✓), with z³ in the top corner. z cubed = zzz, so the mark spells Kagazzz: K·a·g·a·z + z³.',
+    why: 'K for Kagazzz, the tick for "verified, safe, done", the dog-ear for paper, and z³ as the clever detail people notice second. At 24 px it still reads as K plus a tick.',
+    draw: (p) => `${kTick(p)}${z3(p)}`,
+  },
+  {
+    id: 'tick-k-seal',
+    name: 'Tick-K z³ in a seal',
+    color: 'Saffron · Mohar mix',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'The tick-K stamped inside a round मोहर (seal), with z³ in the corner: an official, verified document stamp that spells Kagazzz.',
+    why: 'Mixes card 1 with the Mohar seal: the strongest "official document" feel. The seal ring gives the icon a distinctive round silhouette among square app icons.',
+    draw: (p) => `
+      <circle cx="47" cy="53" r="38" fill="none" stroke="${p.fg}" stroke-width="3.5" stroke-dasharray="5 3.6"/>
+      <circle cx="47" cy="53" r="31" fill="${p.fg}"/>
+      <g transform="translate(22 28) scale(0.5)">${kTick({ fg: p.cut, accent: p.accent })}</g>${z3(p, 78, 2)}`,
+  },
+  {
+    id: 'tick-k-shield',
+    name: 'Tick-K z³ on a shield',
+    color: 'Saffron · Vault mix',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'The tick-K cut out of a shield, with z³ in the corner: your documents, verified and protected.',
+    why: 'Mixes card 1 with the Vault shield: says "privacy and security" first and "K" second. Reads as a security app, which suits an Aadhaar/PAN vault.',
+    draw: (p) => `
+      <path d="M46 8 L80 20 V48 C80 70 65 83 46 92 C27 83 12 70 12 48 V20 Z" fill="${p.fg}"/>
+      <g transform="translate(23 26) scale(0.5)">${kTick({ fg: p.cut, accent: p.accent })}</g>${z3(p, 84, 0)}`,
+  },
   {
     id: 'paper-kz',
     name: 'Paper Kz',
@@ -303,8 +363,8 @@ function indexHtml() {
 </head>
 <body>
 <main>
-  <h1>Kagazzz Docs — logo, round 3</h1>
-  <p class="lead"><b>New in round 3:</b> cards 1–2 are your pick, the paper K from concept 2 in the saffron of concept 1, with a small z (Kz), and the app name is now <b>Kagazzz Docs</b>. The earlier directions follow for comparison, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
+  <h1>Kagazzz Docs — logo, round 4</h1>
+  <p class="lead"><b>New in round 4:</b> cards 1–3. The K's arms are now a tick (✓), with <b>z³</b> (z cubed = zzz) in the top corner, so the mark spells Kagazzz. Card 1 is the pure mark, card 2 mixes it with the Mohar seal, and card 3 with the Vault shield. Round-3 Paper Kz cards follow. The earlier directions follow for comparison, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
   <ul class="rules">
     <li><b>One silhouette</b>Recognisable from the outline alone; see each card's black "silhouette test".</li>
     <li><b>One owned colour</b>A dominant background, one symbol colour, at most one accent.</li>
