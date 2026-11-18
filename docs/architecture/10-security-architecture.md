@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-10-31
+> **Last Updated:** 2026-11-18
 
 ---
 
@@ -247,21 +247,19 @@ In V1, Kagaz enforces a strict **no-network** policy:
 | **No remote config** | All configuration is bundled and local |
 | **No push notifications** | No FCM/APNs integration |
 | **No HTTP calls in app code** | No API endpoints, no REST/GraphQL clients; the only `fetch()` reads local `blob:`/`capacitor:` URLs (F-19 audit) |
+| **One user-initiated download** | The **only** app-initiated network request is the on-device AI model download (Gemma 4 E2B, ~2.6 GB, `huggingface.co`). It starts only when the user taps Download on the AI model page, runs in native code (the WebView CSP is untouched), sends **no user data** (a plain HTTPS GET of a public file), and the file is SHA-256-verified before every load. Everything except the AI assistant works without it. |
 | **Network permissions** | ⚠️ `INTERNET` + `ACCESS_NETWORK_STATE` **are present in the release manifest**, merged transitively by the Play-Services ML Kit scanner (ADR-018). The app's own code makes no network calls; the permission exists only so Play Services can perform the one-time scanner model download. `CAMERA` is **not** requested. See the note below. |
 | **CSP headers** | Content Security Policy blocks all outbound connections from the WebView |
 
 > [!NOTE]
-> Users can verify the app makes no network calls of its own by using it in airplane mode — every feature except the (first-run) scanner works identically with no connection.
+> Users can verify the app makes no network calls of its own by using it in airplane mode — every feature except the (first-run) scanner and the one-time AI model download works identically with no connection, including the AI assistant once its model is downloaded.
 
 > [!IMPORTANT]
 > **Network-permission reality (corrected 2026-07-11).** An earlier revision claimed the app ships with **no `INTERNET` permission**. Building and inspecting the **release** APK (`aapt dump permissions`) disproved that: the document scanner (F-2, [ADR-018](08-tech-stack-decisions.md#adr-018-document-scanner--google-ml-kit-via-play-services)) depends on `play-services-mlkit-document-scanner`, whose transitive Play-Services libraries declare `INTERNET` + `ACCESS_NETWORK_STATE`, and the manifest merger folds them into our app manifest. The **plugin's own** manifest declares no permissions (that part of the ADR-018 verification was right) — but the **merged** result carries them.
 > **Accepted, not stripped** (decision 2026-07-11): the permission is real but the app never uses it — it makes no HTTP calls (F-19 audit), ships no analytics/CDN, and the CSP blocks WebView egress. It exists solely so Play Services can fetch the scanner model once. Stripping it via `tools:node="remove"` was considered and rejected (risk to the Play-Services download path). **Consequence:** the "zero network permission, airplane-mode-provable" claim is downgraded to **"the app makes no network calls of its own; the `INTERNET` permission is present only for the Play-Services scanner model download."** This must be reflected in the Play **data-safety** declaration (G1-6) and the privacy policy. On devices without Play Services, scanning is unavailable; everything else is 100% offline.
 
 > [!WARNING]
-> **Demo-only browser database and cloud path (added 2026-10-31).** The browser demo opens an **unencrypted** sql.js database (SQLCipher has no browser build), and online mode sends messages and transcribed documents to Google Vertex AI through a dev-server proxy that holds the developer's credentials. Both exist only when a demo flag is set, and `vite-plugins/demo-csp.ts` fails any production build that sets one. See [ADR-023](08-tech-stack-decisions.md#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy).
-
-> [!WARNING]
-> **Demo-only local-server path (added 2026-10-31).** When `VITE_OLLAMA_URL` is set at build time, the WebView is allowed to call that one origin (a local Ollama server) for chat, vision OCR and embeddings, and **prompts, tool results and document images/text leave the WebView for it**. This is never enabled in shipped builds: `vite-plugins/demo-csp.ts` only widens `connect-src` when the variable is set and fails a `production` build that sets it, so the CSP row above holds for every release. The server must be localhost or a machine the user controls. A hosted-API fallback would need an explicit PII data-sharing warning and consent before enabling ([05-ai-assistant-module.md](05-ai-assistant-module.md) §3.6, [ADR-022](08-tech-stack-decisions.md#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)).
+> **Browser web demo: testing only (2026-11-18, [ADR-025](08-tech-stack-decisions.md#adr-025-browser-web-demo--dev-server-only-testing-only)).** `pnpm --filter kagaz dev:web-demo` opens an **unencrypted** sql.js database in the browser (SQLCipher has no browser build) and adds `'wasm-unsafe-eval'` to the **dev server's** CSP only. It never exists in a build: the plugin is dev-server-only, `__KAGAZ_DEMO__` is `false` in every `vite build`, and a build with `VITE_WEB_DEMO` set fails. Use only test data in it. The online mode (Vertex AI) and local-server (Ollama) paths described in earlier revisions were **removed from `develop`** on 2026-11-18 (see [future extensions](../roadmap/future-extensions.md)).
 
 ---
 
@@ -476,7 +474,8 @@ The AI assistant operates under strict data access boundaries:
 | Data Type | AI Can Access? | Mechanism |
 |---|---|---|
 | Document **metadata** (name, type, size, tags, dates) | ✅ Yes | Via tool calls to DocumentDAO |
-| Document **content** (actual file bytes, OCR text) | ❌ No | Not exposed as a tool |
+| Document **file bytes** | ❌ No | Not exposed as a tool |
+| Document **extracted text** (OCR / PDF text layer) of **unlocked** documents | ⚠️ On-device model only | `ai.findInDocuments` (keyword hits + snippet), `ai.readDocumentText`. Locked documents are refused. The model runs on the phone, so the text never leaves it. `ai.runOcr` returns a character count only. |
 | Document **thumbnails** | ❌ No | Not exposed as a tool |
 | Folder structure | ✅ Yes | Via tool calls to FolderDAO |
 | AI conversation history | ✅ Yes | Own conversation context |
@@ -485,7 +484,7 @@ The AI assistant operates under strict data access boundaries:
 | File system paths | ❌ No | Only relative paths via metadata |
 
 > [!IMPORTANT]
-> The AI assistant can help organize, search, and manage documents using metadata, but it **cannot read the actual content** of any document. This is an architectural boundary, not just a policy — the tool functions simply don't provide content access.
+> The AI assistant works on metadata by default. Since 2026-10-31 it can read the **extracted text** of an **unlocked** document through two tools, so it can answer "what is the mobile number on my card?". This is acceptable **only because the sole V1 engine is on-device** (`ChatEngine.locality === 'on-device'`, 05 §3.6). Any engine that is not on-device (the deferred online mode, AI-X2) must not receive document text without explicit, per-use, logged consent (DPDP §6) and a DPIA update. The privacy policy and DPIA must describe this on-device reading.
 
 ---
 
@@ -535,11 +534,11 @@ sequenceDiagram
 
 | Measure | Implementation |
 |---|---|
-| **Checksum verification** | SHA-256 hash checked against known-good value before loading |
-| **Signed model files** | Model weights signed with app's certificate |
-| **No runtime modification** | Model weights are read-only |
-| **Version pinning** | Specific model version tied to app version |
-| **Integrity check on launch** | Hash verification on every cold start |
+| **Checksum verification** | SHA-256 checked against the pinned value (`MODEL_SHA256`) **before every load**, not just after download; a mismatch deletes the file |
+| **Atomic download** | Native download writes `<name>.part`, checks the byte count and renames only when complete (2026-11-18), so a truncated file can never be treated as the model |
+| **Presence check on launch** | Cold start checks the file is present and exactly `MODEL_SIZE_BYTES` (cheap); the full hash runs at load |
+| **Storage location** | App-private internal storage (`filesDir`), not backed up (`allowBackup="false"`) |
+| **Version pinning** | Model URL, size and hash are constants tied to the app version |
 
 ```typescript
 async function verifyModelIntegrity(modelPath: string): Promise<boolean> {

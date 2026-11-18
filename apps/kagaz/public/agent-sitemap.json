@@ -3,7 +3,7 @@
   "pages": {
     "ai.settings": {
       "route": "/ai-assistant",
-      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~2.6 GB), see its ready status once loaded, or delete it to free storage. The AI chat itself depends on this model being downloaded and loaded first.",
+      "intent": "Manage the on-device AI Assistant model: download it (one-time, ~2.6 GB), load it, see its status, or delete it (confirmed) to free storage. A downloaded model is remembered across restarts and the AI chat loads it automatically.",
       "primary": null,
       "actions": []
     },

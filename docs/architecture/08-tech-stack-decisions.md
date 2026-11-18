@@ -31,6 +31,7 @@
 - [ADR-022: Demo engine — local Ollama (Gemma 4) behind a ChatEngine seam](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam)
 - [ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine](#adr-024-on-device-semantic-search--embeddinggemma-via-litert-lm-embeddingengine)
 - [ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy](#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)
+- [ADR-025: Browser web demo — dev-server only, testing only](#adr-025-browser-web-demo--dev-server-only-testing-only)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -1244,7 +1245,7 @@ already solved for the scanner (WebView/WASM → native).
 
 | | |
 |---|---|
-| **Status** | ✅ Accepted — **demo / hackathon builds only** (2026-10-31) |
+| **Status** | ⏸️ **Withdrawn from `develop` (2026-11-18)** — the Ollama engine lives only on branch `feature/ai-ollama-embeddings`. The `ChatEngine` seam it introduced **stays** (05 §3.6). Was: accepted for demo builds only (2026-10-31). |
 | **Supplements** | [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) (LiteRT-LM stays the shipped engine) |
 
 **Context.** The demo has to run on an Intel Mac (i9, 16 GB, no Apple Silicon). LiteRT-LM's published Python wheels are macOS ARM64 only and its docs show no Intel-Mac build, so the native engine cannot be shown on that machine, and the Android emulator has no GPU and little RAM. Ollama ships an x86_64 macOS binary (v0.40.13 verified) and serves `gemma4:e2b` (text + vision, tool calling, structured output) and `embeddinggemma`.
@@ -1262,7 +1263,7 @@ already solved for the scanner (WebView/WASM → native).
 
 ## ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine
 
-**Status:** Accepted (2026-10-31) · **Device-verified:** NO (built and unit-tested only)
+**Status:** ⏸️ **Deferred (2026-11-18)**. Removed from `develop` before the store release; tracked as [AI-X1](../roadmap/future-extensions.md#ai-x1--semantic-search-embeddinggemma). The code remains on `feature/ai-ollama-embeddings`. Blockers before it comes back: an EmbeddingGemma licence review (Gemma Terms, not Apache-2.0), an official or self-converted model artifact instead of the community conversion, and persisted vectors. Was: accepted 2026-10-31, never device-verified.
 
 **Decision:** The Android app embeds document text and queries with **EmbeddingGemma-300M** using the `EmbeddingEngine` already present in `litertlm-android` 0.19.0 (CPU backend, 768-d, L2-normalised, 512-token input). The model is an **optional, separate ~330 MB download** (`embeddinggemma_300m.litertlm`) so chat works without it. The plugin gained `embedTexts` (lazy engine on its own executor) and a `tag` on download-progress events so the two downloads cannot drive each other's bars.
 
@@ -1276,7 +1277,7 @@ already solved for the scanner (WebView/WASM → native).
 
 | | |
 |---|---|
-| **Status** | ✅ Accepted — **demo / hackathon builds only** (2026-10-31) |
+| **Status** | ⏸️ **Deferred (2026-11-18)**. Removed from `develop`; tracked as [AI-X2](../roadmap/future-extensions.md#ai-x2--online-mode-hosted-model-fallback). A real product needs a backend (India data residency), a DPIA update and consent logging first. The browser database part moved to [ADR-025](#adr-025-browser-web-demo--dev-server-only-testing-only). Was: accepted for demo builds only (2026-10-31). |
 | **Supplements** | [ADR-022](#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam), [ADR-021](#adr-021-on-device-ai--litert-lm-supersedes-webllm) |
 
 **Context.** Local Gemma 4 E2B on a CPU-only laptop takes tens of seconds for a first answer, too slow to demo comfortably, and a phone cannot run it unattended on every device. Google serves Gemma 4 (and Gemini) on Vertex AI behind an OpenAI-compatible endpoint, authenticated with the developer's application-default credentials — which must never reach a browser or an APK.
@@ -1286,6 +1287,19 @@ already solved for the scanner (WebView/WASM → native).
 **Guardrails.** The proxy exists only under `vite serve`; same-origin JSON only; model pinned server-side; bodies never logged; tokens never returned. `vite-plugins/demo-csp.ts` fails any `production` build with `VITE_CLOUD_AI` or `VITE_OLLAMA_URL` set, and only then widens the CSP (`'wasm-unsafe-eval'`, plus the Ollama origin). A real product needs a real backend in the proxy's place, a DPIA update, and per-user consent logging.
 
 **Consequences.** Gemma 4 26B passed the shared live suite 15/16, 14/16, 15/16 across three runs (the failing scenario is a two-part request); Gemini 2.5 Flash scored 14/16 three times, and on form-asking scenarios Gemma did better. Billing goes to the developer's GCP project.
+
+## ADR-025: Browser web demo — dev-server only, testing only
+
+| | |
+|---|---|
+| **Status** | ✅ Accepted (2026-11-18) |
+| **Supplements** | [ADR-017](#adr-017-offline-csp--no-runtime-fetched-wasmmodels) (the release CSP is unchanged) |
+
+**Context.** Testing the vault UI in a desktop browser needs a database, and a browser has no SQLCipher. The store builds must keep the strict offline CSP (no `wasm-unsafe-eval`) and must never contain an unencrypted store.
+
+**Decision.** `pnpm --filter kagaz dev:web-demo` (`VITE_WEB_DEMO=1 vite`) mounts an unencrypted sql.js store through `jeep-sqlite` (pinned `sql.js@1.11.0` as a dev dependency, the binary that matches `jeep-sqlite` 2.8.0's bundled glue). `vite-plugins/web-demo.ts` is `apply: 'serve'`: it serves the WASM and adds `'wasm-unsafe-eval'` to the **dev server's** HTML only. `__KAGAZ_DEMO__` is `command === 'serve' && VITE_WEB_DEMO === '1'`, so it is the constant `false` in every `vite build` and the demo store is tree-shaken out. Any build with `VITE_WEB_DEMO` set throws. On-device AI is Android-only, so the AI screens show "not available on this platform" in the browser.
+
+**Verification (2026-11-18).** `pnpm build` was run and `dist/index.html`'s CSP was diffed against the source `index.html`: identical. A grep of `dist` for `wasm-unsafe-eval`, `sql-wasm`, Ollama/Vertex endpoints and `embedTexts` found nothing. The only `jeep-sqlite` strings are the licence-attribution list and the `@capacitor-community/sqlite` web shim, which was already present on `develop`.
 
 ---
 
@@ -1303,4 +1317,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-10-31 · Kagaz Architecture Decision Records v1.6 (ADR-024 on-device EmbeddingGemma search; ADR-023 online mode on Vertex AI; ADR-022 demo-only Ollama engine; ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-11-18 · Kagaz Architecture Decision Records v1.7 (ADR-025 dev-server-only web demo; ADR-022/023/024 withdrawn or deferred for the store release; ADR-021 LiteRT-LM supersedes WebLLM)*

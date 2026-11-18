@@ -1,6 +1,6 @@
 # Google Play — Data Safety declaration (Kagaz V1)
 
-> **Launch gate G1-6** (see also **G1.5-4**) · Last updated: 2026-07-24 · Scope: **V1 (offline vault)**, with a **V1.5 addendum** below for the on-device AI model download.
+> **Launch gate G1-6** (see also **G1.5-4**) · Last updated: 2026-11-18 · Scope: **V1 (offline vault)**, with a **V1.5 addendum** below for the on-device AI model download.
 >
 > This maps Kagaz V1's *actual* data behaviour to the fields of the Play Console
 > **Data safety** form. V1 collects and shares **no user data** — everything
@@ -106,6 +106,13 @@ data-type matrix, the correct entries are:
 > content, no analytics. After download, the AI assistant runs fully
 > on-device with no further network activity. Users can delete the model at
 > any time from Settings → AI Assistant or the Storage screen.
+
+## 2026-11-18 update — store-release scope
+
+- **Removed before release:** online mode (Vertex AI) and semantic search were on a feature branch only and **never shipped**. The answers above already assume an on-device-only assistant. Re-declare if either comes back ([future-extensions](../roadmap/future-extensions.md)).
+- **Permissions:** the LiteRT plugin's unneeded `READ/WRITE_EXTERNAL_STORAGE` were removed. Expected merged release permissions: `RECORD_AUDIO`, `INTERNET`, `ACCESS_NETWORK_STATE` (plus normal ones added by the libraries). Confirm with `aapt dump permissions` on the release AAB/APK before submitting.
+- **Voice input:** speech goes through the system `RecognitionService` (usually Google), which may process audio on Google's servers. Kagaz does not receive or transmit the audio. Under Play's definitions this is processing by the OS service, not collection by the app. If Play review asks, say so, and point to privacy policy §3A. An on-device-only alternative is tracked as AI-X8.
+- **AI content:** Play requires that generative-AI apps let users report offensive output. Tracked in [store-release-checklist.md](store-release-checklist.md).
 
 ## When this must change (V2)
 

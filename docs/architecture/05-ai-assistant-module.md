@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/ai-assistant`
 > **Version**: 2.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-10-31 (**Gemma 4 everywhere; skills, online mode, GenUI forms, attachments, markdown** — §3.6–§3.8, §4.2.4–§4.2.5; earlier: engine switched from WebLLM to LiteRT-LM, §3.0)
+> **Last Updated**: 2026-11-18 (**On-device Gemma 4 only** — online mode, the Ollama engine and semantic search removed and moved to [future extensions](../roadmap/future-extensions.md); model lifecycle now remembers a downloaded model across restarts, §3.4.1; earlier: skills, GenUI forms, attachments, markdown §3.7, §4.2.4–§4.2.5; engine switched from WebLLM to LiteRT-LM, §3.0)
 
 ---
 
@@ -119,7 +119,7 @@ This module originally speced **WebLLM** (`@mlc-ai/web-llm`, `WebWorkerMLCEngine
 |---|---|---|---|
 | **Gemma 4 E2B** (the on-device model) | ~2.6 GB (2,588,147,712 bytes) | Apache-2.0 | `litert-community/gemma-4-E2B-it-litert-lm` — public, not gated. Text + native function calling. Needs a recent phone with plenty of free memory. **Not yet verified on a physical device** (2026-10-31). |
 
-**One model, no fallback (decided 2026-10-31).** Earlier revisions defaulted to Qwen3-0.6B (~0.5 GB) for the small download; it has been removed entirely — Gemma 4 E2B is the only on-device model, matching the Gemma 4 used in the demo's local (Ollama) and online (Vertex AI) engines. The size is far above the original 600 MB–1.7 GB budget, so the Settings screen shows the real size before the user taps Download, and the file is checksum-verified on every load. A smaller tier can be re-added behind the same `MODEL_*` constants if device testing shows the memory cost is too high.
+**One model, no fallback (decided 2026-10-31).** Earlier revisions defaulted to Qwen3-0.6B (~0.5 GB) for the small download; it has been removed entirely — Gemma 4 E2B is the only model, and V1 runs it only on-device. The size is far above the original 600 MB–1.7 GB budget, so the Settings screen shows the real size before the user taps Download, and the file is checksum-verified on every load. A smaller tier can be re-added behind the same `MODEL_*` constants if device testing shows the memory cost is too high.
 
 No dynamic VRAM-based model selection — LiteRT-LM's CPU/GPU/NPU backend selection happens per-inference-call, not per-model, and Android doesn't expose a WebGPU-style `adapter.limits` heuristic.
 
@@ -190,6 +190,28 @@ class AiEngineManager {
 
 None of these was verified on a physical device from this session.
 
+#### 3.4.1 Lifecycle states and the "model not remembered" fix (2026-11-18)
+
+**Bug:** after downloading the model and restarting the app, the AI page showed **Download** again. `AIProvider` stat-ed the file at startup but only logged the result; status stayed `not-downloaded` until a load. Separately, the native download wrote straight to the final file name, so a download killed halfway left a truncated file that counted as present.
+
+**States** (`AIProvider`, `AiStatus`):
+
+| State | Meaning | Management page (`/ai-assistant`) | Chat (`/ai-chat`) |
+|---|---|---|---|
+| `unsupported` | Not Android native (iOS, web) | Message only | Message only |
+| `checking` | Startup on-disk check running | Spinner (no button, so no flash of Download) | Spinner |
+| `not-downloaded` | No complete file on disk | **Download (~2.6 GB)** + Wi-Fi hint | Link to the management page |
+| `downloading` | Download in progress | Progress bar | "Downloading (N%)" + link |
+| `downloaded` | Complete file on disk, not in memory: **every cold start after the first download** | **Load now** + **Delete** | **Loads automatically** on open |
+| `loading` | Checksum verify + engine load | Spinner | Spinner |
+| `ready` | Loaded | Backend + load time, **Delete** | The conversation |
+| `error` | Download/verify/load failed | Retry (load if on disk, else download), **Delete** if on disk | Retry (if on disk) + link |
+
+- `modelOnDisk` is tracked separately from `status`, so Delete stays reachable after a load error and Storage counts the space whether or not the model is loaded.
+- `hasDownloadedModel()` requires the file to be exactly `MODEL_SIZE_BYTES`. The SHA-256 is still verified before **every** load (hashing 2.6 GB at every app start would be too slow).
+- Native `downloadFile` writes `<name>.part`, checks the byte count, fsyncs and renames. A failed or short download deletes the partial file. `deleteDownloadedModel()` also removes a leftover `.part`.
+- **Separation of concerns:** download, delete (confirmed with a dialog that states the size freed), the GPU switch and model info live **only** on the management page. The chat never offers Download or Delete; it only loads a model that is already downloaded.
+
 ### 3.5 Model Caching
 
 Models are cached in the app's native files directory (not the WebView's Cache API — there is no WebView involvement in inference at all):
@@ -219,25 +241,17 @@ flowchart TD
 
 ---
 
-### 3.6 Chat-engine seam and the demo Ollama engine (added 2026-10-31)
+### 3.6 Chat-engine seam (added 2026-10-31, narrowed 2026-11-18)
 
-`useChat` no longer calls the native plugin directly. It talks to a `ChatEngine` (`services/chat-engine.ts`) whose surface mirrors the plugin's chat calls and events (`createChat`, `sendMessage`, `resolveToolCall`, and the `textFromAi` / `aiFinished` / `generationError` / `toolCallRequested` listeners), so the tool-dispatch and confirmation-card flow is engine-agnostic. The engine is chosen in `services/chat-engine.registry.ts`:
+`useChat` does not call the native plugin directly. It talks to a `ChatEngine` (`services/chat-engine.ts`) whose surface mirrors the plugin's chat calls and events (`createChat`, `sendMessage`, `resolveToolCall`, and the `textFromAi` / `aiFinished` / `generationError` / `toolCallRequested` listeners), so the tool-dispatch and confirmation-card flow is engine-agnostic. `chat-engine.registry.ts` picks the engine.
 
-| Engine | `locality` | Selected when | Notes |
-|---|---|---|---|
-| `litertChatEngine` | `on-device` | default | Pure pass-through to `@kagaz/capacitor-llm-litert`; the model lifecycle stays in `ai-engine.service.ts`. |
-| `OllamaChatEngine` | `local-server` | `VITE_OLLAMA_URL` is set (demo builds only) | Gemma 4 E2B (`gemma4:e2b`) on a local Ollama server. Works on any platform, including the desktop browser demo. |
-| hosted API *(planned)* | `cloud` | explicit user opt-in | Must show a PII data-sharing warning and get consent first; not built. |
+| Engine | `locality` | Status |
+|---|---|---|
+| `litertChatEngine` | `on-device` | **The only V1 engine.** Pure pass-through to `@kagaz/capacitor-llm-litert`; the model lifecycle stays in `ai-engine.service.ts`. |
+| Local server (Ollama) | `local-server` | Removed 2026-11-18. Kept on branch `feature/ai-ollama-embeddings` for desktop testing only. See [future extensions](../roadmap/future-extensions.md#ai-x2--online-mode-hosted-model-fallback). |
+| Hosted API (online mode) | `cloud` | Deferred (AI-X2). Must sit behind explicit, logged consent and a PII data-sharing warning before the registry may return it. |
 
-`locality` exists so the UI can gate anything that is not `on-device` behind a warning.
-
-**Ollama engine behavior.** Ollama is stateless, so the engine keeps the message history per chat (system prompt from `prompts/system-prompt.ts`, trimmed to the last 40 messages and always restarting at a user turn). For each user message it streams `/api/chat` with the registered tools, emits any model tool calls as `toolCallRequested`, and waits for `resolveToolCall` before looping. Safeguards: at most 5 tool rounds per message, a 30 s timeout on an unanswered tool call (resolves to a timeout result instead of hanging; the same limit as the native bridge), one message in flight per chat, an explicit `num_ctx` of 8192 (the default silently truncates ~35 tool schemas), and failures surface as `generationError` events, never rejections. `AIProvider.activate` for this engine only checks that the server is reachable and the model is pulled; there is no download, checksum or local model load.
-
-**Config and network.** All Ollama settings are read in one place, `infrastructure/ollama/` (`VITE_OLLAMA_URL`, `VITE_OLLAMA_CHAT_MODEL`, `VITE_OLLAMA_VISION_MODEL`, `VITE_OLLAMA_EMBEDDING_MODEL`). The shipped CSP is `connect-src 'self'`; `vite-plugins/demo-csp.ts` adds only the Ollama origin when the URL is set, and **fails a production build** that sets it. See [10-security-architecture.md](10-security-architecture.md) §3.5 and [ADR-022](08-tech-stack-decisions.md#adr-022-demo-engine--local-ollama-gemma-4-behind-a-chatengine-seam).
-
-**Gemma vision.** Where native ML Kit is absent (the web build), OCR falls back to Gemma's vision input (`image-engine/services/vision-ocr.service.ts`). Separately, **Transcribe with Gemma** is offered next to **Extract text** in the document viewer and the vault item menu for images and PDFs *even when text was already extracted*: it re-reads every PDF page with the vision model (not only pages lacking a text layer) and replaces the stored text. It is user-only (no Action Registry entry) and appears only when Gemma is configured. Other formats are not offered; audio input is not wired.
-
-**Semantic index (spike, not wired).** `modules/semantic-index/` defines `EmbeddingProvider` and `VectorStore` ports with an Ollama (`embeddinggemma`) adapter and an in-memory cosine store. It is not connected to the assistant or the search bar yet. Retrieving passages into prompts would cross the metadata-only boundary in §11 and needs the security docs, the DPIA and the privacy policy updated first.
+**Pattern kept for future engines:** a new engine is one file that implements `ChatEngine` and is selected in the registry. `EngineLocality` carries the rule that anything other than `on-device` needs consent first. The vault's **Transcribe with Gemma** option goes through the same kind of seam (`image-engine/services/vision-ocr.service.ts`, `ImageTextRecognizer`). In V1 it returns no recognizer, so the option is hidden and OCR is Google ML Kit on-device. On-device Gemma vision is future item AI-X3.
 
 ---
 
@@ -248,25 +262,21 @@ A small model reads every tool schema on every turn, so the tool list is split i
 - **Router (no model call):** before each send, `matchSkills()` substring-matches the user's text against trigger words and pre-loads the matching skills.
 - **`ai.loadSkill` (fallback):** if the model needs a tool that is not in its list it loads the skill itself.
 - **Session:** loaded skills are sticky (changing the tool list invalidates the server's prompt cache) with a cap of 3, least-recently-used evicted.
-- **Guard:** on engines that can change tools per request (Ollama, cloud) a call to a tool whose skill is not loaded is rejected in code and the error tells the model to load it. The native LiteRT engine fixes its tools when the conversation is created, so it keeps all of them (`ChatEngine.setActiveTools` is optional).
+- **No call-time refusal:** the native engine narrows what the model is *shown* (§3.10), so the app never has to reject a tool call for an unloaded skill. (The per-request JS guard that the removed Ollama/cloud engines used is gone with them.)
 
 Two lessons recorded so nobody repeats them: (1) a core navigation tool named "open PDF Tools" was a look-alike — asked to compress, the model navigated instead and claimed success; moving it into `pdf-tools` fixed the fallback test. (2) Delivering a skill's *rules* to the model as a standing second system message made tool use **worse** in a controlled test (askUser used 3/3 without the rules, 1/6 with), so only the tools are loaded on demand and the rules stay out of the prompt.
 
-### 3.8 Online mode (demo builds) (added 2026-10-31)
+### 3.8 Online mode and 3.9 semantic search: removed (2026-11-18)
 
-One switch in AI settings flips between **offline** (on-device, or a local Ollama server in demos) and **online** (Google Vertex AI). Turning it on first shows a plain-language warning that messages — and any document the user asks the assistant to read — go to Google Cloud and may contain personal information. The choice persists (`kagaz:ai-mode`); the chat header shows an Online/Offline badge.
+Both shipped briefly on `feature/ai-ollama-embeddings` and were removed before `develop`, so that V1 is on-device only for the store release:
+- **Online mode** (Gemma 4 on Vertex AI through a dev-server proxy, one online/offline switch) → [AI-X2](../roadmap/future-extensions.md#ai-x2--online-mode-hosted-model-fallback).
+- **Semantic search** (`ai.semanticSearch`, EmbeddingGemma-300M via the LiteRT-LM `EmbeddingEngine`, optional ~330 MB download) → [AI-X1](../roadmap/future-extensions.md#ai-x1--semantic-search-embeddinggemma).
 
-- **Transport:** `vite-plugins/cloud-ai-proxy.ts` exposes `/api/ai/{health,chat,embed}` on the *dev server only*, using the developer's gcloud application-default credentials. The page never sees a credential; requests must be same-origin JSON; the model is pinned server-side. The build refuses to include it ([ADR-023](08-tech-stack-decisions.md#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)).
-- **Models:** chat and vision use **Gemma 4 26B on Vertex AI** (`CLOUD_CHAT_MODEL` overrides, e.g. to compare with Gemini). Embeddings use `text-embedding-005` because EmbeddingGemma is not offered on Vertex (checked: 404).
-- **Engine:** `CloudChatEngine` and `OllamaChatEngine` both extend `ToolLoopEngine` and differ only in wire format.
-
-### 3.9 On-device semantic search (added 2026-10-31)
-
-`ai.semanticSearch` finds documents by meaning. On Android it uses EmbeddingGemma-300M through the LiteRT-LM `EmbeddingEngine` (see ADR-024): Settings → AI Assistant → **Search model** downloads it (~330 MB, optional, SHA-256 verified). Until it is downloaded the tool returns an error telling the assistant to ask the user to download it. Document text comes from ML Kit OCR / the PDF text layer; vectors are in memory and rebuilt after restart.
+Keyword search inside extracted text (`ai.findInDocuments` / `ai.readDocumentText`, §4.2.4) covers "what is the number on my X card" on-device without an embedding model.
 
 ### 3.10 Skills on the phone (added 2026-10-31)
 
-The native engine fixes its tools when a conversation is created, so skills are applied there by **rebuilding the conversation**: when the router (or `ai.loadSkill`) activates a skill, the plugin's `setToolSubset` recreates the chat with only core + that skill's tools and replays the chat's transcript (last 16 messages) as initial messages. With no skill active every tool stays registered. If a skill loads while a reply is streaming, the change is queued for the next message. The app never *refuses* tool calls on this engine (the model just is not shown the rest), unlike the Ollama/cloud engines, which gate in JS. Skill rule text is not injected on the phone (it made the small model worse); guidance lives in tool descriptions. Not yet device-verified.
+The native engine fixes its tools when a conversation is created, so skills are applied there by **rebuilding the conversation**: when the router (or `ai.loadSkill`) activates a skill, the plugin's `setToolSubset` recreates the chat with only core + that skill's tools and replays the chat's transcript (last 16 messages) as initial messages. With no skill active every tool stays registered. If a skill loads while a reply is streaming, the change is queued for the next message. The app never *refuses* tool calls on this engine (the model just is not shown the rest). Skill rule text is not injected on the phone (it made the small model worse); guidance lives in tool descriptions. Not yet device-verified.
 
 ## 4. Tool Calling System
 
@@ -1192,12 +1202,12 @@ No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Gem
 ## 11. Privacy & Security
 
 > [!CAUTION]
-> The AI Assistant has access to document metadata but NEVER to document content. This is enforced at the architecture level — tool providers only expose metadata, and the system prompt explicitly forbids content access. This boundary is unaffected by the WebLLM→LiteRT-LM engine change: tool *logic* has always lived in TypeScript (§4.3's `ToolProvider`s), never in the LLM engine itself, native or otherwise.
+> The AI Assistant sees document metadata by default. It may read a document's **extracted text** only through `ai.findInDocuments` / `ai.readDocumentText`, only for **unlocked** documents, and only with the **on-device** model, so the text never leaves the phone (2026-10-31; see 10-security-architecture.md §5). Locked documents are refused by every tool (`requireDocument`). Any future engine that is not on-device must not receive document text without explicit, logged consent. This boundary is unaffected by the WebLLM→LiteRT-LM engine change: tool *logic* has always lived in TypeScript (§4.3's `ToolProvider`s), never in the LLM engine itself, native or otherwise.
 
 | Principle | Implementation |
 |---|---|
-| No content access | Tools only return metadata (name, type, size, tags) |
-| On-device inference | LiteRT-LM runs locally via Android's native ML stack, no server calls |
+| Content access | Metadata by default; extracted text of unlocked documents only via the two text tools, on-device only |
+| On-device inference | LiteRT-LM runs locally via Android's native ML stack, no server calls. The only network use is the user-tapped, one-time model download from Hugging Face (no user data sent) |
 | No telemetry | No conversation data sent anywhere |
 | Chat history encryption | SQLite DB encrypted with device key |
 | Model integrity | SHA-256 checksum verification on cached models — added by our fork (§3.4), not present upstream |
@@ -1215,7 +1225,8 @@ No published first-token/tokens-per-second numbers exist yet for LiteRT-LM + Gem
 | Multi-turn tool calling | V2 | Chain multiple tools in a single conversation turn |
 | Document summarization | V2 | Summarize text extracted from PDFs (opt-in) |
 | Smart tagging | V2 | AI auto-suggests tags based on document name |
-| Model picker | V2 | Let users opt into a larger model (e.g. Gemma4-E2B, §3.2) for better quality at a bigger download/RAM cost |
+| Model picker | V2 | Let users choose a smaller model tier (Gemma 4 E2B is ~2.6 GB, §3.2) for low-RAM phones |
+| Semantic search, online mode, Gemma vision, iOS AI | see roadmap | Tracked as AI-X1…AI-X4 in [future-extensions.md](../roadmap/future-extensions.md) |
 | Proactive suggestions | V3 | AI suggests actions based on user patterns |
 | Fine-tuned model | V3 | Kagaz-specific fine-tuned model for better accuracy |
 | Multimodal input | V3+ | Accept image input for visual questions — LiteRT-LM's `Content.ImageBytes`/`ImageFile` already exist natively (§4.1), unlike WebLLM's text-only original plan |
