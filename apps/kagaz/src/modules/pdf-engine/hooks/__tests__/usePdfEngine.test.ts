@@ -2,8 +2,9 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
-const { ingestFiles, read, mergePdfs, imagesToPdf, pickFromScanner, initialize, destroy } =
+const { ingestFiles, read, mergePdfs, imagesToPdf, pickFromScanner, initialize, destroy, record } =
   vi.hoisted(() => ({
+    record: vi.fn(),
     ingestFiles: vi.fn(),
     read: vi.fn(),
     mergePdfs: vi.fn(),
@@ -19,6 +20,12 @@ vi.mock('@/modules/document-vault/hooks/useUpload', () => ({
 vi.mock('@/modules/document-vault/services/upload-sources', () => ({ pickFromScanner }));
 vi.mock('@/infrastructure/filesystem', () => ({
   createFileStorage: () => ({ read }),
+}));
+vi.mock('@/app/providers/DatabaseProvider', () => ({ useOptionalDatabase: () => ({}) }));
+vi.mock('@/infrastructure/database/dao', () => ({
+  ToolHistoryDao: class {
+    record = record;
+  },
 }));
 vi.mock('../../services/pdf-engine.service', () => ({
   PdfEngineServiceImpl: class {
@@ -41,6 +48,38 @@ beforeEach(() => {
   mergePdfs.mockResolvedValue(new Uint8Array([9, 9]));
   imagesToPdf.mockResolvedValue(new Uint8Array([7]));
   ingestFiles.mockResolvedValue({ uploaded: 1, documents: [] });
+  record.mockResolvedValue(undefined);
+});
+
+describe('usePdfEngine result + history (2026-11-19)', () => {
+  it('exposes the created documents and records the run by tool id', async () => {
+    const out = doc('merged');
+    ingestFiles.mockResolvedValue({ uploaded: 1, documents: [out] });
+    const { result } = renderHook(() => usePdfEngine());
+    await act(async () => {
+      await result.current.mergePdfs([doc('a'), doc('b')]);
+    });
+    expect(result.current.lastCreated()).toEqual([out]);
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toolId: 'merge',
+        inputDocumentIds: ['a', 'b'],
+        outputDocumentIds: ['merged'],
+        status: 'completed',
+      })
+    );
+  });
+
+  it('records a failed run with its error code and no outputs', async () => {
+    mergePdfs.mockRejectedValue(new Error('boom'));
+    const { result } = renderHook(() => usePdfEngine());
+    await act(async () => {
+      await result.current.mergePdfs([doc('a'), doc('b')]);
+    });
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({ toolId: 'merge', status: 'failed', outputDocumentIds: [] })
+    );
+  });
 });
 
 describe('usePdfEngine finalize phase (UX-10/11)', () => {

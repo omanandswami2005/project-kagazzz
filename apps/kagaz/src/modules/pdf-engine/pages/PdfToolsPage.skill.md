@@ -35,6 +35,8 @@ pressing **Run** are **direct manipulations** — the user does them by hand.
 - "पीडीएफ़ मिलाओ" → `tools.openPdfTools({ op: 'merge' })`
 
 ## State I should check first
+- The picker is a grid of page previews with names; in multi-select the
+  badge number is the order the files will be combined in.
 - The picker lists only documents of the right type (PDFs, or images for
   Images → PDF). If it shows the empty message, the user has nothing to run the
   op on yet.
@@ -51,6 +53,16 @@ pressing **Run** are **direct manipulations** — the user does them by hand.
 - "Enter valid page ranges, e.g. 1-3, 5." — split ranges malformed.
 - Wrong password on **Remove password** → the file couldn't be decrypted.
 
+## Results and history
+- After a run, a result sheet (`pdf-tools.result`) lists every new document
+  with **Open** (`pdf-tools.result.open-<id>`) and **Share**
+  (`pdf-tools.result.share-<id>`); **Done** closes it.
+- Each tool's sheet ends with that tool's recent runs
+  (`pdf-tools.history-<op>`); the hub ends with every tool's runs
+  (`pdf-tools.history`, with **Clear history**). Tapping a created document
+  opens it.
+
 ## Cross-page handoffs
-- Results are saved into the vault; to view them, go back to `vault.home`.
+- Results are saved into the vault; open them from the result sheet or the
+  history, or go back to `vault.home`.
 - To add more source files first, upload or scan them from `vault.home`.

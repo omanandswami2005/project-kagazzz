@@ -29,6 +29,7 @@ import { IMAGE_TYPES, PDF_OPS, type PdfOpId } from '@/core/pdf-tools-catalog';
 import { parsePageRanges } from '../services/parse-ranges';
 import { pdfErrorMessageKey } from '../services/pdf-error-message';
 import { PdfDocPicker } from './PdfDocPicker';
+import { ToolHistoryList } from './ToolHistoryList';
 
 /** Props for {@link PdfOpSheet}. */
 export interface PdfOpSheetProps {
@@ -39,6 +40,10 @@ export interface PdfOpSheetProps {
   onClose: () => void;
   /** Called with the number of files saved once the op succeeds. */
   onDone: (savedCount: number) => void;
+  /** Opens a document from this tool's history. */
+  onOpenDocument: (document: DocumentEntity) => void;
+  /** Changes after each run so the tool's history reloads. */
+  historyKey?: unknown;
 }
 
 const QUALITIES: CompressionLevel[] = ['low', 'medium', 'high'];
@@ -71,6 +76,8 @@ export function PdfOpSheet({
   engine,
   onClose,
   onDone,
+  onOpenDocument,
+  historyKey,
 }: PdfOpSheetProps): ReactNode {
   const { t } = useTranslation('tools');
   const meta = op ? PDF_OPS.find((o) => o.id === op) : null;
@@ -394,6 +401,10 @@ export function PdfOpSheet({
                   : engine.state.message || t('running')}
               </p>
             </div>
+          )}
+
+          {op && !busy && (
+            <ToolHistoryList toolId={op} refreshKey={historyKey} onOpen={onOpenDocument} />
           )}
         </div>
       </IonContent>

@@ -9,6 +9,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { log } from '@/core/logging';
 import { createFileStorage } from '@/infrastructure/filesystem';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import { useOptionalDatabase } from '@/app/providers/DatabaseProvider';
+import { ToolHistoryDao } from '@/infrastructure/database/dao';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
 import { pickFromScanner } from '@/modules/document-vault/services/upload-sources';
 import type { IncomingFile } from '@/modules/document-vault/types/document.types';
@@ -80,6 +82,13 @@ export interface UsePdfEngineResult {
   state: PdfRunState;
   /** Clears any error so the UI can retry. */
   reset: () => void;
+  /**
+   * The documents the last finished operation saved (2026-11-19), so the
+   * screen can offer Open / Share on the result instead of only a toast. A
+   * getter, not state: callers read it right after awaiting an op, before
+   * React has re-rendered.
+   */
+  lastCreated: () => DocumentEntity[];
   mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
   splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
   /** Renders every page to a preview image blob (F-35 organizer; no save). */
@@ -136,6 +145,9 @@ export function usePdfEngine(): UsePdfEngineResult {
   const engineInitRef = useRef<Promise<PdfEngineServiceImpl> | null>(null);
   const storageRef = useRef(createFileStorage());
   const [state, setState] = useState<PdfRunState>(IDLE);
+  const db = useOptionalDatabase();
+  // Documents saved by the in-flight run (one run at a time per screen).
+  const createdRef = useRef<DocumentEntity[]>([]);
 
   // One engine per screen; torn down (workers terminated) on unmount.
   useEffect(() => {
@@ -169,29 +181,72 @@ export function usePdfEngine(): UsePdfEngineResult {
       // UX-10/11: the worker is done (100%); the save/thumbnail/index step now
       // runs. Flag it so the UI shows "Finalizing…" instead of a frozen 100%.
       setState((s) => ({ ...s, percent: 100, saving: true }));
-      const { uploaded } = await ingestFiles(files);
+      const { uploaded, documents } = await ingestFiles(files);
+      createdRef.current = [...createdRef.current, ...documents];
       return uploaded;
     },
     [ingestFiles]
   );
 
   const reset = useCallback(() => setState(IDLE), []);
+  const lastCreated = useCallback((): DocumentEntity[] => createdRef.current, []);
 
-  /** Runs `op` with busy/progress/error bookkeeping; resolves the saved count. */
+  /**
+   * Records a finished run in the tool history. Best-effort: a history write
+   * must never fail the operation itself. [SEC] ids only — never parameters
+   * (passwords, form values, watermark text).
+   */
+  const recordRun = useCallback(
+    (
+      toolId: string,
+      inputs: DocumentEntity[],
+      started: number,
+      outcome: {
+        created: DocumentEntity[];
+        errorCode?: PdfErrorCode;
+      }
+    ): void => {
+      if (!db) return;
+      void new ToolHistoryDao(db)
+        .record({
+          toolId,
+          inputDocumentIds: inputs.map((d) => d.id),
+          outputDocumentIds: outcome.created.map((d) => d.id),
+          status: outcome.errorCode ? 'failed' : 'completed',
+          errorCode: outcome.errorCode,
+          durationMs: Date.now() - started,
+        })
+        .catch((err: unknown) => {
+          logger.warn({ event: 'pdf.tool.history_failed', err: { message: String(err) } });
+        });
+    },
+    [db]
+  );
+
+  /**
+   * Runs `op` with busy/progress/error bookkeeping and records it in the tool
+   * history under `toolId` (a PDF Tools catalog id); resolves the saved count.
+   */
   const run = useCallback(
     async (
-      op: (
-        engine: PdfEngineServiceImpl,
-        onProgress: (e: ProgressEvent) => void
-      ) => Promise<number>
+      toolId: string,
+      inputs: DocumentEntity[],
+      op: (engine: PdfEngineServiceImpl, onProgress: (e: ProgressEvent) => void) => Promise<number>
     ): Promise<number> => {
       setState({ ...IDLE, busy: true });
+      createdRef.current = [];
+      const started = Date.now();
       try {
         const engine = await getEngine();
         const count = await op(engine, (e) =>
           setState((s) => ({ ...s, percent: e.percent, message: e.message }))
         );
+        const created = createdRef.current;
         setState((s) => ({ ...s, busy: false, saving: false, percent: 100 }));
+        // A cancelled run (e.g. the scanner dismissed) saved nothing: not history.
+        if (count > 0) {
+          recordRun(toolId, inputs, started, { created });
+        }
         return count;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
@@ -204,15 +259,16 @@ export function usePdfEngine(): UsePdfEngineResult {
           error: message,
           errorCode: code,
         }));
+        recordRun(toolId, inputs, started, { created: [], errorCode: code });
         return 0;
       }
     },
-    [getEngine]
+    [getEngine, recordRun]
   );
 
   const mergePdfs = useCallback(
     (docs: DocumentEntity[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('merge', docs, async (engine, onProgress) => {
         const inputs = await Promise.all(docs.map(readBytes));
         const merged = await engine.mergePdfs(inputs, onProgress);
         return save([
@@ -224,7 +280,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const splitPdf = useCallback(
     (doc: DocumentEntity, ranges: PageRange[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('split', [doc], async (engine, onProgress) => {
         const parts = await engine.splitPdf(await readBytes(doc), ranges, onProgress);
         return save(
           parts.map((part, i) => ({
@@ -248,7 +304,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const organizePages = useCallback(
     (doc: DocumentEntity, ops: PageOp[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('organize', [doc], async (engine, onProgress) => {
         const out = await engine.organizePages(await readBytes(doc), ops, onProgress);
         return save([
           {
@@ -263,7 +319,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const extractPages = useCallback(
     (doc: DocumentEntity, ranges: PageRange[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('extractPages', [doc], async (engine, onProgress) => {
         const out = await engine.extractPages(await readBytes(doc), ranges, onProgress);
         return save([
           {
@@ -278,7 +334,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const watermarkPdf = useCallback(
     (doc: DocumentEntity, text: string): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('watermark', [doc], async (engine, onProgress) => {
         const out = await engine.watermarkPdf(await readBytes(doc), text, onProgress);
         return save([
           {
@@ -293,7 +349,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const addPageNumbers = useCallback(
     (doc: DocumentEntity, options: PageNumberOptions): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('pageNumbers', [doc], async (engine, onProgress) => {
         const out = await engine.addPageNumbers(await readBytes(doc), options, onProgress);
         return save([
           {
@@ -308,7 +364,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const compressPdf = useCallback(
     (doc: DocumentEntity, quality: CompressionLevel): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('compress', [doc], async (engine, onProgress) => {
         const out = await engine.compressPdf(await readBytes(doc), quality, onProgress);
         return save([
           {
@@ -323,7 +379,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const imagesToPdf = useCallback(
     (images: DocumentEntity[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('imagesToPdf', images, async (engine, onProgress) => {
         const inputs = await Promise.all(
           images.map(async (doc) => ({
             data: await readBytes(doc),
@@ -331,16 +387,14 @@ export function usePdfEngine(): UsePdfEngineResult {
           }))
         );
         const pdf = await engine.imagesToPdf(inputs, onProgress);
-        return save([
-          { name: 'Images.pdf', blob: blobOf(pdf, 'pdf'), source: 'ai_generated' },
-        ]);
+        return save([{ name: 'Images.pdf', blob: blobOf(pdf, 'pdf'), source: 'ai_generated' }]);
       }),
     [run, readBytes, save]
   );
 
   const imagesToPdfFromFiles = useCallback(
     (files: IncomingFile[]): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('imagesToPdf', [], async (engine, onProgress) => {
         const inputs = await Promise.all(
           files.map(async (file) => ({
             data: new Uint8Array(await file.blob.arrayBuffer()),
@@ -361,7 +415,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const appendScan = useCallback(
     (doc: DocumentEntity): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('appendScan', [doc], async (engine, onProgress) => {
         const scanned = await pickFromScanner();
         if (scanned.length === 0) {
           return 0; // user cancelled the scanner / nothing captured
@@ -380,16 +434,9 @@ export function usePdfEngine(): UsePdfEngineResult {
   );
 
   const stampImage = useCallback(
-    (
-      doc: DocumentEntity,
-      image: DocumentEntity,
-      options: StampOptions
-    ): Promise<number> =>
-      run(async (engine, onProgress) => {
-        const [pdfBytes, imageBytes] = await Promise.all([
-          readBytes(doc),
-          readBytes(image),
-        ]);
+    (doc: DocumentEntity, image: DocumentEntity, options: StampOptions): Promise<number> =>
+      run('stamp', [doc, image], async (engine, onProgress) => {
+        const [pdfBytes, imageBytes] = await Promise.all([readBytes(doc), readBytes(image)]);
         const out = await engine.stampImage(
           pdfBytes,
           {
@@ -412,7 +459,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const pdfToImages = useCallback(
     (doc: DocumentEntity, options: RenderOptions): Promise<number> =>
-      run(async (engine, onProgress) => {
+      run('pdfToImages', [doc], async (engine, onProgress) => {
         const blobs = await engine.pdfToImages(await readBytes(doc), options, onProgress);
         const ext = options.format === 'jpeg' ? 'jpg' : 'png';
         return save(
@@ -428,7 +475,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const exportPdfText = useCallback(
     (doc: DocumentEntity, format: TextExportFormat): Promise<number> =>
-      run(async (engine) => {
+      run('pdfToText', [doc], async (engine) => {
         const text = await engine.extractText(await readBytes(doc));
         if (!text.trim()) {
           // Scanned/image-only PDFs have no text layer — tell the user to OCR.
@@ -453,29 +500,25 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const exportPdfToWord = useCallback(
     (doc: DocumentEntity): Promise<number> =>
-      run(async (engine) => {
+      run('pdfToWord', [doc], async (engine) => {
         const blob = await engine.pdfToWord(await readBytes(doc), baseName(doc.name));
-        return save([
-          { name: `${baseName(doc.name)}.docx`, blob, source: 'ai_generated' },
-        ]);
+        return save([{ name: `${baseName(doc.name)}.docx`, blob, source: 'ai_generated' }]);
       }),
     [run, readBytes, save]
   );
 
   const exportPdfToSheet = useCallback(
     (doc: DocumentEntity, format: 'xlsx' | 'csv'): Promise<number> =>
-      run(async (engine) => {
+      run('pdfToExcel', [doc], async (engine) => {
         const blob = await engine.pdfToSheet(await readBytes(doc), format);
-        return save([
-          { name: `${baseName(doc.name)}.${format}`, blob, source: 'ai_generated' },
-        ]);
+        return save([{ name: `${baseName(doc.name)}.${format}`, blob, source: 'ai_generated' }]);
       }),
     [run, readBytes, save]
   );
 
   const encryptPdf = useCallback(
     (doc: DocumentEntity, password: string): Promise<number> =>
-      run(async (engine) => {
+      run('encrypt', [doc], async (engine) => {
         const out = await engine.encryptPdf(await readBytes(doc), password);
         return save([
           {
@@ -490,7 +533,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const decryptPdf = useCallback(
     (doc: DocumentEntity, password: string): Promise<number> =>
-      run(async (engine) => {
+      run('decrypt', [doc], async (engine) => {
         const out = await engine.decryptPdf(await readBytes(doc), password);
         return save([
           {
@@ -521,7 +564,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const setMetadata = useCallback(
     (doc: DocumentEntity, metadata: PdfMetadata): Promise<number> =>
-      run(async (engine) => {
+      run('metadata', [doc], async (engine) => {
         const out = await engine.setMetadata(await readBytes(doc), metadata);
         return save([
           {
@@ -536,7 +579,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const fillForm = useCallback(
     (doc: DocumentEntity, values: Record<string, string>): Promise<number> =>
-      run(async (engine) => {
+      run('fillForm', [doc], async (engine) => {
         const out = await engine.fillForm(await readBytes(doc), values);
         return save([
           {
@@ -552,6 +595,7 @@ export function usePdfEngine(): UsePdfEngineResult {
   return {
     state,
     reset,
+    lastCreated,
     mergePdfs,
     splitPdf,
     loadPagePreviews,

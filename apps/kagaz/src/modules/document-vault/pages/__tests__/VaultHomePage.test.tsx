@@ -55,6 +55,7 @@ function makePdfEngineMock(
       errorCode: null,
     },
     reset: vi.fn(),
+    lastCreated: vi.fn(() => []),
     mergePdfs: vi.fn(() => Promise.resolve(0)),
     splitPdf: vi.fn(() => Promise.resolve(0)),
     loadPagePreviews: vi.fn(() => Promise.resolve([])),

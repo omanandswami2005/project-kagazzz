@@ -272,6 +272,18 @@ to open it", and "I want a history for each tool and one combined".
   underneath. In multi-select the badge shows the **selection order** (1, 2,
   3…), which is the output order for merge and images → PDF. The same picker
   serves the AI chat's attach sheet and ask-user form.
+- **Result sheet.** After a run saves, `ToolResultSheet` opens with every
+  created document as a preview tile with **Open** (the viewer, `/doc/:id`) and
+  **Share** (the OS share sheet, named copy — see 02 §OS document intents), then
+  **Done**. It replaces the "Saved N files" toast. `usePdfEngine.lastCreated()`
+  returns the run's documents (a getter, read right after awaiting the op,
+  before React re-renders).
+- **History.** `usePdfEngine.run(toolId, inputs, op)` records every run that
+  saved something, or failed, in `operations_history` (migration 008, ids only;
+  09-database-design §4.5). `ToolHistoryList` shows **that tool's** runs at the
+  bottom of each tool's sheet and **all tools'** runs (with Clear history) at
+  the bottom of the PDF Tools page; each created document is a tile that opens
+  it, and deleted ones show as "Deleted document".
 
 ## 5. TypeScript Interfaces
 
