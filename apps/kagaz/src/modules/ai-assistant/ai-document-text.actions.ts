@@ -5,6 +5,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import { docRefSchema } from './services/document-resolver';
 import type { DocumentText, TextMatch } from './services/document-text.service';
 import type { AiToolContext } from './ai-tools.actions';
 
@@ -29,7 +30,7 @@ export const aiDocumentTextActions = {
     id: 'ai.readDocumentText',
     summary:
       'Read the extracted text of one document (images and scanned PDFs are read first if needed) so you can answer questions about what it says. Answer only from this text and name the document; if the answer is not in it, say so.',
-    args: z.object({ documentId: z.string().min(1) }),
+    args: z.object({ documentId: docRefSchema }),
     requiresConfirmation: false,
     handler: (args: { documentId: string }, ctx: AiToolContext): Promise<DocumentText> =>
       ctx.readDocumentText(args.documentId),

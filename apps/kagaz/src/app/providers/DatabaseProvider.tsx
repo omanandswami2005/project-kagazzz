@@ -109,3 +109,12 @@ export function useDatabase(): DatabaseContextValue {
   }
   return ctx;
 }
+
+/**
+ * The open connection, or null — outside the provider or while the database
+ * is still opening. For best-effort writers (tool history) that must never
+ * break a screen rendered without the provider.
+ */
+export function useOptionalDatabase(): DbConnection | null {
+  return useContext(DatabaseContext)?.db ?? null;
+}

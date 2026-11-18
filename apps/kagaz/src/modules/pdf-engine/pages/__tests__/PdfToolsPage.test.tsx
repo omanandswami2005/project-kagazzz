@@ -8,10 +8,15 @@ vi.mock('@/modules/document-vault/hooks/useDocuments', () => ({
   useDocuments: () => ({ documents: [], isLoading: false }),
 }));
 
+vi.mock('@/modules/document-vault/hooks/useDocumentIntents', () => ({
+  useDocumentIntents: () => ({ supported: false, share: vi.fn(), shareMany: vi.fn(), openWith: vi.fn() }),
+}));
+
 vi.mock('../../hooks/usePdfEngine', () => ({
   usePdfEngine: () => ({
     state: { busy: false, percent: 0, message: '', saving: false, error: null, errorCode: null },
     reset: vi.fn(),
+    lastCreated: () => [],
     mergePdfs: vi.fn(),
     splitPdf: vi.fn(),
     compressPdf: vi.fn(),

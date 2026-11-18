@@ -10,17 +10,20 @@ import {
   IonHeader,
   IonPage,
   IonTitle,
-  IonToast,
   IonToolbar,
+  useIonRouter,
 } from '@ionic/react';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { Button, Icon, Search } from '@kagaz/ui';
+import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
 import { PdfOpSheet } from '../components/PdfOpSheet';
 import { PdfOrganizeSheet } from '../components/PdfOrganizeSheet';
+import { ToolHistoryList } from '../components/ToolHistoryList';
+import { ToolResultSheet } from '../components/ToolResultSheet';
 import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
 import '../components/pdf-tools.css';
 
@@ -35,7 +38,11 @@ export function PdfToolsPage(): ReactNode {
   const [activeOp, setActiveOp] = useState<PdfOpId | null>(null);
   // Native-only ops (e.g. the ML Kit scanner) are hidden on the web build.
   const isNative = Capacitor.isNativePlatform();
-  const [savedCount, setSavedCount] = useState(0);
+  const router = useIonRouter();
+  // Documents the last run created → the result sheet (replaces the toast).
+  const [result, setResult] = useState<DocumentEntity[]>([]);
+  // Bumped after every run so the history lists reload.
+  const [runs, setRuns] = useState(0);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<PdfOpCategory | null>(null);
 
@@ -46,6 +53,21 @@ export function PdfToolsPage(): ReactNode {
       : platformOps;
     return query.trim() ? searchPdfTools(query, t, categoryOps) : categoryOps;
   }, [isNative, category, query, t]);
+
+  const openDocument = useCallback(
+    (doc: DocumentEntity): void => {
+      setActiveOp(null);
+      setResult([]);
+      router.push(`/doc/${doc.id}`);
+    },
+    [router]
+  );
+
+  const handleDone = (): void => {
+    setActiveOp(null);
+    setResult(engine.lastCreated());
+    setRuns((n) => n + 1);
+  };
 
   return (
     <IonPage data-agent-id="pdf-tools">
@@ -119,6 +141,8 @@ export function PdfToolsPage(): ReactNode {
               ))}
             </ul>
           )}
+
+          <ToolHistoryList refreshKey={runs} onOpen={openDocument} clearable />
         </main>
 
         {/* F-35's organiser is its own thumbnail-grid modal; every other op
@@ -128,10 +152,9 @@ export function PdfToolsPage(): ReactNode {
           documents={documents}
           engine={engine}
           onClose={() => setActiveOp(null)}
-          onDone={(count) => {
-            setActiveOp(null);
-            setSavedCount(count);
-          }}
+          onDone={handleDone}
+          onOpenDocument={openDocument}
+          historyKey={runs}
         />
 
         <PdfOrganizeSheet
@@ -139,21 +162,10 @@ export function PdfToolsPage(): ReactNode {
           documents={documents}
           engine={engine}
           onClose={() => setActiveOp(null)}
-          onDone={(count) => {
-            setActiveOp(null);
-            setSavedCount(count);
-          }}
+          onDone={handleDone}
         />
 
-        <IonToast
-          isOpen={savedCount > 0}
-          duration={2500}
-          message={t(savedCount === 1 ? 'saved_one' : 'saved_other', {
-            count: savedCount,
-          })}
-          onDidDismiss={() => setSavedCount(0)}
-          data-agent-id="pdf-tools.saved-toast"
-        />
+        <ToolResultSheet documents={result} onOpen={openDocument} onClose={() => setResult([])} />
       </IonContent>
     </IonPage>
   );

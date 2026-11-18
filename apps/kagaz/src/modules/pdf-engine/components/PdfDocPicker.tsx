@@ -1,10 +1,16 @@
 /**
- * Selectable list of vault documents for a PDF operation. Single-select for
+ * Selectable grid of vault documents for a PDF operation. Single-select for
  * most ops, multi-select for merge / images → PDF.
+ *
+ * Tiles show each document's page preview with its name (2026-11-19, user
+ * feedback: a name-and-checkbox list made people remember file names). In
+ * multi-select the badge shows the selection ORDER (1, 2, 3…), because order
+ * is the output order for merge and images → PDF.
  */
 import type { ReactNode } from 'react';
 import { Icon } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import { DocumentThumb } from '@/core/components/DocumentThumb';
 
 /** Props for {@link PdfDocPicker}. */
 export interface PdfDocPickerProps {
@@ -56,7 +62,8 @@ export function PdfDocPicker({
   return (
     <ul className="kg-pdf-picker" data-agent-id={idPrefix}>
       {documents.map((doc) => {
-        const selected = selectedIds.includes(doc.id);
+        const order = selectedIds.indexOf(doc.id);
+        const selected = order !== -1;
         return (
           <li key={doc.id}>
             <button
@@ -67,12 +74,13 @@ export function PdfDocPicker({
               data-agent-state={selected ? 'selected' : 'idle'}
               aria-pressed={selected}
             >
+              <DocumentThumb document={doc} className="kg-pdf-picker__thumb" />
               <span
                 className="kg-pdf-picker__check"
                 data-checked={selected ? 'true' : 'false'}
                 aria-hidden
               >
-                {selected && <Icon name="Check" size={16} />}
+                {selected && (multi ? order + 1 : <Icon name="Check" size={16} />)}
               </span>
               <span className="kg-pdf-picker__name">{doc.name}</span>
             </button>

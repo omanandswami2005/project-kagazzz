@@ -1,6 +1,6 @@
 # Kagaz — Document Vault Module Architecture
 
-> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-07-25
+> **Module: `document-vault`** · Version: V1 (Core) · Last Updated: 2026-11-19
 
 ---
 
@@ -972,6 +972,15 @@ position on a rAF-throttled `scroll` listener and applies a `scale` +
 transform/opacity only (no `rotateY` perspective coverflow), staying cheap
 on the mid-range Android performance budget (CONTRIBUTING.md).
 
+**Frameless cards (2026-11-19, user feedback):** the outer bordered,
+padded card box around each preview is gone — the page preview itself is the
+card: a 104px-wide, 3:4 portrait `.kg-recent__media` box (shared by the
+thumbnail, the type-icon fallback and the blurred locked state) with a soft
+shadow, and the name below. The card width is one CSS variable
+(`--recent-card-w`) that the snap padding derives from. The coverflow falloff
+was raised from 12% to 25% (`MAX_SCALE_DROP`) so the centred card clearly
+stands out.
+
 Swiping up on a card opens PDF Tools (`useSwipeUp`, `core/gestures/` — the
 vertical counterpart to F-88's horizontal swipe-to-act gesture). Kept
 strictly on the vertical axis so it never competes with the horizontal
@@ -1202,6 +1211,16 @@ type comes from `mimeTypeFor(document.fileType)`. `useDocumentIntents` is the
 React hook: it resolves `supported = Capacitor.getPlatform() !== 'web'` once,
 and both actions swallow user-cancellation (dismissing the chooser/share sheet
 is not an error — only a genuine failure surfaces a toast).
+
+**Outgoing file name (bug fixed 2026-11-19):** documents are stored as
+`documents/<uuid>.<ext>`, and that random name used to be what the receiving
+app showed (a WhatsApp attachment called `3f9c…e1.pdf`). Both actions now copy
+the file to `temp/share-<uuid>/<display name>.<ext>` first and hand out the
+copy (`outgoingFileName`: characters receivers reject — `\ / : * ? " < > |` and
+control characters — become `_`, no doubled extension, `name (2).pdf` when a
+bulk share has two documents with the same name). The copy is not deleted
+after the share call (the receiver may still be reading it); temp/ is wiped
+recursively on every launch.
 
 **[SEC]** Both are user-initiated (the user explicitly picked the action from
 the menu) and read-only from the vault's perspective — no network call is made

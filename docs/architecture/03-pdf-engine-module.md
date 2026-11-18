@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
 > **Status**: Partially implemented (F-3/F-4/F-5)
-> **Last Updated**: 2026-07-16
+> **Last Updated**: 2026-11-19
 
 ---
 
@@ -260,7 +260,30 @@ modules' inputs around the engine:
   permission or network — the scanner is Play-Services-hosted (ADR-018), and the
   merge runs in the existing worker.
 
----
+### 4.4 PDF Tools screen UX (2026-11-19)
+
+User feedback: "the tools show all docs as a name list with check boxes — no
+one remembers the names", "after an operation it just says created, no button
+to open it", and "I want a history for each tool and one combined".
+
+- **Picker = thumbnail grid.** `PdfDocPicker` shows each document's page
+  preview (`core/components/DocumentThumb`, the same visual as the Recent
+  strip; locked documents blurred with a lock icon, [SEC] §3.1) with its name
+  underneath. In multi-select the badge shows the **selection order** (1, 2,
+  3…), which is the output order for merge and images → PDF. The same picker
+  serves the AI chat's attach sheet and ask-user form.
+- **Result sheet.** After a run saves, `ToolResultSheet` opens with every
+  created document as a preview tile with **Open** (the viewer, `/doc/:id`) and
+  **Share** (the OS share sheet, named copy — see 02 §OS document intents), then
+  **Done**. It replaces the "Saved N files" toast. `usePdfEngine.lastCreated()`
+  returns the run's documents (a getter, read right after awaiting the op,
+  before React re-renders).
+- **History.** `usePdfEngine.run(toolId, inputs, op)` records every run that
+  saved something, or failed, in `operations_history` (migration 008, ids only;
+  09-database-design §4.5). `ToolHistoryList` shows **that tool's** runs at the
+  bottom of each tool's sheet and **all tools'** runs (with Clear history) at
+  the bottom of the PDF Tools page; each created document is a tile that opens
+  it, and deleted ones show as "Deleted document".
 
 ## 5. TypeScript Interfaces
 

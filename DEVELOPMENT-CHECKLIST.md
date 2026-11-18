@@ -417,6 +417,12 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · 6a6b840 · feat(pdf-engine) · **result sheet** (Open / Share for each created document, replaces the "saved" toast) + **tool history** per tool (bottom of each tool sheet) and combined (PDF Tools page, Clear history); runs from the AI chat recorded too. · user feedback
+- 2026-11-19 · a5bafe0 · feat(database) · migration 008 rebuilds the never-written `operations_history` as tool-run history (ids only — no names/params/passwords; latest 200). · user feedback
+- 2026-11-19 · 159663d · feat(pdf-engine) · PDF Tools picker is a **thumbnail grid** (selection-order badges for merge); shared `core/components/DocumentThumb` + `core/hooks/useThumbnail`. · user feedback
+- 2026-11-19 · 2301cb9 · fix(ai-assistant) · **Gemma no longer needs document ids** — every document arg accepts the alias or the name (`document-resolver.ts`: id → exact name → unique word match; ambiguous lists names). · user feedback
+- 2026-11-19 · d667ad6 · feat(document-vault) · Recent strip: frameless 3:4 preview cards, centre card scale falloff 12% → 25%. · user feedback
+- 2026-11-19 · b32ab7e · fix(document-vault) · **shared files carry the document's name** (were `<uuid>.pdf`): named copy in `temp/share-<uuid>/`, also for Open with. Unit-tested; **WhatsApp/Drive receive check is on the user's device**. · user feedback
 - 2026-11-19 · 5af7495 · test(design-tokens) · token tests assert the saffron primary/focus colours (package tests aren't in the `kagaz` test gate — run `pnpm test` for the whole workspace). · G-STORE-1
 - 2026-11-19 · db63f5b · fix(app) · Ionic primary `-rgb/-contrast/-shade/-tint` bridged to tokens (ripples, toggles, pressed states and on-primary text were still Ionic default blue/white); new `--color-primary-rgb`. · G-STORE-1
 - 2026-11-19 · edb1760 · refactor(app) · **DRY token sweep** over 15 stylesheets (border widths, touch targets, scrims, z-index, colour literals → tokens; no hex/rgba left in app CSS) + fixes for references to tokens that never existed (`--font-weight-*`, `--text-md`, `--surface-0`, `--color-text-secondary`, …); onboarding icon on tinted `--color-primary-subtle`. · G-STORE-1

@@ -43,9 +43,10 @@ export interface CreatedDocuments {
 
 /** Strips a full DocumentEntity down to what's safe to hand the model. */
 export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
+  // Name first: a small model copies whichever value it reads first.
   return {
-    id: doc.id,
     name: doc.name,
+    id: doc.id,
     fileType: doc.fileType,
     fileSizeBytes: doc.fileSize,
     isFavorite: doc.isFavorite,

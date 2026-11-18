@@ -4,8 +4,8 @@ import type { DocumentEntity } from '@/infrastructure/database/types';
 import { PdfDocPicker } from '../PdfDocPicker';
 
 const docs = [
-  { id: 'a', name: 'A.pdf' },
-  { id: 'b', name: 'B.pdf' },
+  { id: 'a', name: 'A.pdf', fileType: 'pdf' },
+  { id: 'b', name: 'B.pdf', fileType: 'pdf' },
 ] as DocumentEntity[];
 
 describe('PdfDocPicker', () => {
@@ -77,5 +77,19 @@ describe('PdfDocPicker', () => {
     );
     fireEvent.click(screen.getByText('A.pdf'));
     expect(onChange).toHaveBeenLastCalledWith(['b']);
+  });
+
+  it('numbers multi-select tiles in selection order (merge output order)', () => {
+    const { container } = render(
+      <PdfDocPicker
+        documents={docs}
+        multi
+        selectedIds={['b', 'a']}
+        onChange={vi.fn()}
+        emptyText=""
+      />
+    );
+    const badges = [...container.querySelectorAll('.kg-pdf-picker__check')].map((b) => b.textContent);
+    expect(badges).toEqual(['2', '1']);
   });
 });

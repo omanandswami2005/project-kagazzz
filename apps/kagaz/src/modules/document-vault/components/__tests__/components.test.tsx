@@ -29,7 +29,7 @@ vi.mock('@/app/providers/DatabaseProvider', () => ({
 
 // DocumentListItem loads thumbnails via useThumbnail (F-24); control it here.
 const thumbnailUrl = vi.fn<() => string | null>(() => null);
-vi.mock('../../hooks/useThumbnail', () => ({
+vi.mock('@/core/hooks/useThumbnail', () => ({
   useThumbnail: () => thumbnailUrl(),
 }));
 
@@ -293,7 +293,7 @@ describe('RecentStrip (F-32)', () => {
         onOpen={() => undefined}
       />
     );
-    const img = container.querySelector('img.kg-recent__thumb');
+    const img = container.querySelector('img.kg-doc-thumb__img');
     expect(img).not.toBeNull();
     expect(img?.getAttribute('src')).toBe('blob:recent-thumb');
   });

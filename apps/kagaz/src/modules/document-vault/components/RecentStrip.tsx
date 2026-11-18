@@ -21,23 +21,13 @@
  */
 import { useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon, type IconName } from '@kagaz/ui';
+import { Icon } from '@kagaz/ui';
 import { usePreferencesStore } from '@/core/preferences';
 import { hapticTap } from '@/core/haptics';
 import { useSwipeUp } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
-import { useThumbnail } from '../hooks/useThumbnail';
+import { DocumentThumb } from '@/core/components/DocumentThumb';
 import { useCoverflowScroll } from '../hooks/useCoverflowScroll';
-import { FileType } from '../types/document.types';
-
-const TYPE_ICONS: Partial<Record<string, IconName>> = {
-  [FileType.PDF]: 'FileText',
-  [FileType.JPG]: 'FileImage',
-  [FileType.JPEG]: 'FileImage',
-  [FileType.PNG]: 'FileImage',
-  [FileType.HEIC]: 'FileImage',
-  [FileType.WEBP]: 'FileImage',
-};
 
 /** Caps how far a card visually lifts while dragging, past the commit point. */
 const MAX_LIFT_PX = 28;
@@ -59,7 +49,6 @@ function RecentItem({
    * it must not stay independently interactive while that's happening. */
   disabled: boolean;
 }): ReactNode {
-  const thumbnailUrl = useThumbnail(document.thumbnailPath);
   const { dragY, isDragging, bind } = useSwipeUp({
     onSwipeUp: onOpenTools,
     onThresholdCross: () => hapticTap(),
@@ -82,25 +71,13 @@ function RecentItem({
         }}
         {...bind}
       >
-        {document.isLocked ? (
-          // [SEC] §3.1: same blurred-thumbnail + lock-icon treatment as
-          // DocumentListItem — findRecent() doesn't filter is_locked.
-          <span className="kg-recent__locked" data-agent-id={`vault.home.recent-${document.id}.locked`}>
-            {thumbnailUrl && (
-              <img
-                className="kg-recent__thumb kg-recent__thumb--locked"
-                src={thumbnailUrl}
-                alt=""
-                loading="lazy"
-              />
-            )}
-            <Icon name="Lock" size={24} />
-          </span>
-        ) : thumbnailUrl ? (
-          <img className="kg-recent__thumb" src={thumbnailUrl} alt="" loading="lazy" />
-        ) : (
-          <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={48} />
-        )}
+        {/* [SEC] §3.1: DocumentThumb blurs + lock-icons a locked document —
+            findRecent() doesn't filter is_locked. */}
+        <DocumentThumb
+          document={document}
+          iconSize={document.isLocked ? 24 : 48}
+          agentId={document.isLocked ? `vault.home.recent-${document.id}.locked` : undefined}
+        />
         <span className="kg-recent__name">{document.name}</span>
       </button>
     </li>

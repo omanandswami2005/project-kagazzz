@@ -1,5 +1,6 @@
 /**
- * Thumbnail loader (F-24): reads a cached thumbnail file from storage and
+ * Thumbnail loader (F-24; shared from core since 2026-11-19 — the vault list,
+ * the Recent strip and the PDF Tools picker all use it): reads a cached thumbnail file from storage and
  * exposes it as an object URL for an <img>, revoking it on cleanup.
  * Returns null while loading, when there is no thumbnail, or on failure
  * (the row then shows a generic icon).

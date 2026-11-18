@@ -136,5 +136,20 @@
     "need_watermark": "Enter the watermark text.",
     "need_image": "Choose an image to place.",
     "bad_page": "Enter a valid page number."
+  },
+  "history": {
+    "title_tool": "Recent runs of this tool",
+    "title_all": "History",
+    "clear": "Clear history",
+    "empty": "Nothing yet. Files you create appear here.",
+    "from": "From {{names}}",
+    "failed": "Failed",
+    "deleted": "Deleted document"
+  },
+  "result": {
+    "open": "Open",
+    "open_named": "Open {{name}}",
+    "share": "Share",
+    "done": "Done"
   }
 }

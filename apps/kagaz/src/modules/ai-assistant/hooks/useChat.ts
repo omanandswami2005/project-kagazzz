@@ -31,6 +31,7 @@ import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
 import { NUDGE_MESSAGE, shouldNudge } from '../services/narration-guard';
 import { decodeFromModel, encodeForModel } from '../services/document-alias';
+import { resolveDocumentRef } from '../services/document-resolver';
 import { findInDocumentText, rankDocumentMatches, readDocumentText } from '../services/document-text.service';
 import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
@@ -40,17 +41,15 @@ import { SkillSession } from '../skills/skill-session';
 const logger = log('ai-assistant');
 
 /**
- * Resolves a model-supplied document id, throwing a clear message if it
- * doesn't exist or is locked. [SEC] Every tool path goes through here, so a
- * locked document can never be processed by the model without the
- * biometric prompt (10-security-architecture.md §3.1) — the pdf-engine and
- * image hooks these tools reuse don't check the lock themselves.
+ * Resolves a model-supplied document reference — the `docN` alias (decoded to
+ * the real id before this runs) or the document's name — throwing a clear
+ * message if nothing matches or it is locked. [SEC] Every tool path goes
+ * through here, so a locked document can never be processed by the model
+ * without the biometric prompt (10-security-architecture.md §3.1) — the
+ * pdf-engine and image hooks these tools reuse don't check the lock themselves.
  */
-async function requireDocument(documentDao: DocumentDao, id: string): Promise<DocumentEntity> {
-  const doc = await documentDao.findById(id);
-  if (!doc) {
-    throw new Error(`No document found with id "${id}"`);
-  }
+async function requireDocument(documentDao: DocumentDao, ref: string): Promise<DocumentEntity> {
+  const doc = await resolveDocumentRef(documentDao, ref);
   if (doc.isLocked) {
     throw new Error('This document is locked; open it yourself to use it');
   }
