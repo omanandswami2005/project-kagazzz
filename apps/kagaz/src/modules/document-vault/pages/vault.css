@@ -683,6 +683,7 @@
 }
 
 .kg-doc-item__action {
+  color: var(--icon-action);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -727,7 +728,7 @@
 }
 
 .kg-doc-item__icon {
-  color: var(--color-primary);
+  color: var(--icon-object);
   display: inline-flex;
   flex: 0 0 auto;
 }

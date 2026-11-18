@@ -79,6 +79,13 @@
   /* Text on --surface-inverse. */
   --text-inverse: #f8fafc;
 
+  /* ── Icon roles (2026-11-19) ── one colour per ROLE, not per screen:
+     actions you can take are neutral; things (file types, tools) and the
+     active/selected state carry the brand. Derived → follow dark mode. */
+  --icon-action: var(--text-secondary);
+  --icon-object: var(--color-primary);
+  --icon-active: var(--color-primary);
+
   /* ── Borders (light) ──────────────────────────────────────────── */
   --border-default: #e2e8f0;
   --border-strong: #cbd5e1;

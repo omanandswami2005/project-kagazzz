@@ -49,7 +49,7 @@
 }
 .kg-btn--ghost {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--icon-action);
 }
 .kg-btn--danger {
   background: var(--color-danger);
@@ -97,8 +97,12 @@
   border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
 }
-.kg-input__box:focus-within {
+/* The search field shares the text field's box (B4, 2026-11-19): it had no
+   border, no fill and no focus ring, so it did not read as a field. */
+.kg-input__box:focus-within,
+.kg-search:focus-within {
   border-color: var(--border-focus);
+  box-shadow: 0 0 0 var(--border-width) var(--border-focus);
 }
 .kg-input__box--error {
   border-color: var(--color-danger);
@@ -728,6 +732,9 @@ button.kg-tag {
   display: flex;
   align-items: center;
   min-width: 0;
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
 }
 .kg-search__icon {
   position: absolute;

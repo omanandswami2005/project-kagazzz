@@ -417,6 +417,14 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · 6a77e24 · feat(app) · **next-best actions**: one uploaded doc → toast Open / Ask AI; viewer bottom row Share / Ask AI / More; Ask AI pre-attaches via `askAiAboutRoute` (`?attach=`). Shared `NextActions`. · smart UI plan
+- 2026-11-19 · 39a5606 · feat(app) · **side drawer** (Quick reference, Quick notes, Archived, Trash, AI model, Settings, Privacy) + **raised centre AI tab**; Documents header's 4 unlabeled icons removed; ☰ on tab roots. · smart UI plan
+- 2026-11-19 · f8e58b3 · feat(ai-assistant) · document names in answers are **links**; result cards show thumbnails + name links; both open an **in-chat preview** (Open / Share / Close). · smart UI plan
+- 2026-11-19 · 4ac37f4 · feat(app) · **bigger launcher icon** — adaptive foreground drops z³, page at scale 6, K ×1.15 (≈38% larger on screen); round-mask composite checked. · B1
+- 2026-11-19 · b7dee6b · fix(ui) · search field gets a box + focus ring (had none — WCAG 2.4.7); `--icon-action/-object/-active` role tokens applied app-wide. · B4/B5
+- 2026-11-19 · 4bffcc4 · fix(ai-assistant) · type/attach while the model answers; only Send waits. · B3
+- 2026-11-19 · 5d67ff0 · fix(document-vault) · grid no longer collapses to 1 column after returning from a document (0-width ResizeObserver reads ignored). **Needs device confirmation.** · B2
+- 2026-11-19 · 2e98b57 · docs(ux) · [smart UI plan](docs/ux/smart-ui-next-best-action.md) — NBA / progressive disclosure / Norman / Hook / anticipatory design mapped to every section; drawer + centre AI; bug list. · user request
 - 2026-11-19 · 6a6b840 · feat(pdf-engine) · **result sheet** (Open / Share for each created document, replaces the "saved" toast) + **tool history** per tool (bottom of each tool sheet) and combined (PDF Tools page, Clear history); runs from the AI chat recorded too. · user feedback
 - 2026-11-19 · a5bafe0 · feat(database) · migration 008 rebuilds the never-written `operations_history` as tool-run history (ids only — no names/params/passwords; latest 200). · user feedback
 - 2026-11-19 · 159663d · feat(pdf-engine) · PDF Tools picker is a **thumbnail grid** (selection-order badges for merge); shared `core/components/DocumentThumb` + `core/hooks/useThumbnail`. · user feedback

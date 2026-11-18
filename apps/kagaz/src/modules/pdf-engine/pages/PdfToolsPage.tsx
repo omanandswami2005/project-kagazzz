@@ -4,8 +4,6 @@
  * and saves the result back to the vault. Reached from the vault.
  */
 import {
-  IonBackButton,
-  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -26,6 +24,7 @@ import { ToolHistoryList } from '../components/ToolHistoryList';
 import { ToolResultSheet } from '../components/ToolResultSheet';
 import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
 import '../components/pdf-tools.css';
+import { MenuButton } from '@/app/shell/MenuButton';
 
 /** Filter chips shown above the grid, "All" first. */
 const CATEGORIES: readonly PdfOpCategory[] = ['pdf', 'image', 'other'];
@@ -73,9 +72,7 @@ export function PdfToolsPage(): ReactNode {
     <IonPage data-agent-id="pdf-tools">
       <IonHeader>
         <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/vault" data-agent-id="pdf-tools.back" />
-          </IonButtons>
+          <MenuButton />
           <IonTitle>{t('title')}</IonTitle>
         </IonToolbar>
       </IonHeader>

@@ -5,9 +5,12 @@
  * breaks, **bold**, *italic* / _italic_, `code`, fenced code blocks, # headings
  * (shown bold), bullet and numbered lists, > quotes and [links](https://…) (http, https and
  * mailto only). Anything else, including unfinished syntax while a reply is
- * still streaming, is shown literally.
+ * still streaming, is shown literally. Plain text runs go through
+ * {@link LinkedText}, so document names become links inside a chat's
+ * DocLinkProvider (smart UI plan §5).
  */
 import type { ReactNode } from 'react';
+import { LinkedText } from './DocumentLinks';
 
 const SAFE_URL = /^(https?:\/\/|mailto:)/i;
 // code | bold | italic | link — earliest match wins
@@ -23,7 +26,7 @@ export function renderInline(text: string, keyPrefix = 'i'): ReactNode[] {
   while (rest) {
     const match = INLINE.exec(rest);
     if (!match) {
-      nodes.push(rest);
+      nodes.push(<LinkedText key={`${keyPrefix}-t${n}`} text={rest} />);
       break;
     }
     const start = match.index;
@@ -32,12 +35,12 @@ export function renderInline(text: string, keyPrefix = 'i'): ReactNode[] {
     // `_` is only emphasis at word edges, so snake_case_names stay untouched.
     const intraword = marker?.startsWith('_') && (isWord(rest[start - 1]) || isWord(rest[end]));
     if (intraword) {
-      nodes.push(rest.slice(0, end));
+      nodes.push(<LinkedText key={`${keyPrefix}-t${n++}`} text={rest.slice(0, end)} />);
       rest = rest.slice(end);
       continue;
     }
     if (start > 0) {
-      nodes.push(rest.slice(0, start));
+      nodes.push(<LinkedText key={`${keyPrefix}-t${n++}`} text={rest.slice(0, start)} />);
     }
     const key = `${keyPrefix}-${n++}`;
     if (match[1]) {

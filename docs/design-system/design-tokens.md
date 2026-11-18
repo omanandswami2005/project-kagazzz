@@ -138,10 +138,15 @@ information.
 >
 > These are icon-only brand colours, written as literal hex in the generated SVG sources (SVG needs literal stops). The in-app UI adopted saffron on 2026-11-19 through the `--color-primary` / `--gradient-brand` tokens, using the deeper `#C2410C` because `#F25C05` fails white-text contrast. The native Android theme colours (`android/app/src/main/res/values/colors.xml`) mirror the UI tokens.
 >
-> **Safe zone (re-checked):** the adaptive foreground is placed at scale 5,
-> so the farthest points (z³, page corners) sit about 308 px from centre,
-> inside the ~313 px safe circle (66/108 of 1024); the round launcher variant
-> shows no clipping.
+> **Launcher variant (2026-11-19, "icon very small on my phone"):** at scale 5
+> the page used only about half the icon because the wide z³ had to fit the
+> ~313 px safe circle (66/108 of 1024). The Android adaptive foreground now
+> drops z³ (unreadable at launcher size anyway — responsive-logo practice),
+> centres the page at scale 6 (corners ~308 px from centre) and enlarges the
+> K inside the page (0.66 → 0.76), so the K renders about 38% larger. The
+> store/iOS icon (`icon-only.svg`) and the splash keep the full mark with z³.
+> Checked by compositing the generated xxxhdpi foreground under a 33/108
+> round mask: no clipping.
 >
 > The rest of this section describes the **previous** (2026-07-18 → 2026-11-18) icon, kept for history.
 
@@ -276,6 +281,21 @@ graph LR
 | `--border-default` | `#E2E8F0` | `#334155` |
 | `--border-strong` | `#CBD5E1` | `#475569` |
 | `--border-focus` | `#C2410C` | `#FB923C` |
+
+### Icon roles
+
+> **Added 2026-11-19** ([smart UI plan](../ux/smart-ui-next-best-action.md#6-visual-consistency-rules)).
+> Icon colour follows the icon's **role**, never the screen it is on.
+
+| Token | Value | Role | Examples |
+|---|---|---|---|
+| `--icon-action` | `--text-secondary` | Something you can do | Toolbar/ghost buttons, row ⋮ and tag buttons, the unfilled favourite star, unselected tabs |
+| `--icon-object` | `--color-primary` | A thing: a file type or a tool | Document type icons and thumbnails, PDF Tools cards |
+| `--icon-active` | `--color-primary` | The selected/active state | Selected tab, selected tiles |
+
+Semantic exceptions keep their meaning: a filled favourite star is
+`--color-warning` (amber), destructive actions are `--color-danger`.
+Decorative empty-state illustrations stay `--text-muted`.
 
 ### Lines, overlays, touch targets, stacking
 

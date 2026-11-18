@@ -18,6 +18,7 @@ import { useAi } from '@/app/providers/AIProvider';
 import { StorageDonut } from '../components/StorageDonut';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
+import { MenuButton } from '@/app/shell/MenuButton';
 
 /** Usage-overview screen for the vault. */
 export function StoragePage(): ReactNode {
@@ -31,6 +32,7 @@ export function StoragePage(): ReactNode {
     <IonPage data-agent-id="vault.storage">
       <IonHeader>
         <IonToolbar>
+          <MenuButton />
           <IonTitle>{t('storage.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>

@@ -26,10 +26,16 @@ describe('columnsForWidth (repeat(auto-fill, minmax(140px, 1fr)) formula)', () =
 // fixed contentRect so the hook's effect can be exercised against a real
 // (if zero-sized) rendered element.
 let observedWidth = 0;
+let lastObserver: FakeResizeObserver | null = null;
 class FakeResizeObserver {
   callback: ResizeObserverCallback;
   constructor(callback: ResizeObserverCallback) {
     this.callback = callback;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- test handle to fire resizes later
+    lastObserver = this;
+  }
+  fire(width: number): void {
+    this.callback([{ contentRect: { width } } as ResizeObserverEntry], this);
   }
   observe(target: Element): void {
     this.callback(
@@ -69,5 +75,14 @@ describe('useGridColumns (hook wiring)', () => {
     observedWidth = 140 * 3 + 12 * 2;
     const { getByTestId } = render(<Probe isGrid />);
     expect(getByTestId('probe')).toHaveAttribute('data-columns', '3');
+  });
+
+  it('keeps its columns while the page is hidden (width 0) — B2 grid collapse', async () => {
+    observedWidth = 140 * 2 + 12;
+    const { getByTestId } = render(<Probe isGrid />);
+    expect(getByTestId('probe')).toHaveAttribute('data-columns', '2');
+    const { act } = await import('@testing-library/react');
+    act(() => lastObserver?.fire(0));
+    expect(getByTestId('probe')).toHaveAttribute('data-columns', '2');
   });
 });

@@ -51,7 +51,11 @@ export function useGridColumns(
     // effect body).
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry) {
+      // Ionic hides a page that is under another one (display: none) and the
+      // observer then reports width 0. Taking that as "1 column" made the grid
+      // collapse to one column after opening a document and coming back.
+      // A hidden list keeps its last real layout instead.
+      if (entry && entry.contentRect.width > 0) {
         setColumns(columnsForWidth(entry.contentRect.width));
       }
     });

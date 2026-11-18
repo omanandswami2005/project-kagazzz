@@ -5,7 +5,6 @@
  * arrive with F-9/F-11/F-25.
  */
 import {
-  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -24,7 +23,6 @@ import {
   hapticSuccess,
   hapticTap,
 } from '@/core/haptics';
-import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
@@ -87,6 +85,9 @@ import { usePreferencesStore } from '@/core/preferences';
 import { pickFromGallery, type UploadSource } from '../services/upload-sources';
 import type { IncomingFile } from '../types/document.types';
 import './vault.css';
+import { MenuButton } from '@/app/shell/MenuButton';
+import { useAi } from '@/app/providers/AIProvider';
+import { askAiAboutRoute } from '@/core/constants/routes';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
 type PendingUndo =
@@ -325,7 +326,8 @@ export function VaultHomePage(): ReactNode {
   const lastUploadErrors = useVaultStore((state) => state.lastUploadErrors);
   const openSheet = useVaultStore((state) => state.openUploadSheet);
   const closeSheet = useVaultStore((state) => state.closeUploadSheet);
-  const [uploadedCount, setUploadedCount] = useState(0);
+  // Documents the last upload added → the success toast and its next actions.
+  const [uploaded, setUploaded] = useState<DocumentEntity[]>([]);
   // UX-8: documents awaiting a rename prompt, oldest first (one alert at a time).
   const [renameQueue, setRenameQueue] = useState<DocumentEntity[]>([]);
   const renameTarget = renameQueue[0] ?? null;
@@ -334,8 +336,8 @@ export function VaultHomePage(): ReactNode {
   // documents. Holds the just-picked files while that choice is pending.
   const [galleryFiles, setGalleryFiles] = useState<IncomingFile[] | null>(null);
 
-  const finishUpload = ({ uploaded, documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
-    setUploadedCount(uploaded);
+  const finishUpload = ({ documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
+    setUploaded(documents);
     // UX-8: queue the new docs for a name prompt, pre-filled with the default.
     if (renameOnAdd && documents.length > 0) {
       setRenameQueue(documents);
@@ -420,50 +422,10 @@ export function VaultHomePage(): ReactNode {
     <IonPage data-agent-id="vault.home">
       <IonHeader>
         <IonToolbar>
+          {/* Smart UI §3: ☰ opens the drawer (Quick reference, Quick notes,
+              Settings…); AI moved to the centre tab. */}
+          <MenuButton />
           <IonTitle>{t('title')}</IonTitle>
-          <IonButtons slot="end">
-            {ai.status !== 'unsupported' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                iconOnly
-                icon={<Icon name="Sparkles" size={24} />}
-                aria-label={t('title', { ns: 'ai-assistant' })}
-                onClick={() => router.push('/ai-chat', 'forward', 'push')}
-                agentId="vault.home.ai-chat"
-              />
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="KeyRound" size={24} />}
-              aria-label={t('quick_reference.title')}
-              onClick={() => router.push('/quick-reference', 'forward', 'push')}
-              agentId="vault.home.quick-reference"
-              agentAction="vault.openQuickReference"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="StickyNote" size={24} />}
-              aria-label={t('quick_notes.title')}
-              onClick={() => router.push('/quick-notes', 'forward', 'push')}
-              agentId="vault.home.quick-notes"
-              agentAction="vault.openQuickNotes"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="Settings" size={24} />}
-              aria-label={t('settings')}
-              onClick={() => router.push('/settings', 'forward', 'push')}
-              agentId="vault.home.settings"
-              agentAction="settings.open"
-            />
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent ref={ionContentRef}>
@@ -679,7 +641,7 @@ export function VaultHomePage(): ReactNode {
                 if (galleryFiles) {
                   void pdfEngine
                     .imagesToPdfFromFiles(galleryFiles)
-                    .then((uploaded) => setUploadedCount(uploaded));
+                    .then(() => setUploaded(pdfEngine.lastCreated()));
                 }
               },
             },
@@ -1111,11 +1073,23 @@ export function VaultHomePage(): ReactNode {
           }}
         />
 
+        {/* Smart UI §4: after adding ONE document the likely next step is to
+            look at it or ask about it — offer both right in the toast. */}
         <IonToast
-          isOpen={uploadedCount > 0}
-          duration={2500}
-          message={t('upload.success', { count: uploadedCount })}
-          onDidDismiss={() => setUploadedCount(0)}
+          isOpen={uploaded.length > 0}
+          duration={uploaded.length === 1 ? 5000 : 2500}
+          message={t('upload.success', { count: uploaded.length })}
+          buttons={
+            uploaded.length === 1
+              ? [
+                  { text: t('upload.open'), handler: () => handleOpen(uploaded[0]) },
+                  ...(ai.status !== 'unsupported'
+                    ? [{ text: t('viewer.ask_ai'), handler: () => router.push(askAiAboutRoute(uploaded[0].id), 'forward', 'push') }]
+                    : []),
+                ]
+              : undefined
+          }
+          onDidDismiss={() => setUploaded([])}
           data-agent-id="vault.home.upload-success-toast"
         />
         <IonToast

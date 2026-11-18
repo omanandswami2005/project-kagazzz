@@ -16,6 +16,12 @@ vi.mock('../../hooks/useAttachableDocuments', () => ({ useAttachableDocuments: (
 vi.mock('@/modules/document-vault/hooks/useUpload', () => ({ useUpload: () => ({ ingestFiles: attach.ingestFiles }) }));
 
 const routerPush = vi.hoisted(() => vi.fn());
+const route = vi.hoisted(() => ({ search: '', replace: vi.fn() }));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useLocation: () => ({ pathname: '/ai-chat', search: route.search }),
+  useHistory: () => ({ replace: route.replace }),
+}));
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ionic/react')>()),
   useIonRouter: () => ({ push: routerPush }),
@@ -23,6 +29,10 @@ vi.mock('@ionic/react', async (importOriginal) => ({
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
 vi.mock('../../hooks/useChat', () => ({ useChat: vi.fn() }));
 vi.mock('../../components/MicButton', () => ({ MicButton: () => null }));
+vi.mock('@/modules/document-vault/hooks/useDocumentIntents', () => ({
+  useDocumentIntents: () => ({ supported: false, share: vi.fn(), shareMany: vi.fn(), openWith: vi.fn() }),
+}));
+vi.mock('@/core/hooks/useThumbnail', () => ({ useThumbnail: () => null }));
 
 const useAiMock = vi.mocked(useAi);
 const useChatMock = vi.mocked(useChat);
@@ -112,6 +122,43 @@ describe('ChatPage (F-13)', () => {
     expect(document.querySelector('[data-agent-state="loading"]')).toBeInTheDocument();
   });
 
+  it('links a document the answer mentions and previews it in the chat (smart UI §5)', async () => {
+    const rent = { id: 'd-rent', name: 'Rent Agreement', fileType: 'pdf', fileSize: 2048, isLocked: false };
+    attach.state = { documents: [rent], lockedCount: 0 };
+    useChatMock.mockReturnValue(
+      chatValue({
+        messages: [
+          {
+            id: 'm-1',
+            conversationId: 'c-1',
+            role: 'assistant',
+            content: 'I compressed Rent Agreement for you.',
+            createdAt: '2026-11-19T00:00:00Z',
+          },
+        ],
+      })
+    );
+    render(<ChatPage />);
+    await userEvent.click(screen.getByRole('button', { name: 'Rent Agreement' }));
+    expect(document.querySelector('[data-agent-id="doc-preview"]')).toHaveAttribute('data-agent-state', 'open');
+    // Close it so the presented IonModal doesn't leak into the next test.
+    await userEvent.click(document.querySelector('[data-agent-id="doc-preview.close"]') as Element);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    attach.state = { documents: [], lockedCount: 0 };
+  });
+
+  it('pre-attaches a document handed off with ?attach= and clears the param (smart UI §4)', () => {
+    const rent = { id: 'd-rent', name: 'Rent Agreement', fileType: 'pdf', fileSize: 2048, isLocked: false };
+    attach.state = { documents: [rent], lockedCount: 0 };
+    route.search = '?attach=d-rent';
+    useChatMock.mockReturnValue(chatValue());
+    render(<ChatPage />);
+    expect(screen.getByText('Rent Agreement')).toBeInTheDocument();
+    expect(route.replace).toHaveBeenCalledWith('/ai-chat');
+    route.search = '';
+    attach.state = { documents: [], lockedCount: 0 };
+  });
+
   it('renders persisted messages once ready', () => {
     useChatMock.mockReturnValue(
       chatValue({
@@ -153,10 +200,12 @@ describe('ChatPage (F-13)', () => {
     expect(input.value).toBe('');
   });
 
-  it('disables sending while streaming', () => {
+  it('disables only sending while streaming — typing stays open (B3)', () => {
     useChatMock.mockReturnValue(chatValue({ isStreaming: true }));
     render(<ChatPage />);
     expect(document.querySelector('[data-agent-id="ai.chat.send"]')).toBeDisabled();
+    expect(document.querySelector('[data-agent-id="ai.chat.input"]')).not.toBeDisabled();
+    expect(document.querySelector('[data-agent-id="ai.chat.attach"]')).not.toBeDisabled();
   });
 
   it('shows a chat-level error alert', () => {

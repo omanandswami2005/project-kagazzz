@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Icon } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentThumb } from '@/core/components/DocumentThumb';
+import { formatDateTime } from '@/core/i18n';
 import { PDF_OPS } from '@/core/pdf-tools-catalog';
 import { useToolHistory, type HistoryDocRef } from '../hooks/useToolHistory';
 
@@ -21,13 +22,6 @@ export interface ToolHistoryListProps {
   onOpen: (document: DocumentEntity) => void;
   /** Offer "Clear history" (combined view). */
   clearable?: boolean;
-}
-
-function formatWhen(iso: string, locale: string): string {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime())
-    ? ''
-    : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 }
 
 /** Recent tool runs, newest first. */
@@ -81,7 +75,7 @@ export function ToolHistoryList({
                   </span>
                 )}
                 <time className="kg-tool-history__when" dateTime={run.createdAt}>
-                  {formatWhen(run.createdAt, i18n.language)}
+                  {formatDateTime(run.createdAt, i18n.language)}
                 </time>
               </div>
               {inputs.length > 0 && (

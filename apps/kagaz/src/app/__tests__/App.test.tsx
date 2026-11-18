@@ -37,5 +37,10 @@ describe('App shell', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home"]')
     ).not.toBeNull();
+    // Smart UI §3 shell: the drawer and its toggle are mounted; the centre AI
+    // tab is hidden where the on-device model can't run (jsdom = web).
+    expect(document.querySelector('[data-agent-id="app.menu"]')).not.toBeNull();
+    expect(document.querySelector('[data-agent-id="app.menu.settings"]')).not.toBeNull();
+    expect(document.querySelector('[data-agent-id="app.tab.ai"]')).toBeNull();
   });
 });
