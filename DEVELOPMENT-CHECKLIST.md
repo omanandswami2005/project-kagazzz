@@ -417,6 +417,10 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-18 · dc60830 · feat(app) · **renamed to Kagazzz Docs** (launcher/display name, page title, en/hi strings, "Kagazzz AI"); package id `in.kagaz.app` and backup format id unchanged (in-place update, old backups restore). · G-STORE-1
+- 2026-11-18 · c9a4d58 · feat(app) · **new app icon + splash** — approved mark `tick-k-doc` (white document, saffron tick-K, z³ = zzz, saffron tile) after six review rounds in [docs/brand/logo-concepts](docs/brand/logo-concepts/index.html); Android adaptive/legacy/round + iOS + splash regenerated; adaptive foreground at scale 5 (inside the round-mask safe circle). Rendered-checked (generated PNGs); **not yet installed on a device**. · G-STORE-1
+- 2026-11-18 · fbc295e · build(brand) · logo script exports the approved mark as `apps/kagaz/assets/*.svg` (`--app-assets`); z³ drawn as paths (no font dependency). · G-STORE-1
+- 2026-11-18 · cd573f0 · test(settings) · fixed a lint error (unnecessary type assertion) introduced in c1fddb6. · G-STORE-1
 - 2026-11-18 · (docs commit) · docs · 05/08/10 updated for on-device-only AI (ADR-022/023/024 withdrawn/deferred, ADR-025 web demo); new [future-extensions.md](docs/roadmap/future-extensions.md), [store-release-checklist.md](docs/compliance/store-release-checklist.md), [app-store-privacy.md](docs/compliance/app-store-privacy.md); privacy policy §3A (on-device AI, model download, voice), DPIA rows, Play form update; web-demo guide replaces the hackathon runbook; Gemma overview HTML removed (kept on the old branch). · F-13a, G-STORE-1
 - 2026-11-18 · c1fddb6 · fix(settings) · AI section hidden where on-device AI is unsupported (iOS/web) — no dead entry point for App Store review. · G-STORE-1
 - 2026-11-18 · 6922c16 · fix(android) · LiteRT plugin's unneeded READ/WRITE_EXTERNAL_STORAGE removed; manifest comments corrected (release does carry INTERNET; speech audio may be processed by the system recogniser). · G-STORE-1
