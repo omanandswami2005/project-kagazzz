@@ -339,7 +339,6 @@ export function ChatPage(): ReactNode {
               variant="ghost"
               size="sm"
               onClick={() => setAttachOpen(true)}
-              disabled={chat.isStreaming}
               agentId="ai.chat.attach"
             >
               <Icon name="Plus" size={20} aria-label={t('attach.button')} />
@@ -350,9 +349,10 @@ export function ChatPage(): ReactNode {
               onSubmit={submit}
               label={t('input_placeholder')}
               placeholder={t('input_placeholder')}
-              disabled={chat.isStreaming}
             />
             <MicButton onResult={(text) => setDraft(text)} onPartial={(text) => setDraft(text)} />
+            {/* Typing and attaching stay open while the model answers (prepare
+                the next message); only Send waits — submit() also guards. */}
             <Button
               type="submit"
               variant="primary"

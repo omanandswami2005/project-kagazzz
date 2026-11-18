@@ -153,10 +153,12 @@ describe('ChatPage (F-13)', () => {
     expect(input.value).toBe('');
   });
 
-  it('disables sending while streaming', () => {
+  it('disables only sending while streaming — typing stays open (B3)', () => {
     useChatMock.mockReturnValue(chatValue({ isStreaming: true }));
     render(<ChatPage />);
     expect(document.querySelector('[data-agent-id="ai.chat.send"]')).toBeDisabled();
+    expect(document.querySelector('[data-agent-id="ai.chat.input"]')).not.toBeDisabled();
+    expect(document.querySelector('[data-agent-id="ai.chat.attach"]')).not.toBeDisabled();
   });
 
   it('shows a chat-level error alert', () => {
