@@ -1,5 +1,5 @@
 {
-  "app_name": "Kagaz",
+  "app_name": "Kagazzz Docs",
   "exit_hint": "Press back again to exit",
   "tabs": {
     "documents": "Documents",
@@ -39,11 +39,11 @@
     "restart": "Restart"
   },
   "lock": {
-    "title": "Kagaz is locked",
+    "title": "Kagazzz Docs is locked",
     "subtitle": "Unlock with your fingerprint, face, or device PIN to continue.",
     "unlock": "Unlock",
     "failed": "Couldn't verify. Try again.",
-    "reason": "Unlock Kagaz",
+    "reason": "Unlock Kagazzz Docs",
     "quick_reference_title": "Quick Reference is locked",
     "quick_reference_subtitle": "Unlock with your fingerprint, face, or device PIN to view your saved values.",
     "quick_reference_reason": "Unlock Quick Reference"
@@ -58,12 +58,12 @@
     "next": "Next",
     "get_started": "Get Started",
     "welcome": {
-      "title": "Welcome to Kagaz",
+      "title": "Welcome to Kagazzz Docs",
       "body": "Keep all your important documents safe on your phone. No account needed."
     },
     "privacy": {
       "title": "Private by design",
-      "body": "Your files never leave your device. Kagaz works fully offline."
+      "body": "Your files never leave your device. Kagazzz Docs works fully offline."
     },
     "organize": {
       "title": "Scan and organize",
