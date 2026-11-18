@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/ai-assistant`
 > **Version**: 2.0.0
 > **Status**: Draft
-> **Last Updated**: 2026-11-18 (**On-device Gemma 4 only** — online mode, the Ollama engine and semantic search removed and moved to [future extensions](../roadmap/future-extensions.md); model lifecycle now remembers a downloaded model across restarts, §3.4.1; earlier: skills, GenUI forms, attachments, markdown §3.7, §4.2.4–§4.2.5; engine switched from WebLLM to LiteRT-LM, §3.0)
+> **Last Updated**: 2026-11-19 (document arguments accept a name, §4.2.3 lock gate; **On-device Gemma 4 only** — online mode, the Ollama engine and semantic search removed and moved to [future extensions](../roadmap/future-extensions.md); model lifecycle now remembers a downloaded model across restarts, §3.4.1; earlier: skills, GenUI forms, attachments, markdown §3.7, §4.2.4–§4.2.5; engine switched from WebLLM to LiteRT-LM, §3.0)
 
 ---
 
@@ -760,6 +760,8 @@ interface ToolProvider {
 Three tools reuse the same document-vault hooks the UI uses (`ai-image-ops.actions.ts`): `ai.resizeImage` (exact pixel size + a size budget in KB, F-85), `ai.enhanceImage` (grayscale / bw / enhance / invert, F-29) and `ai.runOcr` (stores the text for search, F-20). All three save a new copy and leave the source untouched, so `requiresConfirmation` is `false`. `ai.runOcr` returns **only a character count**, never the text.
 
 **Lock gate.** Every tool that takes a document id resolves it through one function (`requireDocument` in `useChat.ts`), which refuses a locked document before anything runs. The pdf-engine and image hooks these tools reuse do not check the per-document lock themselves, so without this the model could process a locked file with no biometric prompt. (Before 2026-10-31 only list/search filtered locked documents; the id-based PDF tools did not.)
+
+**Documents by name (2026-11-19).** The model sees short `docN` aliases (`services/document-alias.ts`), but the 2B model still often asked the user for a document id or passed a name. Every document argument now accepts **an alias or a name** (`docRefSchema`, described in the tool JSON), and `requireDocument` resolves through `services/document-resolver.ts`: id first, then an exact case-insensitive name (extension ignored), then a unique name containing every word. Several matches fail with the candidate **names** listed (never ids — the error also shows in the user's tool chip) so the model can `ai.askUser` and retry with the exact name. Locked documents are still refused after resolution. Tool results list `name` before `id`.
 
 ---
 

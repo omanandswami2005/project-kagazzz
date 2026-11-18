@@ -12,6 +12,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import { docRefSchema } from './services/document-resolver';
 import type { AiToolContext, CreatedDocuments } from './ai-tools.actions';
 
 /** Mirrors `FILTER_PRESETS` in image-engine/services/image-filters.ts. */
@@ -32,7 +33,7 @@ export const aiImageOpsActions = {
       'Resize an image to exact pixel dimensions and compress it under a size limit (e.g. a 200x230 photo under 50 KB for a government form), saving a new copy. The original is untouched.',
     voice: ['resize this photo', 'make this image smaller for the form', 'इस फ़ोटो का साइज़ बदलो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       width: z.number().int().min(16).max(8000),
       height: z.number().int().min(16).max(8000),
       maxSizeKb: z.number().int().min(5).max(20_000),
@@ -51,7 +52,7 @@ export const aiImageOpsActions = {
       'Apply a filter to an image document — grayscale, bw (black & white scan look), enhance (auto contrast) or invert — saving a new copy. The original is untouched.',
     voice: ['enhance this photo', 'make this black and white', 'इस फ़ोटो को बेहतर करो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       preset: filterPresetSchema,
     }),
     requiresConfirmation: false,
@@ -67,7 +68,7 @@ export const aiImageOpsActions = {
       'Read the text in an image or scanned PDF and store it so the document becomes searchable. Returns only how many characters were found — never the text itself.',
     voice: ['read the text in this document', 'make this searchable', 'इस डॉक्यूमेंट का टेक्स्ट पढ़ो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
     }),
     requiresConfirmation: false,
     handler: (args: { documentId: string }, ctx: AiToolContext): Promise<{ characters: number }> =>

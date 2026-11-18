@@ -21,6 +21,7 @@
  */
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
+import { docRefSchema, docRefsSchema } from './services/document-resolver';
 import type { AiToolContext, CreatedDocuments } from './ai-tools.actions';
 
 const qualitySchema = z.enum(['low', 'medium', 'high']);
@@ -34,7 +35,7 @@ export const aiDocumentOpsActions = {
       'Merge two or more existing documents (in the given order) into a single new PDF. The originals are untouched.',
     voice: ['merge these documents', 'combine these into one pdf', 'इन्हें एक PDF में मिलाओ'],
     args: z.object({
-      documentIds: z.array(z.string()).min(2, 'Merging needs at least 2 documents'),
+      documentIds: docRefsSchema.min(2, 'Merging needs at least 2 documents'),
     }),
     requiresConfirmation: false,
     handler: (args: { documentIds: string[] }, ctx: AiToolContext): Promise<CreatedDocuments> =>
@@ -47,7 +48,7 @@ export const aiDocumentOpsActions = {
       'Split a PDF into multiple new documents by page ranges (1-indexed, inclusive). The original is untouched.',
     voice: ['split this pdf', 'split this document into pages', 'इस PDF को बांटो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       ranges: z
         .array(
           z.object({
@@ -71,7 +72,7 @@ export const aiDocumentOpsActions = {
       'Reduce the file size of a PDF, creating a new compressed copy. The original is untouched.',
     voice: ['compress this pdf', 'shrink this document', 'इस PDF को छोटा करो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       quality: qualitySchema.default('medium'),
     }),
     requiresConfirmation: false,
@@ -87,7 +88,7 @@ export const aiDocumentOpsActions = {
     summary: 'Add a text watermark to every page of a PDF, creating a new watermarked copy.',
     voice: ['watermark this pdf', 'add a watermark', 'इस PDF पर वॉटरमार्क लगाओ'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       text: z.string().min(1),
     }),
     requiresConfirmation: false,
@@ -103,7 +104,7 @@ export const aiDocumentOpsActions = {
     summary: 'Combine one or more existing image documents into a single new PDF.',
     voice: ['convert these images to pdf', 'combine these photos into a pdf', 'इन तस्वीरों को PDF बनाओ'],
     args: z.object({
-      documentIds: z.array(z.string()).min(1),
+      documentIds: docRefsSchema.min(1),
     }),
     requiresConfirmation: false,
     handler: (
@@ -118,7 +119,7 @@ export const aiDocumentOpsActions = {
     summary: 'Render every page of a PDF to a separate new image document.',
     voice: ['convert this pdf to images', 'turn this pdf into pictures', 'इस PDF को तस्वीरों में बदलो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       format: imageFormatSchema.default('jpeg'),
     }),
     requiresConfirmation: false,
@@ -135,7 +136,7 @@ export const aiDocumentOpsActions = {
       "Extract a PDF's text layer into a new plain-text or Markdown document. Fails if the PDF has no selectable text (e.g. a scan with no OCR yet) — the extracted text itself is never returned here, only the new document is created (metadata-only boundary, §5).",
     voice: ['export this pdf as text', 'convert this pdf to a text file', 'इस PDF को टेक्स्ट में बदलो'],
     args: z.object({
-      documentId: z.string(),
+      documentId: docRefSchema,
       format: textFormatSchema.default('txt'),
     }),
     requiresConfirmation: false,
