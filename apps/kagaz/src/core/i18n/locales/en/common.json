@@ -5,7 +5,8 @@
     "documents": "Documents",
     "favorites": "Favorites",
     "tools": "Tools",
-    "storage": "Storage"
+    "storage": "Storage",
+    "ai": "AI"
   },
   "buttons": {
     "save": "Save",
@@ -87,5 +88,13 @@
     "hours_ago_other": "{{count}} hours ago",
     "today": "Today",
     "yesterday": "Yesterday"
+  },
+  "menu": {
+    "title": "Menu",
+    "open": "Open menu",
+    "quick_access": "Quick access",
+    "library": "Library",
+    "app": "App",
+    "ai_model": "AI model"
   }
 }

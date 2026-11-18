@@ -2,8 +2,13 @@
 
 ## Purpose
 The user is on the main vault screen. They see their documents (newest
-first) and add new ones. Search, folders, and bulk operations have not
-shipped yet.
+first), search, folders and recents, and add new ones (upload button,
+bottom-right).
+
+**Navigation (2026-11-19):** ☰ at the top left opens the side drawer
+(`app.menu`): Quick reference, Quick notes, Archived, Trash, AI model,
+Settings, Privacy policy. The AI chat is the raised centre button of the tab
+bar (`app.tab.ai`), not a header icon.
 
 ## What I (the AI) can do here
 

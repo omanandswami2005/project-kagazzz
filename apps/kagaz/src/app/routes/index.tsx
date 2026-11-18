@@ -24,6 +24,8 @@ import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, Route } from 'react-router-dom';
 import { Icon, Spinner } from '@kagaz/ui';
+import { useAi } from '@/app/providers/AIProvider';
+import { AppMenu, MAIN_CONTENT_ID } from '@/app/shell/AppMenu';
 import { useShareIntent } from '@/modules/document-vault/hooks/useShareIntent';
 import {
   LazyAiAssistantPage,
@@ -115,9 +117,12 @@ export function AppRoutes(): ReactNode {
   useHardwareBack();
   useShareIntent();
   const { t } = useTranslation('common');
+  const ai = useAi();
   return (
+    <>
+      <AppMenu />
     <IonTabs>
-      <IonRouterOutlet>
+      <IonRouterOutlet id={MAIN_CONTENT_ID}>
         <Suspense fallback={<Spinner size="lg" label="Loading..." />}>
           <Route exact path="/vault" component={LazyVaultHomePage} />
           <Route exact path="/pdf-tools" component={LazyPdfToolsPage} />
@@ -154,6 +159,17 @@ export function AppRoutes(): ReactNode {
           <Icon name="Star" size={24} aria-hidden />
           <IonLabel>{t('tabs.favorites')}</IonLabel>
         </IonTabButton>
+        {/* Smart UI §3: AI is the app's signature action — a raised centre
+            button, not an icon in one tab's header. Hidden where the device
+            can't run the on-device model. */}
+        {ai.status !== 'unsupported' && (
+          <IonTabButton tab="ai" href="/ai-chat" className="kg-tab-ai" data-agent-id="app.tab.ai">
+            <span className="kg-tab-ai__orb">
+              <Icon name="Sparkles" size={24} aria-hidden />
+            </span>
+            <IonLabel>{t('tabs.ai')}</IonLabel>
+          </IonTabButton>
+        )}
         <IonTabButton
           tab="tools"
           href="/pdf-tools"
@@ -172,5 +188,6 @@ export function AppRoutes(): ReactNode {
         </IonTabButton>
       </IonTabBar>
     </IonTabs>
+    </>
   );
 }

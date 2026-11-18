@@ -5,7 +5,8 @@
     "documents": "दस्तावेज़",
     "favorites": "पसंदीदा",
     "tools": "उपकरण",
-    "storage": "स्टोरेज"
+    "storage": "स्टोरेज",
+    "ai": "AI"
   },
   "buttons": {
     "save": "सहेजें",
@@ -87,5 +88,13 @@
     "hours_ago_other": "{{count}} घंटे पहले",
     "today": "आज",
     "yesterday": "कल"
+  },
+  "menu": {
+    "title": "मेन्यू",
+    "open": "मेन्यू खोलें",
+    "quick_access": "झटपट पहुँच",
+    "library": "लाइब्रेरी",
+    "app": "ऐप",
+    "ai_model": "AI मॉडल"
   }
 }

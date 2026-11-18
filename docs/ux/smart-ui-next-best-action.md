@@ -180,8 +180,9 @@ checked off here.
 1. [x] B2 grid columns (5d67ff0) · B3 chat typing (4bffcc4) · B4 search field + B5 icon roles (b7dee6b)
 2. [x] B1 launcher icon fills the safe zone (4ac37f4)
 3. [x] Chat: document links + in-chat preview modal + linked result cards
-4. [ ] Shell: centre AI button in the tab bar; drawer with second-level
-   destinations; header slimmed
+4. [x] Shell: centre AI button in the tab bar; drawer with second-level
+   destinations; header slimmed (labels reuse each screen's own title
+   string; `Cpu`/`ShieldCheck` icons added to the curated set)
 5. [ ] NBA: upload action toast; viewer next-actions row
 6. [ ] Device check (light/dark, en/hi, hardware back from drawer and modal)
 

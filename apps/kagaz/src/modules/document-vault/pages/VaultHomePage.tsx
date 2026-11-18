@@ -5,7 +5,6 @@
  * arrive with F-9/F-11/F-25.
  */
 import {
-  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -24,7 +23,6 @@ import {
   hapticSuccess,
   hapticTap,
 } from '@/core/haptics';
-import { useAi } from '@/app/providers/AIProvider';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
@@ -87,6 +85,7 @@ import { usePreferencesStore } from '@/core/preferences';
 import { pickFromGallery, type UploadSource } from '../services/upload-sources';
 import type { IncomingFile } from '../types/document.types';
 import './vault.css';
+import { MenuButton } from '@/app/shell/MenuButton';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
 type PendingUndo =
@@ -101,7 +100,6 @@ export function VaultHomePage(): ReactNode {
   // namespace's own t(), since PDF_OPS names/descriptions live there.
   const { t: tTools } = useTranslation('tools');
   const router = useIonRouter();
-  const ai = useAi();
   // Virtualization support (UX pass, 2026-07-23): IonContent's scroll
   // element isn't a plain DOM ref, it's resolved async through its own API
   // — Ionic's documented pattern for wiring a scroll-position-dependent
@@ -420,50 +418,10 @@ export function VaultHomePage(): ReactNode {
     <IonPage data-agent-id="vault.home">
       <IonHeader>
         <IonToolbar>
+          {/* Smart UI §3: ☰ opens the drawer (Quick reference, Quick notes,
+              Settings…); AI moved to the centre tab. */}
+          <MenuButton />
           <IonTitle>{t('title')}</IonTitle>
-          <IonButtons slot="end">
-            {ai.status !== 'unsupported' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                iconOnly
-                icon={<Icon name="Sparkles" size={24} />}
-                aria-label={t('title', { ns: 'ai-assistant' })}
-                onClick={() => router.push('/ai-chat', 'forward', 'push')}
-                agentId="vault.home.ai-chat"
-              />
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="KeyRound" size={24} />}
-              aria-label={t('quick_reference.title')}
-              onClick={() => router.push('/quick-reference', 'forward', 'push')}
-              agentId="vault.home.quick-reference"
-              agentAction="vault.openQuickReference"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="StickyNote" size={24} />}
-              aria-label={t('quick_notes.title')}
-              onClick={() => router.push('/quick-notes', 'forward', 'push')}
-              agentId="vault.home.quick-notes"
-              agentAction="vault.openQuickNotes"
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon={<Icon name="Settings" size={24} />}
-              aria-label={t('settings')}
-              onClick={() => router.push('/settings', 'forward', 'push')}
-              agentId="vault.home.settings"
-              agentAction="settings.open"
-            />
-          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent ref={ionContentRef}>

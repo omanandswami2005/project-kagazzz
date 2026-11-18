@@ -192,27 +192,6 @@ describe('VaultHomePage', () => {
     ).not.toBeNull();
   });
 
-  it('shows the AI chat entry point unless the platform is unsupported (F-13)', () => {
-    render(<VaultHomePage />);
-    expect(document.querySelector('[data-agent-id="vault.home.ai-chat"]')).toBeInTheDocument();
-
-    useAiMock.mockReturnValue({
-      status: 'unsupported',
-      downloadProgress: 0,
-      errorMessage: null,
-      capabilities: null,
-      modelOnDisk: true,
-      download: vi.fn(),
-      modelSizeBytes: 497_664_000,
-      preferGpu: false,
-      setPreferGpu: vi.fn(),
-      activate: vi.fn(),
-      remove: vi.fn(),
-    });
-    const { container } = render(<VaultHomePage />);
-    expect(container.querySelector('[data-agent-id="vault.home.ai-chat"]')).toBeNull();
-  });
-
   it('lists documents when present', () => {
     useDocumentsMock.mockReturnValue({ documents: [doc], isLoading: false });
     render(<VaultHomePage />);

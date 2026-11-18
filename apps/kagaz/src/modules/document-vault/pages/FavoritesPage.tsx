@@ -24,6 +24,7 @@ import { useFavorites } from '../hooks/useFavorites';
 import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './vault.css';
+import { MenuButton } from '@/app/shell/MenuButton';
 
 /** Starred-documents screen, reachable from the Favorites tab. */
 export function FavoritesPage(): ReactNode {
@@ -94,6 +95,7 @@ export function FavoritesPage(): ReactNode {
     <IonPage data-agent-id="vault.favorites">
       <IonHeader>
         <IonToolbar>
+          <MenuButton />
           <IonTitle>{t('favorites.title')}</IonTitle>
         </IonToolbar>
       </IonHeader>
