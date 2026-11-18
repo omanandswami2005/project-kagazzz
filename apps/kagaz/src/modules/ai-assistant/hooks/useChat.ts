@@ -32,7 +32,6 @@ import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registr
 import { NUDGE_MESSAGE, shouldNudge } from '../services/narration-guard';
 import { decodeFromModel, encodeForModel } from '../services/document-alias';
 import { findInDocumentText, rankDocumentMatches, readDocumentText } from '../services/document-text.service';
-import { semanticSearchDocuments } from '../services/document-search.service';
 import { findSensitiveRequest, type AskUserSpec } from '../types/ask-user';
 import { serializeParts, toModelText, type DocRef, type MessagePart } from '../types/message-parts';
 import { SkillController } from '../skills/skill-controller';
@@ -177,7 +176,7 @@ export function useChat(): UseChatResult {
   const dao = useMemo(() => (db ? new AiConversationDao(db) : null), [db]);
   const documentDao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const ai = useAi();
-  // The engine behind the chat (native LiteRT by default, Ollama in demo builds) — see chat-engine.registry.ts.
+  // The engine behind the chat (native on-device LiteRT) — see chat-engine.registry.ts.
   const engine = getChatEngine();
   // Which skills (tool groups) are loaded in this chat — see skills/skill-session.ts.
   // Persists a form the model asked for; assigned once the conversation exists (see recordForm below).
@@ -330,12 +329,6 @@ export function useChat(): UseChatResult {
         findInDocumentText({ search: searchByTerm }, query, limit),
       readDocumentText: async (documentId) =>
         readDocumentText(await requireDocument(documentDao, documentId), extractText),
-      semanticSearch: (query, limit) =>
-        semanticSearchDocuments(
-          { listDocuments: () => documentDao.findAll(), extractText },
-          query,
-          limit
-        ),
       askUser: (spec): { status: 'waiting_for_user' } => {
         // [SEC] The model must not be able to collect secrets through a form.
         if (findSensitiveRequest(spec)) {
@@ -616,12 +609,6 @@ export function useChat(): UseChatResult {
           } catch {
             chip(false, `Malformed arguments: ${event.argumentsJson.slice(0, 120)}`);
             return JSON.stringify({ ok: false, error: 'Malformed tool arguments' });
-          }
-          // Skills: refuse a tool whose skill isn't loaded (enforced here, not just in the prompt).
-          const refusal = skills.refusal(event.name);
-          if (refusal) {
-            chip(false, 'Skill not loaded yet');
-            return refusal;
           }
           const action = aiToolRegistry.get(event.name);
           if (action?.requiresConfirmation) {

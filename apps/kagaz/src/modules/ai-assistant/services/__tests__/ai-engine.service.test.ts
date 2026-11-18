@@ -64,10 +64,15 @@ describe('isAiSupported (F-13)', () => {
 });
 
 describe('hasDownloadedModel / modelSizeOnDiskBytes', () => {
-  it('true + size when the file stats successfully', async () => {
-    filesystemMock.stat.mockResolvedValue({ size: 497_664_000 });
+  it('true + size when a complete file is on disk', async () => {
+    filesystemMock.stat.mockResolvedValue({ size: MODEL_SIZE_BYTES });
     expect(await hasDownloadedModel()).toBe(true);
-    expect(await modelSizeOnDiskBytes()).toBe(497_664_000);
+    expect(await modelSizeOnDiskBytes()).toBe(MODEL_SIZE_BYTES);
+  });
+
+  it('false for a truncated file (an interrupted download must not count as downloaded)', async () => {
+    filesystemMock.stat.mockResolvedValue({ size: 497_664_000 });
+    expect(await hasDownloadedModel()).toBe(false);
   });
 
   it('false + null when stat throws (no file yet)', async () => {
@@ -96,7 +101,7 @@ describe('downloadAndVerify (F-13)', () => {
   });
 
   it('skips the download when a model file already exists, but still verifies', async () => {
-    filesystemMock.stat.mockResolvedValue({ size: 1 }); // already present
+    filesystemMock.stat.mockResolvedValue({ size: MODEL_SIZE_BYTES }); // already present
     plugin.sha256File.mockResolvedValue({ hash: MODEL_SHA256 });
 
     await downloadAndVerify(vi.fn());
@@ -198,6 +203,10 @@ describe('deleteDownloadedModel', () => {
     await deleteDownloadedModel();
     expect(plugin.deleteModel).toHaveBeenCalledWith({
       path: '/data/user/0/in.kagaz.app/files/model.litertlm',
+    });
+    // A leftover partial download is cleaned up too.
+    expect(plugin.deleteModel).toHaveBeenCalledWith({
+      path: '/data/user/0/in.kagaz.app/files/model.litertlm.part',
     });
   });
 });

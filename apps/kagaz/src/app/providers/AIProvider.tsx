@@ -4,10 +4,11 @@
  * delete. Model loading is deliberately lazy: mounting this provider does
  * NOT download or load anything on its own (§10.3 "AI engine is only
  * loaded when user first opens the chat") — it only determines
- * `isAiSupported()` and whether a previously-downloaded model file already
- * exists on disk, both cheap, synchronous-feeling checks. `activate()` is
- * what a caller (Settings → AI Assistant, or the chat's first-run gate)
- * invokes to actually download-if-needed/verify/load.
+ * `isAiSupported()` and whether a complete model file already exists on disk
+ * (→ status `downloaded`, so a restart never asks to download again).
+ * Model management (download / delete) lives on the AI model page
+ * (`/ai-assistant`, `download()` / `remove()`); the chat calls `activate()`
+ * on open to verify + load an already-downloaded model.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ToolDescriptor } from '@kagaz/capacitor-llm-litert';
@@ -22,14 +23,26 @@ import {
   MODEL_SIZE_BYTES,
   type LoadResult,
 } from '@/modules/ai-assistant/services/ai-engine.service';
-import { getOllamaEngine, getServerEngine } from '@/modules/ai-assistant/services/chat-engine.registry';
-import { getAiMode, isCloudAiConfigured, setAiMode, type AiMode } from '@/infrastructure/cloud-ai';
-import { getOllamaConfig } from '@/infrastructure/ollama';
 
 const logger = log('ai-assistant');
 
-/** Lifecycle of the on-device model. */
-export type AiStatus = 'unsupported' | 'not-downloaded' | 'downloading' | 'loading' | 'ready' | 'error';
+/**
+ * Lifecycle of the on-device model.
+ * - `checking`: the one-time on-disk check at startup has not finished (no button yet — avoids a
+ *   flash of "Download" for a user who already has the model).
+ * - `downloaded`: the verified-size model file is on disk but not loaded into memory. This is the
+ *   state after every cold start once the model has been downloaded — the app must never offer
+ *   "Download" again here, only "Load" (chat does it automatically) and "Delete".
+ */
+export type AiStatus =
+  | 'unsupported'
+  | 'checking'
+  | 'not-downloaded'
+  | 'downloading'
+  | 'downloaded'
+  | 'loading'
+  | 'ready'
+  | 'error';
 
 /** What AIContext exposes. */
 export interface AiContextValue {
@@ -41,22 +54,11 @@ export interface AiContextValue {
   /** Set only when status === 'ready'. */
   capabilities: LoadResult | null;
   /**
-   * Which engine answers: the on-device native model, a local Ollama server, or
-   * Google Cloud (demo builds). For `ollama`, `serverUrl` is where prompts and
-   * tool results are sent; for `cloud` they go to Google Vertex AI — in both
-   * the UI must not claim "nothing leaves your device".
+   * True when a complete model file is on disk — independent of `status`, so the management page
+   * can offer Delete even after a load error, and Storage can count the space it uses.
    */
-  engine: 'litert' | 'ollama' | 'cloud';
-  serverUrl: string | null;
-  /** The user's single online/offline switch (persisted). `online` only exists in cloud-enabled builds. */
-  mode: AiMode;
-  onlineAvailable: boolean;
-  /**
-   * Switches mode and, going online, connects straight away. The UI must have
-   * shown the data-sharing warning and got a yes before calling this with `online`.
-   */
-  setMode: (next: AiMode, tools: ToolDescriptor[]) => Promise<void>;
-  /** Size of the shipped model — for the Settings "Download (~N MB)" label before download starts. */
+  modelOnDisk: boolean;
+  /** Size of the shipped model — for the "Download (~N MB)" label and the Storage line. */
   modelSizeBytes: number;
   /**
    * User opt-in for the experimental GPU delegate (persisted). Off by
@@ -65,9 +67,14 @@ export interface AiContextValue {
    */
   preferGpu: boolean;
   setPreferGpu: (next: boolean) => void;
-  /** Downloads-if-needed, verifies, and loads the model. Registers `tools` for this session's chat. */
+  /** Downloads and verifies the model without loading it (management page). Ends in `downloaded`. */
+  download: () => Promise<void>;
+  /**
+   * Downloads-if-needed, verifies, and loads the model. Registers `tools` for this session's chat.
+   * The chat calls this on open when the model is already `downloaded`.
+   */
   activate: (tools: ToolDescriptor[]) => Promise<void>;
-  /** Deletes the cached model file. Resets status to 'not-downloaded'. */
+  /** Deletes the model file. Resets status to 'not-downloaded'. */
   remove: () => Promise<void>;
 }
 
@@ -97,13 +104,12 @@ function storePreferGpu(value: boolean): void {
 
 /** Provides AI engine status app-wide. */
 export function AIProvider({ children }: { children: ReactNode }): ReactNode {
-  // Demo builds with a local Ollama server work on any platform, not just Android.
-  const supported = useMemo(() => isAiSupported() || getOllamaEngine() !== null || isCloudAiConfigured(), []);
-  const [mode, setModeState] = useState<AiMode>(getAiMode);
-  const [status, setStatus] = useState<AiStatus>(supported ? 'not-downloaded' : 'unsupported');
+  const supported = useMemo(() => isAiSupported(), []);
+  const [status, setStatus] = useState<AiStatus>(supported ? 'checking' : 'unsupported');
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<LoadResult | null>(null);
+  const [modelOnDisk, setModelOnDisk] = useState(false);
   const [preferGpu, setPreferGpuState] = useState<boolean>(readPreferGpu);
 
   const setPreferGpu = useCallback((next: boolean): void => {
@@ -111,17 +117,21 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
     storePreferGpu(next);
   }, []);
 
-  // One-time check for a model left over from a previous session — cheap
-  // (a file stat), not a load. Still 'not-downloaded' either way until
-  // activate() actually loads it into memory; this only affects whether
-  // activate()'s first phase can skip straight to verify.
+  // One-time check for a model left over from a previous session — a file stat (complete size),
+  // not a load. This is what makes a downloaded model survive an app restart in the UI.
   useEffect(() => {
     if (!supported) {
       return;
     }
     let cancelled = false;
     void hasDownloadedModel().then((exists) => {
-      if (!cancelled && exists) {
+      if (cancelled) {
+        return;
+      }
+      setModelOnDisk(exists);
+      // Only move out of `checking` — never clobber a state the user already started (e.g. a download).
+      setStatus((current) => (current === 'checking' ? (exists ? 'downloaded' : 'not-downloaded') : current));
+      if (exists) {
         logger.info({ event: 'ai.model.found_on_disk' });
       }
     });
@@ -130,76 +140,59 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
     };
   }, [supported]);
 
+  const fetchModel = useCallback(async (): Promise<string> => {
+    setStatus('downloading');
+    setDownloadProgress(0);
+    const path = await downloadAndVerify((percent) => setDownloadProgress(percent));
+    setModelOnDisk(true);
+    return path;
+  }, []);
+
+  const fail = useCallback((error: unknown, fallback: string): void => {
+    setErrorMessage(error instanceof AiError ? error.message : fallback);
+    setStatus('error');
+    // A checksum failure deletes the file; re-check so the page shows Download vs Delete correctly.
+    void hasDownloadedModel().then(setModelOnDisk);
+  }, []);
+
+  const download = useCallback(async (): Promise<void> => {
+    setErrorMessage(null);
+    try {
+      await fetchModel();
+      setStatus('downloaded');
+    } catch (error) {
+      fail(error, 'Failed to download the AI model');
+    }
+  }, [fetchModel, fail]);
+
   const activate = useCallback(
     async (tools: ToolDescriptor[]): Promise<void> => {
       setErrorMessage(null);
-      const server = getServerEngine();
-      if (server) {
-        // No download / checksum / local model load: just confirm the server (and model) are there.
-        setStatus('loading');
-        const startedAt = Date.now();
-        try {
-          server.setTools(tools);
-          await server.checkReady();
-          setCapabilities({ backend: server.kind === 'cloud' ? 'cloud' : 'ollama', loadTimeMs: Date.now() - startedAt });
-          setStatus('ready');
-        } catch (error) {
-          logger.warn({ event: 'ai.server.not_ready', engine: server.kind, err: { message: String(error) } });
-          setErrorMessage(error instanceof Error ? error.message : 'The AI server is not available');
-          setStatus('error');
-        }
-        return;
-      }
-      setStatus('downloading');
-      setDownloadProgress(0);
       try {
-        const path = await downloadAndVerify((percent) => setDownloadProgress(percent));
+        // On disk already: downloadAndVerify skips the download and only re-verifies the checksum.
+        const path = modelOnDisk ? await downloadAndVerify(() => undefined) : await fetchModel();
         setStatus('loading');
         const loaded = await loadModel(path, tools, preferGpu);
         setCapabilities(loaded);
         setStatus('ready');
       } catch (error) {
-        const message = error instanceof AiError ? error.message : 'AI Assistant failed to start';
-        setErrorMessage(message);
-        setStatus('error');
+        fail(error, 'AI Assistant failed to start');
       }
     },
-    [preferGpu]
-  );
-
-  const setMode = useCallback(
-    async (next: AiMode, tools: ToolDescriptor[]): Promise<void> => {
-      setAiMode(next);
-      setModeState(next);
-      setCapabilities(null);
-      setErrorMessage(null);
-      setDownloadProgress(0);
-      setStatus(supported ? 'not-downloaded' : 'unsupported');
-      if (next === 'online') {
-        await activate(tools);
-      }
-    },
-    [activate, supported]
+    [preferGpu, modelOnDisk, fetchModel, fail]
   );
 
   const remove = useCallback(async (): Promise<void> => {
-    if (getServerEngine()) {
-      // Nothing is stored on-device for a server engine.
-      setCapabilities(null);
-      setStatus('not-downloaded');
-      return;
-    }
     try {
       await deleteDownloadedModel();
       setCapabilities(null);
       setDownloadProgress(0);
+      setModelOnDisk(false);
+      setErrorMessage(null);
       setStatus('not-downloaded');
     } catch (error) {
-      // Bug-audit fix: this used to have no error handling at all — a
-      // failed native delete left the status stuck at 'ready' with no user
-      // feedback, and its only call site (`void ai.remove()`) turned the
-      // rejection into an unhandled promise rejection. Surface it the same
-      // way activate() surfaces a load failure.
+      // Bug-audit fix: a failed native delete used to leave the status stuck
+      // with no feedback and an unhandled rejection. Surface it instead.
       logger.warn({ event: 'ai.model.delete_failed', err: { message: String(error) } });
       setErrorMessage('Failed to delete the AI model');
       setStatus('error');
@@ -212,18 +205,15 @@ export function AIProvider({ children }: { children: ReactNode }): ReactNode {
       downloadProgress,
       errorMessage,
       capabilities,
-      engine: getServerEngine()?.kind ?? 'litert',
-      serverUrl: getServerEngine()?.kind === 'ollama' ? (getOllamaConfig()?.baseUrl ?? null) : null,
-      mode,
-      onlineAvailable: isCloudAiConfigured(),
-      setMode,
+      modelOnDisk,
       modelSizeBytes: MODEL_SIZE_BYTES,
       preferGpu,
       setPreferGpu,
+      download,
       activate,
       remove,
     }),
-    [status, downloadProgress, errorMessage, capabilities, preferGpu, setPreferGpu, activate, remove, mode, setMode]
+    [status, downloadProgress, errorMessage, capabilities, modelOnDisk, preferGpu, setPreferGpu, download, activate, remove]
   );
 
   return <AiContext.Provider value={value}>{children}</AiContext.Provider>;

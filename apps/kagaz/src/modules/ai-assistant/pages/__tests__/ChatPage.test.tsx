@@ -55,11 +55,8 @@ function aiValue(overrides: Partial<ReturnType<typeof useAi>> = {}): ReturnType<
     downloadProgress: 0,
     errorMessage: null,
     capabilities: null,
-    engine: 'litert' as const,
-    serverUrl: null,
-    mode: 'offline' as const,
-    onlineAvailable: false,
-    setMode: vi.fn(),
+    modelOnDisk: true,
+    download: vi.fn(),
     modelSizeBytes: 497_664_000,
     preferGpu: false,
     setPreferGpu: vi.fn(),
@@ -81,11 +78,32 @@ beforeEach(() => {
 });
 
 describe('ChatPage (F-13)', () => {
-  it('gates to a setup prompt when the model is not ready', () => {
-    useAiMock.mockReturnValue(aiValue({ status: 'not-downloaded' }));
+  it('gates to the management page link when no model is downloaded (no Download in chat)', () => {
+    const activate = vi.fn();
+    useAiMock.mockReturnValue(aiValue({ status: 'not-downloaded', modelOnDisk: false, activate }));
     render(<ChatPage />);
     expect(document.querySelector('[data-agent-id="ai.chat.gate"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeInTheDocument();
     expect(document.querySelector('[data-agent-id="ai.chat.content"]')).not.toBeInTheDocument();
+    expect(activate).not.toHaveBeenCalled();
+  });
+
+  it('auto-loads an already-downloaded model when the chat opens, once', () => {
+    const activate = vi.fn();
+    useAiMock.mockReturnValue(aiValue({ status: 'downloaded', activate }));
+    const { rerender } = render(<ChatPage />);
+    expect(activate).toHaveBeenCalledOnce();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate"]')).toHaveAttribute('data-agent-state', 'downloaded');
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeNull();
+    rerender(<ChatPage />);
+    expect(activate).toHaveBeenCalledOnce();
+  });
+
+  it('a failed load of a downloaded model offers Retry plus the management link', () => {
+    useAiMock.mockReturnValue(aiValue({ status: 'error', errorMessage: 'Out of memory', modelOnDisk: true }));
+    render(<ChatPage />);
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-retry"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeInTheDocument();
   });
 
   it('shows a loading state while the conversation history loads', () => {

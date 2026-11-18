@@ -68,11 +68,16 @@ async function resolveModelPath(): Promise<string> {
   return uri.replace(/^file:\/\//, '');
 }
 
-/** File exists at the expected on-disk path — existence only, not checksum-verified. */
+/**
+ * A complete model file is on disk: present AND exactly {@link MODEL_SIZE_BYTES} long. Size, not
+ * checksum (hashing 2.6 GB at every app start would be slow) — the checksum is still verified
+ * before every load. The size check rejects a truncated file from an interrupted download
+ * (older builds wrote straight to the final name; the native side now uses `<name>.part`).
+ */
 export async function hasDownloadedModel(): Promise<boolean> {
   try {
-    await Filesystem.stat({ path: MODEL_FILENAME, directory: Directory.Data });
-    return true;
+    const stat = await Filesystem.stat({ path: MODEL_FILENAME, directory: Directory.Data });
+    return stat.size === MODEL_SIZE_BYTES;
   } catch {
     return false;
   }
@@ -131,8 +136,7 @@ export async function downloadAndVerify(onProgress: (percent: number) => void): 
 
 /** What backend actually ended up loaded, and how long it took — for the Settings "ready" line. */
 export interface LoadResult {
-  /** `ollama` = a local server and `cloud` = Google Vertex AI (demo builds) — neither is an on-device backend. */
-  backend: 'cpu' | 'gpu' | 'ollama' | 'cloud';
+  backend: 'cpu' | 'gpu';
   loadTimeMs: number;
 }
 
@@ -211,8 +215,10 @@ async function logLoaded(): Promise<LoadResult> {
   return capabilities;
 }
 
+/** Deletes the model file and any leftover partial download (`<name>.part`). */
 export async function deleteDownloadedModel(): Promise<void> {
   const path = await resolveModelPath();
   await CapacitorLlmLiteRT.deleteModel({ path });
+  await CapacitorLlmLiteRT.deleteModel({ path: `${path}.part` }).catch(() => undefined);
   logger.info({ event: 'ai.model.deleted' });
 }

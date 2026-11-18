@@ -1,8 +1,9 @@
 /**
- * AI chat screen (F-13, 05-ai-assistant-module.md §5). First-run gate:
- * anything short of `ai.status === 'ready'` sends the user to the AI
- * Assistant settings screen instead of rendering the conversation —
- * there is no chat to have with a model that isn't loaded yet.
+ * AI chat screen (F-13, 05-ai-assistant-module.md §5). Gate: until the model
+ * is `ready` the conversation is not rendered. A model already on disk
+ * (`downloaded`) is loaded automatically; otherwise the gate links to the
+ * model management page (`/ai-assistant`) — the chat itself never offers
+ * Download or Delete.
  */
 import {
   IonBackButton,
@@ -33,6 +34,7 @@ import { useAttachableDocuments } from '../hooks/useAttachableDocuments';
 import { answeredFormIds, parseParts, type DocRef } from '../types/message-parts';
 import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../hooks/useChat';
+import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './chat.css';
 
 /** The AI Assistant chat screen. */
@@ -68,6 +70,17 @@ export function ChatPage(): ReactNode {
   }, [chat.messages, chat.streamingText, chat.pendingConfirmation]);
 
   const gated = ai.status !== 'ready';
+
+  // A model that is already on disk loads as soon as the chat opens — the user never has to visit
+  // the management page again after the first download. Once per mount: a failed load shows Retry
+  // instead of looping.
+  const autoLoaded = useRef(false);
+  useEffect(() => {
+    if (ai.status === 'downloaded' && !autoLoaded.current) {
+      autoLoaded.current = true;
+      void ai.activate(AI_TOOL_DESCRIPTORS);
+    }
+  }, [ai]);
 
   const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType: d.fileType });
   const addAttachments = (docs: DocumentEntity[]): void =>
@@ -135,37 +148,50 @@ export function ChatPage(): ReactNode {
                 <Icon name="Plus" size={20} aria-label={t('new_chat')} />
               </Button>
             )}
-            {ai.onlineAvailable && (
-              <span
-                className="kg-chat__mode"
-                data-agent-id="ai.chat.mode-badge"
-                data-agent-state={ai.mode}
-              >
-                {ai.mode === 'online' ? t('mode.badge_online') : t('mode.badge_offline')}
-              </span>
-            )}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
       <IonContent>
         {gated ? (
-          <div className="kg-chat__gate" data-agent-id="ai.chat.gate">
-            <Icon name="Sparkles" size={32} aria-hidden />
-            <p>
-              {ai.engine === 'cloud'
-                ? t('lifecycle.intro_cloud')
-                : ai.engine === 'ollama'
-                  ? t('lifecycle.intro_server', { url: ai.serverUrl })
-                  : t('lifecycle.intro')}
-            </p>
-            <Button
-              variant="primary"
-              onClick={() => router.push('/ai-assistant')}
-              agentId="ai.chat.gate-button"
-            >
-              {t('ai.manage', { ns: 'settings' })}
-            </Button>
+          <div className="kg-chat__gate" data-agent-id="ai.chat.gate" data-agent-state={ai.status}>
+            {ai.status === 'checking' || ai.status === 'downloaded' || ai.status === 'loading' ? (
+              <>
+                <Spinner size="lg" label={t('gate.loading')} />
+                <p>{t('gate.loading')}</p>
+              </>
+            ) : (
+              <>
+                <Icon name={ai.status === 'error' ? 'AlertCircle' : 'Sparkles'} size={32} aria-hidden />
+                <p role={ai.status === 'error' ? 'alert' : undefined}>
+                  {ai.status === 'unsupported'
+                    ? t('lifecycle.unsupported')
+                    : ai.status === 'downloading'
+                      ? t('gate.downloading', { percent: ai.downloadProgress })
+                      : ai.status === 'error'
+                        ? (ai.errorMessage ?? t('gate.error'))
+                        : t('gate.not_downloaded')}
+                </p>
+                {ai.status === 'error' && ai.modelOnDisk && (
+                  <Button
+                    variant="primary"
+                    onClick={() => void ai.activate(AI_TOOL_DESCRIPTORS)}
+                    agentId="ai.chat.gate-retry"
+                  >
+                    {t('lifecycle.retry_button')}
+                  </Button>
+                )}
+                {ai.status !== 'unsupported' && (
+                  <Button
+                    variant={ai.status === 'error' && ai.modelOnDisk ? 'secondary' : 'primary'}
+                    onClick={() => router.push('/ai-assistant')}
+                    agentId="ai.chat.gate-button"
+                  >
+                    {t('gate.manage_button')}
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         ) : chat.isLoading ? (
           <div className="kg-chat__gate" data-agent-state="loading">

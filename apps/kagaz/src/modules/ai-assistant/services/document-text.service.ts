@@ -4,9 +4,8 @@
  * reading a document's text. Needs no embedding model: it is what lets the
  * assistant answer "what is the mobile number on the Rover card?".
  *
- * [SEC] Like semantic search, this hands document *content* to the model (the
- * on-device one; the cloud one only in demo builds). Locked documents are never
- * searched or read. Full spec of the boundary: 10-security-architecture.md §5.
+ * [SEC] This hands document *content* to the model — the on-device one only, so
+ * it never leaves the phone. Locked documents are never searched or read. Full spec of the boundary: 10-security-architecture.md §5.
  */
 import type { DocumentEntity } from '@/infrastructure/database/types';
 

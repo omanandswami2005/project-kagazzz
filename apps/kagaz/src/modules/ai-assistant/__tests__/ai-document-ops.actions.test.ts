@@ -23,7 +23,6 @@ function makeCtx(overrides: Partial<AiToolContext> = {}): AiToolContext {
     runOcr: vi.fn(),
     loadSkill: vi.fn(),
     askUser: vi.fn(),
-    semanticSearch: vi.fn(),
     findInDocuments: vi.fn(),
     readDocumentText: vi.fn(),
     setTheme: vi.fn(),

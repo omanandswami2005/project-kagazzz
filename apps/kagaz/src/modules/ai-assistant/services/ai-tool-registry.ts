@@ -14,7 +14,6 @@ import { aiImageOpsActions } from '../ai-image-ops.actions';
 import { aiSettingsActions } from '../ai-settings.actions';
 import { aiAskUserActions } from '../ai-ask-user.actions';
 import { aiDocumentTextActions } from '../ai-document-text.actions';
-import { aiSemanticSearchActions } from '../ai-semantic-search.actions';
 import { aiSkillActions } from '../ai-skills.actions';
 
 /** Registered once — see the module doc comment for why this is a singleton. */
@@ -26,7 +25,6 @@ export const aiToolRegistry = new ActionRegistry<AiToolContext>()
   .registerAll(aiSettingsActions)
   .registerAll(aiSkillActions)
   .registerAll(aiAskUserActions)
-  .registerAll(aiSemanticSearchActions)
   .registerAll(aiDocumentTextActions);
 
 /**

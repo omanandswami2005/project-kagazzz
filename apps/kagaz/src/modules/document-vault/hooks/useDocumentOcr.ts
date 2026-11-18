@@ -65,7 +65,7 @@ export function isOcrableType(fileType: string): boolean {
   return OCR_EXTENSIONS.has(fileType.toLowerCase());
 }
 
-/** True when some OCR engine is available: native ML Kit, else the (mode-dependent) vision fallback. */
+/** True when some OCR engine is available: native ML Kit, else a vision recognizer (AI-X3). */
 function hasOcrEngine(): boolean {
   return isOcrSupported() || getConfiguredVisionRecognizer() !== null;
 }
@@ -85,8 +85,8 @@ export function canExtractText(document: DocumentEntity): boolean {
 }
 
 /**
- * Whether the Gemma vision transcription option applies: the fallback is
- * configured (VITE_OLLAMA_URL) and the document is an image or a PDF — the
+ * Whether the Gemma vision transcription option applies: a recognizer exists
+ * (none in V1 — future item AI-X3, see vision-ocr.service.ts) and the document is an image or a PDF — the
  * formats the vision model is fed (PDF pages are rendered to images first).
  * Independent of whether text was already extracted: re-running is the point.
  */

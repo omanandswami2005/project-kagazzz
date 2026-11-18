@@ -19,7 +19,6 @@
 import { defineAction } from '@kagaz/agent-kit';
 import { z } from 'zod';
 import type { DocumentText, TextMatch } from './services/document-text.service';
-import type { SemanticSearchResult } from './services/document-search.service';
 import type { AskUserSpec } from './types/ask-user';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 
@@ -103,8 +102,6 @@ export interface AiToolContext {
   ) => Promise<CreatedDocuments>;
   /** OCRs a document into its search text; resolves the character count only (never the text). */
   runOcr: (documentId: string) => Promise<number>;
-  /** Searches inside documents by meaning and returns the matching passages (ai-semantic-search.actions.ts). */
-  semanticSearch: (query: string, limit: number) => Promise<SemanticSearchResult>;
   /** Keyword-searches the extracted text of documents (ai-document-text.actions.ts). */
   findInDocuments: (query: string, limit: number) => Promise<TextMatch[]>;
   /** Returns one document's extracted text, extracting it first if needed. */

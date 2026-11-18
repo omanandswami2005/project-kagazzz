@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { act, render, renderHook } from '@testing-library/react';
+import { act, render, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AiError } from '@/modules/ai-assistant/services/ai-engine.service';
 import { AIProvider, useAi } from '../AIProvider';
@@ -49,9 +49,44 @@ describe('AIProvider (F-13)', () => {
     expect(result.current.status).toBe('unsupported');
   });
 
-  it('starts as not-downloaded on a supported platform', () => {
+  it('starts as checking, then not-downloaded when no model is on disk', async () => {
     const { result } = renderHook(() => useAi(), { wrapper });
-    expect(result.current.status).toBe('not-downloaded');
+    expect(result.current.status).toBe('checking');
+    await waitFor(() => expect(result.current.status).toBe('not-downloaded'));
+    expect(result.current.modelOnDisk).toBe(false);
+  });
+
+  it('remembers a model downloaded in an earlier session: status downloaded, not not-downloaded', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
+    const { result } = renderHook(() => useAi(), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe('downloaded'));
+    expect(result.current.modelOnDisk).toBe(true);
+    expect(engine.downloadAndVerify).not.toHaveBeenCalled();
+    expect(engine.loadModel).not.toHaveBeenCalled();
+  });
+
+  it('download() downloads and verifies without loading, ending in downloaded', async () => {
+    const { result } = renderHook(() => useAi(), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe('not-downloaded'));
+    await act(async () => {
+      await result.current.download();
+    });
+    expect(engine.downloadAndVerify).toHaveBeenCalledOnce();
+    expect(engine.loadModel).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('downloaded');
+    expect(result.current.modelOnDisk).toBe(true);
+  });
+
+  it('a failed load keeps modelOnDisk so Delete stays reachable', async () => {
+    engine.hasDownloadedModel.mockResolvedValue(true);
+    engine.loadModel.mockRejectedValue(new AiError('MODEL_LOAD_FAILED', 'Out of memory'));
+    const { result } = renderHook(() => useAi(), { wrapper });
+    await waitFor(() => expect(result.current.status).toBe('downloaded'));
+    await act(async () => {
+      await result.current.activate([]);
+    });
+    expect(result.current.status).toBe('error');
+    await waitFor(() => expect(result.current.modelOnDisk).toBe(true));
   });
 
   it('useAi throws outside the provider', () => {
@@ -125,6 +160,7 @@ describe('AIProvider (F-13)', () => {
     expect(engine.deleteDownloadedModel).toHaveBeenCalledOnce();
     expect(result.current.status).toBe('not-downloaded');
     expect(result.current.capabilities).toBeNull();
+    expect(result.current.modelOnDisk).toBe(false);
   });
 
   it('remove() surfaces a native delete failure as an error state (bug-audit fix: used to be an unhandled rejection)', async () => {

@@ -1,8 +1,8 @@
 /**
  * The chat-engine seam (05-ai-assistant-module.md §3.5). `useChat` talks to
- * this interface only; which engine sits behind it — the native LiteRT-LM
- * plugin, a local Ollama server, or (later) a hosted API — is chosen in
- * chat-engine.registry.ts. The surface deliberately mirrors the native
+ * this interface only; which engine sits behind it is chosen in
+ * chat-engine.registry.ts. V1 ships only the native LiteRT-LM engine; the seam
+ * stays so a later engine (V2 opt-in hosted fallback) is one new file. The surface deliberately mirrors the native
  * plugin's chat calls and events, so the LiteRT adapter is a pure
  * pass-through and `useChat`'s tool-call / confirmation flow is engine-agnostic.
  */
@@ -15,8 +15,9 @@ import type {
 
 /**
  * Where prompts and tool results go. Anything but `on-device` means user data
- * leaves the phone, so a UI warning / consent is required before enabling it
- * (the planned hosted-API fallback must show a PII data-sharing warning).
+ * leaves the phone, so an explicit, logged consent and a PII data-sharing
+ * warning are required before such an engine is enabled. V1 uses only
+ * `on-device`; the other values are reserved for the V2 hosted fallback.
  */
 export type EngineLocality = 'on-device' | 'local-server' | 'cloud';
 
@@ -28,14 +29,9 @@ export interface ChatEngineEvents {
 }
 
 export interface ChatEngine {
-  readonly kind: 'litert' | 'ollama' | 'cloud';
+  /** `litert` is the only V1 engine; widen this union when another engine is added. */
+  readonly kind: 'litert';
   readonly locality: EngineLocality;
-  /**
-   * Restricts which tools the model sees (skills, §3.7). Optional: the native
-   * engine fixes its tools when the conversation is created, so it omits this
-   * and keeps all of them; callers must not assume it exists.
-   */
-  setActiveTools?(toolIds: string[]): void;
   /**
    * Native engine only: narrows the tools the current chat can call to a skill-sized subset
    * (`null` = all tools). Unlike `setActiveTools` it never makes the app refuse a tool call — the
