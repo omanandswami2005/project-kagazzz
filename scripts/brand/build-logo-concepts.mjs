@@ -30,6 +30,44 @@ const SANS = "'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif";
  */
 const CONCEPTS = [
   {
+    id: 'paper-kz',
+    name: 'Paper Kz',
+    color: 'Saffron · featured',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'The folded paper K (see the Folded K card below), now in saffron, with a small z as a subscript: Kz, the K and the zzz of Kagazzz Docs.',
+    why: 'Keeps the folded-paper K you liked (the dog-ear on the stem says "paper"), adds the z so the mark belongs to Kagazzz and no other K brand. Two shapes plus a tiny accent: it holds up at 24 px.',
+    draw: ({ fg, accent }) => `
+      <path d="M10 14 H23 L31 22 V86 H10 Z" fill="${fg}"/>
+      <path d="M23 14 L31 22 H23 Z" fill="${accent}"/>
+      <path d="M35 51 L55 14 H73 L47 59 Z" fill="${fg}"/>
+      <path d="M43 59 L51 53 L71 86 H53 Z" fill="${fg}"/>
+      <path d="M76 66 H89 L76 85 H89" fill="none" stroke="${fg}" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  {
+    id: 'paper-kz-mouth',
+    name: 'Paper Kz (z inside)',
+    color: 'Saffron · variant',
+    tile: '#F25C05',
+    fg: '#FFFFFF',
+    cutOnTile: '#F25C05',
+    ink: '#E4570A',
+    accent: '#FFC9A8',
+    wordBg: '#FFF7F0',
+    story: 'Same paper K, with the small z tucked into the open side of the K, as if the K is holding it.',
+    why: 'More compact and more square than the subscript version, so the K can be drawn bigger. The z is smaller, though, so it fades sooner at tiny sizes.',
+    draw: ({ fg, accent }) => `
+      <path d="M16 12 H30 L38 20 V88 H16 Z" fill="${fg}"/>
+      <path d="M30 12 L38 20 H30 Z" fill="${accent}"/>
+      <path d="M42 49 L64 12 H84 L54 58 Z" fill="${fg}"/>
+      <path d="M50 58 L59 52 L84 88 H64 Z" fill="${fg}"/>
+      <path d="M70 46 H82 L70 60 H82" fill="none" stroke="${fg}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  },
+  {
     id: 'safe-page',
     name: 'Safe Page',
     color: 'Saffron',
@@ -163,15 +201,15 @@ function tileSvg(c, px, variant = 'primary') {
   }[variant];
   const { defs, fill } = paint(v.bg);
   const border = v.bg === '#FFFFFF' || v.bg === '#F4EEE1' ? ' stroke="#D0D7DE" stroke-width="0.8"' : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} icon (${variant})">${defs}<rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="${fill}"${border}/><g transform="translate(15 15) scale(0.7)">${c.draw(v)}</g></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs ${c.name} icon (${variant})">${defs}<rect x="0.4" y="0.4" width="99.2" height="99.2" rx="22.5" fill="${fill}"${border}/><g transform="translate(15 15) scale(0.7)">${c.draw(v)}</g></svg>`;
 }
 
 function markSvg(c) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} mark">${c.draw({ fg: c.ink, cut: '#FFFFFF', accent: c.accent === '#FFFFFF' ? c.ink : c.accent })}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs ${c.name} mark">${c.draw({ fg: c.ink, cut: '#FFFFFF', accent: c.accent === '#FFFFFF' ? c.ink : c.accent })}</svg>\n`;
 }
 
 function monoSvg(c) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz ${c.name} mark, single colour">${c.draw({ fg: '#000000', cut: '#FFFFFF', accent: '#000000' })}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs ${c.name} mark, single colour">${c.draw({ fg: '#000000', cut: '#FFFFFF', accent: '#000000' })}</svg>\n`;
 }
 
 /** Icon + lowercase wordmark, on light or dark. */
@@ -180,7 +218,7 @@ function lockupSvg(c, dark = false) {
   const text = dark ? '#FFFFFF' : '#111111';
   const bg = dark ? '#111111' : c.wordBg;
   const border = c.tile === '#FFFFFF' || c.tile === '#F4EEE1' ? ' stroke="#D0D7DE" stroke-width="0.8"' : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 400 100" role="img" aria-label="Kagazzz ${c.name} logo">${defs}<rect width="400" height="100" rx="14" fill="${bg}"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="${fill}"${border}/><g transform="translate(27.6 27.6) scale(0.448)">${c.draw({ fg: c.fg, cut: c.cutOnTile, accent: c.accent })}</g><text x="100" y="64" font-family="${SANS}" font-weight="700" font-size="42" letter-spacing="-1.5" fill="${text}">kagazzz</text></svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="300" viewBox="0 0 480 100" role="img" aria-label="Kagazzz Docs logo — ${c.name}">${defs}<rect width="480" height="100" rx="14" fill="${bg}"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="${fill}"${border}/><g transform="translate(27.6 27.6) scale(0.448)">${c.draw({ fg: c.fg, cut: c.cutOnTile, accent: c.accent })}</g><text x="100" y="64" font-family="${SANS}" font-weight="700" font-size="42" letter-spacing="-1.2" fill="${text}">Kagazzz<tspan font-weight="500" fill-opacity="0.6"> Docs</tspan></text></svg>\n`;
 }
 
 function homeScreen(c) {
@@ -188,7 +226,7 @@ function homeScreen(c) {
   const cells = apps
     .map((a) => {
       if (a === 'self') {
-        return `<div class="cell">${tileSvg(c, 52)}<span>Kagazzz</span></div>`;
+        return `<div class="cell">${tileSvg(c, 52)}<span>Kagazzz Docs</span></div>`;
       }
       const { defs, fill } = paint(a);
       return `<div class="cell"><svg width="52" height="52" viewBox="0 0 100 100" aria-hidden="true">${defs}<rect width="100" height="100" rx="22.5" fill="${fill}"/></svg><span>&nbsp;</span></div>`;
@@ -225,7 +263,7 @@ function indexHtml() {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kagazzz Logo Concepts</title>
+<title>Kagazzz Docs Logo</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root { --bg:#FAFAF9; --card:#FFFFFF; --ink:#111111; --muted:#57534E; --line:#E7E5E4; }
@@ -265,8 +303,8 @@ function indexHtml() {
 </head>
 <body>
 <main>
-  <h1>kagazzz — logo concepts, round 2</h1>
-  <p class="lead">Six directions, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
+  <h1>Kagazzz Docs — logo, round 3</h1>
+  <p class="lead"><b>New in round 3:</b> cards 1–2 are your pick, the paper K from concept 2 in the saffron of concept 1, with a small z (Kz), and the app name is now <b>Kagazzz Docs</b>. The earlier directions follow for comparison, each with its <b>own colour</b>, built the way the best-known app marks are: GitHub (white on graphite), Claude (one warm colour), Spotify and WhatsApp (one owned colour), Instagram (one gradient, one glyph). Every concept is checked on white, in dark mode, as a black silhouette, at 24 px, as a wordmark and on a home screen.</p>
   <ul class="rules">
     <li><b>One silhouette</b>Recognisable from the outline alone; see each card's black "silhouette test".</li>
     <li><b>One owned colour</b>A dominant background, one symbol colour, at most one accent.</li>

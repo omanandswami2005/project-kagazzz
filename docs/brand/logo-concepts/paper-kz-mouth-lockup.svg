@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="300" viewBox="0 0 480 100" role="img" aria-label="Kagazzz Docs logo — Paper Kz (z inside)"><rect width="480" height="100" rx="14" fill="#FFF7F0"/><rect x="18" y="18" width="64" height="64" rx="14.5" fill="#F25C05"/><g transform="translate(27.6 27.6) scale(0.448)">
+      <path d="M16 12 H30 L38 20 V88 H16 Z" fill="#FFFFFF"/>
+      <path d="M30 12 L38 20 H30 Z" fill="#FFC9A8"/>
+      <path d="M42 49 L64 12 H84 L54 58 Z" fill="#FFFFFF"/>
+      <path d="M50 58 L59 52 L84 88 H64 Z" fill="#FFFFFF"/>
+      <path d="M70 46 H82 L70 60 H82" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></g><text x="100" y="64" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="42" letter-spacing="-1.2" fill="#111111">Kagazzz<tspan font-weight="500" fill-opacity="0.6"> Docs</tspan></text></svg>
