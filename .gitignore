@@ -27,3 +27,6 @@ Thumbs.db
 # build's own output artifact, never a source file — the real build lives at
 # apps/kagaz/android/app/build/outputs/apk/debug/app-debug.apk)
 /*.apk
+
+# UX audit screenshots — regenerate with scripts/ux/capture-screens.mjs
+docs/ux/screens/
