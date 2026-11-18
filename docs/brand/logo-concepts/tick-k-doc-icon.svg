@@ -9,4 +9,4 @@
         <polygon points="53,74 59,66 86,88 67,88" fill="#F25C05"/>
       </g></g>
       <path d="M80 2 H92 L80 16 H92" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="94.5" y="7" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="9.5" fill="#FFFFFF">3</text></g></svg>
+      <path d="M94.5 0 H100.5 L97 3.6 Q101 3.6 101 6 Q101 8.6 97.6 8.6 Q95.4 8.6 94.4 7.4" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
