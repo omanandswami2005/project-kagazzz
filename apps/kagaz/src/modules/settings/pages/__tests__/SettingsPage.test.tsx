@@ -5,7 +5,7 @@ import { i18n, initI18n } from '@/core/i18n';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { usePreferencesStore } from '@/core/preferences';
 
-const aiStatus = vi.hoisted(() => ({ value: 'not-downloaded' as string }));
+const aiStatus = vi.hoisted(() => ({ value: 'not-downloaded' }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: () => ({ status: aiStatus.value }) }));
 
 // The backup hook reaches for the DB + native plugins; stub it so this page
