@@ -1,7 +1,9 @@
 /** Renders the structured parts of a chat message: attached documents and created-document result cards. */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon } from '@kagaz/ui';
+import { Icon } from '@kagaz/ui';
+import { DocumentThumb } from '@/core/components/DocumentThumb';
+import type { DocumentEntity } from '@/infrastructure/database/types';
 import type { DocRef } from '../types/message-parts';
 
 const IMAGE_TYPES = new Set(['jpg', 'jpeg', 'png', 'webp', 'heic', 'tiff']);
@@ -42,13 +44,20 @@ export function AttachmentChips({
   );
 }
 
-/** The card shown when a tool created documents — each one opens in the viewer. */
+/**
+ * The card shown when a tool created documents: each new file as a preview
+ * tile with its name as a link (smart UI plan §5). Tapping opens the in-chat
+ * preview; `lookup` supplies the live document for the thumbnail (absent →
+ * a type icon, e.g. a document deleted since).
+ */
 export function ResultCard({
   documents,
   onOpen,
+  lookup,
 }: {
   documents: DocRef[];
   onOpen: (id: string) => void;
+  lookup?: (id: string) => DocumentEntity | undefined;
 }): ReactNode {
   const { t } = useTranslation('ai-assistant');
   return (
@@ -60,20 +69,28 @@ export function ResultCard({
     >
       <span className="kg-chat__result-title">{t('result.title')}</span>
       <ul className="kg-chat__result-list">
-        {documents.map((doc) => (
-          <li key={doc.id} className="kg-chat__result-item">
-            <Icon name={iconFor(doc.fileType)} size={20} aria-hidden />
-            <span className="kg-chat__chip-name">{doc.name}</span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onOpen(doc.id)}
-              agentId={`ai.chat.result-open-${doc.id}`}
-            >
-              <Icon name="ExternalLink" size={16} aria-hidden /> {t('result.open')}
-            </Button>
-          </li>
-        ))}
+        {documents.map((doc) => {
+          const live = lookup?.(doc.id);
+          return (
+            <li key={doc.id} className="kg-chat__result-item">
+              <button
+                type="button"
+                className="kg-chat__result-open"
+                onClick={() => onOpen(doc.id)}
+                data-agent-id={`ai.chat.result-open-${doc.id}`}
+              >
+                <span className="kg-chat__result-thumb">
+                  {live ? (
+                    <DocumentThumb document={live} iconSize={20} />
+                  ) : (
+                    <Icon name={iconFor(doc.fileType)} size={20} aria-hidden />
+                  )}
+                </span>
+                <span className="kg-doc-link">{doc.name}</span>
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

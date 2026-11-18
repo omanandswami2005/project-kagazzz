@@ -8,7 +8,7 @@
 /* Markdown (privacy / terms). */
 .kg-md {
   line-height: 1.6;
-  color: var(--text-primary, currentColor);
+  color: var(--text-primary);
   overflow-wrap: break-word;
 }
 

@@ -44,7 +44,7 @@
 
 .kg-onboarding__title {
   margin: 0;
-  font-size: var(--text-2xl, 1.5rem);
+  font-size: var(--text-2xl);
   font-weight: var(--font-bold);
 }
 
@@ -52,7 +52,7 @@
   margin: 0;
   max-width: 30ch;
   color: var(--text-secondary);
-  font-size: var(--text-lg, 1.125rem);
+  font-size: var(--text-lg);
   line-height: 1.5;
 }
 
@@ -67,7 +67,7 @@
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
-  background: var(--surface-3, var(--text-muted));
+  background: var(--surface-3);
   opacity: 0.4;
 }
 

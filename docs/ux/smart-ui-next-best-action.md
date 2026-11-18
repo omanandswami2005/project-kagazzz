@@ -126,15 +126,18 @@ single obvious place for AI.
 
 ## 5. AI chat: documents as links, in-chat preview
 
-- **Typing while generating:** the textarea stays enabled during streaming;
-  only **Send** (and Attach, which would change the pending turn) waits.
+- **Typing while generating:** the textarea and Attach stay enabled during
+  streaming (attaching only stages files for the next message); only **Send**
+  waits.
   Pressing Enter while streaming does nothing.
 - **Links in answers:** after the model's text is rendered, any exact mention
   of a document the conversation touched (attachments, tool results, search
   results) becomes a `DocumentLink`. Matching is by document **name** (the
   model never sees ids it could print — aliases are decoded), longest name
-  first, whole-word, case-insensitive. Only documents already in the
-  conversation are linked, so no lookup of arbitrary vault names.
+  first, whole-word, case-insensitive, names of 3+ characters. Candidates are
+  the user's **unlocked** vault documents (the list the attach sheet already
+  loads, re-read on every new message), so a file the answer found by search
+  is linked too.
 - **Tool results:** the "documents created" card lists each new file as a
   `DocumentLink` (name + thumbnail).
 - **In-chat preview:** a `DocumentPreviewModal` (sheet, same screen) shows the
@@ -174,9 +177,9 @@ single obvious place for AI.
 Small, independently shippable steps; each gets its own commit and is
 checked off here.
 
-1. [ ] B2 grid columns · B3 chat typing · B4 search field · B5 icon roles
-2. [ ] B1 launcher icon fills the safe zone
-3. [ ] Chat: document links + in-chat preview modal + linked result cards
+1. [x] B2 grid columns (5d67ff0) · B3 chat typing (4bffcc4) · B4 search field + B5 icon roles (b7dee6b)
+2. [x] B1 launcher icon fills the safe zone (4ac37f4)
+3. [x] Chat: document links + in-chat preview modal + linked result cards
 4. [ ] Shell: centre AI button in the tab bar; drawer with second-level
    destinations; header slimmed
 5. [ ] NBA: upload action toast; viewer next-actions row

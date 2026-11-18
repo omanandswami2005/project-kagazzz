@@ -381,5 +381,10 @@
     "empty_confirm_yes": "Delete all",
     "cancel": "Cancel"
   },
-  "settings": "Settings"
+  "settings": "Settings",
+  "preview": {
+    "open": "Open",
+    "share": "Share",
+    "close": "Close"
+  }
 }

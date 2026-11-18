@@ -16,16 +16,18 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Icon, Spinner } from '@kagaz/ui';
 import { AskUserForm } from '../components/AskUserForm';
 import { ChatTextarea } from '../components/ChatTextarea';
+import { DocLinkProvider } from '../components/DocumentLinks';
 import { Markdown } from '../components/Markdown';
 import { AttachSheet } from '../components/AttachSheet';
 import { ConversationsSheet } from '../components/ConversationsSheet';
 import { AttachmentChips, ResultCard, ToolChip } from '../components/MessageParts';
 import { MicButton } from '../components/MicButton';
+import { DocumentPreviewModal } from '@/modules/document-vault/components/DocumentPreviewModal';
 import { UploadOptionsSheet } from '@/modules/document-vault/components/UploadOptionsSheet';
 import { useUpload } from '@/modules/document-vault/hooks/useUpload';
 import { pickFiles, type UploadSource } from '@/modules/document-vault/services/upload-sources';
@@ -57,7 +59,28 @@ export function ChatPage(): ReactNode {
       ),
     [chat.messages, answered]
   );
-  const attachable = useAttachableDocuments(attachOpen || hasOpenForm);
+  const attachable = useAttachableDocuments(
+    `${attachOpen}|${hasOpenForm}|${chat.messages.length}`
+  );
+  // In-chat preview (smart UI plan §5): links and result cards open it here.
+  const [preview, setPreview] = useState<DocumentEntity | null>(null);
+  const openFull = useCallback(
+    (doc: DocumentEntity): void => {
+      setPreview(null);
+      router.push(`/doc/${doc.id}`, 'forward', 'push');
+    },
+    [router]
+  );
+  // A result card only knows the id; locked or deleted ones aren't in the
+  // list, so they go to the viewer (which handles the lock / missing case).
+  const previewById = (id: string): void => {
+    const doc = attachable.documents.find((d) => d.id === id);
+    if (doc) {
+      setPreview(doc);
+    } else {
+      router.push(`/doc/${id}`, 'forward', 'push');
+    }
+  };
   const { ingestFiles } = useUpload();
   const listEndRef = useRef<HTMLDivElement>(null);
 
@@ -199,6 +222,7 @@ export function ChatPage(): ReactNode {
           </div>
         ) : (
           <main className="kg-chat" data-agent-id="ai.chat.content">
+            <DocLinkProvider documents={attachable.documents} onOpen={setPreview}>
             <ul className="kg-chat__list" data-agent-id="ai.chat.messages">
               {chat.messages.map((message) => {
                 const parts = parseParts(message.partsJson);
@@ -224,7 +248,8 @@ export function ChatPage(): ReactNode {
                     <li key={message.id} data-agent-id={`ai.chat.message-${message.id}`}>
                       <ResultCard
                         documents={created}
-                        onOpen={(id) => router.push(`/doc/${id}`, 'forward', 'push')}
+                        lookup={(id) => attachable.documents.find((d) => d.id === id)}
+                        onOpen={previewById}
                       />
                     </li>
                   ) : null;
@@ -322,6 +347,7 @@ export function ChatPage(): ReactNode {
               )}
               <div ref={listEndRef} />
             </ul>
+            </DocLinkProvider>
           </main>
         )}
       </IonContent>
@@ -391,6 +417,7 @@ export function ChatPage(): ReactNode {
           />
         </IonFooter>
       )}
+      <DocumentPreviewModal document={preview} onOpen={openFull} onClose={() => setPreview(null)} />
     </IonPage>
   );
 }

@@ -11,8 +11,12 @@ const logger = log('ai-assistant');
  * are left out (and counted, so the sheet can say so): the assistant's tools
  * refuse them anyway, and attaching one must never bypass the biometric
  * prompt [SEC] (10-security-architecture.md §3.1).
+ *
+ * The same list is what the chat links document names against (smart UI
+ * plan §5), so it is re-read whenever `refreshKey` changes — the attach sheet
+ * opening, a form appearing, or a new message (a tool may have created one).
  */
-export function useAttachableDocuments(isOpen: boolean): {
+export function useAttachableDocuments(refreshKey: unknown): {
   documents: DocumentEntity[];
   lockedCount: number;
 } {
@@ -20,9 +24,8 @@ export function useAttachableDocuments(isOpen: boolean): {
   const dao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const [all, setAll] = useState<DocumentEntity[]>([]);
 
-  // Re-read each time the sheet opens so a just-uploaded document shows up.
   useEffect(() => {
-    if (!isOpen || !dao) {
+    if (!dao) {
       return;
     }
     let cancelled = false;
@@ -39,7 +42,7 @@ export function useAttachableDocuments(isOpen: boolean): {
     return (): void => {
       cancelled = true;
     };
-  }, [isOpen, dao]);
+  }, [refreshKey, dao]);
 
   return {
     documents: all.filter((d) => !d.isLocked),
