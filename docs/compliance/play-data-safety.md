@@ -111,7 +111,7 @@ data-type matrix, the correct entries are:
 
 - **Removed before release:** online mode (Vertex AI) and semantic search were on a feature branch only and **never shipped**. The answers above already assume an on-device-only assistant. Re-declare if either comes back ([future-extensions](../roadmap/future-extensions.md)).
 - **Permissions:** the LiteRT plugin's unneeded `READ/WRITE_EXTERNAL_STORAGE` were removed. Expected merged release permissions: `RECORD_AUDIO`, `INTERNET`, `ACCESS_NETWORK_STATE` (plus normal ones added by the libraries). Confirm with `aapt dump permissions` on the release AAB/APK before submitting.
-- **Voice input:** speech goes through the system `RecognitionService` (usually Google), which may process audio on Google's servers. Kagaz does not receive or transmit the audio. Under Play's definitions this is processing by the OS service, not collection by the app. If Play review asks, say so, and point to privacy policy §3A. An on-device-only alternative is tracked as AI-X8.
+- **Voice input:** speech goes through the system `RecognitionService` (usually Google), which may process audio on Google's servers. Kagaz does not receive or transmit the audio. Under Play's definitions this is processing by the OS service, not collection by the app. If Play review asks, say so, and point to privacy policy §5. An on-device-only alternative is tracked as AI-X8.
 - **AI content:** Play requires that generative-AI apps let users report offensive output. Tracked in [store-release-checklist.md](store-release-checklist.md).
 
 ## When this must change (V2)
