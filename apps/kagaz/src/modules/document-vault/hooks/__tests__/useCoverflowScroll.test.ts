@@ -75,7 +75,7 @@ describe('useCoverflowScroll', () => {
     renderHook(() => useCoverflowScroll(ref, []));
 
     const offCenter = document.getElementById('off-center')!;
-    expect(offCenter.style.transform).toBe('scale(0.880)');
+    expect(offCenter.style.transform).toBe('scale(0.750)');
     // jsdom's CSSOM strips the trailing zero when serializing opacity.
     expect(offCenter.style.opacity).toBe('0.65');
   });

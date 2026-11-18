@@ -350,16 +350,18 @@
 }
 
 .kg-recent__row {
+  /* One card width drives both the card and the snap padding. */
+  --recent-card-w: 104px;
   list-style: none;
   margin: 0;
-  padding: var(--space-2) var(--space-1);
+  padding: var(--space-3) var(--space-1);
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-3);
   overflow-x: auto;
   /* UX-16: native snap-to-center carousel — the row scrolls, the browser
      settles each card on the center, no custom fling/paging JS needed. */
   scroll-snap-type: x proximity;
-  scroll-padding-inline: calc(50% - 60px);
+  scroll-padding-inline: calc(50% - var(--recent-card-w) / 2);
 }
 
 .kg-recent__li {
@@ -370,17 +372,17 @@
   transform-origin: center;
 }
 
+/* Frameless (2026-11-19): the page preview IS the card — no outer border or
+   padding box around it, just the preview and its name. */
 .kg-recent__item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  width: 120px;
-  padding: var(--space-4) var(--space-3);
-  background: var(--surface-1);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  width: var(--recent-card-w);
+  padding: 0;
+  background: transparent;
+  border: none;
   color: var(--color-primary);
   cursor: pointer;
   /* UX-16: only native-pan this element horizontally — frees vertical
@@ -389,32 +391,34 @@
   touch-action: pan-x;
 }
 
-.kg-recent__thumb {
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  animation: kg-fade-in var(--duration-normal) var(--ease-out);
-}
-
-/* [SEC] §3.1: same blur+lock-icon treatment as .kg-doc-item__locked, sized
-   for the Recent strip's larger 72px thumbnail. */
-.kg-recent__locked {
+/* Portrait page-shaped box shared by the thumbnail, the type-icon fallback
+   and the locked state, so every card has the same silhouette. */
+.kg-recent__media {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--surface-2);
+  box-shadow: var(--shadow-sm);
 }
+
+.kg-recent__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: kg-fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* [SEC] §3.1: same blur+lock-icon treatment as .kg-doc-item__locked. */
 .kg-recent__thumb--locked {
   filter: blur(8px);
   opacity: 0.55;
 }
-.kg-recent__locked > :not(.kg-recent__thumb--locked) {
+.kg-recent__media > :not(.kg-recent__thumb) {
   position: absolute;
 }
 

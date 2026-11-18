@@ -85,7 +85,7 @@ function RecentItem({
         {document.isLocked ? (
           // [SEC] §3.1: same blurred-thumbnail + lock-icon treatment as
           // DocumentListItem — findRecent() doesn't filter is_locked.
-          <span className="kg-recent__locked" data-agent-id={`vault.home.recent-${document.id}.locked`}>
+          <span className="kg-recent__media" data-agent-id={`vault.home.recent-${document.id}.locked`}>
             {thumbnailUrl && (
               <img
                 className="kg-recent__thumb kg-recent__thumb--locked"
@@ -96,10 +96,14 @@ function RecentItem({
             )}
             <Icon name="Lock" size={24} />
           </span>
-        ) : thumbnailUrl ? (
-          <img className="kg-recent__thumb" src={thumbnailUrl} alt="" loading="lazy" />
         ) : (
-          <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={48} />
+          <span className="kg-recent__media">
+            {thumbnailUrl ? (
+              <img className="kg-recent__thumb" src={thumbnailUrl} alt="" loading="lazy" />
+            ) : (
+              <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={40} />
+            )}
+          </span>
         )}
         <span className="kg-recent__name">{document.name}</span>
       </button>

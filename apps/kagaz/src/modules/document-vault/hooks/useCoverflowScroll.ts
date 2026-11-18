@@ -19,8 +19,9 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { hapticTap } from '@/core/haptics';
 
-/** How much a fully-off-center card shrinks (1 → 1 - this). */
-const MAX_SCALE_DROP = 0.12;
+/** How much a fully-off-center card shrinks (1 → 1 - this). 0.25 makes the
+ * centred card clearly the "featured" one (was 0.12, too subtle). */
+const MAX_SCALE_DROP = 0.25;
 /** How much a fully-off-center card fades (1 → 1 - this). */
 const MAX_OPACITY_DROP = 0.35;
 

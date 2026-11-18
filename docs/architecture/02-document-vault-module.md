@@ -972,6 +972,15 @@ position on a rAF-throttled `scroll` listener and applies a `scale` +
 transform/opacity only (no `rotateY` perspective coverflow), staying cheap
 on the mid-range Android performance budget (CONTRIBUTING.md).
 
+**Frameless cards (2026-11-19, user feedback):** the outer bordered,
+padded card box around each preview is gone — the page preview itself is the
+card: a 104px-wide, 3:4 portrait `.kg-recent__media` box (shared by the
+thumbnail, the type-icon fallback and the blurred locked state) with a soft
+shadow, and the name below. The card width is one CSS variable
+(`--recent-card-w`) that the snap padding derives from. The coverflow falloff
+was raised from 12% to 25% (`MAX_SCALE_DROP`) so the centred card clearly
+stands out.
+
 Swiping up on a card opens PDF Tools (`useSwipeUp`, `core/gestures/` — the
 vertical counterpart to F-88's horizontal swipe-to-act gesture). Kept
 strictly on the vertical axis so it never competes with the horizontal
