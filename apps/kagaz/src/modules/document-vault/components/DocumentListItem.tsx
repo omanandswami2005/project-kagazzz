@@ -234,7 +234,7 @@ export function DocumentListItem({
                 color={
                   document.isFavorite
                     ? 'var(--color-warning)'
-                    : 'var(--text-muted)'
+                    : 'var(--icon-action)'
                 }
               />
             </button>

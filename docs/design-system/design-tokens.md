@@ -277,6 +277,21 @@ graph LR
 | `--border-strong` | `#CBD5E1` | `#475569` |
 | `--border-focus` | `#C2410C` | `#FB923C` |
 
+### Icon roles
+
+> **Added 2026-11-19** ([smart UI plan](../ux/smart-ui-next-best-action.md#6-visual-consistency-rules)).
+> Icon colour follows the icon's **role**, never the screen it is on.
+
+| Token | Value | Role | Examples |
+|---|---|---|---|
+| `--icon-action` | `--text-secondary` | Something you can do | Toolbar/ghost buttons, row ⋮ and tag buttons, the unfilled favourite star, unselected tabs |
+| `--icon-object` | `--color-primary` | A thing: a file type or a tool | Document type icons and thumbnails, PDF Tools cards |
+| `--icon-active` | `--color-primary` | The selected/active state | Selected tab, selected tiles |
+
+Semantic exceptions keep their meaning: a filled favourite star is
+`--color-warning` (amber), destructive actions are `--color-danger`.
+Decorative empty-state illustrations stay `--text-muted`.
+
 ### Lines, overlays, touch targets, stacking
 
 > **Added 2026-11-19** in the DRY sweep that came with the saffron retheme:
