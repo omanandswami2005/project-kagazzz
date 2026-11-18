@@ -16,6 +16,12 @@ vi.mock('../../hooks/useAttachableDocuments', () => ({ useAttachableDocuments: (
 vi.mock('@/modules/document-vault/hooks/useUpload', () => ({ useUpload: () => ({ ingestFiles: attach.ingestFiles }) }));
 
 const routerPush = vi.hoisted(() => vi.fn());
+const route = vi.hoisted(() => ({ search: '', replace: vi.fn() }));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useLocation: () => ({ pathname: '/ai-chat', search: route.search }),
+  useHistory: () => ({ replace: route.replace }),
+}));
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ionic/react')>()),
   useIonRouter: () => ({ push: routerPush }),
@@ -138,6 +144,18 @@ describe('ChatPage (F-13)', () => {
     // Close it so the presented IonModal doesn't leak into the next test.
     await userEvent.click(document.querySelector('[data-agent-id="doc-preview.close"]') as Element);
     await new Promise((resolve) => setTimeout(resolve, 50));
+    attach.state = { documents: [], lockedCount: 0 };
+  });
+
+  it('pre-attaches a document handed off with ?attach= and clears the param (smart UI §4)', () => {
+    const rent = { id: 'd-rent', name: 'Rent Agreement', fileType: 'pdf', fileSize: 2048, isLocked: false };
+    attach.state = { documents: [rent], lockedCount: 0 };
+    route.search = '?attach=d-rent';
+    useChatMock.mockReturnValue(chatValue());
+    render(<ChatPage />);
+    expect(screen.getByText('Rent Agreement')).toBeInTheDocument();
+    expect(route.replace).toHaveBeenCalledWith('/ai-chat');
+    route.search = '';
     attach.state = { documents: [], lockedCount: 0 };
   });
 

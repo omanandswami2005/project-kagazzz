@@ -57,6 +57,7 @@ vi.mock('@ionic/react', async (importOriginal) => {
   return { ...actual, useIonRouter: () => ({ goBack, push: vi.fn() }) };
 });
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
+vi.mock('@/app/providers/AIProvider', () => ({ useAi: () => ({ status: 'ready' }) }));
 // DocumentDetailsSheet (F-67) reads the locale via useLocale.
 vi.mock('@/core/i18n', () => ({ useLocale: () => ({ locale: 'en' }) }));
 vi.mock('../../hooks/useDocument', () => ({
@@ -126,6 +127,12 @@ describe('DocumentViewerPage (UX-6)', () => {
   it('renders the document pages', async () => {
     await renderAuthorized();
     expect(q('vault.viewer.pages')?.querySelectorAll('img').length).toBe(1);
+  });
+
+  it('offers next actions (Ask AI, More) once authorized (smart UI §4)', async () => {
+    await renderAuthorized();
+    expect(q('vault.viewer.next.ask-ai')).not.toBeNull();
+    expect(q('vault.viewer.next.more')).not.toBeNull();
   });
 
   it('shows a spinner while loading', () => {

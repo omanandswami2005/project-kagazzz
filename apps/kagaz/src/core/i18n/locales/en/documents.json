@@ -235,7 +235,8 @@
       "file_write_error": "The file could not be saved",
       "db_error": "The document could not be saved — please try again",
       "conversion_failed": "The photo could not be converted"
-    }
+    },
+    "open": "Open"
   },
   "banner": {
     "db_unavailable": "Secure storage could not start. Restart the app — if this keeps happening, reinstall."
@@ -249,7 +250,9 @@
     "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
     "detected_numbers": "Detected numbers",
     "copy_number": "Copy {{number}}",
-    "trashed_banner": "Previewing from Trash — restore it to make changes."
+    "trashed_banner": "Previewing from Trash — restore it to make changes.",
+    "ask_ai": "Ask AI",
+    "more": "More"
   },
   "detail": {
     "size": "Size",

@@ -18,6 +18,8 @@ import {
 } from '@ionic/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useHistory, useLocation } from 'react-router-dom';
+import { ATTACH_PARAM } from '@/core/constants/routes';
 import { Button, Icon, Spinner } from '@kagaz/ui';
 import { AskUserForm } from '../components/AskUserForm';
 import { ChatTextarea } from '../components/ChatTextarea';
@@ -38,6 +40,9 @@ import { useAi } from '@/app/providers/AIProvider';
 import { useChat } from '../hooks/useChat';
 import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './chat.css';
+
+/** The stored shape of an attached document. */
+const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType: d.fileType });
 
 /** The AI Assistant chat screen. */
 export function ChatPage(): ReactNode {
@@ -105,12 +110,30 @@ export function ChatPage(): ReactNode {
     }
   }, [ai]);
 
-  const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType: d.fileType });
   const addAttachments = (docs: DocumentEntity[]): void =>
     setAttachments((prev) => [
       ...prev,
       ...docs.filter((d) => !prev.some((p) => p.id === d.id)).map(toRef),
     ]);
+
+  // "Ask AI about this" (viewer, upload toast): `?attach=<id>` pre-attaches
+  // that document once it is in the (unlocked) list, then clears the param so
+  // a back/forward doesn't attach it again.
+  const location = useLocation();
+  const history = useHistory();
+  const handoffId = new URLSearchParams(location.search).get(ATTACH_PARAM);
+  const handoffDoc = handoffId ? attachable.documents.find((d) => d.id === handoffId) : undefined;
+  const [handledHandoff, setHandledHandoff] = useState<string | null>(null);
+  if (handoffDoc && handledHandoff !== handoffDoc.id) {
+    // Adjusting state while rendering (React's documented pattern) — not an effect.
+    setHandledHandoff(handoffDoc.id);
+    setAttachments((prev) => (prev.some((p) => p.id === handoffDoc.id) ? prev : [...prev, toRef(handoffDoc)]));
+  }
+  useEffect(() => {
+    if (handledHandoff && handoffId === handledHandoff) {
+      history.replace(location.pathname);
+    }
+  }, [handledHandoff, handoffId, history, location.pathname]);
 
   const submit = (): void => {
     if ((!draft.trim() && attachments.length === 0) || chat.isStreaming) {

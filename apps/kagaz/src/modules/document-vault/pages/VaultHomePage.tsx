@@ -86,6 +86,8 @@ import { pickFromGallery, type UploadSource } from '../services/upload-sources';
 import type { IncomingFile } from '../types/document.types';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
+import { useAi } from '@/app/providers/AIProvider';
+import { askAiAboutRoute } from '@/core/constants/routes';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
 type PendingUndo =
@@ -100,6 +102,7 @@ export function VaultHomePage(): ReactNode {
   // namespace's own t(), since PDF_OPS names/descriptions live there.
   const { t: tTools } = useTranslation('tools');
   const router = useIonRouter();
+  const ai = useAi();
   // Virtualization support (UX pass, 2026-07-23): IonContent's scroll
   // element isn't a plain DOM ref, it's resolved async through its own API
   // — Ionic's documented pattern for wiring a scroll-position-dependent
@@ -323,7 +326,8 @@ export function VaultHomePage(): ReactNode {
   const lastUploadErrors = useVaultStore((state) => state.lastUploadErrors);
   const openSheet = useVaultStore((state) => state.openUploadSheet);
   const closeSheet = useVaultStore((state) => state.closeUploadSheet);
-  const [uploadedCount, setUploadedCount] = useState(0);
+  // Documents the last upload added → the success toast and its next actions.
+  const [uploaded, setUploaded] = useState<DocumentEntity[]>([]);
   // UX-8: documents awaiting a rename prompt, oldest first (one alert at a time).
   const [renameQueue, setRenameQueue] = useState<DocumentEntity[]>([]);
   const renameTarget = renameQueue[0] ?? null;
@@ -332,8 +336,8 @@ export function VaultHomePage(): ReactNode {
   // documents. Holds the just-picked files while that choice is pending.
   const [galleryFiles, setGalleryFiles] = useState<IncomingFile[] | null>(null);
 
-  const finishUpload = ({ uploaded, documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
-    setUploadedCount(uploaded);
+  const finishUpload = ({ documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
+    setUploaded(documents);
     // UX-8: queue the new docs for a name prompt, pre-filled with the default.
     if (renameOnAdd && documents.length > 0) {
       setRenameQueue(documents);
@@ -637,7 +641,7 @@ export function VaultHomePage(): ReactNode {
                 if (galleryFiles) {
                   void pdfEngine
                     .imagesToPdfFromFiles(galleryFiles)
-                    .then((uploaded) => setUploadedCount(uploaded));
+                    .then(() => setUploaded(pdfEngine.lastCreated()));
                 }
               },
             },
@@ -1069,11 +1073,23 @@ export function VaultHomePage(): ReactNode {
           }}
         />
 
+        {/* Smart UI §4: after adding ONE document the likely next step is to
+            look at it or ask about it — offer both right in the toast. */}
         <IonToast
-          isOpen={uploadedCount > 0}
-          duration={2500}
-          message={t('upload.success', { count: uploadedCount })}
-          onDidDismiss={() => setUploadedCount(0)}
+          isOpen={uploaded.length > 0}
+          duration={uploaded.length === 1 ? 5000 : 2500}
+          message={t('upload.success', { count: uploaded.length })}
+          buttons={
+            uploaded.length === 1
+              ? [
+                  { text: t('upload.open'), handler: () => handleOpen(uploaded[0]) },
+                  ...(ai.status !== 'unsupported'
+                    ? [{ text: t('viewer.ask_ai'), handler: () => router.push(askAiAboutRoute(uploaded[0].id), 'forward', 'push') }]
+                    : []),
+                ]
+              : undefined
+          }
+          onDidDismiss={() => setUploaded([])}
           data-agent-id="vault.home.upload-success-toast"
         />
         <IonToast

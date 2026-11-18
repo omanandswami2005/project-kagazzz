@@ -1,0 +1,13 @@
+/* Next-best-action row (NextActions.tsx) — tokens only. */
+.kg-next-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--page-padding) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface-1);
+  border-top: var(--border-width) solid var(--border-default);
+}
+
+.kg-next-actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+}

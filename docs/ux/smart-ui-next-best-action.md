@@ -108,18 +108,18 @@ single obvious place for AI.
 
 | Section | Trigger (what just happened) | Predicted intent | Next-best action (inline) | Status |
 |---|---|---|---|---|
-| **Documents — upload done** | File(s) saved | Look at it / do something with it | Toast becomes an action toast: **Open**, **Ask AI**, (PDF) **Tools** | planned |
-| **Documents — grid/list** | Opened a doc and came back | Continue browsing where I was | Layout and scroll position preserved (grid bug §7) | planned |
+| **Documents — upload done** | File(s) saved | Look at it / do something with it | One document: action toast **Open** / **Ask AI** (several: plain count) | ✅ |
+| **Documents — grid/list** | Opened a doc and came back | Continue browsing where I was | Layout preserved (grid bug B2) | ✅ |
 | **Recent strip** | Swipe up on a card | Run a tool on it | Already opens Tools (UX-16) | ✅ |
-| **Document viewer** | Document open | Share / convert / ask about it | Bottom next-actions row: **Share**, **Tools** (PDF/image-aware), **Ask AI about this** | planned |
+| **Document viewer** | Document open | Share / ask about it / more | Bottom next-actions row: **Share**, **Ask AI** (document pre-attached), **More** (existing menu: convert, enhance, tools…) | ✅ |
 | **PDF Tools — run finished** | Output saved | See it / send it | Result sheet: preview, **Open**, **Share** | ✅ 6a6b840 |
 | **PDF Tools — picking** | Choosing inputs | Recognise, not recall, the file | Thumbnail grid with names; order badges for merge | ✅ 159663d |
 | **PDF Tools — returning** | Opened a tool again | Redo / find last output | Per-tool history in the sheet; combined on the page | ✅ 6a6b840 |
-| **AI chat — answer mentions a document** | Text names a file | Look at it | Name rendered as a **link** → in-chat preview modal | planned |
-| **AI chat — tool created a file** | Merge/compress/etc. done | See / share the new file | Result card names are links → preview modal with **Open** / **Share** / **Close** | planned |
-| **AI chat — generating** | Model is answering | Prepare my next message | Typing allowed; only **Send** waits | planned |
+| **AI chat — answer mentions a document** | Text names a file | Look at it | Name rendered as a **link** → in-chat preview modal | ✅ |
+| **AI chat — tool created a file** | Merge/compress/etc. done | See / share the new file | Result card names are links → preview modal with **Open** / **Share** / **Close** | ✅ |
+| **AI chat — generating** | Model is answering | Prepare my next message | Typing allowed; only **Send** waits | ✅ |
 | **Share** | Shared a document | Receiver sees a real name | Named copy (`PAN Card.pdf`) | ✅ b32ab7e |
-| **Quick reference / notes** | Copied a value | Paste it elsewhere | Copy toast (existing); reachable from drawer | planned (drawer) |
+| **Quick reference / notes** | Copied a value | Paste it elsewhere | Copy toast (existing); reachable from drawer | ✅ |
 | **Storage** | Sees space used | Free space | Existing manage actions; AI model size → AI model page | ✅ existing |
 
 ---
@@ -183,7 +183,7 @@ checked off here.
 4. [x] Shell: centre AI button in the tab bar; drawer with second-level
    destinations; header slimmed (labels reuse each screen's own title
    string; `Cpu`/`ShieldCheck` icons added to the curated set)
-5. [ ] NBA: upload action toast; viewer next-actions row
+5. [x] NBA: upload action toast (one document → **Open** / **Ask AI**); viewer next-actions row (**Share** / **Ask AI** / **More**) via shared `core/components/NextActions`; "Ask AI about this" hands off with `askAiAboutRoute(id)` (`/ai-chat?attach=<id>`, `core/constants/routes.ts`), which the chat reads once and clears
 6. [ ] Device check (light/dark, en/hi, hardware back from drawer and modal)
 
 ---

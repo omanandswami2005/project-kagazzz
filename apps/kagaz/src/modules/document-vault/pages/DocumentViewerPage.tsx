@@ -35,6 +35,7 @@ import {
   IonBackButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonPage,
   IonSpinner,
@@ -53,6 +54,9 @@ import { useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
+import { useAi } from '@/app/providers/AIProvider';
+import { NextActions } from '@/core/components/NextActions';
+import { askAiAboutRoute } from '@/core/constants/routes';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive } from '@/core/haptics';
 import { extractNumberSequences } from '../services/extract-numbers';
@@ -80,6 +84,7 @@ export function DocumentViewerPage(): ReactNode {
   const { softDelete, markAccessed, rename } = useVaultMutations();
   const { authorizeView } = useDocLock();
   const intents = useDocumentIntents();
+  const ai = useAi();
 
   // Extracted text: the freshly-extracted override, else the stored OCR text.
   // Derived (no effect) so it stays in sync as the document loads.
@@ -405,6 +410,24 @@ export function DocumentViewerPage(): ReactNode {
           data-agent-id="vault.viewer.toast"
         />
       </IonContent>
+      {/* Smart UI §4: what people do next with an open document, in their
+          path — same lock gate as the ⋮ menu; not for a Trash preview. */}
+      {document && authorized === true && !trashed && (
+        <IonFooter>
+          <NextActions
+            agentPrefix="vault.viewer.next"
+            actions={[
+              ...(intents.supported
+                ? [{ id: 'share', icon: 'Share2' as const, label: t('preview.share'), onClick: () => void handleShare() }]
+                : []),
+              ...(ai.status !== 'unsupported'
+                ? [{ id: 'ask-ai', icon: 'Sparkles' as const, label: t('viewer.ask_ai'), onClick: () => router.push(askAiAboutRoute(document.id), 'forward', 'push') }]
+                : []),
+              { id: 'more', icon: 'MoreVertical', label: t('viewer.more'), onClick: () => setMenuOpen(true) },
+            ]}
+          />
+        </IonFooter>
+      )}
     </IonPage>
   );
 }
