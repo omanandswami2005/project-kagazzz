@@ -5,6 +5,9 @@ import { i18n, initI18n } from '@/core/i18n';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { usePreferencesStore } from '@/core/preferences';
 
+const aiStatus = vi.hoisted(() => ({ value: 'not-downloaded' as string }));
+vi.mock('@/app/providers/AIProvider', () => ({ useAi: () => ({ status: aiStatus.value }) }));
+
 // The backup hook reaches for the DB + native plugins; stub it so this page
 // test stays focused on the theme/language/security UI (covered in its own test).
 vi.mock('../../hooks/useBackupExport', () => ({
@@ -90,19 +93,31 @@ describe('SettingsPage', () => {
   });
 
   it('offers a link to the AI Assistant settings screen (F-13)', () => {
+    aiStatus.value = 'not-downloaded';
     renderPage();
-    expect(document.querySelector('[data-agent-id="settings.open-ai-assistant"]')).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-agent-id="settings.open-ai-assistant"]')
+    ).toBeInTheDocument();
+  });
+
+  it('hides the AI section where on-device AI is unsupported (iOS/web, AI-X4)', () => {
+    aiStatus.value = 'unsupported';
+    renderPage();
+    expect(document.querySelector('[data-agent-id="settings.open-ai-assistant"]')).toBeNull();
+    aiStatus.value = 'not-downloaded';
   });
 
   describe('swipe actions (F-88)', () => {
     it('defaults to delete on the left, favorite on the right', () => {
       renderPage();
-      expect(
-        document.querySelector('[data-agent-id="settings.swipe-left"]')
-      ).toHaveAttribute('data-agent-state', 'delete');
-      expect(
-        document.querySelector('[data-agent-id="settings.swipe-right"]')
-      ).toHaveAttribute('data-agent-state', 'favorite');
+      expect(document.querySelector('[data-agent-id="settings.swipe-left"]')).toHaveAttribute(
+        'data-agent-state',
+        'delete'
+      );
+      expect(document.querySelector('[data-agent-id="settings.swipe-right"]')).toHaveAttribute(
+        'data-agent-state',
+        'favorite'
+      );
     });
 
     it('changes the left swipe action independently of the right', async () => {
@@ -110,12 +125,14 @@ describe('SettingsPage', () => {
       await userEvent.click(
         document.querySelector('[data-agent-id="settings.swipe-left-move"]') as Element
       );
-      expect(
-        document.querySelector('[data-agent-id="settings.swipe-left"]')
-      ).toHaveAttribute('data-agent-state', 'move');
-      expect(
-        document.querySelector('[data-agent-id="settings.swipe-right"]')
-      ).toHaveAttribute('data-agent-state', 'favorite');
+      expect(document.querySelector('[data-agent-id="settings.swipe-left"]')).toHaveAttribute(
+        'data-agent-state',
+        'move'
+      );
+      expect(document.querySelector('[data-agent-id="settings.swipe-right"]')).toHaveAttribute(
+        'data-agent-state',
+        'favorite'
+      );
     });
   });
 

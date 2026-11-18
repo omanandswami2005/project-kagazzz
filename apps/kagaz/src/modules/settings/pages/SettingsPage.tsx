@@ -20,16 +20,13 @@ import { Alert, Button, Toggle } from '@kagaz/ui';
 import { DeleteAllDataDialog } from '../components/DeleteAllDataDialog';
 import { useBackupExport } from '../hooks/useBackupExport';
 import { useBackupRestore } from '../hooks/useBackupRestore';
-import {
-  useLocale,
-  SUPPORTED_LANGUAGES,
-  type SupportedLanguage,
-} from '@/core/i18n';
+import { useLocale, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/core/i18n';
 import type { SwipeActionKind } from '@/core/gestures';
 import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
 import { useQuickReferenceLockSettings } from '@/modules/auth/hooks/useQuickReferenceLockSettings';
 import { AUTO_LOCK_TIMEOUTS } from '@/modules/auth/store/lock.store';
 import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
+import { useAi } from '@/app/providers/AIProvider';
 import { usePreferencesStore } from '@/core/preferences';
 import { APP_VERSION } from '@/core/logging';
 import './settings.css';
@@ -56,6 +53,7 @@ export function SettingsPage(): ReactNode {
   const { theme, setTheme } = useTheme();
   const { locale } = useLocale();
   const lock = useLockSettings();
+  const aiSupported = useAi().status !== 'unsupported';
   const quickRefLock = useQuickReferenceLockSettings();
   const backup = useBackupExport();
   const restore = useBackupRestore();
@@ -150,9 +148,7 @@ export function SettingsPage(): ReactNode {
                 onChange={setRenameOnAdd}
                 agentId="settings.rename-on-add"
               />
-              <p className="kg-settings__hint">
-                {t('documents.rename_on_add_hint')}
-              </p>
+              <p className="kg-settings__hint">{t('documents.rename_on_add_hint')}</p>
             </div>
           </section>
 
@@ -283,22 +279,25 @@ export function SettingsPage(): ReactNode {
             </div>
           </section>
 
-          <section className="kg-settings__section">
-            <h2 className="kg-settings__section-title" id="settings-ai">
-              {t('ai.title')}
-            </h2>
-            <div className="kg-settings__row">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => router.push('/ai-assistant')}
-                agentId="settings.open-ai-assistant"
-              >
-                {t('ai.manage')}
-              </Button>
-              <p className="kg-settings__hint">{t('ai.manage_hint')}</p>
-            </div>
-          </section>
+          {/* On-device AI is Android-only in V1 (AI-X4): no dead entry point on iOS/web. */}
+          {aiSupported && (
+            <section className="kg-settings__section">
+              <h2 className="kg-settings__section-title" id="settings-ai">
+                {t('ai.title')}
+              </h2>
+              <div className="kg-settings__row">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => router.push('/ai-assistant')}
+                  agentId="settings.open-ai-assistant"
+                >
+                  {t('ai.manage')}
+                </Button>
+                <p className="kg-settings__hint">{t('ai.manage_hint')}</p>
+              </div>
+            </section>
+          )}
 
           <section className="kg-settings__section">
             <h2 className="kg-settings__section-title" id="settings-data">
@@ -413,10 +412,7 @@ export function SettingsPage(): ReactNode {
           </section>
         </main>
 
-        <DeleteAllDataDialog
-          isOpen={eraseOpen}
-          onDismiss={() => setEraseOpen(false)}
-        />
+        <DeleteAllDataDialog isOpen={eraseOpen} onDismiss={() => setEraseOpen(false)} />
 
         {/* Restore preview — nothing is written until the user confirms
            (useBackupRestore's pickBackup() only decrypts + parses). */}
