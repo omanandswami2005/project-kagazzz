@@ -3,7 +3,7 @@
 > **Project:** Kagaz
 > **Database Engine:** SQLite (via `@capacitor-community/sqlite`)
 > **Encryption:** SQLCipher
-> **Last Updated:** 2026-07-18
+> **Last Updated:** 2026-11-19
 
 ---
 
@@ -373,6 +373,29 @@ CREATE TABLE document_tags (
 ---
 
 ### 4.5 `operations_history`
+
+> **Rebuilt by migration 008 (2026-11-19) — PDF Tools history.** The table
+> below is the original 001 design. It was never written by any release, and
+> its `operation_type` CHECK rejected most of today's tools (organize, stamp,
+> page numbers, PDF → Word, …) while allowing only one output document. 008
+> drops and recreates it as one row per tool run:
+>
+> | Column | Type | Description |
+> |---|---|---|
+> | `id` | TEXT PK | UUID |
+> | `tool_id` | TEXT NOT NULL | PDF Tools catalog id (`core/pdf-tools-catalog.ts`) |
+> | `input_document_ids` | TEXT (JSON array) | Source documents, in order |
+> | `output_document_ids` | TEXT (JSON array) | Documents the run created |
+> | `status` | TEXT | `'completed'` \| `'failed'` |
+> | `error_code` | TEXT | `PdfErrorCode` when failed |
+> | `duration_ms` | INTEGER | |
+> | `created_at` | TEXT | ISO 8601 |
+>
+> Indexes: `created_at`, `(tool_id, created_at)`. `ToolHistoryDao` keeps the
+> latest 200 runs (pruned on insert). **[SEC]** ids only — no names, no
+> parameters, never passwords or form values; names are looked up live, so a
+> deleted or trashed document shows as "Deleted document" and leaves no name
+> behind. "Delete all data" removes it with the database file.
 
 Audit trail for every document operation (merge, split, compress, OCR, etc.).
 
@@ -1187,3 +1210,11 @@ When cloud sync is introduced in V2, the SQL-based schema makes migration straig
 ## Migration 007 — chat message parts (2026-10-31)
 
 `ai_messages.parts_json TEXT NULL` stores structured pieces of a message that plain `content` cannot: documents the user attached, result cards for documents a tool created, assistant forms (GenUI) and the answers to them. `ai_conversations.active_skills TEXT NULL` remembers which tool groups were loaded. Both are nullable and additive (existing rows stay plain text). Parts are validated with zod on read — a corrupt row degrades to a plain message. Chat content: encrypted DB only, never logged.
+
+## Migration 008 — tool run history (2026-11-19)
+
+Drops the never-written 001 `operations_history` and recreates it for PDF
+Tools history (one row per run, id lists as JSON). See [§4.5](#45-operations_history).
+Written by `usePdfEngine`'s `run()`, so runs started from the AI chat are
+recorded too; read by `useToolHistory` (per tool in each tool's sheet, all
+tools on the PDF Tools page).

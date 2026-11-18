@@ -86,31 +86,19 @@ export interface QuickReferenceEntry {
   updatedAt: string;
 }
 
-/** operations_history.operation_type CHECK constraint values (§4.5). */
-export type OperationType =
-  | 'merge'
-  | 'split'
-  | 'compress'
-  | 'convert'
-  | 'encrypt'
-  | 'decrypt'
-  | 'ocr'
-  | 'watermark'
-  | 'annotate'
-  | 'resize';
+/** operations_history.status (§4.5, migration 008). */
+export type ToolRunStatus = 'completed' | 'failed';
 
-/** operations_history.status lifecycle (§4.5). */
-export type OperationStatus = 'pending' | 'processing' | 'completed' | 'failed';
-
-/** operations_history row (§4.5). */
-export interface OperationEntity {
+/** operations_history row: one PDF Tools run (§4.5, migration 008). */
+export interface ToolRunEntity {
   id: string;
-  documentId?: string;
-  operationType: OperationType;
-  inputParamsJson?: string;
-  outputDocumentId?: string;
-  status: OperationStatus;
-  errorMessage?: string;
+  /** PDF Tools catalog id (`merge`, `compress`, …). */
+  toolId: string;
+  inputDocumentIds: string[];
+  outputDocumentIds: string[];
+  status: ToolRunStatus;
+  /** Machine-readable failure code, when failed. */
+  errorCode?: string;
   durationMs?: number;
   createdAt: string;
 }

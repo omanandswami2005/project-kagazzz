@@ -11,7 +11,7 @@ import { migrations } from '../migrations';
 describe('migration registry', () => {
   it('contains all migrations in ascending, gapless version order', () => {
     const versions = migrations.map((m) => m.version);
-    expect(versions).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(versions).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 });
 
@@ -227,5 +227,16 @@ describe('native SQLite splitter compatibility', () => {
       '  INSERT INTO y VALUES(1);\n' +
       'END;\n';
     expect(splitLikePlugin(correct).some(hasUnclosedTrigger)).toBe(false);
+  });
+});
+
+describe('008-tool-history', () => {
+  it('rebuilds operations_history without the old operation_type CHECK', async () => {
+    const { addToolHistory } = await import('../migrations/008-tool-history');
+    const db = new FakeDb();
+    await addToolHistory.up(db);
+    expect(db.allSql).toContain('DROP TABLE IF EXISTS operations_history');
+    expect(db.allSql).toContain('tool_id');
+    expect(db.allSql).not.toContain('operation_type');
   });
 });
