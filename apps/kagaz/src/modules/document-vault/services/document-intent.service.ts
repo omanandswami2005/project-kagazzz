@@ -28,7 +28,13 @@ import { STORAGE_DIRS } from '@/infrastructure/filesystem';
 import { mimeTypeFor } from './upload.service';
 
 /** Characters other apps (Drive, WhatsApp, Windows) reject in file names. */
-const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|\u0000-\u001f\u007f]/g;
+const UNSAFE_FILENAME_CHARS = /[\\/:*?"<>|]/g;
+
+/** True for control characters (also rejected by receivers). */
+const isControl = (ch: string): boolean => {
+  const code = ch.charCodeAt(0);
+  return code < 32 || code === 127;
+};
 
 /**
  * The file name a document leaves the app with: its display name plus its
@@ -40,7 +46,10 @@ export function outgoingFileName(
   taken: Set<string> = new Set()
 ): string {
   const ext = document.fileType.toLowerCase();
-  let base = document.name.replace(UNSAFE_FILENAME_CHARS, '_').trim();
+  let base = [...document.name.replace(UNSAFE_FILENAME_CHARS, '_')]
+    .map((ch) => (isControl(ch) ? '_' : ch))
+    .join('')
+    .trim();
   // Guard the double extension ("bill.pdf" named docs → "bill.pdf", not "bill.pdf.pdf").
   if (base.toLowerCase().endsWith(`.${ext}`)) {
     base = base.slice(0, -(ext.length + 1)).trim();

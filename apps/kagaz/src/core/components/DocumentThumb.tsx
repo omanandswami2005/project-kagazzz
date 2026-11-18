@@ -7,7 +7,7 @@
  * by a lock icon, never shown plainly.
  */
 import type { ReactNode } from 'react';
-import { Icon, type IconName } from '@kagaz/ui';
+import { Icon, type IconName, type IconProps } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useThumbnail } from '@/core/hooks/useThumbnail';
 import './document-thumb.css';
@@ -26,7 +26,7 @@ export const DOCUMENT_TYPE_ICONS: Partial<Record<string, IconName>> = {
 export interface DocumentThumbProps {
   document: Pick<DocumentEntity, 'thumbnailPath' | 'fileType' | 'isLocked'>;
   /** Fallback/lock icon size in px. */
-  iconSize?: number;
+  iconSize?: IconProps['size'];
   /** Extra class for the box (sizing comes from the caller). */
   className?: string;
   agentId?: string;

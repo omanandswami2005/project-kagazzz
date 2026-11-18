@@ -75,7 +75,7 @@ function RecentItem({
             findRecent() doesn't filter is_locked. */}
         <DocumentThumb
           document={document}
-          iconSize={document.isLocked ? 24 : 40}
+          iconSize={document.isLocked ? 24 : 48}
           agentId={document.isLocked ? `vault.home.recent-${document.id}.locked` : undefined}
         />
         <span className="kg-recent__name">{document.name}</span>
