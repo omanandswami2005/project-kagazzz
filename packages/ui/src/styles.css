@@ -4,6 +4,18 @@
  * Import after the tokens: density modes drive --target-min, --scale, etc.
  */
 
+/* ── Base ────────────────────────────────────────────────────────── */
+/* Native form controls don't inherit font by default: every bare <button>
+   rendered at the browser's 13.33px — including the document rows, so all
+   document names were smaller than designed (screen audit M-10). Component
+   classes below still set their own size/weight. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 /* ── Button ──────────────────────────────────────────────────────── */
 .kg-btn {
   display: inline-flex;
@@ -121,7 +133,7 @@
 .kg-input__error {
   margin: 0;
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-input__helper {
   margin: 0;
@@ -599,10 +611,10 @@ button.kg-tag {
   flex: 1;
 }
 .kg-action-sheet__btn--destructive {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-action-sheet__btn--destructive .kg-icon {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-action-sheet__btn--cancel {
   margin-top: var(--space-2);
@@ -717,7 +729,7 @@ button.kg-tag {
   cursor: pointer;
 }
 .kg-alert__btn--destructive {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-alert__btn--cancel {
   color: var(--text-secondary);

@@ -48,7 +48,7 @@
 
 .kg-chat__error {
   align-self: center;
-  color: var(--color-danger);
+  color: var(--text-danger);
   font-size: var(--text-sm);
 }
 
@@ -283,7 +283,7 @@
 
 .kg-chat__form-error {
   margin: var(--space-1) 0 0;
-  color: var(--color-danger);
+  color: var(--text-danger);
   font-size: var(--text-sm);
 }
 
@@ -395,7 +395,7 @@
 }
 
 .kg-chat__tool--failed {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 
 .kg-chat__tool-error {

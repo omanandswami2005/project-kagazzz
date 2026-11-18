@@ -445,7 +445,7 @@
 }
 
 .kg-bulk-bar__action--danger {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 
 .kg-bulk-bar__action:disabled {

@@ -40,7 +40,10 @@
   /* ── Semantic colors ──────────────────────────────────────────── */
   --color-accent: #10b981;
   --color-accent-light: #34d399;
-  --color-danger: #f43f5e;
+  /* Danger split by role (screen audit M-2/M-3): rose-500 #f43f5e was 3.51:1 as
+     text and 3.67:1 under white. Fill = rose-700 (white 6.29:1, both themes);
+     text = rose-700 on light (6.01:1), rose-400 on dark (dark-mode.css). */
+  --color-danger: #be123c;
   --color-danger-light: #fb7185;
   /* Amber, not orange: orange is now the brand colour, and a warning must not
      look like a brand button. */
@@ -70,7 +73,10 @@
   /* ── Text (light) ─────────────────────────────────────────────── */
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  /* slate-500: 4.55:1 on surface-1 (AA). Was #94a3b8 (2.45:1) — the light and
+     dark values had been swapped (screen audit M-1). */
+  --text-muted: #64748b;
+  --text-danger: #be123c;
   /* Text on brand surfaces (primary, the brand gradient). Dark mode flips it. */
   --text-on-primary: #ffffff;
   --text-on-secondary: #0f172a;

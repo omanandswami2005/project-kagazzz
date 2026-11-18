@@ -28,7 +28,7 @@ describe('token definitions (design-tokens.md v2.1)', () => {
     expect(allCss).toContain('--color-primary: #c2410c');
     expect(allCss).toContain('--color-secondary: #f59e0b');
     expect(allCss).toContain('--color-accent: #10b981');
-    expect(allCss).toContain('--color-danger: #f43f5e');
+    expect(allCss).toContain('--color-danger: #be123c');
   });
 
   it('every var() reference resolves to a defined token', () => {
