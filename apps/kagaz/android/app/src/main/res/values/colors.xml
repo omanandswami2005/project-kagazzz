@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Saffron brand colours; mirror --color-primary / -dark in packages/design-tokens/src/tokens.css.
+<!-- Saffron brand colours; mirror the color-primary and color-primary-dark tokens in packages/design-tokens/src/tokens.css.
      Overrides Capacitor's default indigo/pink so native dialogs and overscroll glow match the app. -->
 <resources>
     <color name="colorPrimary">#C2410C</color>
