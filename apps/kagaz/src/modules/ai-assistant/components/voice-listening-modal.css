@@ -21,7 +21,7 @@
   background: transparent;
 }
 .kg-voice-modal::backdrop {
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--overlay-scrim);
 }
 .kg-voice-modal[open] {
   display: flex;
@@ -55,7 +55,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--radius-full);
-  border: 2px solid var(--color-primary);
+  border: var(--border-width-thick) solid var(--color-primary);
   opacity: 0;
   animation: kg-voice-modal-ripple 2.4s var(--ease-out) infinite;
 }
@@ -131,5 +131,5 @@
   cursor: pointer;
 }
 .kg-voice-modal__stop:hover {
-  background: var(--surface-3, var(--surface-2));
+  background: var(--border-default);
 }

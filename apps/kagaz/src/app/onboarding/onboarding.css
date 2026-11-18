@@ -3,7 +3,7 @@
 .kg-onboarding {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   padding: var(--space-6) var(--space-5);
@@ -37,15 +37,15 @@
   justify-content: center;
   width: 96px;
   height: 96px;
-  border-radius: var(--radius-full, 999px);
-  background: var(--color-primary-light, var(--surface-2));
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
 .kg-onboarding__title {
   margin: 0;
   font-size: var(--text-2xl, 1.5rem);
-  font-weight: var(--font-weight-bold, 700);
+  font-weight: var(--font-bold);
 }
 
 .kg-onboarding__body {
@@ -66,7 +66,7 @@
 .kg-onboarding__dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--surface-3, var(--text-muted));
   opacity: 0.4;
 }

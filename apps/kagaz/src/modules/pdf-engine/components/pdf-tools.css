@@ -45,7 +45,7 @@
   width: 100%;
   min-height: var(--target-min);
   padding: var(--space-4);
-  border: 1px solid var(--border-default);
+  border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-1);
   color: var(--color-primary);
@@ -120,7 +120,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  border: 1px solid var(--border-subtle, var(--color-border, #ccc));
+  border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   padding: var(--space-2);
 }
@@ -132,7 +132,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--surface-sunken, var(--color-surface, #f2f2f2));
+  background: var(--surface-2);
 }
 
 .kg-pdf-organize__thumb img {
@@ -149,8 +149,8 @@
   text-align: center;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
-  background: var(--surface-inverse, rgba(0, 0, 0, 0.65));
-  color: var(--text-inverse, #fff);
+  background: var(--surface-inverse);
+  color: var(--text-inverse);
   font-size: var(--text-xs);
 }
 
@@ -171,8 +171,8 @@
   font-size: var(--text-sm);
   margin: 0;
   padding: var(--space-2);
-  border-left: 3px solid var(--color-primary, currentColor);
-  background: var(--surface-sunken, transparent);
+  border-left: var(--border-width-accent) solid var(--color-primary);
+  background: transparent;
   border-radius: var(--radius-sm);
 }
 
@@ -211,7 +211,7 @@
   width: 100%;
   min-height: var(--target-min);
   padding: var(--space-3);
-  border: 1px solid var(--border-default);
+  border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-md);
   background: var(--surface-1);
   color: var(--text-primary);
@@ -231,9 +231,9 @@
   width: 22px;
   height: 22px;
   flex: none;
-  border: 2px solid var(--border-default);
+  border: var(--border-width-thick) solid var(--border-default);
   border-radius: var(--radius-sm);
-  color: #fff;
+  color: var(--text-on-primary);
 }
 
 .kg-pdf-picker__check[data-checked='true'] {
