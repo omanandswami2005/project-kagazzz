@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import {
   openDocumentWith,
+  outgoingFileName,
   shareDocument,
   shareDocuments,
   type DocumentIntentDeps,
@@ -13,6 +14,8 @@ const doc = (over: Partial<DocumentEntity> = {}): DocumentEntity =>
 function deps(over: Partial<DocumentIntentDeps> = {}): DocumentIntentDeps {
   return {
     getUri: vi.fn(async (p: string) => `file:///data/${p}`),
+    copy: vi.fn(async () => undefined),
+    newId: () => 'x',
     share: vi.fn(async () => undefined),
     openFile: vi.fn(async () => undefined),
     ...over,
@@ -20,13 +23,13 @@ function deps(over: Partial<DocumentIntentDeps> = {}): DocumentIntentDeps {
 }
 
 describe('shareDocument (F-65)', () => {
-  it('resolves the file URI and shares it with the doc name', async () => {
+  it('shares a copy named after the document, not the stored uuid file', async () => {
     const d = deps();
     await shareDocument(doc(), d);
-    expect(d.getUri).toHaveBeenCalledWith('documents/d1.pdf');
+    expect(d.copy).toHaveBeenCalledWith('documents/d1.pdf', 'temp/share-x/PAN Card.pdf');
     expect(d.share).toHaveBeenCalledWith({
       title: 'PAN Card',
-      url: 'file:///data/documents/d1.pdf',
+      url: 'file:///data/temp/share-x/PAN Card.pdf',
     });
   });
 });
@@ -44,20 +47,28 @@ describe('shareDocuments (F-65 bulk-select)', () => {
     await shareDocuments([doc()], d);
     expect(d.share).toHaveBeenCalledWith({
       title: 'PAN Card',
-      url: 'file:///data/documents/d1.pdf',
+      url: 'file:///data/temp/share-x/PAN Card.pdf',
     });
   });
 
   it('shares multiple documents in one call via the files array', async () => {
     const d = deps();
-    const second = doc({ id: 'd2', name: 'Aadhaar', filePath: 'documents/d2.jpg' });
+    const second = doc({ id: 'd2', name: 'Aadhaar', filePath: 'documents/d2.jpg', fileType: 'jpg' });
     await shareDocuments([doc(), second], d);
-    expect(d.getUri).toHaveBeenCalledWith('documents/d1.pdf');
-    expect(d.getUri).toHaveBeenCalledWith('documents/d2.jpg');
     expect(d.share).toHaveBeenCalledWith({
       title: 'PAN Card, Aadhaar',
-      files: ['file:///data/documents/d1.pdf', 'file:///data/documents/d2.jpg'],
+      files: ['file:///data/temp/share-x/PAN Card.pdf', 'file:///data/temp/share-x/Aadhaar.jpg'],
     });
+  });
+
+  it('de-duplicates two documents with the same name', async () => {
+    const d = deps();
+    await shareDocuments([doc(), doc({ id: 'd2', filePath: 'documents/d2.pdf' })], d);
+    expect(d.share).toHaveBeenCalledWith(
+      expect.objectContaining({
+        files: ['file:///data/temp/share-x/PAN Card.pdf', 'file:///data/temp/share-x/PAN Card (2).pdf'],
+      })
+    );
   });
 });
 
@@ -66,7 +77,7 @@ describe('openDocumentWith (F-64)', () => {
     const d = deps();
     await openDocumentWith(doc(), d);
     expect(d.openFile).toHaveBeenCalledWith({
-      filePath: 'file:///data/documents/d1.pdf',
+      filePath: 'file:///data/temp/share-x/PAN Card.pdf',
       contentType: 'application/pdf',
       openWithDefault: false,
     });
@@ -86,5 +97,19 @@ describe('openDocumentWith (F-64)', () => {
     expect(d.openFile).toHaveBeenCalledWith(
       expect.objectContaining({ contentType: 'application/octet-stream' })
     );
+  });
+});
+
+describe('outgoingFileName', () => {
+  it('strips characters receivers reject', () => {
+    expect(outgoingFileName({ name: 'Bill: 2024/25?', fileType: 'pdf' })).toBe('Bill_ 2024_25_.pdf');
+  });
+
+  it('does not double the extension', () => {
+    expect(outgoingFileName({ name: 'scan.PDF', fileType: 'pdf' })).toBe('scan.pdf');
+  });
+
+  it('falls back to "document" for an empty name', () => {
+    expect(outgoingFileName({ name: '  ', fileType: 'jpg' })).toBe('document.jpg');
   });
 });
