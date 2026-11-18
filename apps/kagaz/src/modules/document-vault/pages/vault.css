@@ -391,37 +391,6 @@
   touch-action: pan-x;
 }
 
-/* Portrait page-shaped box shared by the thumbnail, the type-icon fallback
-   and the locked state, so every card has the same silhouette. */
-.kg-recent__media {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
-  box-shadow: var(--shadow-sm);
-}
-
-.kg-recent__thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  animation: kg-fade-in var(--duration-normal) var(--ease-out);
-}
-
-/* [SEC] §3.1: same blur+lock-icon treatment as .kg-doc-item__locked. */
-.kg-recent__thumb--locked {
-  filter: blur(8px);
-  opacity: 0.55;
-}
-.kg-recent__media > :not(.kg-recent__thumb) {
-  position: absolute;
-}
-
 .kg-recent__name {
   width: 100%;
   font-size: var(--text-sm);

@@ -12,7 +12,7 @@ import type {
   DocumentEntity,
   TagEntity,
 } from '@/infrastructure/database/types';
-import { useThumbnail } from '../hooks/useThumbnail';
+import { useThumbnail } from '@/core/hooks/useThumbnail';
 import { FileType } from '../types/document.types';
 
 const TYPE_ICONS: Partial<Record<string, IconName>> = {

@@ -3,7 +3,7 @@
 > **Module**: `@kagaz/pdf-engine`
 > **Version**: 1.0.0
 > **Status**: Partially implemented (F-3/F-4/F-5)
-> **Last Updated**: 2026-07-16
+> **Last Updated**: 2026-11-19
 
 ---
 
@@ -260,7 +260,18 @@ modules' inputs around the engine:
   permission or network — the scanner is Play-Services-hosted (ADR-018), and the
   merge runs in the existing worker.
 
----
+### 4.4 PDF Tools screen UX (2026-11-19)
+
+User feedback: "the tools show all docs as a name list with check boxes — no
+one remembers the names", "after an operation it just says created, no button
+to open it", and "I want a history for each tool and one combined".
+
+- **Picker = thumbnail grid.** `PdfDocPicker` shows each document's page
+  preview (`core/components/DocumentThumb`, the same visual as the Recent
+  strip; locked documents blurred with a lock icon, [SEC] §3.1) with its name
+  underneath. In multi-select the badge shows the **selection order** (1, 2,
+  3…), which is the output order for merge and images → PDF. The same picker
+  serves the AI chat's attach sheet and ask-user form.
 
 ## 5. TypeScript Interfaces
 

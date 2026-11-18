@@ -199,51 +199,57 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-3);
 }
 
+/* One tile: page preview with the name under it; selection ring + badge. */
 .kg-pdf-picker__row {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
   width: 100%;
-  min-height: var(--target-min);
-  padding: var(--space-3);
-  border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-1);
+  padding: var(--space-1);
+  border: var(--border-width-thick) solid transparent;
+  border-radius: var(--radius-lg);
+  background: transparent;
   color: var(--text-primary);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
 .kg-pdf-picker__row[data-agent-state='selected'] {
   border-color: var(--color-primary);
-  background: var(--surface-2);
+  background: var(--color-primary-subtle);
 }
 
 .kg-pdf-picker__check {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  border: var(--border-width-thick) solid var(--border-default);
-  border-radius: var(--radius-sm);
+  min-width: var(--space-6);
+  height: var(--space-6);
+  border: var(--border-width-thick) solid var(--surface-1);
+  border-radius: var(--radius-full);
+  background: var(--overlay-scrim);
   color: var(--text-on-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
 }
 
 .kg-pdf-picker__check[data-checked='true'] {
   background: var(--color-primary);
-  border-color: var(--color-primary);
 }
 
 .kg-pdf-picker__name {
   font-family: var(--font-primary);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
