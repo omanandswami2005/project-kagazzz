@@ -12,6 +12,8 @@
   --color-primary: #c2410c;
   --color-primary-light: #ea580c;
   --color-primary-dark: #9a3412;
+  /* Comma triplet of --color-primary, for rgba() consumers (Ionic tints). */
+  --color-primary-rgb: 194, 65, 12;
   /* Tinted brand background for icons/chips that carry --color-primary on
      top. Derived, so it follows dark mode (data-theme sits on <html>). */
   --color-primary-subtle: color-mix(in srgb, var(--color-primary) 14%, var(--surface-1));

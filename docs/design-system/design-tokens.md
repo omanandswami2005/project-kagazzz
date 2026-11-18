@@ -41,6 +41,7 @@
 | `--color-primary` | `#C2410C` | `194, 65, 12` | Saffron — primary actions, links, focus, navigation |
 | `--color-primary-light` | `#EA580C` | `234, 88, 12` | Decorative highlights only (white text on it is 3.56:1 — never put text on it) |
 | `--color-primary-dark` | `#9A3412` | `154, 52, 18` | Primary active/pressed states |
+| `--color-primary-rgb` | `194, 65, 12` (dark `249, 115, 22`) | — | Comma triplet for `rgba()` consumers; bridged to Ionic's `--ion-color-primary-rgb` in `app.css` |
 | `--color-primary-subtle` | `color-mix(primary 14%, surface-1)` | derived | Tinted background behind a `--color-primary` icon (onboarding circles); follows dark mode |
 | `--color-secondary` | `#F59E0B` | `245, 158, 11` | Accessibility, Warmth — highlights, CTAs, badges |
 | `--color-secondary-light` | `#FBBF24` | `251, 191, 36` | Secondary hover states |
