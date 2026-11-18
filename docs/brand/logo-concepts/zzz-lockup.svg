@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 375 100" role="img" aria-label="Kagazzz logo — Zzz stack">
+  <defs><linearGradient id="gl-zzz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4F46E5"/><stop offset="0.55" stop-color="#7C3AED"/><stop offset="1" stop-color="#A21CAF"/></linearGradient></defs>
+  <rect x="4" y="10" width="80" height="80" rx="18" fill="url(#gl-zzz)"/>
+  <g transform="translate(15.2 21.2) scale(0.576)">
+      <rect x="16" y="34" width="44" height="54" rx="7" fill="#C4B5FD" transform="rotate(-10 38 61)"/>
+      <rect x="26" y="24" width="44" height="54" rx="7" fill="#EDE9FE" transform="rotate(-4 48 51)"/>
+      <path d="M38 14 H74 L84 24 V72 Q84 76 80 76 H42 Q38 76 38 72 Z" fill="#FFFFFF"/>
+      <path d="M74 14 V24 H84 Z" fill="#C4B5FD"/>
+      <path d="M50 32 H72 L50 58 H72" fill="none" stroke="#4F46E5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="80" cy="84" r="5" fill="#6EE7B7"/></g>
+  <text x="104" y="60" font-family="'Space Grotesk','Inter','Segoe UI',system-ui,sans-serif" font-weight="700" font-size="44" letter-spacing="-1" fill="#1E1B4B">Kagazzz</text>
+  <text x="106" y="84" font-family="'Noto Sans Devanagari','Kohinoor Devanagari','Mangal',sans-serif" font-weight="500" font-size="15" fill="#4B5563">कागज़ · आपके दस्तावेज़, आपके फ़ोन पर</text>
+</svg>
