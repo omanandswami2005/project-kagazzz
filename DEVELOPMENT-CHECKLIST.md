@@ -417,6 +417,7 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · (this commit) · fix(ui) · **device pass** (Pixel6_API34, debug APK, CDP): cold start, onboarding → Add first document → upload sheet, hardware back closes sheet, tab bar hidden on Settings and back again after hardware back, exit toast above tab bar (G-5), navy dark mode (G-1), Hindi readable. Found + fixed: selected segment barely visible in dark → saffron label + ring. One early ANR traced to emulator cold-boot load (GMS/Play also ANR'd), not app code. Not verified: scanner/camera/AI (need real hardware). Bundle total 545 KB gz vs 500 KB budget — already 535.4 KB before this work. · screen audit
 - 2026-11-19 · 6af803b · docs(ux) · audit status: re-measured every screen — text below AA 100/125 → **0/0**, tap targets <44 px 233/248 → 8/8 (toggle graphics in 48 px rows); open items listed with reasons; toggle off state 3:1 (FP-3) · screen audit
 - 2026-11-19 · 95b9ee0 · feat(ui) · Simple mode zeroes all motion durations (G-10); star/badge pops; segments, filter chips, number chips full 44 px · screen audit
 - 2026-11-19 · e04440b · feat(document-vault) · grid ☆ ⋮ in their own row, not over the thumbnail (VH-5); one-time long-press tip after 3 docs (`seenTips` pref, VH-15); tool icon in sheet title (TS-13) · screen audit
