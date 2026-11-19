@@ -56,6 +56,9 @@ import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hook
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useAi } from '@/app/providers/AIProvider';
 import { NextActions } from '@/core/components/NextActions';
+import { detectIdNumbers } from '@/core/id-numbers';
+import { NumberChip } from '../components/NumberChip';
+import { offerQuickReferenceDraft } from '../store/quick-reference-draft';
 import { documentTypeIcon, isImageFile } from '@/core/components/DocumentThumb';
 import { askAiAboutRoute, pdfToolRoute } from '@/core/constants/routes';
 import { copyToClipboard } from '@/core/clipboard';
@@ -298,19 +301,25 @@ export function DocumentViewerPage(): ReactNode {
                         <h3 className="kg-viewer__numbers-title">
                           {t('viewer.detected_numbers')}
                         </h3>
+                        <p className="kg-viewer__text-empty">{t('quick_reference.save_to_quickref')}</p>
                         <ul className="kg-viewer__numbers-list">
                           {detectedNumbers.map((n) => (
                             <li key={n}>
-                              <button
-                                type="button"
-                                className="kg-viewer__number-chip"
-                                onClick={() => void handleCopyNumber(n)}
-                                aria-label={t('viewer.copy_number', { number: n })}
-                                data-agent-id="vault.viewer.copy-number"
-                              >
-                                <span className="kg-viewer__number-chip-value">{n}</span>
-                                <Icon name="Copy" size={16} aria-hidden />
-                              </button>
+                              <NumberChip
+                                value={n}
+                                onCopy={(v) => void handleCopyNumber(v)}
+                                onSaveToQuickReference={(v) => {
+                                  const id = detectIdNumbers(v)[0];
+                                  offerQuickReferenceDraft({
+                                    label: id
+                                      ? t(id.kind === 'pan' ? 'quick_reference.template_pan' : 'quick_reference.template_aadhaar')
+                                      : '',
+                                    value: id?.value ?? v,
+                                    kind: id?.kind,
+                                  });
+                                  router.push('/quick-reference', 'forward', 'push');
+                                }}
+                              />
                             </li>
                           ))}
                         </ul>

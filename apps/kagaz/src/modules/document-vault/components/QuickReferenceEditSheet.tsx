@@ -15,7 +15,9 @@ import {
 } from '@ionic/react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Input } from '@kagaz/ui';
+import { Button, Checkbox, Icon, Input } from '@kagaz/ui';
+import { maskAadhaar } from '@/core/id-numbers';
+import type { QuickReferenceDraft } from '../store/quick-reference-draft';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 
 const TEMPLATE_KEYS = [
@@ -37,6 +39,8 @@ export interface QuickReferenceEditSheetProps {
   entry: QuickReferenceEntry | null | undefined;
   onClose: () => void;
   onSave: (label: string, value: string, editingId?: string) => Promise<void>;
+  /** Pre-fills create mode (a value found in a document or note). */
+  draft?: QuickReferenceDraft | null;
 }
 
 /** The Quick Reference create/edit sheet. */
@@ -44,11 +48,16 @@ export function QuickReferenceEditSheet({
   entry,
   onClose,
   onSave,
+  draft,
 }: QuickReferenceEditSheetProps): ReactNode {
   const { t } = useTranslation('documents');
   const [label, setLabel] = useState('');
   const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
+  // [COMPLIANCE — check before publication] Aadhaar is kept masked by default
+  // (UIDAI masked-Aadhaar guidance); the user may opt to keep it in full.
+  const [maskId, setMaskId] = useState(true);
+  const isAadhaarDraft = !entry && draft?.kind === 'aadhaar';
   const isOpen = entry !== undefined;
 
   // Reset/prefill each time the sheet opens for a new create or a different
@@ -56,9 +65,10 @@ export function QuickReferenceEditSheet({
   // and PdfOpSheet — a `key` remount would skip it.)
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setLabel(entry?.label ?? '');
-    setValue(entry?.value ?? '');
-  }, [entry]);
+    setLabel(entry?.label ?? (entry === null ? (draft?.label ?? '') : ''));
+    setValue(entry?.value ?? (entry === null ? (draft?.value ?? '') : ''));
+    setMaskId(true);
+  }, [entry, draft]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const canSave = label.trim().length > 0 && value.trim().length > 0;
@@ -68,7 +78,8 @@ export function QuickReferenceEditSheet({
       return;
     }
     setSaving(true);
-    void onSave(label, value, entry?.id).finally(() => setSaving(false));
+    const saved = isAadhaarDraft && maskId ? maskAadhaar(value) : value;
+    void onSave(label, saved, entry?.id).finally(() => setSaving(false));
   };
 
   return (
@@ -127,10 +138,19 @@ export function QuickReferenceEditSheet({
             />
             <Input
               label={t('quick_reference.value_field')}
-              value={value}
+              value={isAadhaarDraft && maskId ? maskAadhaar(value) : value}
               onChange={setValue}
+              disabled={isAadhaarDraft && maskId}
               agentId="vault.quick-reference.value-input"
             />
+            {isAadhaarDraft && (
+              <Checkbox
+                checked={maskId}
+                onChange={setMaskId}
+                label={t('quick_reference.mask_aadhaar')}
+                agentId="vault.quick-reference.mask-aadhaar"
+              />
+            )}
           </div>
         </div>
       </IonContent>

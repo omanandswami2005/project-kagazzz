@@ -135,7 +135,13 @@
     "cancel": "Cancel",
     "copied": "Copied to clipboard",
     "copy_failed": "Couldn't copy.",
-    "more_actions": "More actions"
+    "more_actions": "More actions",
+    "found_title": "Found in your documents",
+    "found_in": "{{kind}} · in “{{name}}”",
+    "mask_aadhaar": "Keep only the last 4 digits (recommended for Aadhaar)",
+    "move_hint": "Looks like an ID number — keep it locked in Quick Reference.",
+    "move": "Move to Quick Reference",
+    "save_to_quickref": "Tap to copy · hold to keep it in Quick Reference"
   },
   "quick_notes": {
     "title": "Quick Notes",

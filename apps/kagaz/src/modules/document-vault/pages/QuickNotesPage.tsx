@@ -29,6 +29,7 @@ import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 import { QuickNoteRow } from '../components/QuickNoteRow';
 import { QuickNotesEditSheet } from '../components/QuickNotesEditSheet';
 import { useQuickReference } from '../hooks/useQuickReference';
+import { offerQuickReferenceDraft } from '../store/quick-reference-draft';
 import './quick-reference.css';
 
 /** Ms after a copy before the clipboard is best-effort cleared (F-84 pattern). */
@@ -250,6 +251,17 @@ export function QuickNotesPage(): ReactNode {
                   onToggleSelect={toggleSelect}
                   onLongPress={handleLongPress}
                   onMore={setMenuEntry}
+                  onMoveToQuickReference={(note, id) => {
+                    // Hand the value over in memory; the note is removed only
+                    // once Quick Reference has saved it.
+                    offerQuickReferenceDraft({
+                      label: note.label,
+                      value: id.value,
+                      kind: id.kind,
+                      onSaved: () => deleteEntry(note.id),
+                    });
+                    history.push('/quick-reference');
+                  }}
                 />
               ))}
             </ul>
