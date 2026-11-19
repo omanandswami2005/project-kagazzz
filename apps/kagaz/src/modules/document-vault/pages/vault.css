@@ -26,8 +26,16 @@
   font-size: var(--text-sm);
 }
 
+/* UP-8: upload progress is a thin bar pinned under the header, not a block
+   that pushes the list down. */
 .kg-vault__progress {
-  margin-block: var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: calc(var(--page-padding) * -1) calc(var(--page-padding) * -1) var(--space-2);
+  padding: var(--space-1) var(--page-padding);
+  background: var(--surface-1);
+  font-size: var(--text-xs);
 }
 
 /* UX-3: the searchbar + hold-to-speak mic read as ONE field — a shared rounded
@@ -634,6 +642,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.kg-filter-sheet__count {
+  display: inline-block;
+  animation: kg-pop-in var(--duration-fast) var(--ease-spring);
 }
 
 .kg-filter-sheet__actions {

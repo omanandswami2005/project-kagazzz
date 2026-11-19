@@ -24,6 +24,8 @@ describe('OnboardingGate (F-27)', () => {
     expect(q('app.onboarding.next')).not.toBeNull();
     // Back is hidden on the first slide (audit OB-1).
     expect(q('app.onboarding.back')).toBeNull();
+    // OB-8: switch language before reading on.
+    expect(q('app.onboarding.language-hi')).not.toBeNull();
   });
 
   it('advances through slides and shows Get Started on the last', () => {

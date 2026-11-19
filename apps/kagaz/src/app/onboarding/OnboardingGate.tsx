@@ -6,7 +6,8 @@
  */
 import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, type IconName } from '@kagaz/ui';
+import { Button, Icon, SegmentedControl, type IconName } from '@kagaz/ui';
+import { i18n, SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/core/i18n';
 import { AppMark } from '@/app/shell/AppMark';
 import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
 import { useVaultStore } from '@/modules/document-vault/store/vault.store';
@@ -23,6 +24,9 @@ const SLIDES = [
   icon: IconName | null;
   key: string;
 }[];
+
+/** Each language in its own script (OB-8). */
+const LANGUAGE_NAMES: Record<SupportedLanguage, string> = { en: 'English', hi: 'हिन्दी' };
 
 /** Minimum horizontal drag (px) before a pointer gesture counts as a swipe,
  * not a tap or vertical scroll — same cancel-threshold idea as F-25's
@@ -90,6 +94,18 @@ export function OnboardingGate(): ReactNode {
       data-agent-state={`slide-${index + 1}`}
     >
       <div className="kg-onboarding__bar">
+        {/* OB-8: the device language is picked automatically; slide 1 lets
+            the user switch before reading anything else. Names are shown in
+            their own script, so they never need translating. */}
+        {isFirst && (
+          <SegmentedControl
+            aria-label="Language / भाषा"
+            agentId="app.onboarding.language"
+            value={(i18n.resolvedLanguage ?? i18n.language) as SupportedLanguage}
+            onChange={(lng) => void i18n.changeLanguage(lng)}
+            options={SUPPORTED_LANGUAGES.map((lng) => ({ value: lng, label: LANGUAGE_NAMES[lng] }))}
+          />
+        )}
         <Button
           variant="ghost"
           size="sm"

@@ -15,7 +15,13 @@
 
 .kg-onboarding__bar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Skip stays right even when the language switch isn't shown. */
+.kg-onboarding__bar > .kg-btn {
+  margin-inline-start: auto;
 }
 
 .kg-onboarding__slide {

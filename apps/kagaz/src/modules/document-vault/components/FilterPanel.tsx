@@ -157,9 +157,14 @@ export function FilterPanel({
             disabled={draftCount === 0}
             agentId="vault.home.filter-apply"
           >
-            {draftCount === undefined
-              ? t('filters.apply')
-              : t('filters.show_count', { count: draftCount })}
+            {draftCount === undefined ? (
+              t('filters.apply')
+            ) : (
+              // FP-6: the count ticks (re-mounts with a pop) as filters change.
+              <span key={draftCount} className="kg-filter-sheet__count">
+                {t('filters.show_count', { count: draftCount })}
+              </span>
+            )}
           </Button>
         </div>
       </div>
