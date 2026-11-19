@@ -9,12 +9,14 @@ import { RootWarningBanner } from '@/modules/auth/components/RootWarningBanner';
 import { OnboardingGate } from './onboarding/OnboardingGate';
 import { AppProviders } from './providers/AppProviders';
 import { AppRoutes } from './routes';
+import { paperTransition } from './shell/paper-transition';
 
 // One design on every platform (audit G-9): Material — left-aligned titles,
 // arrow-only back, 48 px toolbar targets. The app is Android-first and our
 // tokens already define every surface, so iOS mode would only re-centre
 // titles and add "Back" labels.
-setupIonicReact({ mode: 'md' });
+// Pages move like sheets of paper (device feedback 2026-11-19).
+setupIonicReact({ mode: 'md', navAnimation: paperTransition });
 
 /** The Kagaz application. */
 export function App(): ReactNode {
