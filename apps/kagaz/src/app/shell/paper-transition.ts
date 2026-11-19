@@ -54,7 +54,7 @@ export function paperTransition(_baseEl: HTMLElement, opts: PaperTransitionOptio
   if (top) {
     const sheet = (top === opts.enteringEl ? entering : createAnimation().addElement(top))
       .beforeStyles({ 'z-index': '2', 'box-shadow': token('--shadow-xl', 'none') })
-      .afterClearStyles(['z-index', 'box-shadow']);
+      .afterClearStyles(['z-index', 'box-shadow', 'transform']);
     sheet.fromTo('transform', back ? 'translateX(0)' : `translateX(${off})`, back ? `translateX(${off})` : 'translateX(0)');
     if (top !== opts.enteringEl) root.addAnimation(sheet);
   }
@@ -63,7 +63,7 @@ export function paperTransition(_baseEl: HTMLElement, opts: PaperTransitionOptio
     const page = bottom === opts.enteringEl ? entering : createAnimation().addElement(bottom);
     page
       .beforeStyles({ 'z-index': '1' })
-      .afterClearStyles(['z-index', 'filter'])
+      .afterClearStyles(['z-index', 'filter', 'transform'])
       .fromTo('transform', back ? `translateX(${under})` : 'translateX(0)', back ? 'translateX(0)' : `translateX(${under})`)
       .fromTo('filter', back ? 'brightness(0.9)' : 'brightness(1)', back ? 'brightness(1)' : 'brightness(0.9)');
     if (bottom !== opts.enteringEl) root.addAnimation(page);

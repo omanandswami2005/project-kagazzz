@@ -14,6 +14,8 @@ import {
   IonToast,
   IonToolbar,
   useIonRouter,
+  useIonViewDidEnter,
+  useIonViewWillLeave,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -449,6 +451,15 @@ export function VaultHomePage(): ReactNode {
   // own navigation handler (0) — Ionic's exits without chaining, so any
   // folder handler below 0 would never run. When no folder is open we
   // call next() to defer to the lower-priority handlers.
+  // The page stays mounted under the viewer/settings (Ionic page cache): only
+  // pop a folder while this page is the one on screen.
+  const isActive = useRef(true);
+  useIonViewDidEnter(() => {
+    isActive.current = true;
+  });
+  useIonViewWillLeave(() => {
+    isActive.current = false;
+  });
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       return undefined;
@@ -463,7 +474,7 @@ export function VaultHomePage(): ReactNode {
         }>
       ).detail.register(10, (next) => {
         const state = useVaultStore.getState();
-        if (state.folderPath.length > 0) {
+        if (isActive.current && state.folderPath.length > 0) {
           state.goToFolderDepth(state.folderPath.length - 1);
         } else {
           next();

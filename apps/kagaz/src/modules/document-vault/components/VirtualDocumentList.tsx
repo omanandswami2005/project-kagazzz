@@ -115,7 +115,7 @@ export function VirtualDocumentList({
     // Re-measure whenever content that could sit above this list changes
     // size (Recent strip collapse/expand, filter controls appearing, the
     // document count itself affecting the controls row).
-  }, [documents.length, viewMode]);
+  }, [documents.length, viewMode, containerEl]);
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,

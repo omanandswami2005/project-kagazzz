@@ -75,8 +75,10 @@ export function AppMenu(): ReactNode {
         ? t('settings:data.backup_last', { date: formatShortDate(lastBackupAt) })
         : t('menu.backup_never')
       : undefined;
+  // Opens from the right, by ☰ only: a right-edge swipe would collide with
+  // row swipe actions and the viewer's next-document swipe.
   return (
-    <IonMenu contentId={MAIN_CONTENT_ID} side="end" type="overlay" data-agent-id="app.menu">
+    <IonMenu contentId={MAIN_CONTENT_ID} side="end" type="overlay" swipeGesture={false} data-agent-id="app.menu">
       <IonHeader>
         <IonToolbar>
           {/* DR-1: the mark, the name, and the promise in one line. */}
