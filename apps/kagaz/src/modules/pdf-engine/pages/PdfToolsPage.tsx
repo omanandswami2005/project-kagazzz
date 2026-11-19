@@ -141,22 +141,35 @@ export function PdfToolsPage(): ReactNode {
               {t('no_results', { query })}
             </p>
           ) : (
-            <ul className="kg-pdf-tools__grid" data-agent-id="pdf-tools.ops">
-              {ops.map((op) => (
-                <li key={op.id}>
-                  <button
-                    type="button"
-                    className="kg-pdf-tools__card"
-                    onClick={() => setActiveOp(op.id)}
-                    data-agent-id={`pdf-tools.op-${op.id}`}
-                  >
-                    <Icon name={op.icon} size={32} aria-hidden />
-                    <span className="kg-pdf-tools__card-title">{t(`ops.${op.id}`)}</span>
-                    <span className="kg-pdf-tools__card-desc">{t(`desc.${op.id}`)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            // PT-6: "All" shows the tools grouped under headings, not one wall.
+            <div data-agent-id="pdf-tools.ops">
+              {(category === null && !query.trim()
+                ? CATEGORIES.map((c) => ({ c, list: ops.filter((op) => op.category === c) }))
+                : [{ c: null, list: ops }]
+              )
+                .filter((group) => group.list.length > 0)
+                .map((group) => (
+                  <section key={group.c ?? 'all'} className="kg-pdf-tools__group">
+                    {group.c && <h2 className="kg-pdf-tools__group-title">{t(`category_${group.c}`)}</h2>}
+                    <ul className="kg-pdf-tools__grid">
+                      {group.list.map((op) => (
+                        <li key={op.id}>
+                          <button
+                            type="button"
+                            className="kg-pdf-tools__card"
+                            onClick={() => setActiveOp(op.id)}
+                            data-agent-id={`pdf-tools.op-${op.id}`}
+                          >
+                            <Icon name={op.icon} size={32} aria-hidden />
+                            <span className="kg-pdf-tools__card-title">{t(`ops.${op.id}`)}</span>
+                            <span className="kg-pdf-tools__card-desc">{t(`desc.${op.id}`)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+            </div>
           )}
 
           <ToolHistoryList refreshKey={runs} onOpen={openDocument} clearable />

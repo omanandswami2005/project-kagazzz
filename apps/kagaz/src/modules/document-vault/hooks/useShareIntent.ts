@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { useIonRouter, useIonToast } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
+import { askAiAboutRoute } from '@/core/constants/routes';
 import { log } from '@/core/logging';
 import { useUpload } from './useUpload';
 import { useVaultStore } from '../store/vault.store';
@@ -39,7 +40,7 @@ export function useShareIntent(): void {
         return;
       }
       try {
-        const { uploaded } = await ingestFiles(files);
+        const { uploaded, documents } = await ingestFiles(files);
         if (uploaded === 0) {
           // Bug-audit fix: ingestFiles() never throws for a per-file
           // validation failure (oversized/corrupt/unsupported) — it's
@@ -60,10 +61,19 @@ export function useShareIntent(): void {
           return;
         }
         router.push('/vault');
+        // UP-6 (next best action): a single shared file is usually wanted
+        // right away — offer to open it or ask about it, like an upload does.
+        const [only] = documents.length === 1 ? documents : [];
         void presentToast({
           message: t('upload.success', { count: uploaded }),
-          duration: 2500,
+          duration: only ? 5000 : 2500,
           position: 'bottom',
+          buttons: only
+            ? [
+                { text: t('upload.open'), handler: () => router.push(`/doc/${only.id}`, 'forward', 'push') },
+                { text: t('viewer.ask_ai'), handler: () => router.push(askAiAboutRoute(only.id), 'forward', 'push') },
+              ]
+            : undefined,
         });
       } catch (error) {
         logger.warn({

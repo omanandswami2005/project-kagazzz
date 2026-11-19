@@ -4,6 +4,7 @@
  * duplicate-reclaim hints (F-26). Read-only.
  */
 import {
+  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -11,14 +12,17 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/core/i18n';
 import { useAi } from '@/app/providers/AIProvider';
 import { Button, Icon } from '@kagaz/ui';
 import { DocumentThumb } from '@/core/components/DocumentThumb';
 import { pdfToolRoute } from '@/core/constants/routes';
-import { StorageDonut } from '../components/StorageDonut';
+import { FreeUpSpaceSheet } from '../components/FreeUpSpaceSheet';
+import { StorageBar } from '../components/StorageBar';
+import { useCompressionEstimates } from '../hooks/useCompressionEstimates';
+import { useCountUp } from '../hooks/useCountUp';
 import { isPdf } from '../hooks/useDocumentFile';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
@@ -31,6 +35,11 @@ export function StoragePage(): ReactNode {
   const { stats } = useStorageStats();
   const ai = useAi();
   const router = useIonRouter();
+  const [freeUpOpen, setFreeUpOpen] = useState(false);
+  const estimates = useCompressionEstimates();
+  const shownTotal = useCountUp(stats?.totalBytes ?? 0);
+  // ST-5: the large PDFs that compressing could shrink (locked ones stay put).
+  const pdfs = (stats?.largest ?? []).filter((d) => isPdf(d.fileType) && !d.isLocked);
 
   return (
     <IonPage data-agent-id="vault.storage">
@@ -38,6 +47,18 @@ export function StoragePage(): ReactNode {
         <IonToolbar>
           <MenuButton />
           <IonTitle>{t('storage.title')}</IonTitle>
+          {/* ST-5: every way to free space, behind one header action. */}
+          <IonButtons slot="end">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Icon name="Sparkles" size={20} />}
+              onClick={() => setFreeUpOpen(true)}
+              agentId="vault.storage.free-up-button"
+            >
+              {t('storage.free_up')}
+            </Button>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -46,33 +67,25 @@ export function StoragePage(): ReactNode {
             <p data-agent-id="vault.storage.loading">{t('storage.loading')}</p>
           ) : (
             <>
-              {stats.byType.length > 0 ? (
+              {/* ST-2/ST-7: the total is the headline; it counts up once. */}
+              <section className="kg-storage__total" data-agent-id="vault.storage.total">
+                <span className="kg-storage__total-value">{formatFileSize(Math.round(shownTotal))}</span>
+                <span className="kg-storage__total-label">
+                  {t('storage.used', { count: stats.documentCount })}
+                </span>
+              </section>
+
+              {stats.byType.length > 0 && (
                 <section className="kg-storage__card" data-agent-id="vault.storage.by-type">
                   <h2 className="kg-storage__heading">{t('storage.by_type')}</h2>
-                  <StorageDonut
+                  <StorageBar
                     segments={stats.byType.map((row) => ({
-                      label: row.fileType.toUpperCase(),
+                      fileType: row.fileType,
                       sizeLabel: formatFileSize(row.bytes),
                       fraction: row.fraction,
                     }))}
-                    centerValue={formatFileSize(stats.totalBytes)}
-                    centerLabel={t('storage.used', {
-                      count: stats.documentCount,
-                    })}
                     ariaLabel={t('storage.by_type')}
                   />
-                </section>
-              ) : (
-                <section
-                  className="kg-storage__total"
-                  data-agent-id="vault.storage.total"
-                >
-                  <span className="kg-storage__total-value">
-                    {formatFileSize(stats.totalBytes)}
-                  </span>
-                  <span className="kg-storage__total-label">
-                    {t('storage.used', { count: stats.documentCount })}
-                  </span>
                 </section>
               )}
 
@@ -104,7 +117,11 @@ export function StoragePage(): ReactNode {
                         <DocumentThumb document={doc} iconSize={20} className="kg-storage__thumb" />
                         <span className="kg-storage__largest-text">
                           <span className="kg-storage__largest-name">{doc.name}</span>
-                          <span className="kg-storage__row-size">{formatFileSize(doc.fileSize)}</span>
+                          <span className="kg-storage__row-size">
+                            {formatFileSize(doc.fileSize)}
+                            {(estimates.savings.get(doc.id) ?? 0) > 0 &&
+                              ` · ${t('storage.save_about', { size: formatFileSize(estimates.savings.get(doc.id) ?? 0) })}`}
+                          </span>
                         </span>
                       </button>
                       {isPdf(doc.fileType) && !doc.isLocked && (
@@ -147,6 +164,22 @@ export function StoragePage(): ReactNode {
             </>
           )}
         </main>
+        <FreeUpSpaceSheet
+          isOpen={freeUpOpen}
+          onClose={() => setFreeUpOpen(false)}
+          pdfs={pdfs}
+          estimates={estimates}
+          onCompress={(doc) => {
+            setFreeUpOpen(false);
+            router.push(pdfToolRoute('compress', doc.id), 'forward', 'push');
+          }}
+          aiModelBytes={ai.modelOnDisk ? ai.modelSizeBytes : undefined}
+          onManageAi={() => {
+            setFreeUpOpen(false);
+            router.push('/ai-assistant', 'forward', 'push');
+          }}
+          onFreed={() => setFreeUpOpen(false)}
+        />
       </IonContent>
     </IonPage>
   );

@@ -406,10 +406,11 @@ describe('FilterPanel (F-12)', () => {
       </IonPage>
     );
     // Earlier tests' sheets may linger in jsdom: act on this one (the last).
-    const apply = await screen.findByText('Show 3 documents');
+    expect(await screen.findByText('Show 3 documents')).toBeInTheDocument();
     const pdfChips = screen.getAllByText('PDF');
     await userEvent.click(pdfChips[pdfChips.length - 1]);
-    expect(apply.closest('button')).toBeDisabled();
+    const applies = document.querySelectorAll('[data-agent-id="vault.home.filter-apply"]');
+    expect(applies[applies.length - 1]).toBeDisabled();
   });
 });
 

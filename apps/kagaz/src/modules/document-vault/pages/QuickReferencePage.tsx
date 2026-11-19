@@ -20,13 +20,16 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, EmptyState, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
+import { maskAadhaar } from '@/core/id-numbers';
 import { hapticDestructive, hapticSuccess } from '@/core/haptics';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
 import { useQuickReferenceLockStore } from '@/modules/auth/store/quick-reference-lock.store';
 import { biometricAuthenticator } from '@/modules/auth/services/biometric.service';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 import { QuickReferenceEditSheet } from '../components/QuickReferenceEditSheet';
+import { useIdSuggestions } from '../hooks/useIdSuggestions';
 import { useQuickReference } from '../hooks/useQuickReference';
+import { takeQuickReferenceDraft, type QuickReferenceDraft } from '../store/quick-reference-draft';
 import './quick-reference.css';
 
 /** Ms after a copy before the clipboard is best-effort cleared (F-84). */
@@ -56,6 +59,18 @@ export function QuickReferencePage(): ReactNode {
     null
   );
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // QR-2 / QN-2 / VW-9: a value to pre-fill in the Add sheet.
+  const [draft, setDraft] = useState<QuickReferenceDraft | null>(null);
+  const suggestions = useIdSuggestions(
+    entries.map((e) => e.value),
+    unlocked && !isLoading
+  );
+  const labelFor = (kind: 'pan' | 'aadhaar'): string =>
+    t(kind === 'pan' ? 'quick_reference.template_pan' : 'quick_reference.template_aadhaar');
+  const openDraft = (next: QuickReferenceDraft): void => {
+    setDraft(next);
+    setEditTarget(null);
+  };
 
   // Screen-level biometric gate: skip when the user turned it off in Settings
   // (F-84 follow-up — off by user choice) or when unavailable (no biometry AND
@@ -76,6 +91,13 @@ export function QuickReferencePage(): ReactNode {
   const checkGeneration = useRef(0);
   useIonViewWillEnter(() => {
     setRevealedIds(new Set());
+    // A note or a viewer chip handed a value over: open Add with it once the
+    // gate clears (it waits in `draft`; the sheet only opens when unlocked).
+    const handed = takeQuickReferenceDraft();
+    if (handed) {
+      setDraft(handed);
+      setEditTarget(null);
+    }
     setCheckingLock(true);
     setUnlocked(false);
     const myGeneration = ++checkGeneration.current;
@@ -137,6 +159,8 @@ export function QuickReferencePage(): ReactNode {
       await updateEntry(editingId, { label, value });
     } else {
       await createEntry(label, value);
+      await draft?.onSaved?.();
+      setDraft(null);
     }
     setEditTarget(undefined);
   };
@@ -204,6 +228,31 @@ export function QuickReferencePage(): ReactNode {
 
       <IonContent>
         <main className="kg-quickref" data-agent-id="vault.quick-reference.content">
+          {/* QR-2: IDs already in the user's documents, one tap from saved. */}
+          {suggestions.length > 0 && (
+            <section className="kg-quickref__suggest" data-agent-id="vault.quick-reference.suggestions">
+              <h2 className="kg-quickref__suggest-title">{t('quick_reference.found_title')}</h2>
+              {suggestions.map((s) => (
+                <div key={s.value} className="kg-quickref__suggest-row">
+                  <span className="kg-quickref__row-text">
+                    <span className="kg-quickref__label">
+                      {t('quick_reference.found_in', { kind: labelFor(s.kind), name: s.documentName })}
+                    </span>
+                    <span className="kg-quickref__value">{s.kind === 'aadhaar' ? maskAadhaar(s.value) : s.value}</span>
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Icon name="Plus" size={20} />}
+                    onClick={() => openDraft({ label: labelFor(s.kind), value: s.value, kind: s.kind })}
+                    agentId={`vault.quick-reference.suggestion-${s.kind}`}
+                  >
+                    {t('quick_reference.add')}
+                  </Button>
+                </div>
+              ))}
+            </section>
+          )}
           {isLoading ? (
             <div className="kg-quickref__loading">
               <Spinner size="lg" label={t('quick_reference.title')} />
@@ -275,8 +324,12 @@ export function QuickReferencePage(): ReactNode {
       </IonContent>
 
       <QuickReferenceEditSheet
-        entry={editTarget}
-        onClose={() => setEditTarget(undefined)}
+        entry={unlocked ? editTarget : undefined}
+        draft={draft}
+        onClose={() => {
+          setEditTarget(undefined);
+          setDraft(null);
+        }}
         onSave={handleSave}
       />
 

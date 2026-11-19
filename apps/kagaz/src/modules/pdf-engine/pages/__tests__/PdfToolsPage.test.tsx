@@ -118,8 +118,9 @@ describe('PdfToolsPage', () => {
 
     it('filters the grid by category', async () => {
       const { container } = render(<PdfToolsPage />);
+      // The segment, not the "Image tools" group heading (PT-6).
       await userEvent.click(
-        within(container).getByText('Image tools')
+        container.querySelector('[data-agent-id="pdf-tools.category-image"]') as Element
       );
 
       expect(within(container).getByText('PDF → Images')).toBeInTheDocument();
@@ -129,7 +130,9 @@ describe('PdfToolsPage', () => {
 
     it('combines search and category filters', async () => {
       const { container } = render(<PdfToolsPage />);
-      await userEvent.click(within(container).getByText('Other tools'));
+      await userEvent.click(
+        container.querySelector('[data-agent-id="pdf-tools.category-other"]') as Element
+      );
       const search = within(container).getByLabelText('Search tools');
       await userEvent.type(search, 'word');
 
@@ -154,5 +157,11 @@ describe('PdfToolsPage', () => {
       expect(tile('d2')).toHaveAttribute('data-agent-state', 'selected');
       expect(tile('d1')).toHaveAttribute('data-agent-state', 'idle');
     });
+  });
+
+  it('groups tools under headings when showing all (PT-6)', () => {
+    const { container } = render(<PdfToolsPage />);
+    const titles = [...container.querySelectorAll('.kg-pdf-tools__group-title')].map((h) => h.textContent);
+    expect(titles).toEqual(['PDF tools', 'Image tools', 'Other tools']);
   });
 });

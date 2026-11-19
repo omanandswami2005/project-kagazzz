@@ -7,6 +7,12 @@ documents, a hint about duplicate files that could be reclaimed, and —
 when the on-device AI model is downloaded (F-13) — how much space it
 occupies, with a link to manage/delete it.
 
+**Free up space (2026-11-19):** `vault.storage.free-up-button` opens a
+sheet with Empty Trash (size), the AI model, and
+`vault.storage.free-up.check`, which measures what compressing each large
+PDF would save (a dry run — nothing is saved). Rows then open Compress on
+that file. The total is the headline; types show as a stacked bar.
+
 ## What I (the AI) can do here
 Nothing mutating — there are no actions on this screen. I can read the
 figures aloud or summarize them ("PDFs use the most space", "you have 3

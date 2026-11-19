@@ -49,6 +49,8 @@ export interface DocumentListItemProps {
   /** Action fired on a committed swipe-right (F-88). Omit/`'none'` to disable. */
   swipeRightAction?: SwipeActionKind;
   /** Handles a committed swipe action. Required when either side is set. */
+  /** Plays the slide-away exit before the row is removed (FV-5). */
+  leaving?: boolean;
   onSwipeAction?: (
     document: DocumentEntity,
     kind: Exclude<SwipeActionKind, 'none'>
@@ -69,6 +71,7 @@ export function DocumentListItem({
   swipeLeftAction = 'none',
   swipeRightAction = 'none',
   onSwipeAction,
+  leaving = false,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
   const { formatShortDate, formatFileSize } = useLocale();
@@ -238,7 +241,7 @@ export function DocumentListItem({
   const hasSwipe = swipeLeftAction !== 'none' || swipeRightAction !== 'none';
 
   return (
-    <li className="kg-doc-item__li">
+    <li className={`kg-doc-item__li${leaving ? ' kg-doc-item__li--leaving' : ''}`}>
       {hasSwipe ? (
         <SwipeableRow
           leftReveal={swipeReveal(swipeLeftAction)}

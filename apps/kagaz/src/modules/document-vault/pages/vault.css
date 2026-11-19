@@ -26,8 +26,16 @@
   font-size: var(--text-sm);
 }
 
+/* UP-8: upload progress is a thin bar pinned under the header, not a block
+   that pushes the list down. */
 .kg-vault__progress {
-  margin-block: var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: calc(var(--page-padding) * -1) calc(var(--page-padding) * -1) var(--space-2);
+  padding: var(--space-1) var(--page-padding);
+  background: var(--surface-1);
+  font-size: var(--text-xs);
 }
 
 /* UX-3: the searchbar + hold-to-speak mic read as ONE field — a shared rounded
@@ -120,6 +128,7 @@
 
 .kg-storage__total-value {
   font-size: var(--text-3xl);
+  font-variant-numeric: tabular-nums;
   font-weight: var(--font-bold);
 }
 
@@ -168,6 +177,40 @@
 }
 
 /* ST-4: the sections are cards, like every other grouped list. */
+/* ST-5: the Free up space sheet. */
+.kg-free-up {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--page-padding);
+  padding-bottom: calc(var(--page-padding) + env(safe-area-inset-bottom));
+}
+
+.kg-free-up__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+.kg-free-up__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-free-up__heading {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.kg-free-up__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .kg-storage__card {
   padding: var(--space-4);
   border: var(--border-width) solid var(--border-default);
@@ -509,6 +552,50 @@
   margin-inline-start: auto;
 }
 
+/* VH-16: a one-time sideways nudge of the first row hints at swipe actions. */
+@keyframes kg-swipe-peek {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35%,
+  55% {
+    transform: translateX(calc(var(--space-8) * -1));
+  }
+}
+.kg-vault__peek .kg-doc-item__li:first-child .kg-swipe-row__content,
+.kg-vault__peek .kg-vault__virtual-row:first-child .kg-doc-item__li:first-child .kg-swipe-row__content {
+  animation: kg-swipe-peek var(--duration-slow) var(--ease-standard) 600ms 2;
+}
+
+/* VH-14: suggestion chips under the controls. */
+.kg-vault__quick {
+  display: flex;
+  gap: var(--space-2);
+  margin-block: 0 var(--space-2);
+  overflow-x: auto;
+}
+
+/* VH-9: every control in the row is the same 44 px box — Filter and the
+   sort direction match the Sort select instead of floating as bare icons. */
+.kg-vault__controls .kg-select {
+  min-height: var(--touch-target);
+  padding-block: 0;
+}
+
+.kg-vault__controls .kg-btn--icon-only {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.kg-vault__controls .kg-segmented {
+  padding: 0;
+  gap: 0;
+}
+
 .kg-vault__filter {
   position: relative;
   flex: 0 0 auto;
@@ -555,6 +642,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.kg-filter-sheet__count {
+  display: inline-block;
+  animation: kg-pop-in var(--duration-fast) var(--ease-spring);
 }
 
 .kg-filter-sheet__actions {
@@ -676,7 +768,13 @@
 }
 
 .kg-vault__list--compact .kg-doc-item {
+  min-height: var(--target-min);
   padding-block: var(--space-2);
+}
+
+/* Grid cards size to their content, not to a list row's height. */
+.kg-vault__list--grid .kg-doc-item {
+  min-height: 0;
 }
 
 .kg-vault__list--compact .kg-doc-item__icon,
@@ -695,6 +793,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  /* VH-10: row height follows the density mode (Simple 80 / 56 / Compact). */
+  min-height: var(--row-h);
   padding: var(--space-3);
   /* Reserve room so the tag + favorite actions never overlap content. */
   padding-right: calc(var(--target-min) * 2 + var(--space-3));
@@ -989,80 +1089,101 @@
   transform: scale(0.95);
 }
 
-/* ── Storage donut (F-26) ────────────────────────────────────────── */
-.kg-donut {
+
+/* ── Storage by type: stacked bar + legend (ST-2/ST-7/ST-8) ── */
+@keyframes kg-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.kg-storage-bar {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  margin-top: var(--space-2);
-  animation: kg-pop-in var(--duration-normal) var(--ease-spring) both;
+  gap: var(--space-3);
 }
 
-.kg-donut__svg {
-  width: 200px;
-  max-width: 60%;
-  height: auto;
+.kg-storage-bar__track {
+  display: flex;
+  height: var(--space-3);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--chart-track);
 }
 
-.kg-donut__track {
-  stroke: var(--chart-track);
+.kg-storage-bar__segment {
+  height: 100%;
+  transform-origin: left center;
+  animation: kg-bar-grow var(--duration-slow) var(--ease-out) both;
+  animation-delay: calc(var(--i) * 80ms);
 }
 
-.kg-donut__ring circle {
-  /* Animate arc growth on first paint. */
-  transition: stroke-dashoffset var(--duration-slow) var(--ease-out);
-}
-
-.kg-donut__value {
-  fill: var(--text-primary);
-  font-family: var(--font-primary);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
-}
-
-.kg-donut__caption {
-  fill: var(--text-secondary);
-  font-family: var(--font-primary);
-  font-size: 12px;
-}
-
-.kg-donut__legend {
-  list-style: none;
+.kg-storage-bar__legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  list-style: none;
 }
 
-.kg-donut__legend-item {
-  display: flex;
+.kg-storage-bar__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   font-size: var(--text-sm);
-  color: var(--text-primary);
 }
 
-.kg-donut__swatch {
-  flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-sm);
+.kg-storage-bar__icon {
+  display: inline-flex;
 }
 
-.kg-donut__legend-label {
-  flex: 1 1 auto;
+.kg-storage-bar__label {
   font-weight: var(--font-medium);
 }
 
-.kg-donut__legend-size {
+.kg-storage-bar__size,
+.kg-storage-bar__pct {
   color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
-.kg-donut__legend-pct {
+.kg-storage-bar__pct {
   min-width: 3ch;
-  text-align: right;
-  color: var(--text-muted);
+  text-align: end;
+}
+
+/* FV-4: Favorites reorder mode — a name and a drag handle per row. */
+.kg-favorites__reorder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--row-h);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+
+.kg-favorites__reorder-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* FV-5: an unstarred row slides away before it leaves the list. */
+@keyframes kg-row-leave {
+  to {
+    opacity: 0;
+    transform: translateX(var(--space-8));
+  }
+}
+.kg-doc-item__li--leaving {
+  animation: kg-row-leave var(--duration-fast) var(--ease-in) forwards;
 }

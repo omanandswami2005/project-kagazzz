@@ -6,6 +6,14 @@ save for fast retrieval — PAN, mobile number, bank account, IFSC, emails,
 or anything else they choose to name. Each value is masked by default
 (tap to reveal) and the whole screen sits behind a biometric prompt.
 
+**ID suggestions (2026-11-19):** a "Found in your documents" card
+(`vault.quick-reference.suggestions`) lists PAN / Aadhaar numbers found in
+unlocked documents' text that aren't saved yet; Add opens the sheet
+pre-filled. Aadhaar is saved as `XXXX XXXX 1234` unless the user unticks
+`vault.quick-reference.mask-aadhaar`. Values handed over from Quick Notes or
+the viewer open the Add sheet once the gate clears. Never add an entry
+without the user's tap. ⚠️ Pending compliance review before publication.
+
 ## What I (the AI) can do here
 - Copy an entry's value (`quickref.copyValue`) or copy it with its label
   (`quickref.copyWithLabel`) when the user names which one they want

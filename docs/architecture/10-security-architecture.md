@@ -2,7 +2,7 @@
 
 > **Project:** Kagaz
 > **Classification:** Security-Critical
-> **Last Updated:** 2026-11-18
+> **Last Updated:** 2026-11-19
 
 ---
 
@@ -298,6 +298,36 @@ This keeps Quick Reference in the same category as a generic encrypted notes
 feature (broadly accepted, on-device, user's own data, never transmitted)
 rather than a purpose-built "government ID database" (the pattern UIDAI
 guidance actually targets).
+
+#### 3.6.2 ID suggestions (2026-11-19) — ⚠️ CHECK AGAIN BEFORE PUBLICATION
+
+Screen audit QR-2 / QN-2 / VW-9 added **ID detection**
+(`core/id-numbers`): PAN by pattern and Aadhaar by 12 digits plus the
+Verhoeff checksum, run over text already on the phone (unlocked documents'
+OCR text, Quick Notes, viewer number chips). It powers three offers: "PAN
+found in “PAN Card” — Add", "Move this note to Quick Reference", and
+hold-a-number-to-save. **This partly reverses §3.6.1:** the app now *does*
+recognise Aadhaar-shaped values, even though the stored entry is still a
+plain label/value pair with no Aadhaar-typed column.
+
+Mitigations in place:
+
+- Detection is pure and on-device; nothing is logged, stored by the
+  detector, or sent anywhere. Values move between screens in memory only
+  (`store/quick-reference-draft.ts`), never in a URL or storage.
+- **Aadhaar is saved masked by default** (`XXXX XXXX 1234`, UIDAI's
+  masked-Aadhaar form); keeping the full number requires the user to untick
+  "Keep only the last 4 digits".
+- Locked documents are never scanned for suggestions; suggestions show only
+  inside the biometric-gated Quick Reference screen.
+- Every save is the user's tap; nothing is added automatically.
+
+**Before publication**, counsel must confirm (a) that offering to save a
+detected Aadhaar number — masked by default — is acceptable under the Aadhaar
+Act §29 and UIDAI guidance, or (b) that Aadhaar detection should be removed
+and only PAN kept (delete the `aadhaar` branch in `core/id-numbers` — the UI
+follows automatically). Tracked in
+[indian-compliance-checklist.md §11](../indian-compliance-checklist.md).
 
 ---
 

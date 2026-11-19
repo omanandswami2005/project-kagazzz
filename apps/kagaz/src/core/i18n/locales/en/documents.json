@@ -135,7 +135,13 @@
     "cancel": "Cancel",
     "copied": "Copied to clipboard",
     "copy_failed": "Couldn't copy.",
-    "more_actions": "More actions"
+    "more_actions": "More actions",
+    "found_title": "Found in your documents",
+    "found_in": "{{kind}} · in “{{name}}”",
+    "mask_aadhaar": "Keep only the last 4 digits (recommended for Aadhaar)",
+    "move_hint": "Looks like an ID number — keep it locked in Quick Reference.",
+    "move": "Move to Quick Reference",
+    "save_to_quickref": "Tap to copy · hold to keep it in Quick Reference"
   },
   "quick_notes": {
     "title": "Quick Notes",
@@ -264,7 +270,8 @@
     "no_text_type": "This file type has no text to extract.",
     "no_text_device": "Text extraction runs in the phone app — open this document there to extract its text.",
     "compress": "Compress",
-    "make_pdf": "Make PDF"
+    "make_pdf": "Make PDF",
+    "zoom_hint": "Double-tap or pinch to zoom · swipe for the next document"
   },
   "detail": {
     "size": "Size",
@@ -305,7 +312,10 @@
     "title": "Favorites",
     "empty": "No favorites yet",
     "empty_hint": "Star your Aadhaar, PAN and other documents you need often — they'll wait here.",
-    "browse": "Browse documents"
+    "browse": "Browse documents",
+    "reorder": "Reorder",
+    "done": "Done",
+    "removed": "Removed from favorites"
   },
   "search": {
     "placeholder": "Search documents",
@@ -318,7 +328,8 @@
       "failed": "Voice input couldn't start. Check that Google speech services are installed and try again."
     },
     "ask_ai": "Ask AI to find “{{query}}”",
-    "ask_ai_prompt": "Find my documents about “{{query}}”"
+    "ask_ai_prompt": "Find my documents about “{{query}}”",
+    "pull_hint": "Release to search"
   },
   "templates": {
     "cta": "Set up starter folders",
@@ -341,7 +352,18 @@
     "duplicates_other": "{{count}} duplicate groups — about {{size}} can be freed",
     "ai_model": "AI model",
     "ai_model_size": "{{size}} on device",
-    "ai_model_manage": "Manage"
+    "ai_model_manage": "Manage",
+    "free_up": "Free up space",
+    "free_up_trash_one": "{{count}} document waiting in Trash",
+    "free_up_trash_other": "{{count}} documents waiting in Trash",
+    "free_up_compress": "Compress large PDFs",
+    "free_up_check_one": "Check how much {{count}} PDF can shrink",
+    "free_up_check_other": "Check how much {{count}} PDFs can shrink",
+    "free_up_checking": "Checking {{n}} of {{total}}…",
+    "free_up_already_small": "Your PDFs are already compact — compressing wouldn't save much.",
+    "free_up_no_pdfs": "No large PDFs to compress.",
+    "free_up_total": "Compressing these would free about {{size}}.",
+    "save_about": "save ~{{size}}"
   },
   "bulk": {
     "toolbar": "Bulk actions",
@@ -418,5 +440,9 @@
   "tips": {
     "long_press": "Tip: press and hold a document to select several.",
     "got_it": "Got it"
+  },
+  "quick_filters": {
+    "recent": "Added this week · {{count}}",
+    "starred": "Starred · {{count}}"
   }
 }

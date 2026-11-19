@@ -294,6 +294,9 @@ textarea {
    hit area reaches 44 px; selected = tinted fill + saffron edge + check
    (audit FP-1/FP-2, M-4). Static tags in list rows stay compact. */
 button.kg-tag {
+  /* FP-6: selecting fills in rather than snapping. */
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
   min-height: var(--touch-target);
   padding: 0 var(--space-4);
   border-color: var(--border-strong);

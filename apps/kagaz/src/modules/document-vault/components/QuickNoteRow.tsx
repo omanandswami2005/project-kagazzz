@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '@kagaz/ui';
 import { useLongPress } from '@/core/gestures';
+import { detectIdNumbers, type DetectedId } from '@/core/id-numbers';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
 
 /** Props for {@link QuickNoteRow}. */
@@ -25,6 +26,8 @@ export interface QuickNoteRowProps {
   onLongPress: (entry: QuickReferenceEntry) => void;
   /** Opens the overflow menu (copy with title, edit, delete). */
   onMore: (entry: QuickReferenceEntry) => void;
+  /** QN-2: moves an ID-looking note into the locked Quick Reference. */
+  onMoveToQuickReference?: (entry: QuickReferenceEntry, id: DetectedId) => void;
 }
 
 /** One label+value row — tap copies, long-press selects, "more" opens the menu. */
@@ -36,8 +39,11 @@ export function QuickNoteRow({
   onToggleSelect,
   onLongPress,
   onMore,
+  onMoveToQuickReference,
 }: QuickNoteRowProps): ReactNode {
   const { t } = useTranslation('documents');
+  // QN-2: Quick Notes is unlocked by design — an ID number doesn't belong here.
+  const id = onMoveToQuickReference ? detectIdNumbers(`${entry.label} ${entry.value}`)[0] : undefined;
   const longPress = useLongPress(() => onLongPress(entry), !selectionMode);
 
   const handleClick = (): void => {
@@ -86,6 +92,20 @@ export function QuickNoteRow({
             data-agent-id={`vault.quick-notes.item-${entry.id}.more`}
           >
             <Icon name="MoreVertical" size={20} color="var(--text-muted)" />
+          </button>
+        </div>
+      )}
+      {id && !selectionMode && onMoveToQuickReference && (
+        <div className="kg-quicknote__move" data-agent-id={`vault.quick-notes.item-${entry.id}.id-hint`}>
+          <Icon name="ShieldCheck" size={16} />
+          <span>{t('quick_reference.move_hint')}</span>
+          <button
+            type="button"
+            className="kg-quicknote__move-btn"
+            onClick={() => onMoveToQuickReference(entry, id)}
+            data-agent-id={`vault.quick-notes.item-${entry.id}.move`}
+          >
+            {t('quick_reference.move')}
           </button>
         </div>
       )}

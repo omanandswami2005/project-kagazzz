@@ -8,6 +8,10 @@ Reference, this screen has **no biometric gate and no mask-by-default** —
 that's the deliberate trade-off: speed over protection, for data that
 doesn't need protecting.
 
+**ID-looking notes (2026-11-19):** a note that contains a PAN or Aadhaar
+number shows a hint with `vault.quick-notes.item-<id>.move` ("Move to Quick
+Reference"); the note is deleted only after Quick Reference saves the entry.
+
 ## What I (the AI) can do here
 - Copy an entry's value (`quicknotes.copyValue`) or copy it with its title
   (`quicknotes.copyWithLabel`) when the user names which one they want.

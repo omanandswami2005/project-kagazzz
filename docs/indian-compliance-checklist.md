@@ -2,7 +2,7 @@
 
 > Purpose: A single, living reference for legal, privacy, security, and government-integration requirements relevant to an app that stores and processes citizens' government documents (locally on-device) and integrates with DigiLocker and Common Service Centres (CSCs).
 >
-> Last updated: 2026-07-18
+> Last updated: 2026-11-19
 
 ---
 
@@ -95,6 +95,12 @@ its label looks like "Aadhaar." This keeps the feature in the same risk
 category as a generic on-device notes app rather than a purpose-built ID
 database. Full detail: [10-security-architecture.md](architecture/10-security-architecture.md) §3.6.
 
+**Update 2026-11-19 — ⚠️ check again before publication:** ID suggestions
+(screen audit QR-2/QN-2/VW-9) now recognise Aadhaar-shaped numbers in
+on-device text to offer saving them (masked by default), which partly
+reverses the "no Aadhaar-aware logic" point above. See §11 and
+[10-security-architecture.md §3.6.2](architecture/10-security-architecture.md).
+
 ---
 
 ## 5) Data localization & hosting
@@ -176,6 +182,12 @@ Priority P0 — Do before any public release or DigiLocker/CSC integration:
 - [ ] Prepare incident response plan & designate compliance/grievance officer
 - [ ] Start DigiLocker partner onboarding (apply; prepare docs)
 - [ ] Start CSC outreach (state nodal / CSC SPV) if integrating CSCs
+- [ ] **⚠️ Check again before publication — ID suggestions (added 2026-11-19).**
+  The app detects PAN and Aadhaar numbers in on-device text and offers to save
+  them to Quick Reference (Aadhaar masked to the last 4 digits by default).
+  This partly reverses the §4 design decision below. Counsel to confirm it is
+  acceptable, or remove Aadhaar detection and keep PAN only. Details:
+  [10-security-architecture.md §3.6.2](architecture/10-security-architecture.md#362-id-suggestions-2026-11-19--️-check-again-before-publication).
 
 ### V1-launch applicability review (gate G1-7) — 2026-07-14
 

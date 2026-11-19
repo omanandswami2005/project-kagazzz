@@ -53,3 +53,12 @@ ion-fab-button.kg-upload-fab-item::before {
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* UP-8: the mini buttons fan out one after another (30 ms stagger). The
+   main button's + → × swap is Ionic's own (fab-button-close-active). */
+ion-fab-list.fab-list-active ion-fab-button.kg-upload-fab-item:nth-child(2) {
+  transition-delay: 30ms;
+}
+ion-fab-list.fab-list-active ion-fab-button.kg-upload-fab-item:nth-child(3) {
+  transition-delay: 60ms;
+}

@@ -5,6 +5,7 @@ import { useFavorites } from '../../hooks/useFavorites';
 import { useTags } from '../../hooks/useTags';
 import { useVaultMutations } from '../../hooks/useVaultMutations';
 import { entityFromNew } from '../../__tests__/fixtures/vault-fixtures';
+import { usePreferencesStore } from '@/core/preferences';
 import { FavoritesPage } from '../FavoritesPage';
 import { FavoritesPageAgent } from '../FavoritesPage.agent';
 
@@ -58,6 +59,17 @@ beforeEach(() => {
 });
 
 describe('FavoritesPage (F-33)', () => {
+  it('lists favourites in the saved order (FV-4)', () => {
+    const second = { ...favDoc, id: 'fav-2', name: 'Second Scan' };
+    useFavoritesMock.mockReturnValue({ favorites: [favDoc, second], isLoading: false });
+    usePreferencesStore.setState({ favoriteOrder: ['fav-2', 'fav-1'] });
+    render(<FavoritesPage />);
+    const names = [...document.querySelectorAll('.kg-doc-item__name')].map((n) => n.textContent);
+    expect(names).toEqual(['Second Scan', 'Starred Scan']);
+    expect(document.querySelector('[data-agent-id="vault.favorites.reorder"]')).not.toBeNull();
+    usePreferencesStore.setState({ favoriteOrder: [] });
+  });
+
   it('shows the empty state when nothing is starred', () => {
     useFavoritesMock.mockReturnValue({ favorites: [], isLoading: false });
     render(<FavoritesPage />);

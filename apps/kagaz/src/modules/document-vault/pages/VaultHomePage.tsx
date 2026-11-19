@@ -8,6 +8,8 @@ import {
   IonContent,
   IonHeader,
   IonPage,
+  IonRefresher,
+  IonRefresherContent,
   IonTitle,
   IonToast,
   IonToolbar,
@@ -16,7 +18,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Alert, Button, Icon, ProgressBar, type ActionSheetButton } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon, ProgressBar, Tag, type ActionSheetButton } from '@kagaz/ui';
 import {
   hapticAction,
   hapticDestructive,
@@ -96,6 +98,16 @@ type PendingUndo =
 
 /** One-time tip id for the long-press multi-select hint (VH-15). */
 const LONG_PRESS_TIP = 'long-press';
+/** One-time swipe hint (VH-16) and how long its animation runs. */
+const SWIPE_PEEK_TIP = 'swipe-peek';
+const SWIPE_PEEK_MS = 2500;
+
+/** VH-14 quick suggestion chips. */
+type QuickFilter = 'recent' | 'starred';
+/** "Recently added" = the last week. */
+const RECENT_MS = 7 * 86_400_000;
+const isRecent = (d: DocumentEntity, nowMs: number): boolean =>
+  nowMs - Date.parse(d.createdAt) <= RECENT_MS;
 
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
@@ -177,8 +189,19 @@ export function VaultHomePage(): ReactNode {
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const filterCount = activeFilterCount(filters);
+  // VH-14 (anticipatory): one-tap suggestion chips from what's on the phone.
+  const [quickFilter, setQuickFilter] = useState<QuickFilter | null>(null);
+  const [nowMs] = useState(() => Date.now());
+  const quickCounts = {
+    recent: documents.filter((d) => isRecent(d, nowMs)).length,
+    starred: documents.filter((d) => d.isFavorite).length,
+  };
   // Filters apply to the current folder's documents (after sort).
-  const filteredDocuments = applyFilters(documents, filters, tagsByDocument);
+  const filteredDocuments = applyFilters(documents, filters, tagsByDocument).filter(
+    (d) =>
+      quickFilter === null ||
+      (quickFilter === 'recent' ? isRecent(d, nowMs) : d.isFavorite)
+  );
   const folderPath = useVaultStore((s) => s.folderPath);
   const enterFolder = useVaultStore((s) => s.enterFolder);
   const goToFolderDepth = useVaultStore((s) => s.goToFolderDepth);
@@ -383,6 +406,18 @@ export function VaultHomePage(): ReactNode {
 
   const seenTips = usePreferencesStore((s) => s.seenTips);
   const markTipSeen = usePreferencesStore((s) => s.markTipSeen);
+  // VH-16: swipe actions are invisible until tried — nudge the first row
+  // sideways once, then never again.
+  const showSwipePeek =
+    !isLoading &&
+    documents.length > 0 &&
+    (swipeLeftAction !== 'none' || swipeRightAction !== 'none') &&
+    !seenTips.includes(SWIPE_PEEK_TIP);
+  useEffect(() => {
+    if (!showSwipePeek) return undefined;
+    const timer = setTimeout(() => markTipSeen(SWIPE_PEEK_TIP), SWIPE_PEEK_MS);
+    return (): void => clearTimeout(timer);
+  }, [showSwipePeek, markTipSeen]);
   const showLongPressTip =
     !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
 
@@ -471,6 +506,18 @@ export function VaultHomePage(): ReactNode {
         </IonToolbar>
       </IonHeader>
       <IonContent ref={ionContentRef}>
+        {/* VH-17: offline, pull-to-refresh has nothing to fetch — pulling down
+            jumps to search instead (direct manipulation). */}
+        <IonRefresher
+          slot="fixed"
+          onIonRefresh={(event) => {
+            document.querySelector<HTMLInputElement>('[data-agent-id="vault.home.search"]')?.focus();
+            void event.detail.complete();
+          }}
+          data-agent-id="vault.home.pull-to-search"
+        >
+          <IonRefresherContent pullingText={t('search.pull_hint')} />
+        </IonRefresher>
         <main className="kg-vault" data-agent-id="vault.home.content">
 
           {dbStatus === 'error' && (
@@ -639,6 +686,22 @@ export function VaultHomePage(): ReactNode {
                       <ViewModeControl mode={viewMode} onChange={setViewMode} />
                     </div>
                   )}
+                  {/* VH-14: only chips that would narrow the list show up. */}
+                  {documents.length >= 4 && (
+                    <div className="kg-vault__quick" data-agent-id="vault.home.quick-filters">
+                      {(['recent', 'starred'] as const)
+                        .filter((q) => quickCounts[q] > 0 && quickCounts[q] < documents.length)
+                        .map((q) => (
+                          <Tag
+                            key={q}
+                            label={t(`quick_filters.${q}`, { count: quickCounts[q] })}
+                            selected={quickFilter === q}
+                            onClick={() => setQuickFilter((cur) => (cur === q ? null : q))}
+                            agentId={`vault.home.quick-filter-${q}`}
+                          />
+                        ))}
+                    </div>
+                  )}
                   {filteredDocuments.length === 0 && filterCount > 0 ? (
                     <p
                       className="kg-vault__no-results"
@@ -647,6 +710,7 @@ export function VaultHomePage(): ReactNode {
                       {t('filters.no_matches')}
                     </p>
                   ) : (
+                  <div className={showSwipePeek ? 'kg-vault__peek' : undefined}>
                   <VirtualDocumentList
                     documents={filteredDocuments}
                     viewMode={viewMode}
@@ -665,6 +729,7 @@ export function VaultHomePage(): ReactNode {
                     agentId="vault.home.list"
                     agentState={listState}
                   />
+                  </div>
                   )}
                 </>
               )}

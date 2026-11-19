@@ -9,6 +9,11 @@ selection via native drag-select, or a single detected number (account/ID
 number, PIN code, date, amount, …) via its own tap-to-copy chip under
 **Detected numbers** (F-83, shown only when the text contains one).
 
+**Gestures (2026-11-19):** double-tap or pinch zooms the pages
+(`vault.viewer.zoom`); at 1× a horizontal swipe opens the previous / next
+document of the list the user came from. Holding a detected number chip hands
+it to Quick Reference's Add sheet.
+
 ## What I (the AI) can do here
 Read-focused. I can read the extracted text aloud, summarize it, or answer
 questions about it. I do **not** run OCR or delete — those are user-only (no
