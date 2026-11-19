@@ -60,7 +60,7 @@
 | 017 | OpenCV scanner CSP | `wasm-unsafe-eval` weakening | — | ⚠️ Moot (scanner → ML Kit, ADR-018) |
 | 018 | Document Scanner | **Google ML Kit** (`@capacitor-mlkit/document-scanner`, native/Play Services) | jscanify + OpenCV.js (ADR-016) | ✅ Accepted |
 | 019 | OCR Engine | **Bundled native ML Kit Text Recognition** (custom `OcrPlugin`, in-APK, Hindi+EN) | Tesseract.js (ADR-011), LiteParse, Capawesome Insiders | ✅ Accepted |
-| 020 | Office interop (PDF↔Word/Excel) | **`docx` + SheetJS `xlsx` + `mammoth`** (pure-JS, lazy-loaded) | LibreOffice-WASM, commercial SDKs | ✅ Accepted |
+| 020 | Office interop (PDF↔Word/Excel) | **`docx` + `mammoth`**; .xlsx/.csv written with JSZip (SheetJS dropped 2026-11-19) | LibreOffice-WASM, commercial SDKs | ✅ Accepted (amended) |
 | 021 | On-Device AI | **LiteRT-LM** (Google AI Edge, forked `@capgo/capacitor-llm` bridge, native tool calling) | WebLLM (ADR-006), Transformers.js, Cloud API | ✅ Accepted |
 | 023 | Online AI mode (demo) | **Gemma 4 26B on Vertex AI** through a same-origin dev proxy; one user switch with a data-sharing warning | Direct browser→Google calls, API keys in the app, Gemini | ✅ Accepted (demo-only) |
 | 022 | Demo AI engine | **Local Ollama (Gemma 4 E2B + EmbeddingGemma)** behind a `ChatEngine` seam; demo builds only | Hosted API (later, with consent), LiteRT on desktop (no Intel-Mac build) | ✅ Accepted (demo-only) |
@@ -1167,6 +1167,13 @@ So V1 targets the **usable, content-first 80%** (extract text/tables into an
     `.wasm`, no CDN/jsdelivr/unpkg, no `fetch`/XHR/`importScripts`** worker load;
     the only `http(s)` strings are doc-comment reference links (officeopenxml.com)
     and a `fromCodePoint` polyfill note. Lazy-loaded via `pdf-to-word-ops.ts`.
+  - **Amendment 2026-11-19 — SheetJS removed.** npm's last `xlsx` (0.18.5) has
+    two high advisories (prototype pollution, ReDoS) whose fixes ship only on
+    SheetJS's CDN. F-42 only writes sheets, so `pdf-to-sheet-ops.ts` now emits a
+    minimal SpreadsheetML package (content types, workbook, one sheet of inline
+    strings) zipped with **JSZip**, which the app already ships for backups.
+    CSV is RFC 4180 with a UTF-8 BOM and a formula-injection guard. This also
+    drops the ~140 KB gz `lib-xlsx` chunk. The original note follows.
   - **`xlsx` @ 0.18.5 (SheetJS, Apache-2.0) audited & added 2026-07-13 (F-42):**
     dist carries **no `.wasm`, no CDN (jsdelivr/unpkg/cdn.sheetjs), no
     `fetch`/XHR/`importScripts`**; the only `http(s)` strings are XML **namespace

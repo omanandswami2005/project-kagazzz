@@ -104,8 +104,9 @@ export default defineConfig(({ command, mode }) => {
             }
             if (/[\\/]node_modules[\\/]pdfjs-dist[\\/]/.test(id)) return 'lib-pdfjs';
             if (/[\\/]node_modules[\\/]pdf-lib[\\/]/.test(id)) return 'lib-pdflib';
-            if (/[\\/]node_modules[\\/]xlsx[\\/]/.test(id)) return 'lib-xlsx';
             if (/[\\/]node_modules[\\/]docx[\\/]/.test(id)) return 'lib-docx';
+            // First-run tour (ADR-026): loads only when a tour runs.
+            if (/[\\/]node_modules[\\/]driver\.js[\\/]/.test(id)) return 'lib-driver';
             if (/[\\/]node_modules[\\/]mammoth[\\/]/.test(id)) return 'lib-mammoth';
             if (/[\\/]node_modules[\\/]jszip[\\/]/.test(id)) return 'lib-jszip';
             return undefined;
