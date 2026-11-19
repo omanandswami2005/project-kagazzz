@@ -16,7 +16,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Alert, Button, Icon, ProgressBar } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, Icon, ProgressBar, type ActionSheetButton } from '@kagaz/ui';
 import {
   hapticAction,
   hapticDestructive,
@@ -87,12 +87,15 @@ import type { IncomingFile } from '../types/document.types';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
 import { useAi } from '@/app/providers/AIProvider';
-import { askAiAboutRoute } from '@/core/constants/routes';
+import { askAiAboutRoute, askAiRoute } from '@/core/constants/routes';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
 type PendingUndo =
   | { kind: 'single'; document: DocumentEntity }
   | { kind: 'bulk'; documents: DocumentEntity[] };
+
+/** One-time tip id for the long-press multi-select hint (VH-15). */
+const LONG_PRESS_TIP = 'long-press';
 
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
@@ -338,11 +341,50 @@ export function VaultHomePage(): ReactNode {
 
   const finishUpload = ({ documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
     setUploaded(documents);
-    // UX-8: queue the new docs for a name prompt, pre-filled with the default.
-    if (renameOnAdd && documents.length > 0) {
+    // UX-8: name prompt for a single new document, pre-filled with the
+    // default. Audit UP-1: a batch keeps its default names — five prompts in
+    // a row is a wall; each can be renamed later from its menu.
+    if (renameOnAdd && documents.length === 1) {
       setRenameQueue(documents);
     }
   };
+
+  /** IM-5: the per-file-type tools, ordered by what that type needs most. */
+  const documentTools = (doc: DocumentEntity): ActionSheetButton[] => [
+    // Images: clean up, convert, shrink.
+    ...(canApplyImageFilter(doc)
+      ? [{ id: 'enhance', text: t('enhance.action'), icon: 'Sparkles' as const, handler: (): void => setEnhanceDoc(doc) }]
+      : []),
+    ...(canConvertImageFormat(doc)
+      ? [
+          { id: 'convert', text: t('convert_format.action'), icon: 'FileType' as const, handler: (): void => setConvertDoc(doc) },
+          { id: 'resize', text: t('resize_compress.action'), icon: 'Shrink' as const, handler: (): void => setResizeDoc(doc) },
+        ]
+      : []),
+    // PDFs: compress (the top government-portal need), extract, page → image.
+    ...(isPdf(doc.fileType)
+      ? [
+          { id: 'compress', text: t('pdf_compress.action'), icon: 'Shrink' as const, handler: (): void => void handleCompressPdf(doc) },
+          { id: 'extract-pages', text: t('pdf_extract_pages.action'), icon: 'Scissors' as const, handler: (): void => setExtractPagesDoc(doc) },
+          { id: 'page-image', text: t('page_image.action'), icon: 'Images' as const, handler: (): void => setPageImageDoc(doc) },
+        ]
+      : []),
+    // Text: copy what's stored (F-68), or extract it (F-20 / Gemma).
+    ...(copyText.hasText(doc)
+      ? [{ id: 'copy-text', text: t('copy_text.action'), icon: 'Copy' as const, handler: (): void => void handleCopyText(doc) }]
+      : []),
+    ...(canOcr(doc)
+      ? [{ id: 'extract-text', text: t('actions.extract_text'), icon: 'FileText' as const, handler: (): void => void handleOcr(doc) }]
+      : []),
+    ...(canTranscribeWithVision(doc)
+      ? [{ id: 'transcribe', text: t('actions.transcribe_gemma'), icon: 'FileText' as const, handler: (): void => void handleOcr(doc, 'vision') }]
+      : []),
+  ];
+
+  const seenTips = usePreferencesStore((s) => s.seenTips);
+  const markTipSeen = usePreferencesStore((s) => s.markTipSeen);
+  const showLongPressTip =
+    !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
 
   const handleSelectSource = (source: UploadSource): void => {
     // Gallery is special-cased: with 2+ photos picked, ask whether to
@@ -460,7 +502,7 @@ export function VaultHomePage(): ReactNode {
           documents.length === 0 &&
           folders.length === 0 &&
           folderPath.length === 0 ? (
-            <EmptyVaultState onSetUpFolders={setUpStarterFolders} />
+            <EmptyVaultState onAdd={handleSelectSource} onSetUpFolders={setUpStarterFolders} />
           ) : (
             <>
               <div className="kg-vault__search-row">
@@ -492,12 +534,30 @@ export function VaultHomePage(): ReactNode {
                     </ul>
                   )}
                   {visibleDocuments.length === 0 && matchingTools.length === 0 && !search.isSearching ? (
-                    <p
+                    <div
                       className="kg-vault__no-results"
                       data-agent-id="vault.home.no-results"
                     >
-                      {t('search.no_results', { query: search.query })}
-                    </p>
+                      <p>{t('search.no_results', { query: search.query })}</p>
+                      {/* VH-13: the AI reads inside documents' text — one
+                         tap from "can't find it" to asking it. */}
+                      {ai.status !== 'unsupported' && (
+                        <Button
+                          variant="secondary"
+                          icon={<Icon name="Sparkles" size={20} />}
+                          onClick={() =>
+                            router.push(
+                              askAiRoute(t('search.ask_ai_prompt', { query: search.query })),
+                              'forward',
+                              'push'
+                            )
+                          }
+                          agentId="vault.home.no-results.ask-ai"
+                        >
+                          {t('search.ask_ai', { query: search.query })}
+                        </Button>
+                      )}
+                    </div>
                   ) : visibleDocuments.length > 0 || search.isSearching ? (
                     <VirtualDocumentList
                       documents={visibleDocuments}
@@ -554,18 +614,26 @@ export function VaultHomePage(): ReactNode {
 
                   {documents.length > 0 && (
                     <div className="kg-vault__controls">
-                      <Button
-                        variant={filterCount > 0 ? 'secondary' : 'ghost'}
-                        size="sm"
-                        icon={<Icon name="Filter" size={20} />}
-                        onClick={() => setFilterOpen(true)}
-                        agentId="vault.home.filter-button"
-                        agentAction="vault.openFilters"
-                      >
-                        {filterCount > 0
-                          ? t('filters.active', { count: filterCount })
-                          : t('filters.title')}
-                      </Button>
+                      <span className="kg-vault__filter">
+                        <Button
+                          variant={filterCount > 0 ? 'secondary' : 'ghost'}
+                          iconOnly
+                          icon={<Icon name="Filter" size={20} />}
+                          onClick={() => setFilterOpen(true)}
+                          agentId="vault.home.filter-button"
+                          agentAction="vault.openFilters"
+                          aria-label={
+                            filterCount > 0
+                              ? t('filters.active', { count: filterCount })
+                              : t('filters.title')
+                          }
+                        />
+                        {filterCount > 0 && (
+                          <span className="kg-vault__filter-badge" aria-hidden="true">
+                            {filterCount}
+                          </span>
+                        )}
+                      </span>
                       {documents.length > 1 && <SortControl />}
                       {/* UX-7: List / Grid / Compact, persisted across launches. */}
                       <ViewModeControl mode={viewMode} onChange={setViewMode} />
@@ -653,6 +721,7 @@ export function VaultHomePage(): ReactNode {
           isOpen={isFilterOpen}
           filters={filters}
           tags={tags}
+          countFor={(draft) => applyFilters(documents, draft, tagsByDocument).length}
           onDismiss={() => setFilterOpen(false)}
           onApply={(next) => {
             setFilters(next);
@@ -696,218 +765,83 @@ export function VaultHomePage(): ReactNode {
           onClose={() => setExtractPagesDoc(null)}
         />
 
+        {/* IM-1…5: the likely next steps as a quick row; organise actions;
+            file-type tools folded under "More tools"; lock/archive/delete last. */}
         <ActionSheet
           isOpen={moreDoc !== null}
           header={moreDoc?.name}
           agentId="vault.home.item-menu"
           onDidDismiss={() => setMoreDoc(null)}
-          buttons={[
-            {
-              text: t('actions.rename'),
-              icon: 'Pencil',
-              handler: (): void => {
-                if (moreDoc) setRenameDocTarget(moreDoc);
-              },
-            },
-            {
-              text: t('actions.add_tag'),
-              icon: 'Tag',
-              handler: (): void => {
-                if (moreDoc) setTagDocId(moreDoc.id);
-              },
-            },
-            {
-              text: t('folders.move'),
-              icon: 'Move',
-              handler: (): void => {
-                if (moreDoc) setMoveDocId(moreDoc.id);
-              },
-            },
-            {
-              text: t('bulk.select'),
-              icon: 'SquareCheck',
-              handler: (): void => {
-                if (moreDoc) enterSelection(moreDoc.id);
-              },
-            },
-            {
-              text: t(moreDoc?.isLocked ? 'actions.unlock' : 'actions.lock'),
-              icon: moreDoc?.isLocked ? 'Unlock' : 'Lock',
-              handler: (): void => {
-                if (moreDoc) {
-                  hapticTap();
-                  void toggleLock(moreDoc);
-                }
-              },
-            },
-            // F-64/F-65: open in / share with another app (native only).
-            ...(intents.supported
+          collapsedGroups={[t('menu.more_tools')]}
+          quickActions={
+            moreDoc
               ? [
+                  // F-64/F-65: share / open in another app (native only).
+                  ...(intents.supported
+                    ? [
+                        { id: 'share', text: t('intents.share'), icon: 'Share2' as const, handler: (): void => void handleShareDoc(moreDoc) },
+                        { id: 'open-with', text: t('intents.open_with'), icon: 'ExternalLink' as const, handler: (): void => void handleOpenWith(moreDoc) },
+                      ]
+                    : []),
+                  ...(ai.status !== 'unsupported'
+                    ? [{ id: 'ask-ai', text: t('viewer.ask_ai'), icon: 'Sparkles' as const, handler: (): void => router.push(askAiAboutRoute(moreDoc.id), 'forward', 'push') }]
+                    : []),
                   {
-                    text: t('intents.open_with'),
-                    icon: 'ExternalLink' as const,
+                    id: 'favorite',
+                    text: t(moreDoc.isFavorite ? 'menu.unfavorite' : 'menu.favorite'),
+                    icon: 'Star' as const,
                     handler: (): void => {
-                      if (moreDoc) void handleOpenWith(moreDoc);
-                    },
-                  },
-                  {
-                    text: t('intents.share'),
-                    icon: 'Share2' as const,
-                    handler: (): void => {
-                      if (moreDoc) void handleShareDoc(moreDoc);
+                      hapticTap();
+                      void toggleFavorite(moreDoc);
                     },
                   },
                 ]
-              : []),
-            // F-67: read-only document details.
-            {
-              text: t('details.title'),
-              icon: 'Info',
-              handler: (): void => {
-                if (moreDoc) setDetailsDoc(moreDoc);
-              },
-            },
-            // F-68: quick-copy text, only when the doc already has stored text.
-            ...(moreDoc && copyText.hasText(moreDoc)
+              : []
+          }
+          buttons={
+            moreDoc
               ? [
+                  { id: 'rename', text: t('actions.rename'), icon: 'Pencil', handler: (): void => setRenameDocTarget(moreDoc) },
+                  { id: 'move', text: t('folders.move'), icon: 'Move', handler: (): void => setMoveDocId(moreDoc.id) },
+                  { id: 'tags', text: t('actions.add_tag'), icon: 'Tag', handler: (): void => setTagDocId(moreDoc.id) },
+                  // F-67: read-only document details.
+                  { id: 'details', text: t('details.title'), icon: 'Info', handler: (): void => setDetailsDoc(moreDoc) },
+                  ...documentTools(moreDoc).map((tool) => ({ ...tool, group: t('menu.more_tools') })),
                   {
-                    text: t('copy_text.action'),
-                    icon: 'Copy' as const,
+                    id: 'lock',
+                    text: t(moreDoc.isLocked ? 'actions.unlock' : 'actions.lock'),
+                    icon: moreDoc.isLocked ? 'Unlock' : 'Lock',
                     handler: (): void => {
-                      if (moreDoc) void handleCopyText(moreDoc);
+                      hapticTap();
+                      void toggleLock(moreDoc);
                     },
                   },
-                ]
-              : []),
-            // F-8: convert an image to another Canvas format (JPEG/PNG/WebP).
-            ...(moreDoc && canConvertImageFormat(moreDoc)
-              ? [
+                  // F-89: hide from the main list without deleting.
                   {
-                    text: t('convert_format.action'),
-                    icon: 'FileType' as const,
+                    id: 'archive',
+                    text: t('actions.archive'),
+                    icon: 'Archive',
                     handler: (): void => {
-                      if (moreDoc) setConvertDoc(moreDoc);
+                      hapticTap();
+                      void archive(moreDoc);
                     },
                   },
-                ]
-              : []),
-            // F-29: image filter presets (grayscale/B&W/auto-enhance/invert).
-            ...(moreDoc && canApplyImageFilter(moreDoc)
-              ? [
+                  // UX-1: soft-delete to Trash (recoverable via Undo).
                   {
-                    text: t('enhance.action'),
-                    icon: 'Sparkles' as const,
+                    id: 'delete',
+                    text: t('actions.delete'),
+                    role: 'destructive',
+                    icon: 'Trash2',
                     handler: (): void => {
-                      if (moreDoc) setEnhanceDoc(moreDoc);
+                      hapticDestructive();
+                      void softDelete(moreDoc);
+                      enqueueUndo({ kind: 'single', document: moreDoc });
                     },
                   },
+                  { text: t('actions.cancel'), role: 'cancel' },
                 ]
-              : []),
-            // F-85: resize to exact dimensions + compress to a size target.
-            ...(moreDoc && canConvertImageFormat(moreDoc)
-              ? [
-                  {
-                    text: t('resize_compress.action'),
-                    icon: 'Shrink' as const,
-                    handler: (): void => {
-                      if (moreDoc) setResizeDoc(moreDoc);
-                    },
-                  },
-                ]
-              : []),
-            // F-5 UX follow-up: one-tap compress at the recommended quality —
-            // the highest-frequency PDF tool (shrinking a scan under a
-            // government-portal upload limit), promoted from the Tools-hub
-            // tool-first flow straight onto the document it applies to.
-            ...(moreDoc && isPdf(moreDoc.fileType)
-              ? [
-                  {
-                    text: t('pdf_compress.action'),
-                    icon: 'Shrink' as const,
-                    handler: (): void => {
-                      if (moreDoc) void handleCompressPdf(moreDoc);
-                    },
-                  },
-                ]
-              : []),
-            // F-66 UX follow-up: same item-menu-first promotion as Compress —
-            // extract selected pages into a new PDF, reusing F-86's page-range
-            // sheet pattern.
-            ...(moreDoc && isPdf(moreDoc.fileType)
-              ? [
-                  {
-                    text: t('pdf_extract_pages.action'),
-                    icon: 'Scissors' as const,
-                    handler: (): void => {
-                      if (moreDoc) setExtractPagesDoc(moreDoc);
-                    },
-                  },
-                ]
-              : []),
-            // F-86: save selected page(s) of a PDF as standalone images.
-            ...(moreDoc && isPdf(moreDoc.fileType)
-              ? [
-                  {
-                    text: t('page_image.action'),
-                    icon: 'Images' as const,
-                    handler: (): void => {
-                      if (moreDoc) setPageImageDoc(moreDoc);
-                    },
-                  },
-                ]
-              : []),
-            // F-20: OCR only offered for image documents on a native platform.
-            ...(moreDoc && canOcr(moreDoc)
-              ? [
-                  {
-                    text: t('actions.extract_text'),
-                    icon: 'FileText' as const,
-                    handler: (): void => {
-                      if (moreDoc) void handleOcr(moreDoc);
-                    },
-                  },
-                ]
-              : []),
-            // Gemma transcription: images + PDFs, even if text was already extracted.
-            ...(moreDoc && canTranscribeWithVision(moreDoc)
-              ? [
-                  {
-                    text: t('actions.transcribe_gemma'),
-                    icon: 'FileText' as const,
-                    handler: (): void => {
-                      if (moreDoc) void handleOcr(moreDoc, 'vision');
-                    },
-                  },
-                ]
-              : []),
-            // F-89: hide from the main list without deleting — the item-menu
-            // path for the same action Swipe Actions can bind to a side.
-            {
-              text: t('actions.archive'),
-              icon: 'Archive',
-              handler: (): void => {
-                if (moreDoc) {
-                  hapticTap();
-                  void archive(moreDoc);
-                }
-              },
-            },
-            // UX-1: individual delete → soft-delete to Trash (recoverable via Undo).
-            {
-              text: t('actions.delete'),
-              role: 'destructive',
-              icon: 'Trash2',
-              handler: (): void => {
-                if (moreDoc) {
-                  const doc = moreDoc;
-                  hapticDestructive();
-                  void softDelete(doc);
-                  enqueueUndo({ kind: 'single', document: doc });
-                }
-              },
-            },
-            { text: t('actions.cancel'), role: 'cancel' },
-          ]}
+              : []
+          }
         />
 
         {/* F-8: pick the target format after "Convert format" is chosen above. */}
@@ -1099,6 +1033,16 @@ export function VaultHomePage(): ReactNode {
           message={lastUploadErrors.map((key) => t(key)).join('\n')}
           onDidDismiss={() => useVaultStore.getState().finishUpload([])}
           data-agent-id="vault.home.upload-error-toast"
+        />
+        {/* VH-15: multi-select is a long-press — say so once, when it starts
+            to matter (3+ documents), then never again. */}
+        <IonToast
+          isOpen={showLongPressTip}
+          duration={5000}
+          message={t('tips.long_press')}
+          buttons={[{ text: t('tips.got_it'), role: 'cancel' }]}
+          onDidDismiss={() => markTipSeen(LONG_PRESS_TIP)}
+          data-agent-id="vault.home.tip-long-press"
         />
         <IonToast
           isOpen={ocrMsg !== null}

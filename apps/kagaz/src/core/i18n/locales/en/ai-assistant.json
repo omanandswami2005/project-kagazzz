@@ -17,12 +17,14 @@
     "dismiss": "Dismiss"
   },
   "suggestions": {
-    "find": "Find a document",
-    "merge": "Merge PDFs",
-    "scan": "Scan something new"
+    "title": "Ask about your documents",
+    "hint": "It reads names and saved text on this phone — nothing leaves it.",
+    "about": "What does “{{name}}” say?",
+    "find": "Find my rent agreement",
+    "merge": "Merge my Aadhaar front and back into one PDF"
   },
   "lifecycle": {
-    "unsupported": "The AI Assistant needs on-device AI support, which isn't available on this platform.",
+    "unsupported": "On-device AI needs the Kagazzz Docs Android app on a phone that can run the model. Everything else in the app works without it.",
     "intro": "Kagazzz AI runs entirely on your device — nothing you type or ask ever leaves your phone.",
     "download_button": "Download AI Assistant ({{size}})",
     "wifi_hint": "One-time download. Wi-Fi recommended.",
@@ -40,7 +42,8 @@
     "delete_confirm_body": "This frees {{size}}. Your saved conversations stay. To use the assistant again you will need to download the model again.",
     "delete_confirm_ok": "Delete",
     "delete_confirm_cancel": "Cancel",
-    "storage_hint": "Stored only in this app's private storage. Downloaded once from Hugging Face — no documents or messages are sent."
+    "storage_hint": "Stored only in this app's private storage. Downloaded once from Hugging Face — no documents or messages are sent.",
+    "unsupported_title": "On-device AI isn't available here"
   },
   "errors": {
     "model_failed": "The assistant could not start. Free up some space and retry."

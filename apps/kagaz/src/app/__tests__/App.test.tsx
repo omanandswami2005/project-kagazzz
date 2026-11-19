@@ -42,5 +42,10 @@ describe('App shell', () => {
     expect(document.querySelector('[data-agent-id="app.menu"]')).not.toBeNull();
     expect(document.querySelector('[data-agent-id="app.menu.settings"]')).not.toBeNull();
     expect(document.querySelector('[data-agent-id="app.tab.ai"]')).toBeNull();
+    // Audit G-2: the tab bar shows on the tab roots (vault is one).
+    expect(
+      document.querySelector('[data-agent-id="app.tab-bar"]')
+    ).toHaveAttribute('data-agent-state', 'expanded');
+    expect(document.documentElement.classList.contains('kg-tabs-visible')).toBe(true);
   });
 });

@@ -240,6 +240,8 @@ Atoms are the smallest, indivisible UI building blocks.
 | `onRemove` | `() => void` | — | Remove handler |
 | `onClick` | `() => void` | — | Click handler (for filter tags) |
 
+Sizes: static tags (in document rows) stay compact; clickable tags are **filter chips** — 44 px tall with an 8 px gap, a 1 px `--border-strong` edge, and when selected a `--color-primary-subtle` fill, saffron edge and a check icon (screen audit FP-1/FP-2).
+
 **Accessibility:**
 - Removable tags: `aria-label="Remove [tag name]"` on the × button
 - Selectable tags: use `aria-pressed` for toggle behavior
@@ -555,14 +557,37 @@ Molecules combine atoms into functional, reusable units.
 
 ### EmptyState
 
-**Purpose:** Displayed when a section has no content (no documents, no search results, etc.).
+**Purpose:** Displayed when a section has no content (no documents, no search results, etc.). Implemented in `@kagaz/ui` (`molecules/EmptyState.tsx`); every empty screen uses it (screen audit G-8).
 
 | Prop | Type | Description |
 |---|---|---|
-| `illustration` | `ReactNode` | SVG illustration or Lottie animation |
+| `icon` | `IconName` | 48 px icon in the object-icon colour |
 | `title` | `string` | Main message (e.g., "No documents yet") |
-| `description` | `string` | Helper text (e.g., "Upload your first document to get started") |
-| `action` | `{ label: string; onClick: () => void }` | Optional CTA button |
+| `hint` | `string` | Optional helper text (e.g., "Upload your first document to get started") |
+| `action` | `ReactNode` | Optional CTA — a primary `Button` with a leading icon |
+
+Layout: top third of the content area, centred, 8 px between lines.
+
+---
+
+### SegmentedControl
+
+**Purpose:** The one single-choice picker (screen audit G-6): view mode, theme, language, auto-lock, swipe actions, tool categories, every tool-sheet option. A tinted track with the selected segment raised; wraps when the options don't fit. `@kagaz/ui` `molecules/SegmentedControl.tsx`.
+
+| Prop | Type | Description |
+|---|---|---|
+| `options` | `{ value; label?; icon?; ariaLabel? }[]` | Icon-only segments need `ariaLabel` |
+| `value` / `onChange` | `T` / `(v: T) => void` | Controlled value |
+| `agentId` | `string` | Group id; each segment is `${agentId}-${value}` unless `optionAgentId` is given |
+| `fullWidth` | `boolean` | Segments share the row equally |
+
+Each segment is a full 44 px target; `aria-pressed` marks the selection; the group exposes `data-agent-state = value`.
+
+---
+
+### ListRow
+
+**Purpose:** A navigation or action row (screen audit SE-2): leading icon, title, optional hint, trailing chevron. Use it for lists of destinations (Settings → Backup, Privacy policy…) instead of stacked outline buttons. `tone="danger"` for destructive rows, `loading` swaps the chevron for a spinner. `@kagaz/ui` `molecules/ListRow.tsx`.
 
 ---
 

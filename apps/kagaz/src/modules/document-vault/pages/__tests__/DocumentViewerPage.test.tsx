@@ -69,6 +69,7 @@ vi.mock('../../hooks/useDocument', () => ({
   },
 }));
 vi.mock('../../hooks/useDocumentFile', () => ({
+  isPdf: (fileType: string) => /pdf/i.test(fileType),
   useDocumentFile: () => ({ pages: state.pages, loading: state.fileLoading, error: state.error }),
 }));
 vi.mock('../../hooks/useDocumentOcr', () => ({
@@ -133,6 +134,13 @@ describe('DocumentViewerPage (UX-6)', () => {
     await renderAuthorized();
     expect(q('vault.viewer.next.ask-ai')).not.toBeNull();
     expect(q('vault.viewer.next.more')).not.toBeNull();
+  });
+
+  it('offers the file type\'s next tool: PDF → Compress (VW-8)', async () => {
+    state.document = doc({ fileType: 'pdf' });
+    await renderAuthorized();
+    expect(q('vault.viewer.next.compress')).not.toBeNull();
+    expect(q('vault.viewer.next.make-pdf')).toBeNull();
   });
 
   it('shows a spinner while loading', () => {
@@ -216,7 +224,7 @@ describe('DocumentViewerPage (UX-6)', () => {
     state.document = doc({ fileType: 'text/plain', ocrText: undefined });
     await renderAuthorized();
     expect(q('vault.viewer.extract-text')).toBeNull();
-    expect(screen.getByText('viewer.no_text')).toBeInTheDocument();
+    expect(screen.getByText('viewer.no_text_type')).toBeInTheDocument();
   });
 
   it('renders an error state when the file fails to render', async () => {

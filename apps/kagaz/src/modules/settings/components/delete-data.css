@@ -10,7 +10,7 @@
 }
 
 .kg-erase__title {
-  color: var(--color-danger);
+  color: var(--text-danger);
   font-family: var(--font-primary);
   font-size: var(--text-xl);
   font-weight: var(--font-semibold);

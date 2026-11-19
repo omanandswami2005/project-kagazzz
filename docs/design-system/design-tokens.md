@@ -53,10 +53,12 @@
 |---|---|---|---|
 | `--color-accent` | `#10B981` | Success, Growth | Confirmations, uploads complete, active states |
 | `--color-accent-light` | `#34D399` | Success hover | Lighter success backgrounds |
-| `--color-danger` | `#F43F5E` | Destructive actions | Delete, remove, error states |
+| `--color-danger` | `#BE123C` | Destructive **fills** | Delete buttons, swipe-to-delete reveal (white text 6.29:1). Was `#F43F5E` — 3.51:1 as text, 3.67:1 under white, failed AA ([screen audit M-2/M-3](../ux/screen-audit.md#m-measured--colours-sizes-wcag-aa)) |
+| `--text-danger` | `#BE123C` light · `#FB7185` dark | Destructive **text** | "Delete" in menus, error messages (6.01:1 light, 6.63:1 on navy) |
 | `--color-danger-light` | `#FB7185` | Danger hover | Error backgrounds, soft alerts |
 | `--color-warning` | `#F59E0B` | Caution | Expiring documents, quota warnings (amber, not orange: orange is the brand, a warning must not look like a brand button) |
 | `--color-warning-light` | `#FBBF24` | Warning hover | Warning backgrounds |
+| `--color-warning-subtle` / `--color-warning-border` | 12 % / 35 % amber mix | Warning banner | Fill and edge of caution banners (Quick Notes) |
 | `--color-info` | `#0EA5E9` | Informational | Tips, AI suggestions, help text |
 | `--color-info-light` | `#38BDF8` | Info hover | Info backgrounds |
 
@@ -268,7 +270,7 @@ graph LR
 |---|---|---|---|
 | `--text-primary` | `#0F172A` | `#F8FAFC` | Headings, body text, primary labels |
 | `--text-secondary` | `#475569` | `#CBD5E1` | Descriptions, captions, metadata |
-| `--text-muted` | `#94A3B8` | `#64748B` | Placeholders, disabled text, hints |
+| `--text-muted` | `#64748B` | `#94A3B8` | Meta lines, hints, placeholders — 4.55:1 light, 6.96:1 dark. The two values were swapped until 2026-11-19 (2.45:1 / 3.75:1, [audit M-1](../ux/screen-audit.md#m-measured--colours-sizes-wcag-aa)) |
 | `--text-on-primary` | `#FFFFFF` | `#0F172A` | Text on brand surfaces (`--color-primary`, `--gradient-brand`); flips dark in dark mode |
 | `--text-on-color` | `#FFFFFF` | `#FFFFFF` | Text on semantic fills (danger, success, info badges/buttons); never flips |
 | `--text-on-secondary` | `#0F172A` | `#0F172A` | Text on secondary-colored backgrounds |
@@ -411,12 +413,14 @@ All spacing values are based on a **4px base grid** to ensure consistent rhythm 
 
 | Token | Value (px) | Usage |
 |---|---|---|
-| `--radius-sm` | 4 | Tags, badges, small chips |
-| `--radius-md` | 8 | Buttons, inputs, cards |
-| `--radius-lg` | 12 | Modals, panels, large cards |
-| `--radius-xl` | 16 | Sheets, drawers, image containers |
-| `--radius-2xl` | 24 | Floating action buttons, pills |
-| `--radius-full` | 9999 | Avatars, circular buttons, toggles |
+| `--radius-sm` | 4 | Badges, segments inside a segmented control, small thumbnails |
+| `--radius-md` | 8 | Buttons, inputs, search box, page thumbnails |
+| `--radius-lg` | 12 | **Every card**: document rows/cards, tool cards, settings groups, list rows, banners |
+| `--radius-xl` | 16 | Sheets, drawers |
+| `--radius-2xl` | 24 | Floating action buttons |
+| `--radius-full` | 9999 | Chips (filter, number, tag), avatars, circular buttons, toggles |
+
+One radius per role (screen audit M-13): if a surface is a card, it is 12 px, whatever screen it is on.
 
 ---
 
@@ -571,7 +575,8 @@ Kagaz uses a **mobile-first** responsive design system.
 |---|---|---|---|
 | `#0F172A` (text-primary) | `#F8FAFC` (surface-1) | **15.4:1** | ✅ AAA |
 | `#475569` (text-secondary) | `#F8FAFC` (surface-1) | **7.1:1** | ✅ AA |
-| `#94A3B8` (text-muted) | `#F8FAFC` (surface-1) | **3.3:1** | ✅ Large text only |
+| `#64748B` (text-muted) | `#F8FAFC` (surface-1) | **4.55:1** | ✅ AA |
+| `#94A3B8` (text-muted dark) | `#0F172A` (surface-1 dark) | **6.96:1** | ✅ AA |
 | `#FFFFFF` (text-on-primary) | `#C2410C` (primary) | **5.18:1** | ✅ AA |
 | `#C2410C` (primary, links) | `#F8FAFC` (surface-1) | **4.95:1** | ✅ AA |
 | `#0F172A` (text-on-primary dark) | `#F97316` (primary dark) | **6.37:1** | ✅ AA |
@@ -784,7 +789,7 @@ Simple Mode is more than a density switch — it suppresses entire UI patterns. 
 | Token | Simple Mode value | Why |
 |---|---|---|
 | `--shadow-default` | `none` | Shadows confuse on low-end displays in bright light. |
-| `--duration-default` | `0ms` | Reduce motion automatically. |
+| `--duration-default`, `--duration-instant/fast/normal/slow` | `0ms` | No decorative motion at all — every animation reads these tokens, so zeroing them stops it app-wide (screen audit G-10). Same collapse as `prefers-reduced-motion`. |
 | `--radius-default` | `--radius-md` (8px) | Less playful, more obvious affordances. |
 | `--icon-default` | `--icon-lg` (32px) | Bigger, less ambiguous. |
 | `--focus-ring-width` | `4px` | Easier to see. |
@@ -793,6 +798,10 @@ Simple Mode is more than a density switch — it suppresses entire UI patterns. 
 :root[data-density="simple"] {
   --shadow-default: none;
   --duration-default: 0ms;
+  --duration-instant: 0ms;
+  --duration-fast: 0ms;
+  --duration-normal: 0ms;
+  --duration-slow: 0ms;
   --radius-default: var(--radius-md);
   --icon-default: var(--icon-lg);
   --focus-ring-width: 4px;

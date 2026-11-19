@@ -27,12 +27,12 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Icon, Spinner } from '@kagaz/ui';
+import { Alert, Button, EmptyState, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useTrash } from '../hooks/useTrash';
-import { TRASH_RETENTION_DAYS } from '../services/trash.service';
+import { daysUntilPurge, TRASH_RETENTION_DAYS } from '../services/trash.service';
 import './trash.css';
 
 /** F-88: fixed swipe actions for Trash — not user-configurable, since
@@ -48,7 +48,7 @@ const DELETE_FOREVER_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--co
 /** The Trash / Recycle Bin screen. */
 export function TrashPage(): ReactNode {
   const { t } = useTranslation('documents');
-  const { locale } = useLocale();
+  const { formatFileSize } = useLocale();
   const router = useIonRouter();
   const trash = useTrash();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
@@ -58,8 +58,10 @@ export function TrashPage(): ReactNode {
     router.push(`/doc/${doc.id}?trashed=1`);
   };
 
-  const formatDate = (iso?: string): string =>
-    iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(iso)) : '';
+  // TR-2: what emptying the Trash frees, and when each item goes by itself.
+  const trashBytes = trash.items.reduce((sum, doc) => sum + doc.fileSize, 0);
+  // Read once per visit — day counts don't need to tick while you look.
+  const [now] = useState(() => Date.now());
 
   return (
     <IonPage data-agent-id="vault.trash">
@@ -81,10 +83,11 @@ export function TrashPage(): ReactNode {
               <Spinner size="lg" label={t('trash.title')} />
             </div>
           ) : trash.items.length === 0 ? (
-            <div className="kg-trash__empty" data-agent-id="vault.trash.empty">
-              <Icon name="Trash2" size={48} aria-hidden />
-              <p>{t('trash.empty_state')}</p>
-            </div>
+            <EmptyState
+              icon="Trash2"
+              title={t('trash.empty_state')}
+              agentId="vault.trash.empty"
+            />
           ) : (
             <>
               <div className="kg-trash__toolbar">
@@ -118,7 +121,7 @@ export function TrashPage(): ReactNode {
                     onClick={() => setConfirmEmpty(true)}
                     agentId="vault.trash.empty"
                   >
-                    {t('trash.empty_trash')}
+                    {t('trash.empty_trash_size', { size: formatFileSize(trashBytes) })}
                   </Button>
                 )}
               </div>
@@ -145,7 +148,7 @@ export function TrashPage(): ReactNode {
                         >
                           <span className="kg-trash__name">{doc.name}</span>
                           <span className="kg-trash__deleted">
-                            {t('trash.deleted_on', { date: formatDate(doc.deletedAt) })}
+                            {t('trash.deletes_in', { count: daysUntilPurge(doc.deletedAt, now) })}
                           </span>
                         </button>
                         <div className="kg-trash__actions">

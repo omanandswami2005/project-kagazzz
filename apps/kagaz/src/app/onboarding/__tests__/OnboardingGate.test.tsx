@@ -22,8 +22,8 @@ describe('OnboardingGate (F-27)', () => {
     expect(q('app.onboarding')?.getAttribute('data-agent-state')).toBe('slide-1');
     expect(q('app.onboarding.skip')).not.toBeNull();
     expect(q('app.onboarding.next')).not.toBeNull();
-    // Back is disabled on the first slide.
-    expect(q('app.onboarding.back')).toHaveProperty('disabled', true);
+    // Back is hidden on the first slide (audit OB-1).
+    expect(q('app.onboarding.back')).toBeNull();
   });
 
   it('advances through slides and shows Get Started on the last', () => {
@@ -36,6 +36,8 @@ describe('OnboardingGate (F-27)', () => {
     expect(q('app.onboarding')?.getAttribute('data-agent-state')).toBe('slide-4');
     expect(q('app.onboarding.next')).toBeNull();
     expect(q('app.onboarding.get-started')).not.toBeNull();
+    // OB-6: the last slide leads with adding the first document.
+    expect(q('app.onboarding.add-first')).toHaveAttribute('data-agent-role', 'primary-action');
   });
 
   it('Back steps to the previous slide', () => {

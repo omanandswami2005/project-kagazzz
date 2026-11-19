@@ -6,18 +6,21 @@
  */
 import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon } from '@kagaz/ui';
+import { Button, Icon, type IconName } from '@kagaz/ui';
+import { AppMark } from '@/app/shell/AppMark';
+import { useLockSettings } from '@/modules/auth/hooks/useLockSettings';
+import { useVaultStore } from '@/modules/document-vault/store/vault.store';
 import { useOnboarding } from './useOnboarding';
 import './onboarding.css';
 
 /** Slide definitions — icon + i18n keys (bodies read at 8th-grade level). */
 const SLIDES = [
-  { icon: 'FileText', key: 'welcome' },
+  { icon: null, key: 'welcome' }, // OB-3: the app mark, not a generic file icon
   { icon: 'Lock', key: 'privacy' },
   { icon: 'Scan', key: 'organize' },
-  { icon: 'Download', key: 'backup' },
+  { icon: 'ShieldCheck', key: 'backup' },
 ] as const satisfies readonly {
-  icon: 'FileText' | 'Lock' | 'Scan' | 'Download';
+  icon: IconName | null;
   key: string;
 }[];
 
@@ -33,6 +36,7 @@ export function OnboardingGate(): ReactNode {
   const { showOnboarding, complete } = useOnboarding();
   const [index, setIndex] = useState(0);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const lock = useLockSettings();
 
   if (!showOnboarding) {
     return null;
@@ -101,8 +105,8 @@ export function OnboardingGate(): ReactNode {
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <span className="kg-onboarding__icon" aria-hidden>
-          <Icon name={slide.icon} size={48} />
+        <span className="kg-onboarding__icon" aria-hidden key={slide.key}>
+          {slide.icon ? <Icon name={slide.icon} size={48} /> : <AppMark size={96} />}
         </span>
         <h1 id="kg-onboarding-title" className="kg-onboarding__title">
           {t(`onboarding.${slide.key}.title`)}
@@ -110,45 +114,75 @@ export function OnboardingGate(): ReactNode {
         <p className="kg-onboarding__body">{t(`onboarding.${slide.key}.body`)}</p>
       </div>
 
-      <div className="kg-onboarding__dots" aria-hidden>
-        {SLIDES.map((s, i) => (
-          <span
-            key={s.key}
-            className={`kg-onboarding__dot${i === index ? ' kg-onboarding__dot--active' : ''}`}
-          />
-        ))}
+      {/* OB-7: the lock the last slide talks about, one tap away. */}
+      {isLast && lock.available === true && (
+        <Button
+          variant="secondary"
+          fullWidth
+          icon={<Icon name={lock.enabled ? 'Check' : 'Lock'} size={20} />}
+          disabled={lock.enabled || lock.busy}
+          loading={lock.busy}
+          onClick={() => lock.toggle(true)}
+          agentId="app.onboarding.enable-lock"
+        >
+          {lock.enabled ? t('onboarding.lock_on') : t('onboarding.enable_lock')}
+        </Button>
+      )}
+
+      {/* OB-1/OB-5: Back is a text link beside the dots (hidden on slide 1);
+         the primary action is full-width in the thumb zone. */}
+      <div className="kg-onboarding__nav">
+        <span className="kg-onboarding__back">
+          {!isFirst && (
+            <Button variant="ghost" size="sm" onClick={goBack} agentId="app.onboarding.back">
+              {t('onboarding.back')}
+            </Button>
+          )}
+        </span>
+        <div className="kg-onboarding__dots" aria-hidden>
+          {SLIDES.map((s, i) => (
+            <span
+              key={s.key}
+              className={`kg-onboarding__dot${i === index ? ' kg-onboarding__dot--active' : ''}`}
+            />
+          ))}
+        </div>
+        <span className="kg-onboarding__back" />
       </div>
 
-      <div className="kg-onboarding__nav">
+      {isLast ? (
+        <div className="kg-onboarding__finish">
+          {/* OB-6 (next best action): land on the first real step, not an empty vault. */}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon={<Icon name="Plus" size={20} />}
+            onClick={() => {
+              complete();
+              useVaultStore.getState().openUploadSheet();
+            }}
+            agentId="app.onboarding.add-first"
+            agentRole="primary-action"
+          >
+            {t('onboarding.add_first')}
+          </Button>
+          <Button variant="ghost" fullWidth onClick={complete} agentId="app.onboarding.get-started">
+            {t('onboarding.explore')}
+          </Button>
+        </div>
+      ) : (
         <Button
-          variant="ghost"
-          size="md"
-          onClick={goBack}
-          disabled={isFirst}
-          agentId="app.onboarding.back"
+          variant="primary"
+          size="lg"
+          fullWidth
+          onClick={goNext}
+          agentId="app.onboarding.next"
+          agentRole="primary-action"
         >
-          {t('onboarding.back')}
+          {t('onboarding.next')}
         </Button>
-        {isLast ? (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={complete}
-            agentId="app.onboarding.get-started"
-          >
-            {t('onboarding.get_started')}
-          </Button>
-        ) : (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={goNext}
-            agentId="app.onboarding.next"
-          >
-            {t('onboarding.next')}
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ import {
 } from '@ionic/react';
 import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, EmptyState, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive, hapticSuccess } from '@/core/haptics';
 import { LockScreen } from '@/modules/auth/components/LockScreen';
@@ -209,22 +209,22 @@ export function QuickReferencePage(): ReactNode {
               <Spinner size="lg" label={t('quick_reference.title')} />
             </div>
           ) : entries.length === 0 ? (
-            <div className="kg-quickref__empty" data-agent-id="vault.quick-reference.empty">
-              <Icon name="Copy" size={48} aria-hidden />
-              <p className="kg-quickref__empty-message">
-                {t('quick_reference.empty_state')}
-              </p>
-              <p className="kg-quickref__empty-hint">
-                {t('quick_reference.empty_hint')}
-              </p>
-              <Button
-                variant="primary"
-                onClick={() => setEditTarget(null)}
-                agentId="vault.quick-reference.empty-add"
-              >
-                {t('quick_reference.add')}
-              </Button>
-            </div>
+            <EmptyState
+              icon="KeyRound"
+              title={t('quick_reference.empty_state')}
+              hint={t('quick_reference.empty_hint')}
+              agentId="vault.quick-reference.empty"
+              action={
+                <Button
+                  variant="primary"
+                  icon={<Icon name="Plus" size={20} />}
+                  onClick={() => setEditTarget(null)}
+                  agentId="vault.quick-reference.empty-add"
+                >
+                  {t('quick_reference.add')}
+                </Button>
+              }
+            />
           ) : (
             <ul className="kg-quickref__list" data-agent-id="vault.quick-reference.list">
               {entries.map((entry) => {

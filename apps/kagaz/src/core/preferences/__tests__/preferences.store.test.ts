@@ -54,6 +54,8 @@ describe('preferences store — recentSectionCollapsed (UX pass)', () => {
       swipeLeftAction: 'delete',
       swipeRightAction: 'favorite',
       hapticsEnabled: true,
+      lastBackupAt: null,
+      seenTips: [],
     });
   });
 });
@@ -99,5 +101,17 @@ describe('preferences store — hapticsEnabled (UX pass 2026-07-24)', () => {
   it('treats only an explicit false as disabled', () => {
     localStorage.setItem('kagaz:preferences', JSON.stringify({}));
     expect(readPreferences().hapticsEnabled).toBe(true);
+  });
+});
+
+describe('preferences store — backup time and one-time tips', () => {
+  it('persists the last backup time (SE-6) and each tip once (VH-15)', () => {
+    usePreferencesStore.setState({ seenTips: [] });
+    const store = usePreferencesStore.getState();
+    store.setLastBackupAt('2026-11-19T10:00:00.000Z');
+    store.markTipSeen('long-press');
+    store.markTipSeen('long-press');
+    expect(readPreferences().lastBackupAt).toBe('2026-11-19T10:00:00.000Z');
+    expect(readPreferences().seenTips).toEqual(['long-press']);
   });
 });

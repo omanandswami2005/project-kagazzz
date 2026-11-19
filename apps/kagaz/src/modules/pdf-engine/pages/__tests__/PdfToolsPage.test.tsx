@@ -4,8 +4,16 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
 import { PdfToolsPage } from '../PdfToolsPage';
 
+const route = vi.hoisted(() => ({ search: '', replace: vi.fn() }));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useLocation: () => ({ pathname: '/pdf-tools', search: route.search }),
+  useHistory: () => ({ replace: route.replace }),
+}));
+
+const docsState = vi.hoisted(() => ({ documents: [] as unknown[] }));
 vi.mock('@/modules/document-vault/hooks/useDocuments', () => ({
-  useDocuments: () => ({ documents: [], isLoading: false }),
+  useDocuments: () => ({ documents: docsState.documents, isLoading: false }),
 }));
 
 vi.mock('@/modules/document-vault/hooks/useDocumentIntents', () => ({
@@ -41,6 +49,8 @@ beforeAll(async () => {
 // can still be mid-teardown when the next test's render() starts, leaking
 // its content into that test's queries.
 afterEach(async () => {
+  route.search = '';
+  docsState.documents = [];
   cleanup();
   await new Promise((resolve) => setTimeout(resolve, 50));
 });
@@ -125,6 +135,24 @@ describe('PdfToolsPage', () => {
 
       expect(within(container).getByText('PDF → Word')).toBeInTheDocument();
       expect(within(container).queryByText('PDF → Excel')).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens the linked tool with the linked document chosen (VW-8, TS-9)', async () => {
+    docsState.documents = [
+      { id: 'd1', name: 'Rent.pdf', fileType: 'pdf', isLocked: false, thumbnailPath: null },
+      { id: 'd2', name: 'PAN.pdf', fileType: 'pdf', isLocked: false, thumbnailPath: null },
+    ];
+    route.search = '?tool=compress&doc=d2';
+    render(<PdfToolsPage />);
+    const sheet = document.querySelector('[data-agent-id="pdf-tools.op-sheet"]');
+    expect(sheet?.getAttribute('data-agent-state')).toBe('open');
+    expect(route.replace).toHaveBeenCalledWith('/pdf-tools');
+    await vi.waitFor(() => {
+      const tile = (id: string): Element | null =>
+        document.querySelector(`[data-agent-id$=".item-${id}"]`);
+      expect(tile('d2')).toHaveAttribute('data-agent-state', 'selected');
+      expect(tile('d1')).toHaveAttribute('data-agent-state', 'idle');
     });
   });
 });

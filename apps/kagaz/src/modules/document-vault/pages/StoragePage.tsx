@@ -15,7 +15,11 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/core/i18n';
 import { useAi } from '@/app/providers/AIProvider';
+import { Button, Icon } from '@kagaz/ui';
+import { DocumentThumb } from '@/core/components/DocumentThumb';
+import { pdfToolRoute } from '@/core/constants/routes';
 import { StorageDonut } from '../components/StorageDonut';
+import { isPdf } from '../hooks/useDocumentFile';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
@@ -43,7 +47,7 @@ export function StoragePage(): ReactNode {
           ) : (
             <>
               {stats.byType.length > 0 ? (
-                <section data-agent-id="vault.storage.by-type">
+                <section className="kg-storage__card" data-agent-id="vault.storage.by-type">
                   <h2 className="kg-storage__heading">{t('storage.by_type')}</h2>
                   <StorageDonut
                     segments={stats.byType.map((row) => ({
@@ -78,21 +82,42 @@ export function StoragePage(): ReactNode {
                   data-agent-id="vault.storage.duplicates"
                 >
                   {t('storage.duplicates', {
-                    groups: stats.duplicateGroups,
+                    count: stats.duplicateGroups,
                     size: formatFileSize(stats.reclaimableBytes),
                   })}
                 </section>
               )}
 
-              <section data-agent-id="vault.storage.largest">
+              {/* ST-3/ST-5: each large document opens on tap; PDFs offer
+                  Compress right where the space is being spent. */}
+              <section className="kg-storage__card" data-agent-id="vault.storage.largest">
                 <h2 className="kg-storage__heading">{t('storage.largest')}</h2>
                 <ul className="kg-storage__list">
                   {stats.largest.map((doc) => (
                     <li key={doc.id} className="kg-storage__largest-row">
-                      <span className="kg-storage__largest-name">{doc.name}</span>
-                      <span className="kg-storage__row-size">
-                        {formatFileSize(doc.fileSize)}
-                      </span>
+                      <button
+                        type="button"
+                        className="kg-storage__largest-open"
+                        onClick={() => router.push(`/doc/${doc.id}`, 'forward', 'push')}
+                        data-agent-id={`vault.storage.largest-${doc.id}`}
+                      >
+                        <DocumentThumb document={doc} iconSize={20} className="kg-storage__thumb" />
+                        <span className="kg-storage__largest-text">
+                          <span className="kg-storage__largest-name">{doc.name}</span>
+                          <span className="kg-storage__row-size">{formatFileSize(doc.fileSize)}</span>
+                        </span>
+                      </button>
+                      {isPdf(doc.fileType) && !doc.isLocked && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={<Icon name="Shrink" size={20} />}
+                          onClick={() => router.push(pdfToolRoute('compress', doc.id), 'forward', 'push')}
+                          agentId={`vault.storage.largest-${doc.id}.compress`}
+                        >
+                          {t('viewer.compress')}
+                        </Button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -109,14 +134,14 @@ export function StoragePage(): ReactNode {
                       {t('storage.ai_model_size', { size: formatFileSize(ai.modelSizeBytes) })}
                     </span>
                   </span>
-                  <button
-                    type="button"
-                    className="kg-storage__ai-model-manage"
-                    data-agent-id="vault.storage.ai-model.manage"
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    agentId="vault.storage.ai-model.manage"
                     onClick={() => router.push('/ai-assistant', 'forward', 'push')}
                   >
                     {t('storage.ai_model_manage')}
-                  </button>
+                  </Button>
                 </section>
               )}
             </>

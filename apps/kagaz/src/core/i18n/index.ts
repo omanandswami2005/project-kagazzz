@@ -16,5 +16,6 @@ export {
   formatFileSize,
   formatNumber,
   formatRelativeTime,
+  formatShortDate,
 } from './utils';
 export type { TranslationResources } from './types';

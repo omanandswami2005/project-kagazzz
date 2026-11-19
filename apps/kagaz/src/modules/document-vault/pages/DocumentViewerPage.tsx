@@ -50,13 +50,14 @@ import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocLock } from '../hooks/useDocLock';
-import { useDocumentFile } from '../hooks/useDocumentFile';
+import { isPdf, useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useAi } from '@/app/providers/AIProvider';
 import { NextActions } from '@/core/components/NextActions';
-import { askAiAboutRoute } from '@/core/constants/routes';
+import { documentTypeIcon, isImageFile } from '@/core/components/DocumentThumb';
+import { askAiAboutRoute, pdfToolRoute } from '@/core/constants/routes';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive } from '@/core/haptics';
 import { extractNumberSequences } from '../services/extract-numbers';
@@ -184,6 +185,16 @@ export function DocumentViewerPage(): ReactNode {
     }
   };
 
+  // VW-8: PDFs most often need shrinking for an upload limit; photos most
+  // often need to become a PDF.
+  const typeTool = !document
+    ? null
+    : isPdf(document.fileType)
+      ? { id: 'compress', tool: 'compress', icon: 'Shrink' as const, labelKey: 'viewer.compress' as const }
+      : isImageFile(document.fileType)
+        ? { id: 'make-pdf', tool: 'imagesToPdf', icon: 'FileOutput' as const, labelKey: 'viewer.make_pdf' as const }
+        : null;
+
   return (
     <IonPage data-agent-id="vault.viewer">
       <IonHeader>
@@ -243,30 +254,42 @@ export function DocumentViewerPage(): ReactNode {
             <>
               <div className="kg-viewer__pages" data-agent-id="vault.viewer.pages">
                 {pages.map((url, i) => (
-                  <img
-                    key={url}
-                    className="kg-viewer__page"
-                    src={url}
-                    alt={t('viewer.page', { n: i + 1 })}
-                  />
+                  // VW-3: each page is a framed sheet on the canvas, numbered.
+                  <figure key={url} className="kg-viewer__sheet">
+                    <img
+                      className="kg-viewer__page"
+                      src={url}
+                      alt={t('viewer.page', { n: i + 1 })}
+                    />
+                    {pages.length > 1 && (
+                      <figcaption className="kg-viewer__page-number">
+                        {t('viewer.page_of', { n: i + 1, total: pages.length })}
+                      </figcaption>
+                    )}
+                  </figure>
                 ))}
               </div>
 
               <section className="kg-viewer__text" data-agent-id="vault.viewer.text-panel">
-                <h2 className="kg-viewer__text-title">{t('viewer.extracted_text')}</h2>
+                {/* VW-6: Copy is an icon in the panel header, not a full-width button. */}
+                <div className="kg-viewer__text-head">
+                  <h2 className="kg-viewer__text-title">{t('viewer.extracted_text')}</h2>
+                  {text && text.trim() && (
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      icon={<Icon name="Copy" size={20} />}
+                      aria-label={t('viewer.copy')}
+                      onClick={() => void handleCopy()}
+                      agentId="vault.viewer.copy-text"
+                    />
+                  )}
+                </div>
                 {text && text.trim() ? (
                   <>
                     <p className="kg-viewer__text-body" data-agent-id="vault.viewer.text-body">
                       {text}
                     </p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void handleCopy()}
-                      agentId="vault.viewer.copy-text"
-                    >
-                      {t('viewer.copy')}
-                    </Button>
                     {detectedNumbers.length > 0 && (
                       <div
                         className="kg-viewer__numbers"
@@ -305,7 +328,12 @@ export function DocumentViewerPage(): ReactNode {
                     {t('actions.extract_text')}
                   </Button>
                 ) : (
-                  <p className="kg-viewer__text-empty">{t('viewer.no_text')}</p>
+                  // VW-2: don't say "works on images" while showing an image.
+                  <p className="kg-viewer__text-empty">
+                    {documentTypeIcon(document.fileType) === 'File'
+                      ? t('viewer.no_text_type')
+                      : t('viewer.no_text_device')}
+                  </p>
                 )}
                 {/* Gemma transcription: offered even when text already exists (re-run replaces it). */}
                 {canTranscribeWithVision(document) && (
@@ -412,7 +440,8 @@ export function DocumentViewerPage(): ReactNode {
       </IonContent>
       {/* Smart UI §4: what people do next with an open document, in their
           path — same lock gate as the ⋮ menu; not for a Trash preview. */}
-      {document && authorized === true && !trashed && (
+      {/* VW-1: when only "More" would be left, the header ⋮ already covers it. */}
+      {document && authorized === true && !trashed && (intents.supported || ai.status !== 'unsupported' || typeTool) && (
         <IonFooter>
           <NextActions
             agentPrefix="vault.viewer.next"
@@ -422,6 +451,10 @@ export function DocumentViewerPage(): ReactNode {
                 : []),
               ...(ai.status !== 'unsupported'
                 ? [{ id: 'ask-ai', icon: 'Sparkles' as const, label: t('viewer.ask_ai'), onClick: () => router.push(askAiAboutRoute(document.id), 'forward', 'push') }]
+                : []),
+              // VW-8: the file type's most-needed tool, opened on this document.
+              ...(typeTool
+                ? [{ id: typeTool.id, icon: typeTool.icon, label: t(typeTool.labelKey), onClick: () => router.push(pdfToolRoute(typeTool.tool, document.id), 'forward', 'push') }]
                 : []),
               { id: 'more', icon: 'MoreVertical', label: t('viewer.more'), onClick: () => setMenuOpen(true) },
             ]}

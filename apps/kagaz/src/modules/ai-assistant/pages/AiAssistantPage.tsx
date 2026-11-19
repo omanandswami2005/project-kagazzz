@@ -17,7 +17,7 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
+import { Alert, Button, EmptyState, Icon, ProgressBar, Spinner, Toggle } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { AI_TOOL_DESCRIPTORS } from '../services/ai-tool-registry';
 import './ai-assistant.css';
@@ -59,10 +59,12 @@ export function AiAssistantPage(): ReactNode {
           )}
 
           {ai.status === 'unsupported' && (
-            <div className="kg-ai-settings__center" data-agent-id="ai.settings.unsupported">
-              <Icon name="AlertCircle" size={32} aria-hidden />
-              <p>{t('lifecycle.unsupported')}</p>
-            </div>
+            <EmptyState
+              icon="Cpu"
+              title={t('lifecycle.unsupported_title')}
+              hint={t('lifecycle.unsupported')}
+              agentId="ai.settings.unsupported"
+            />
           )}
 
           {ai.status === 'checking' && (

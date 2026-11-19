@@ -1,68 +1,64 @@
-# Terms & Conditions — Kagaz (Omni Docs)
+# Terms & Conditions — Kagazzz Docs
 
-Last updated: 2026-06-08
+Last updated: 2026-11-19 (draft for counsel review — rewritten for the current app; placeholders in [brackets] must be filled before release)
 
-1. Introduction
+## 1. Introduction
 
-These Terms and Conditions ("Terms") govern your use of Kagaz by Omni Docs Pvt Ltd ("Kagaz"). Please read carefully. By using the app, you agree to these Terms.
+These Terms govern your use of the Kagazzz Docs app published by [Company legal name] ("we"). By using the app, you agree to these Terms.
 
-2. Eligibility
+## 2. Eligibility
 
-You must be at least 18 years old to use Kagaz unless parental consent is obtained for minors.
+You must be 18 or older, or use the app with a parent's or guardian's consent.
 
-3. Services
+## 3. What the app does
 
-Kagaz provides a local document vault, import from DigiLocker (with your consent), optional encrypted backups (India-only), sharing, eSign via licensed providers, and AI-assisted features (on-device by default).
+Kagazzz Docs is a document vault that runs on your phone: add, scan, organise, search, convert and share your own documents, with an optional on-device AI assistant. There is no account, and your documents are not uploaded to us.
 
-4. User responsibilities
+## 4. Your responsibilities
 
-- Provide accurate information.
-- Do not upload documents of third parties without consent.
-- Keep your device secure.
+- Add only documents you are entitled to keep. Do not add other people's documents without their consent.
+- Keep your phone secure and use the app lock for sensitive documents.
+- Keep your own backups: if you lose your phone or delete the app without exporting a backup, we cannot recover your documents.
 
-5. Privacy
+## 5. Privacy
 
-Our Privacy Policy describes how we handle your data. By using Kagaz, you consent to the processing described there.
+The Privacy Policy explains how the app handles your data.
 
-6. Prohibited conduct
+## 6. Prohibited use
 
-- Illegal documents, forged IDs, or use of the service for unlawful activity.
-- Attempting to reverse-engineer or tamper with the app.
+- Storing or creating forged documents, or any unlawful use.
+- Reverse-engineering or tampering with the app, except where the law allows it.
 
-7. Third-party services
+## 7. Third-party services
 
-Integrations (DigiLocker, eSign providers, CSCs) are subject to their own terms. We are not responsible for third-party services.
+The app uses services built into your phone (for example Google Play services for the document scanner and your phone's speech recognition for voice input) and downloads the AI model from Hugging Face when you ask it to. Those services have their own terms.
 
-8. Fees
+## 8. Fees
 
-Kagaz V1 is free. Some partner services (eSign, CSC-assisted services) may incur fees; we will disclose them at the point of transaction.
+The app is free.
 
-9. Intellectual property
+## 9. AI assistant
 
-All IP in Kagaz is owned by Omni Docs unless otherwise stated.
+The assistant can make mistakes. Check important information (amounts, dates, ID numbers) against the document itself. It asks for confirmation before deleting or changing anything.
 
-10. Termination
+## 10. Intellectual property
 
-We may suspend or terminate accounts for violations of these Terms.
+The app and its content belong to [Company legal name], except third-party open-source components listed under Open-source licenses.
 
-11. Limitation of liability
+## 11. Limitation of liability
 
-To the extent permitted by law, Omni Docs’ liability is limited to the amount you paid in the prior 12 months. We are not liable for indirect or consequential losses.
+To the extent the law allows, we are not liable for loss of documents or data on your device, or for indirect or consequential losses.
 
-12. Indemnification
+## 12. Governing law
 
-You agree to indemnify Omni Docs for claims arising from your misuse of the service.
+Laws of India. Courts at [City].
 
-13. Governing law
+## 13. Changes
 
-Indian law. Courts in [City].
+We will show a notice in the app before material changes take effect.
 
-14. Changes
-
-We may modify Terms; major changes notified in-app.
-
-Contact: legal@omnidocs.example
+Contact: [Grievance Officer email]
 
 ---
 
-Note: Draft only. Get legal review before publishing.
+Note: draft prepared from the app's actual behaviour. Have Indian legal counsel review it and fill the bracketed placeholders before publishing.

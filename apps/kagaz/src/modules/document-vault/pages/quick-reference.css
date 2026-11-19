@@ -11,10 +11,10 @@
 .kg-quickref__banner {
   margin: 0;
   padding: var(--space-3);
-  background: color-mix(in srgb, var(--color-warning) 12%, var(--surface-1));
-  border: var(--border-width) solid color-mix(in srgb, var(--color-warning) 35%, transparent);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  background: var(--color-warning-subtle);
+  border: var(--border-width) solid var(--color-warning-border);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
   font-size: var(--text-sm);
 }
 
@@ -24,29 +24,6 @@
   align-items: center;
   justify-content: center;
   padding-block: var(--space-8);
-}
-
-.kg-quickref__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-12);
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.kg-quickref__empty-message {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: var(--font-medium);
-  color: var(--text-primary);
-}
-
-.kg-quickref__empty-hint {
-  margin: 0;
-  max-width: 30ch;
-  font-size: var(--text-sm);
 }
 
 .kg-quickref__list {

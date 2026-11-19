@@ -23,6 +23,8 @@ export interface FilterPanelProps {
   tags: TagEntity[];
   onDismiss: () => void;
   onApply: (filters: DocumentFilters) => void;
+  /** How many documents a draft would show — labels Apply live (audit FP-5). */
+  countFor?: (filters: DocumentFilters) => number;
 }
 
 const KINDS = [
@@ -51,18 +53,22 @@ export function FilterPanel({
   tags,
   onDismiss,
   onApply,
+  countFor,
 }: FilterPanelProps): ReactNode {
   const { t } = useTranslation('documents');
   // Seeded from the active filters; the parent remounts (via key) on open
   // so this starts fresh each time without a setState-in-effect.
   const [draft, setDraft] = useState<DocumentFilters>(filters);
+  const draftCount = countFor?.(draft);
 
   return (
     <IonModal
       isOpen={isOpen}
       onDidDismiss={onDismiss}
-      initialBreakpoint={0.75}
-      breakpoints={[0, 0.75, 1]}
+      // FP-4: fit the sheet to its content.
+      className="kg-sheet-auto"
+      initialBreakpoint={1}
+      breakpoints={[0, 1]}
       data-agent-id="vault.home.filter-sheet"
       data-agent-state={isOpen ? 'expanded' : 'collapsed'}
       aria-label={t('filters.title')}
@@ -148,9 +154,12 @@ export function FilterPanel({
           <Button
             variant="primary"
             onClick={() => onApply(draft)}
+            disabled={draftCount === 0}
             agentId="vault.home.filter-apply"
           >
-            {t('filters.apply')}
+            {draftCount === undefined
+              ? t('filters.apply')
+              : t('filters.show_count', { count: draftCount })}
           </Button>
         </div>
       </div>

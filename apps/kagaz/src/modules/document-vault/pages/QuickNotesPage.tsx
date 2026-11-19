@@ -22,7 +22,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Alert, Button, Icon, Spinner } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, EmptyState, Icon, Spinner } from '@kagaz/ui';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticAction, hapticDestructive, hapticSuccess, hapticTap } from '@/core/haptics';
 import type { QuickReferenceEntry } from '@/infrastructure/database/types';
@@ -222,22 +222,22 @@ export function QuickNotesPage(): ReactNode {
               <Spinner size="lg" label={t('quick_notes.title')} />
             </div>
           ) : entries.length === 0 ? (
-            <div className="kg-quickref__empty" data-agent-id="vault.quick-notes.empty">
-              <Icon name="StickyNote" size={48} aria-hidden />
-              <p className="kg-quickref__empty-message">
-                {t('quick_notes.empty_state')}
-              </p>
-              <p className="kg-quickref__empty-hint">
-                {t('quick_notes.empty_hint')}
-              </p>
-              <Button
-                variant="primary"
-                onClick={() => setEditTarget(null)}
-                agentId="vault.quick-notes.empty-add"
-              >
-                {t('quick_notes.add')}
-              </Button>
-            </div>
+            <EmptyState
+              icon="StickyNote"
+              title={t('quick_notes.empty_state')}
+              hint={t('quick_notes.empty_hint')}
+              agentId="vault.quick-notes.empty"
+              action={
+                <Button
+                  variant="primary"
+                  icon={<Icon name="Plus" size={20} />}
+                  onClick={() => setEditTarget(null)}
+                  agentId="vault.quick-notes.empty-add"
+                >
+                  {t('quick_notes.add')}
+                </Button>
+              }
+            />
           ) : (
             <ul className="kg-quickref__list" data-agent-id="vault.quick-notes.list">
               {entries.map((entry) => (

@@ -22,6 +22,36 @@ export function formatDate(date: string | Date, locale: string): string {
   }).format(new Date(date));
 }
 
+function startOfDay(d: Date): number {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+/**
+ * Compact date for cards and rows (audit G-4): "Today" / "Yesterday" for
+ * the last two days, "19 Nov" this year, "19 Nov 2025" otherwise. Full
+ * dates belong in Details ({@link formatDate}).
+ */
+export function formatShortDate(
+  date: string | Date,
+  locale: string,
+  now: Date = new Date()
+): string {
+  const value = new Date(date);
+  const days = Math.round((startOfDay(now) - startOfDay(value)) / 86_400_000);
+  if (days === 0 || days === 1) {
+    const word = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+      -days,
+      'day'
+    );
+    return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1);
+  }
+  return new Intl.DateTimeFormat(locale, {
+    day: 'numeric',
+    month: 'short',
+    ...(value.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  }).format(value);
+}
+
 /** "Jun 7, 2026, 02:30 PM" localized. */
 export function formatDateTime(date: string | Date, locale: string): string {
   return new Intl.DateTimeFormat(locale, {

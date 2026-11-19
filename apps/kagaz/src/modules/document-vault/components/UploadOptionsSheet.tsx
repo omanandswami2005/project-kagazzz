@@ -7,7 +7,7 @@
 import { IonModal } from '@ionic/react';
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
-import { Button, Icon } from '@kagaz/ui';
+import { ListRow } from '@kagaz/ui';
 import { isScanningSupported } from '@/modules/document-scanner/services/scanner.service';
 import type { UploadSource } from '../services/upload-sources';
 
@@ -45,8 +45,10 @@ export function UploadOptionsSheet({
     <IonModal
       isOpen={isOpen}
       onDidDismiss={onDismiss}
-      initialBreakpoint={0.6}
-      breakpoints={[0, 0.6, 0.9]}
+      // UP-3: the sheet is as tall as its rows, not 60 % of the screen.
+      className="kg-sheet-auto"
+      initialBreakpoint={1}
+      breakpoints={[0, 1]}
       data-agent-id="vault.home.upload-sheet"
       data-agent-state={isOpen ? 'expanded' : 'collapsed'}
       aria-label={t('upload.sheet_title')}
@@ -54,18 +56,16 @@ export function UploadOptionsSheet({
       <div className="kg-upload-sheet">
         <h2 className="kg-upload-sheet__title">{t('upload.sheet_title')}</h2>
         {options.map(({ source, labelKey, icon }) => (
-          <Button
+          <ListRow
             key={source}
-            variant="secondary"
-            size="lg"
-            fullWidth
-            icon={<Icon name={icon} size={24} />}
+            icon={icon}
+            title={t(labelKey)}
+            hint={t(`upload.source_hints.${source}`)}
+            noChevron
             onClick={() => onSelect(source)}
             agentId={`vault.home.upload-source-${source}`}
             agentAction="vault.uploadDocument"
-          >
-            {t(labelKey)}
-          </Button>
+          />
         ))}
       </div>
     </IonModal>

@@ -417,6 +417,24 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · 6af803b · docs(ux) · audit status: re-measured every screen — text below AA 100/125 → **0/0**, tap targets <44 px 233/248 → 8/8 (toggle graphics in 48 px rows); open items listed with reasons; toggle off state 3:1 (FP-3) · screen audit
+- 2026-11-19 · 95b9ee0 · feat(ui) · Simple mode zeroes all motion durations (G-10); star/badge pops; segments, filter chips, number chips full 44 px · screen audit
+- 2026-11-19 · e04440b · feat(document-vault) · grid ☆ ⋮ in their own row, not over the thumbnail (VH-5); one-time long-press tip after 3 docs (`seenTips` pref, VH-15); tool icon in sheet title (TS-13) · screen audit
+- 2026-11-19 · 5e34f43 · fix(document-vault) · Trash reads the clock once per visit (React purity lint) · screen audit
+- 2026-11-19 · b77691a · feat(app) · AI chat suggestions fill the box (AI-3); AI-unavailable explains why (AI-1); legal headings + Contents list, licence chips (LG-2/3); warning tint over surface-2 (QN-1) · screen audit
+- 2026-11-19 · 9186051 · feat(document-vault) · Favorites rows get ⋮ (preview) + Browse documents empty action (FV-1/3); Trash 'Empty Trash (size)' + 'Deletes in N days' (TR-2) · screen audit
+- 2026-11-19 · 77fe414 · fix(document-vault) · real i18n plurals replace every '(s)' (ST-1); Storage largest rows open + PDFs Compress inline; sections as cards (ST-3/4/5) · screen audit
+- 2026-11-19 · 2e2b78e · feat(app) · onboarding: app mark hero, visible dots, Add first document + Turn on fingerprint lock (OB-1…7); drawer brand, current page, Backup entry with status (DR-1…6); Recent tools row (PT-5); glow only on primary-action, disabled primaries grey (G-7, TS-5) · screen audit
+- 2026-11-19 · 2c32b59 · feat(pdf-engine) · `/pdf-tools?tool=&doc=` opens a tool with the document chosen; viewer offers PDF → Compress / image → Make PDF (VW-8); pre-select + helper line + hide empty history (TS-8/9/10) · screen audit
+- 2026-11-19 · 6e0651e · feat(document-vault) · document ⋮ menu: quick row Share · Open with · Ask AI · Favorite, tools folded by file type under More tools, destructive last; ActionSheet gains quickActions + groups (IM-1…7) · screen audit
+- 2026-11-19 · 90f974d · feat(document-vault) · empty vault leads with Scan / Add files (VH-12); no-match search → Ask AI (`?ask=`, VH-13); labelled FAB items, fitted source sheet (UP-2…5); no rename prompt per file on multi-add (UP-1); filter live count (FP-4/5) · screen audit
+- 2026-11-19 · 6c7c4fd · fix(app) · tab bar only on the 5 roots, toasts above it (G-2/5); Material mode everywhere (G-9); one Documents toolbar row (VH-1/2/3/8); framed viewer pages, copy icon, honest no-text copy (VW-1/2/3/6, M-9) · screen audit
+- 2026-11-19 · 91b3b47 · fix(app) · shared primitives used on every screen; Settings rebuilt (cards, list rows, backup nudge, Advanced fold, danger zone — SE-1…9); short dates (G-4); thumb edge + uncropped photos (VH-4/6) · screen audit
+- 2026-11-19 · a5bf8ea · feat(ui) · `EmptyState`, `SegmentedControl`, `ListRow`; sm buttons + filter chips 44 px; saffron toggles; warning banner tokens; radius-per-role doc (G-6/8, M-4…13, SE-2) · screen audit
+- 2026-11-19 · d4e4615 · docs(legal) · privacy policy + terms rewritten for the current app (draft for counsel, [placeholders]) (LG-1) · screen audit
+- 2026-11-19 · 9bb7759 · fix(pdf-engine) · compress no longer saves an empty file (pdf.js detached the buffer); failed saves surface SAVE_FAILED (TS-1) · screen audit
+- 2026-11-19 · 3edf498 · fix(design-tokens) · muted text and danger red pass AA in both themes; buttons inherit font (doc names were 13.33 px) (M-1/2/3/10) · screen audit
+- 2026-11-19 · 0c64d20 · fix(app) · dark mode uses navy surfaces — Ionic dark palette out-specified our bridge (G-1, M-11) · screen audit
 - 2026-11-19 · 6a77e24 · feat(app) · **next-best actions**: one uploaded doc → toast Open / Ask AI; viewer bottom row Share / Ask AI / More; Ask AI pre-attaches via `askAiAboutRoute` (`?attach=`). Shared `NextActions`. · smart UI plan
 - 2026-11-19 · 39a5606 · feat(app) · **side drawer** (Quick reference, Quick notes, Archived, Trash, AI model, Settings, Privacy) + **raised centre AI tab**; Documents header's 4 unlabeled icons removed; ☰ on tab roots. · smart UI plan
 - 2026-11-19 · f8e58b3 · feat(ai-assistant) · document names in answers are **links**; result cards show thumbnails + name links; both open an **in-chat preview** (Open / Share / Close). · smart UI plan

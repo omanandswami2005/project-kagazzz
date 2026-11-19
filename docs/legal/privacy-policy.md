@@ -1,124 +1,86 @@
-# Privacy Policy — Kagaz (Omni Docs)
+# Privacy Policy — Kagazzz Docs
 
-Last updated: 2026-11-18 (draft — section 3A on-device AI and voice input added; counsel review pending)
+Last updated: 2026-11-19 (draft for counsel review — rewritten to describe the current app only; placeholders in [brackets] must be filled before release)
 
-Short summary
+## Short summary
 
-Kagaz ("we", "us", "Omni Docs") helps users store, search, and manage government documents on their devices. By default, documents remain on your device. With your explicit consent, Kagaz can import documents from DigiLocker, share documents via short-lived share links, back up an encrypted copy to India-hosted servers (optional), and enable eSign using licensed providers.
+Kagazzz Docs keeps your documents on your phone. You don't need an account, and we don't run servers that receive your documents, your messages or information about how you use the app. The app makes one kind of network request on its own: downloading the optional on-device AI model when you tap Download.
 
-This policy explains what we collect, why, and how you can control your data. Read the short summary above and the full policy below.
+## 1. Who we are
 
-1. Who we are
+- Publisher: [Company legal name]
+- Product: Kagazzz Docs (Android app; iOS app planned)
+- Grievance Officer: [Name], [email], [phone]
 
-- Company: Omni Docs Pvt Ltd
-- Product: Kagaz (mobile apps and web)
-- Contact / Grievance Officer: legal@omnidocs.example (replace before launch)
+## 2. What this policy covers
 
-2. Scope
+This policy covers the Kagazzz Docs app as it is today. If we add online features later (for example cloud backup or importing from DigiLocker), we will update this policy and ask for your explicit consent before any such feature is used.
 
-This policy covers all data collected directly in-app, via DigiLocker imports, and via CSC-assisted flows. It covers local device storage, optional encrypted backups to India-hosted servers, and third-party providers we use (DigiLocker, eSign providers, analytics providers).
+## 3. What the app stores, and where
 
-3. Data we collect
+Everything below stays on your device, in the app's private storage, which other apps cannot read and which is excluded from Android cloud backups:
 
-Categories:
-- Identity & government documents: name, PAN, passport, Aadhaar (only via DigiLocker import or user upload). We do NOT store Aadhaar numbers or biometrics unless explicitly required and permitted by UIDAI and with separate consent.
-- Document images & PDFs (scans, uploads, imports)
-- OCR text extracted from documents (on-device by default; cloud OCR only with explicit opt-in)
-- Usage & diagnostics: app version, crash logs, anonymized usage telemetry (opt-in)
-- Metadata: document names, file hashes, tags, folder names, expiry dates you set
-- Consent records and audit logs (timestamp, UA)
+- Documents you add: photos, scans, PDFs and files you choose.
+- Text the app extracts from your documents so you can search and copy it (done on your phone).
+- Details you enter: document names, folders, tags, favourites, Quick Reference values and Quick Notes.
+- The app's settings and a local diagnostic log used to troubleshoot problems. The log never contains document content or ID numbers, and it never leaves your phone unless you export and share it yourself.
+- AI chat history, if you use the AI assistant.
 
-3A. On-device AI assistant and voice input (Android app; draft for counsel review)
+The app's database (names, tags, extracted text, Quick Reference values, chat history) is encrypted with a key held in your phone's secure keystore. Document files are stored in the app's private storage. We do not store Aadhaar biometrics.
 
-- The AI assistant (Kagaz AI) runs entirely on your phone using the Gemma 4 model. Your messages, the assistant's replies and any document text it reads stay on your device. We do not receive them.
-- To use the assistant you must first download the model (about 2.6 GB) by tapping Download. This is the only network request the app itself makes. It fetches a public file from Hugging Face and sends no information about you or your documents. You can delete the model at any time from Settings → AI Assistant or the Storage screen.
+## 4. Network use
+
+- The app does not send your documents or any information about you to us or anyone else.
+- On-device AI model: if you choose to use the AI assistant, the app downloads the model file (about 2.6 GB) from Hugging Face when you tap Download. The request contains no information about you or your documents. You can delete the model at any time.
+- Document scanner: on Android, the scanner is provided by Google Play services, which may download its own components. The app does not send your scans anywhere.
+- No analytics, advertising or crash-reporting services are included.
+
+## 5. On-device AI assistant and voice input
+
+- The AI assistant (Kagazzz AI) runs entirely on your phone using the Gemma 4 model. Your messages, its replies and any document text it reads stay on your device. We do not receive them.
 - When you ask about what a document says, the assistant may read the text already extracted from that document, on your device only. It never reads documents you have locked.
 - The assistant asks you to confirm before it deletes or changes anything.
-- Voice input: when you use the mic button, the app uses your phone's built-in speech recognition service (Google on Android, Apple on iOS) to turn speech into text. That service may process the audio on its provider's servers under the provider's own privacy terms. Kagaz does not record, store or send the audio. Type instead if you prefer.
-- Chat history is stored in the app's encrypted database on your device. You can delete conversations, or all data, in the app.
+- Voice input: when you tap the mic, the app uses your phone's built-in speech recognition service (Google on Android, Apple on iOS) to turn speech into text. That service may process the audio on its provider's servers under the provider's own privacy terms. Kagazzz Docs does not record, store or send the audio. You can type instead.
 
-4. How we collect data
+## 6. Sharing
 
-- From you: camera, uploads, manual entry.
-- From DigiLocker: only when you authorize an import using DigiLocker OAuth flow.
-- From CSCs: only when you explicitly authorize a CSC-assisted action.
+We don't sell or share your data, because we don't receive it. A document leaves your phone only when you choose to share it or open it in another app; what that app does with it is governed by that app's own policy.
 
-5. Purposes of processing
+## 7. Backups
 
-- Core product: store, index, search, and present documents in your vault.
-- OCR: extract text to enable search, expiry detection, and smart suggestions.
-- Security: detect duplicate documents, malware scanning, integrity checks.
-- Integrations: import/export via DigiLocker, share via short-lived links, eSign workflows.
-- Optional backups: encrypted backups for cross-device sync (India only).
-- Legal & compliance: fraud, abuse detection, and legal obligations.
+You can export an encrypted backup file (AES-256-GCM). It can be opened only by this app on this device. Where you keep that file is your choice.
 
-6. Legal basis & consent
+## 8. Retention and deletion
 
-Our lawful basis for processing is your informed and explicit consent. You can withdraw consent anytime in Settings. Consent is recorded with timestamp and UA.
+- Your documents stay until you delete them.
+- Deleted documents go to Trash for 30 days, then are removed permanently. You can empty Trash sooner.
+- "Delete all data" in Settings permanently removes every document, folder, tag, setting and chat from this device.
+- Uninstalling the app removes its data from your phone.
 
-Special rules for Aadhaar
+## 9. Security
 
-- If any flow involves Aadhaar authentication or Aadhaar-derived data, we will use the UIDAI-prescribed consent language and follow UIDAI rules. We will not store Aadhaar biometrics or Aadhaar numbers unless explicitly permitted by UIDAI and with a separate, explicit consent.
+- Encrypted database with the key in the Android Keystore / iOS Keychain.
+- Optional fingerprint, face or PIN lock for the app, and a separate lock for Quick Reference.
+- Screenshots and the recent-apps preview are blocked inside the app.
 
-7. Sharing & third parties
+## 10. Your rights (Digital Personal Data Protection Act, 2023)
 
-We do not sell your data. We may share data with:
-- DigiLocker: only with your authorization; subject to DigiLocker terms.
-- CSC partners: only with your explicit, purpose-limited consent.
-- eSign providers: to complete signature flows (CCA-licensed providers).
-- Law enforcement & government: when required by law or court order.
-- Service providers: hosting, analytics (only with strict controls and minimal data sharing).
+Because your data stays on your device, you control it directly: view, correct, export (encrypted backup) or delete it at any time in the app. For questions or grievances, contact the Grievance Officer above.
 
-8. Data storage & localization
+## 11. Children
 
-- Device: Primary storage is on-device (vault).
-- Backups / sync: Encrypted backups (if enabled) are stored only in India-region cloud infra. Encryption keys remain under user control where possible.
-- Audit logs & minimal metadata used for security and compliance are stored in India.
+The app is not directed at children under 18. A parent or guardian should set it up for a minor.
 
-9. Retention
+## 12. Changes to this policy
 
-- Documents in vault: until you delete them.
-- Deleted items: moved to Trash for 30 days by default, then permanently deleted unless you choose otherwise.
-- Consent records, audit logs: retained for 2 years unless law requires longer.
+We will show a notice in the app before material changes take effect.
 
-10. Security measures
+## 13. Governing law
 
-- Encryption at rest: AES-256 for files.
-- Transport: TLS 1.2+ with HSTS and certificate pinning on critical endpoints.
-- Secure key storage: Android Keystore / iOS Secure Enclave.
-- Regular security testing: SAST/DAST, annual pentest, dependency scanning.
-
-11. Your rights
-
-You have rights to:
-- Access & obtain a copy of your data
-- Correct inaccurate data
-- Delete your data (subject to legal retention obligations)
-- Withdraw consent
-- Port your data (export as ZIP/PDF)
-
-Exercise these via Settings → Privacy or contact legal@omnidocs.example.
-
-12. Children
-
-Users under 18 must have parental consent. Contact support if you are a parent managing a minor's account.
-
-13. Changes to the policy
-
-We will notify you of material changes via in-app notice and email.
-
-14. Dispute resolution & governing law
-
-Governing law: India. Disputes: courts in [City] (set before launch).
-
-15. Contact
-
-Grievance Officer: [Name]
-Email: legal@omnidocs.example
-Phone: +91-XXXXXXXXXX
+Laws of India. Courts at [City].
 
 ---
 
-Legal notice
+## Legal notice
 
-This draft is a starting point. Consult Indian legal counsel before publishing. Replace placeholder contact details before going live.
+This is a draft prepared from the app's actual behaviour. Have Indian legal counsel review it and fill the bracketed placeholders before publishing.

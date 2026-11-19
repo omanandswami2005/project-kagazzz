@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon, type IconName } from '@kagaz/ui';
+import { SegmentedControl, type IconName } from '@kagaz/ui';
 import type { ViewMode } from '../hooks/useViewMode';
 
 const OPTIONS = [
@@ -26,33 +26,17 @@ export interface ViewModeControlProps {
 export function ViewModeControl({ mode, onChange }: ViewModeControlProps): ReactNode {
   const { t } = useTranslation('documents');
   return (
-    <div
-      className="kg-vault__view-mode"
-      role="group"
+    <SegmentedControl
       aria-label={t('view.label')}
-      data-agent-id="vault.home.view-mode"
-    >
-      {OPTIONS.map((opt) => {
-        const active = opt.mode === mode;
-        return (
-          <button
-            key={opt.mode}
-            type="button"
-            className={`kg-vault__view-btn${active ? ' kg-vault__view-btn--active' : ''}`}
-            aria-pressed={active}
-            aria-label={t(opt.labelKey)}
-            data-agent-id={`vault.home.view-mode.${opt.mode}`}
-            data-agent-state={active ? 'selected' : 'idle'}
-            onClick={() => onChange(opt.mode)}
-          >
-            <Icon
-              name={opt.icon}
-              size={20}
-              color={active ? 'var(--color-primary)' : 'var(--text-muted)'}
-            />
-          </button>
-        );
-      })}
-    </div>
+      agentId="vault.home.view-mode"
+      optionAgentId={(m) => `vault.home.view-mode.${m}`}
+      value={mode}
+      onChange={onChange}
+      options={OPTIONS.map((opt) => ({
+        value: opt.mode,
+        icon: opt.icon,
+        ariaLabel: t(opt.labelKey),
+      }))}
+    />
   );
 }

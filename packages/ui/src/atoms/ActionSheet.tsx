@@ -28,6 +28,10 @@ export interface ActionSheetButton {
   icon?: IconName;
   /** Runs on tap, before the sheet closes. */
   handler?: () => void;
+  /** Stable suffix for the row's agent id (`${agentId}.${id}`). */
+  id?: string;
+  /** Section the row belongs to; a labelled heading starts each new group. */
+  group?: string;
 }
 
 /** Props for {@link ActionSheet}. */
@@ -38,8 +42,26 @@ export interface ActionSheetProps extends AgentProps {
   header?: string;
   /** Rows, top to bottom. */
   buttons: ActionSheetButton[];
+  /** Up to four big labelled actions above the list — the likely next steps
+   * (audit IM-3, next best action). */
+  quickActions?: ActionSheetButton[];
+  /** Groups that start folded behind their heading (progressive disclosure). */
+  collapsedGroups?: readonly string[];
   /** Fires after the sheet closes, however it closed (row tap, scrim, Esc, back button). */
   onDidDismiss: () => void;
+}
+
+/** Splits rows into runs of the same `group` (ungrouped rows form their own runs). */
+function groupRows(
+  buttons: ActionSheetButton[]
+): { group: string | undefined; rows: ActionSheetButton[] }[] {
+  const runs: { group: string | undefined; rows: ActionSheetButton[] }[] = [];
+  for (const button of buttons) {
+    const last = runs[runs.length - 1];
+    if (last && last.group === button.group) last.rows.push(button);
+    else runs.push({ group: button.group, rows: [button] });
+  }
+  return runs;
 }
 
 /** A bottom-sheet list of actions — the `IonActionSheet` replacement. */
@@ -47,6 +69,8 @@ export function ActionSheet({
   isOpen,
   header,
   buttons,
+  quickActions = [],
+  collapsedGroups = [],
   onDidDismiss,
   ...agent
 }: ActionSheetProps): ReactNode {
@@ -83,6 +107,30 @@ export function ActionSheet({
     if (ref.current) closeDialog(ref.current);
   };
 
+  const agentIdFor = (button: ActionSheetButton): string | undefined =>
+    button.id && agent.agentId ? `${agent.agentId}.${button.id}` : undefined;
+
+  const renderRow = (button: ActionSheetButton, key: string): ReactNode => {
+    const icon = button.icon ?? (button.role === 'cancel' ? 'X' : undefined);
+    return (
+      <button
+        key={key}
+        type="button"
+        className={clsx(
+          'kg-action-sheet__btn',
+          button.role === 'destructive' && 'kg-action-sheet__btn--destructive',
+          button.role === 'cancel' && 'kg-action-sheet__btn--cancel'
+        )}
+        onClick={() => handleButtonClick(button)}
+        data-agent-id={agentIdFor(button)}
+      >
+        {/* Decorative — the row's own text is the accessible name. */}
+        {icon && <Icon name={icon} size={20} color="currentColor" />}
+        <span className="kg-action-sheet__btn-label">{button.text}</span>
+      </button>
+    );
+  };
+
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events -- click-outside-to-dismiss on the scrim; Escape (native `<dialog>` cancel) and the ionBackButton handler above already give keyboard/hardware-back equivalents
     <dialog
@@ -97,25 +145,41 @@ export function ActionSheet({
       <div className="kg-action-sheet__panel">
         <div className="kg-action-sheet__handle" aria-hidden="true" />
         {header && <h2 className="kg-action-sheet__header">{header}</h2>}
-        <div className="kg-action-sheet__buttons">
-          {buttons.map((button, index) => {
-            const icon = button.icon ?? (button.role === 'cancel' ? 'X' : undefined);
-            return (
+        {quickActions.length > 0 && (
+          <div className="kg-action-sheet__quick">
+            {quickActions.map((button, index) => (
               <button
-                key={index}
+                key={button.id ?? index}
                 type="button"
-                className={clsx(
-                  'kg-action-sheet__btn',
-                  button.role === 'destructive' &&
-                    'kg-action-sheet__btn--destructive',
-                  button.role === 'cancel' && 'kg-action-sheet__btn--cancel'
-                )}
+                className="kg-action-sheet__quick-btn"
                 onClick={() => handleButtonClick(button)}
+                data-agent-id={agentIdFor(button)}
               >
-                {/* Decorative — the row's own text is the accessible name. */}
-                {icon && <Icon name={icon} size={20} color="currentColor" />}
-                <span className="kg-action-sheet__btn-label">{button.text}</span>
+                <span className="kg-action-sheet__quick-icon" aria-hidden="true">
+                  {button.icon && <Icon name={button.icon} size={24} />}
+                </span>
+                <span className="kg-action-sheet__quick-label">{button.text}</span>
               </button>
+            ))}
+          </div>
+        )}
+        <div className="kg-action-sheet__buttons">
+          {groupRows(buttons).map(({ group, rows }, gi) => {
+            const list = rows.map((button, index) => renderRow(button, `${gi}-${index}`));
+            if (!group) return list;
+            return collapsedGroups.includes(group) ? (
+              <details key={`g-${gi}`} className="kg-action-sheet__group">
+                <summary className="kg-action-sheet__group-title">
+                  <span>{group}</span>
+                  <Icon name="ChevronDown" size={20} />
+                </summary>
+                {list}
+              </details>
+            ) : (
+              <div key={`g-${gi}`} className="kg-action-sheet__group">
+                <h3 className="kg-action-sheet__group-title">{group}</h3>
+                {list}
+              </div>
             );
           })}
         </div>

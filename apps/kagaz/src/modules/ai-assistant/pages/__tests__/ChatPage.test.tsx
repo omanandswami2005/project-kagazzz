@@ -310,7 +310,7 @@ describe('ChatPage attachments and result cards (chat journey)', () => {
     render(<ChatPage />);
 
     await userEvent.click(q('ai.chat.attach') as Element);
-    await userEvent.click(await screen.findByRole('button', { name: /Rent agreement\.pdf/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Rent agreement\.pdf/ }));
     await userEvent.click(q('ai.chat.attach-confirm') as Element);
 
     expect(q('ai.chat.attachment-doc-a')).toHaveTextContent('Rent agreement.pdf');
@@ -323,6 +323,15 @@ describe('ChatPage attachments and result cards (chat journey)', () => {
     expect(q('ai.chat.attachment-doc-a')).toBeNull();
   });
 
+  it('a new chat suggests requests that fill the box without sending (AI-3)', async () => {
+    const sendMessage = vi.fn();
+    useChatMock.mockReturnValue(chatValue({ sendMessage }));
+    render(<ChatPage />);
+    await userEvent.click(q('ai.chat.suggestion-about') as Element);
+    expect(q('ai.chat.input')).toHaveValue('What does “Rent agreement.pdf” say?');
+    expect(sendMessage).not.toHaveBeenCalled();
+  });
+
   it('a chip can be removed, and attachments alone (no text) can be sent', async () => {
     const sendMessage = vi.fn();
     useChatMock.mockReturnValue(chatValue({ sendMessage }));
@@ -333,7 +342,7 @@ describe('ChatPage attachments and result cards (chat journey)', () => {
       await userEvent.click(q('ai.chat.attach-confirm') as Element);
     };
 
-    await attachDoc(/Rent agreement\.pdf/);
+    await attachDoc(/^Rent agreement\.pdf/);
     await userEvent.click(q('ai.chat.attachment-remove-doc-a') as Element);
     expect(q('ai.chat.attachment-doc-a')).toBeNull();
     expect(q('ai.chat.send')).toBeDisabled();

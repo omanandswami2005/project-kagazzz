@@ -82,6 +82,7 @@ export function UploadFAB({
           onClick={onUpload}
           disabled={disabled}
           aria-label={t('actions.upload')}
+          data-label={t('actions.upload')}
           className="kg-upload-fab-item"
           {...uploadProps}
         >
@@ -90,6 +91,7 @@ export function UploadFAB({
         <IonFabButton
           onClick={onNewFolder}
           aria-label={t('folders.new')}
+          data-label={t('folders.new')}
           className="kg-upload-fab-item"
           {...newFolderProps}
         >
@@ -98,6 +100,7 @@ export function UploadFAB({
         <IonFabButton
           onClick={onQuickNote}
           aria-label={t('quick_notes.new_note')}
+          data-label={t('quick_notes.new_note')}
           className="kg-upload-fab-item"
           {...quickNoteProps}
         >

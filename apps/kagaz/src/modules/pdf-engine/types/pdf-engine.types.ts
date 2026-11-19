@@ -167,6 +167,8 @@ export type PdfErrorCode =
   | 'ENCRYPTION_FAILED'
   | 'OUT_OF_MEMORY'
   | 'OPERATION_CANCELLED'
+  /** The result was produced but could not be saved into the vault. */
+  | 'SAVE_FAILED'
   | 'UNKNOWN';
 
 export interface PdfEngineError {

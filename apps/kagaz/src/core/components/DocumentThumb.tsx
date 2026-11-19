@@ -20,7 +20,20 @@ export const DOCUMENT_TYPE_ICONS: Partial<Record<string, IconName>> = {
   png: 'FileImage',
   heic: 'FileImage',
   webp: 'FileImage',
+  tiff: 'FileImage',
+  bmp: 'FileImage',
+  gif: 'FileImage',
 };
+
+/** The file-type icon for a stored extension ('File' when unknown). */
+export function documentTypeIcon(fileType: string): IconName {
+  return DOCUMENT_TYPE_ICONS[fileType.toLowerCase()] ?? 'File';
+}
+
+/** Whether a stored extension is a photo/scan (shown uncropped, audit VH-6). */
+export function isImageFile(fileType: string): boolean {
+  return documentTypeIcon(fileType) === 'FileImage';
+}
 
 /** Props for {@link DocumentThumb}. */
 export interface DocumentThumbProps {
@@ -40,7 +53,13 @@ export function DocumentThumb({
   agentId,
 }: DocumentThumbProps): ReactNode {
   const url = useThumbnail(document.thumbnailPath);
-  const classes = ['kg-doc-thumb', className].filter(Boolean).join(' ');
+  const classes = [
+    'kg-doc-thumb',
+    isImageFile(document.fileType) && 'kg-doc-thumb--image',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
   if (document.isLocked) {
     return (
       <span className={classes} data-agent-id={agentId} data-locked="true">
@@ -54,7 +73,7 @@ export function DocumentThumb({
       {url ? (
         <img className="kg-doc-thumb__img" src={url} alt="" loading="lazy" />
       ) : (
-        <Icon name={DOCUMENT_TYPE_ICONS[document.fileType.toLowerCase()] ?? 'File'} size={iconSize} />
+        <Icon name={documentTypeIcon(document.fileType)} size={iconSize} />
       )}
     </span>
   );

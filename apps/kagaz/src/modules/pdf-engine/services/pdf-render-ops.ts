@@ -68,6 +68,19 @@ async function loadPdfjs(): Promise<typeof import('pdfjs-dist')> {
  * [SEC] the returned text is document content — the caller stores it only in
  * the encrypted DB and never logs it.
  */
+
+/**
+ * pdf.js TRANSFERS `data` to its worker, detaching the caller's buffer — the
+ * caller's Uint8Array silently becomes length 0. Compress then compared its
+ * output against a 0-byte "original", returned it, and every save failed as a
+ * corrupted file (screen audit TS-1). Always hand pdf.js its own copy.
+ */
+type PdfJsModule = typeof import('pdfjs-dist');
+
+function openDocument(pdfjs: PdfJsModule, pdf: Uint8Array): ReturnType<PdfJsModule['getDocument']> {
+  return pdfjs.getDocument({ data: pdf.slice() });
+}
+
 export async function extractPdfTextPerPageImpl(pdf: Uint8Array): Promise<string[]> {
   const op = 'extractPdfText';
   if (!pdf || pdf.length === 0) {
@@ -75,7 +88,7 @@ export async function extractPdfTextPerPageImpl(pdf: Uint8Array): Promise<string
   }
 
   const pdfjs = await loadPdfjs();
-  const loadingTask = pdfjs.getDocument({ data: pdf });
+  const loadingTask = openDocument(pdfjs, pdf);
   let doc: Awaited<typeof loadingTask.promise>;
   try {
     doc = await loadingTask.promise;
@@ -130,7 +143,7 @@ export async function pdfToImagesImpl(
   const mime = options.format === 'jpeg' ? 'image/jpeg' : 'image/png';
   const quality = options.quality ?? 0.92;
 
-  const loadingTask = pdfjs.getDocument({ data: pdf });
+  const loadingTask = openDocument(pdfjs, pdf);
   let doc: Awaited<typeof loadingTask.promise>;
   try {
     doc = await loadingTask.promise;

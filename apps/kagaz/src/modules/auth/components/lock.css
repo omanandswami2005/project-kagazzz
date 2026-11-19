@@ -35,7 +35,7 @@
 }
 
 .kg-lock__error {
-  color: var(--color-danger);
+  color: var(--text-danger);
   font-size: var(--text-sm);
   margin: 0;
 }

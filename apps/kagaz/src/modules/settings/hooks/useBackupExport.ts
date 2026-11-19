@@ -14,6 +14,7 @@ import { Share } from '@capacitor/share';
 import { useCallback, useState } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { log } from '@/core/logging';
+import { usePreferencesStore } from '@/core/preferences';
 import { getOrCreateBackupEncryptionKey } from '@/infrastructure/database/backup-key.provider';
 import { DocumentDao, FolderDao } from '@/infrastructure/database/dao';
 import { createFileStorage } from '@/infrastructure/filesystem';
@@ -71,6 +72,7 @@ export function useBackupExport(): UseBackupExport {
 
       setResult(res);
       setStatus('done');
+      usePreferencesStore.getState().setLastBackupAt(new Date().toISOString());
       // Delivery is a convenience; a failure here doesn't undo the backup.
       await shareArchive(res.path).catch((err: unknown) => {
         logger.warn({ event: 'settings.backup.share_skipped', err: { message: String(err) } });

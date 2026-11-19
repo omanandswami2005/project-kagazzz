@@ -34,6 +34,7 @@ pass.
 
 ## Table of Contents
 
+- [Status after the fixes](#status-after-the-fixes)
 - [M. Measured — colours, sizes, WCAG AA](#m-measured--colours-sizes-wcag-aa)
 - [G. Global — affects every page](#g-global--affects-every-page)
 - [OB. Onboarding](#ob-onboarding)
@@ -54,6 +55,28 @@ pass.
 - [LG. Legal pages (privacy, terms, licenses)](#lg-legal-pages-privacy-terms-licenses)
 - [SE. Settings](#se-settings)
 - [Fix order](#fix-order)
+
+---
+
+## Status after the fixes
+
+Fixed on `feature/ux-audit-fixes` (2026-11-19), in the batches of the [Fix order](#fix-order). Re-measured by re-running the capture script on every screen (59 per theme):
+
+| Measure | Before | After |
+|---|---|---|
+| Text below WCAG AA (light / dark) | 100 / 125 | **0 / 0** |
+| Tap targets under 44 px (light / dark) | 233 / 248 | **8 / 8**: only the toggle switch graphic; the whole 48 px label row is the tap target (M-8) |
+
+**Fixed:** all P0 (G-1, M-1/2/3, M-10, TS-1, LG-1 as a draft for counsel) · every P1 except QR-2 and AI-2 · and these P2s: G-7, G-8, G-9, G-10, M-4…M-9, M-12, M-13, M-15, OB-1…OB-7, OB-9, OB-10, VH-3, VH-7, VH-11 (Material header), VH-18, VH-19, UP-3, UP-4, UP-9, IM-2, IM-4…IM-7, FP-3, FP-4, FP-5, DR-1…DR-6, VW-6, VW-11 (page fade), VW-12, FV-2, FV-3, ST-3, ST-4, ST-6, PT-1…PT-4, PT-7, PT-8, TS-3, TS-4, TS-5, TS-10, TS-12, TS-13, QR-1, QR-4, QN-1, QN-3, TR-1, TR-2, AR-1, AI-1, AI-3, LG-2, LG-3, SE-1…SE-9.
+
+**Not done, and why:**
+
+| ID | Why it is still open |
+|---|---|
+| QR-2, QN-2 | Moving ID numbers between stores needs a compliance decision first: Aadhaar numbers must never be stored raw (UIDAI rules), so "Move to Quick Reference" can't simply copy what's detected. |
+| AI-2, OB-8 | Need a phone: the real AI states (download, load, chat) and the Hindi layout can't run in the browser demo. |
+| VW-5 | The line breaks are lost in the OCR output itself, not in the viewer, so it can't be fixed in the UI. |
+| VH-9, VH-10, VH-14, VH-16, VH-17, VW-9, VW-10, UP-6, FV-4, FV-5, ST-2, ST-7, ST-8, PT-6, FP-6, UP-8 | P2 refinements (per-density row heights, suggestion chips, swipe peek, pull-to-search, pinch zoom, reorder favourites, bar chart instead of donut, grouped tool headings). Each is a feature in its own right; left for a follow-up. |
 
 ---
 

@@ -3,9 +3,23 @@
 /* Bridge Ionic's component variables to the design tokens so IonContent /
    IonModal / IonToast follow data-theme. Without this, Ionic keeps its
    white default background while dark-mode tokens turn text near-white —
-   unreadable screens on devices in dark mode. */
-:root {
+   unreadable screens on devices in dark mode.
+   The Ionic dark palette (palettes/dark.class.css, kept for its tuned step
+   colours) sets these on `.ion-palette-dark.ios` / `.md` — two classes, so a
+   bare :root lost and dark pages rendered #000 / #121212 instead of navy
+   (screen audit G-1). The selectors below match its specificity and come
+   later, so the tokens win in both modes, including inside modals. */
+:root,
+.ion-palette-dark.ios,
+.ion-palette-dark.md,
+.ion-palette-dark.ios ion-modal,
+.ion-palette-dark.md ion-modal {
   --ion-background-color: var(--surface-1);
+  --ion-border-color: var(--border-default);
+  --ion-tab-bar-background: var(--surface-1);
+  --ion-tab-bar-border-color: var(--border-default);
+  --ion-toolbar-border-color: var(--border-default);
+  --ion-card-background: var(--surface-2);
   --ion-text-color: var(--text-primary);
   --ion-toolbar-background: var(--surface-2);
   --ion-toolbar-color: var(--text-primary);
@@ -34,4 +48,16 @@
   color: var(--text-primary);
   font-family: var(--font-primary);
   text-align: center;
+}
+
+/* Toolbar titles on the type scale, not Ionic's 17/20 px (audit M-10). */
+ion-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+/* Sheets that fit their content (Ionic auto-height sheet): add
+   className="kg-sheet-auto" with breakpoints [0, 1] (audit UP-3, FP-4). */
+ion-modal.kg-sheet-auto {
+  --height: auto;
 }

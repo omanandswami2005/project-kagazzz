@@ -10,6 +10,7 @@ import {
   formatFileSize,
   formatNumber,
   formatRelativeTime,
+  formatShortDate,
   toFormattingLocale,
 } from '../utils';
 
@@ -21,6 +22,8 @@ export interface LocaleInfo {
   dir: 'ltr' | 'rtl';
   formatDate: (date: string | Date) => string;
   formatDateTime: (date: string | Date) => string;
+  /** "Today" / "19 Nov" — for cards and rows (audit G-4). */
+  formatShortDate: (date: string | Date) => string;
   formatRelativeTime: (date: string | Date) => string;
   formatNumber: (value: number) => string;
   formatFileSize: (bytes: number) => string;
@@ -39,6 +42,7 @@ export function useLocale(): LocaleInfo {
     dir: i18n.dir(locale),
     formatDate: (date) => formatDate(date, fmt),
     formatDateTime: (date) => formatDateTime(date, fmt),
+    formatShortDate: (date) => formatShortDate(date, fmt),
     formatRelativeTime: (date) => formatRelativeTime(date, fmt),
     formatNumber: (value) => formatNumber(value, fmt),
     formatFileSize: (bytes) => formatFileSize(bytes, fmt),

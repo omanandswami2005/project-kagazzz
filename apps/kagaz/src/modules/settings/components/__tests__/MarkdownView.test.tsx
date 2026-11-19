@@ -39,4 +39,18 @@ describe('MarkdownView (G1-5)', () => {
     const { container } = render(<MarkdownView source={'above\n\n---\n\nbelow'} />);
     expect(container.querySelector('hr')).not.toBeNull();
   });
+
+  it('adds a contents list after the title when there are 4+ sections (LG-2)', () => {
+    const source = '# Title\n\n## One\n\na\n\n## Two\n\nb\n\n## Three\n\nc\n\n## Four\n\nd';
+    const { container } = render(<MarkdownView source={source} tocLabel="Contents" />);
+    const nav = container.querySelector('nav[aria-label="Contents"]');
+    expect(nav?.querySelectorAll('button')).toHaveLength(4);
+    expect(container.firstElementChild?.firstElementChild?.tagName).toBe('H2'); // title first
+    expect(container.querySelector('#md-section-3')?.textContent).toBe('Four');
+  });
+
+  it('skips the contents list for short texts', () => {
+    const { container } = render(<MarkdownView source={'## One\n\n## Two'} tocLabel="Contents" />);
+    expect(container.querySelector('nav')).toBeNull();
+  });
 });

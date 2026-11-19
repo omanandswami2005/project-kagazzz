@@ -61,6 +61,17 @@ export function isExpired(
   return !Number.isNaN(deletedMs) && nowMs - deletedMs >= retentionDays * DAY_MS;
 }
 
+/** Whole days left before a trashed document is purged (0 = at the next launch). */
+export function daysUntilPurge(
+  deletedAt: string | undefined,
+  nowMs: number,
+  retentionDays = TRASH_RETENTION_DAYS
+): number {
+  const deletedMs = deletedAt ? Date.parse(deletedAt) : Number.NaN;
+  if (Number.isNaN(deletedMs)) return retentionDays;
+  return Math.max(0, Math.ceil((deletedMs + retentionDays * DAY_MS - nowMs) / DAY_MS));
+}
+
 /** Permanently removes one document's files then its row (best-effort files). */
 async function purgeOne(doc: DocumentEntity, deps: TrashDeps): Promise<void> {
   await deps.deleteFile(doc.filePath).catch(() => undefined);

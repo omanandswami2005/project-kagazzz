@@ -30,3 +30,4 @@ Thumbs.db
 
 # UX audit screenshots — regenerate with scripts/ux/capture-screens.mjs
 docs/ux/screens/
+docs/ux/screens-after/

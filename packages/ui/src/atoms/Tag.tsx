@@ -5,6 +5,7 @@
 import { clsx } from 'clsx';
 import type { CSSProperties, ReactNode } from 'react';
 import { agentAttrs, type AgentProps } from '../agent-props';
+import { Icon } from './Icon';
 
 /** Props for {@link Tag}. */
 export interface TagProps extends AgentProps {
@@ -38,6 +39,11 @@ export function Tag({
   const state = selected ? 'selected' : 'idle';
   const content = (
     <>
+      {selected && onClick && (
+        <span className="kg-tag__check" aria-hidden="true">
+          <Icon name="Check" size={16} />
+        </span>
+      )}
       <span className="kg-tag__label">{label}</span>
       {removable && (
         <button

@@ -11,15 +11,18 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
+import { DOC_PARAM, TOOL_PARAM } from '@/core/constants/routes';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
-import { Button, Icon, Search } from '@kagaz/ui';
+import { Icon, Search, SegmentedControl } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
 import { PdfOpSheet } from '../components/PdfOpSheet';
 import { PdfOrganizeSheet } from '../components/PdfOrganizeSheet';
+import { RecentTools } from '../components/RecentTools';
 import { ToolHistoryList } from '../components/ToolHistoryList';
 import { ToolResultSheet } from '../components/ToolResultSheet';
 import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
@@ -44,6 +47,27 @@ export function PdfToolsPage(): ReactNode {
   const [runs, setRuns] = useState(0);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<PdfOpCategory | null>(null);
+
+  // Hand-off from a document (viewer next actions, VW-8): `?tool=&doc=` opens
+  // that tool with the document already chosen (TS-9), then clears the query
+  // so Back doesn't reopen it.
+  const location = useLocation();
+  const history = useHistory();
+  const params = new URLSearchParams(location.search);
+  const linkedTool = PDF_OPS.find((o) => o.id === params.get(TOOL_PARAM))?.id ?? null;
+  const linkedDoc = params.get(DOC_PARAM) ?? undefined;
+  const [preselectId, setPreselectId] = useState<string | undefined>(undefined);
+  const [handledLink, setHandledLink] = useState<string | null>(null);
+  if (linkedTool && handledLink !== location.search) {
+    setHandledLink(location.search);
+    setPreselectId(linkedDoc);
+    setActiveOp(linkedTool);
+  }
+  useEffect(() => {
+    if (handledLink && handledLink === location.search) {
+      history.replace(location.pathname);
+    }
+  }, [handledLink, location.search, location.pathname, history]);
 
   const ops = useMemo(() => {
     const platformOps = PDF_OPS.filter((op) => !op.native || isNative);
@@ -80,6 +104,17 @@ export function PdfToolsPage(): ReactNode {
         <main className="kg-pdf-tools" data-agent-id="pdf-tools.content">
           <p className="kg-pdf-tools__subtitle">{t('subtitle')}</p>
 
+          {/* PT-5: what you ran last, first — the full history stays below. */}
+          {!query.trim() && (
+            <RecentTools
+              refreshKey={runs}
+              onPick={(op, documentId) => {
+                setPreselectId(documentId);
+                setActiveOp(op);
+              }}
+            />
+          )}
+
           <Search
             value={query}
             placeholder={t('search_placeholder')}
@@ -88,33 +123,18 @@ export function PdfToolsPage(): ReactNode {
             onChange={setQuery}
           />
 
-          <div
-            className="kg-pdf-tools__categories"
-            role="group"
+          <SegmentedControl
             aria-label={t('category_filter_label')}
-            data-agent-id="pdf-tools.categories"
-            data-agent-state={category ?? 'all'}
-          >
-            <Button
-              variant={category === null ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setCategory(null)}
-              agentId="pdf-tools.category-all"
-            >
-              {t('category_all')}
-            </Button>
-            {CATEGORIES.map((c) => (
-              <Button
-                key={c}
-                variant={category === c ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setCategory(c)}
-                agentId={`pdf-tools.category-${c}`}
-              >
-                {t(`category_${c}`)}
-              </Button>
-            ))}
-          </div>
+            agentId="pdf-tools.categories"
+            optionAgentId={(c) => `pdf-tools.category-${c}`}
+            value={category ?? 'all'}
+            onChange={(c) => setCategory(c === 'all' ? null : c)}
+            options={(['all', ...CATEGORIES] as const).map((c) => ({
+              value: c,
+              label: t(`category_${c}`),
+            }))}
+            fullWidth
+          />
 
           {ops.length === 0 ? (
             <p className="kg-pdf-tools__no-results" data-agent-id="pdf-tools.no-results">
@@ -148,10 +168,14 @@ export function PdfToolsPage(): ReactNode {
           op={activeOp === 'organize' ? null : activeOp}
           documents={documents}
           engine={engine}
-          onClose={() => setActiveOp(null)}
+          onClose={() => {
+            setActiveOp(null);
+            setPreselectId(undefined);
+          }}
           onDone={handleDone}
           onOpenDocument={openDocument}
           historyKey={runs}
+          preselectId={preselectId}
         />
 
         <PdfOrganizeSheet

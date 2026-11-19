@@ -4,6 +4,18 @@
  * Import after the tokens: density modes drive --target-min, --scale, etc.
  */
 
+/* ── Base ────────────────────────────────────────────────────────── */
+/* Native form controls don't inherit font by default: every bare <button>
+   rendered at the browser's 13.33px — including the document rows, so all
+   document names were smaller than designed (screen audit M-10). Component
+   classes below still set their own size/weight. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
 /* ── Button ──────────────────────────────────────────────────────── */
 .kg-btn {
   display: inline-flex;
@@ -30,17 +42,28 @@
 .kg-btn--primary {
   background: var(--gradient-brand);
   color: var(--text-on-primary);
-  box-shadow: var(--shadow-glow-brand);
+  box-shadow: var(--shadow-sm);
   transition:
     box-shadow var(--duration-fast) var(--ease-standard),
     transform var(--duration-fast) var(--ease-standard);
 }
-.kg-btn--primary:hover:not(:disabled) {
+/* The glow marks the screen's ONE main action (agentRole="primary-action"),
+   not every small Add/Apply (audit G-7, design-principles #1). */
+.kg-btn--primary[data-agent-role='primary-action'] {
+  box-shadow: var(--shadow-glow-brand);
+}
+.kg-btn--primary[data-agent-role='primary-action']:hover:not(:disabled) {
   box-shadow: var(--shadow-glow-brand-lg);
 }
 .kg-btn--primary:active:not(:disabled) {
-  box-shadow: var(--shadow-glow-brand);
   transform: scale(0.98);
+}
+/* Disabled primary reads as unavailable, not as a faded brand button (TS-5). */
+.kg-btn--primary:disabled {
+  opacity: 1;
+  background: var(--surface-3);
+  color: var(--text-secondary); /* still AA, though disabled controls are exempt */
+  box-shadow: none;
 }
 .kg-btn--secondary {
   background: transparent;
@@ -62,7 +85,8 @@
   padding: 0;
 }
 .kg-btn--sm {
-  min-height: calc(var(--target-min) * 0.85);
+  /* Never below the 44 px platform minimum (audit M-7). */
+  min-height: max(var(--touch-target), calc(var(--target-min) * 0.85));
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
 }
@@ -121,7 +145,7 @@
 .kg-input__error {
   margin: 0;
   font-size: var(--text-sm);
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-input__helper {
   margin: 0;
@@ -163,8 +187,10 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  min-height: var(--target-min);
+  /* The whole row is the hit area — the label forwards taps (audit M-8). */
+  min-height: var(--touch-target-lg);
   font-family: var(--font-primary);
+  cursor: pointer;
 }
 .kg-toggle__label {
   font-size: var(--label-size);
@@ -177,11 +203,16 @@
   border: none;
   border-radius: var(--radius-full);
   background: var(--surface-3);
+  /* Off reads at 3:1 against the page (WCAG 1.4.11, audit FP-3): a muted
+     outline and a muted thumb, Material-style. */
+  box-shadow: inset 0 0 0 2px var(--text-muted);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .kg-toggle__track--on {
-  background: var(--color-accent);
+  /* "On" uses the same saffron as every other selected state (audit SE-1). */
+  background: var(--color-primary);
+  box-shadow: none;
 }
 .kg-toggle__thumb {
   position: absolute;
@@ -190,9 +221,13 @@
   height: 80%;
   aspect-ratio: 1;
   border-radius: var(--radius-full);
-  background: var(--surface-1);
+  background: var(--text-muted);
   box-shadow: var(--shadow-default);
-  transition: transform var(--duration-fast) var(--ease-spring);
+  transition: transform var(--duration-fast) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+.kg-toggle__track--on .kg-toggle__thumb {
+  background: var(--surface-1);
 }
 .kg-toggle__track--on .kg-toggle__thumb {
   transform: translateX(100%);
@@ -255,13 +290,24 @@
   font-size: var(--text-sm);
   cursor: default;
 }
+/* Interactive chips are filter chips: 40 px tall inside an 8 px gap so the
+   hit area reaches 44 px; selected = tinted fill + saffron edge + check
+   (audit FP-1/FP-2, M-4). Static tags in list rows stay compact. */
 button.kg-tag {
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border-color: var(--border-strong);
+  background: var(--surface-1);
   cursor: pointer;
 }
-.kg-tag--selected {
-  background: var(--color-primary);
+.kg-tag--selected,
+button.kg-tag--selected {
+  background: var(--color-primary-subtle);
   border-color: var(--color-primary);
-  color: var(--text-on-primary);
+  color: var(--text-primary);
+}
+.kg-tag__check {
+  color: var(--color-primary);
 }
 .kg-tag__remove {
   display: inline-flex;
@@ -563,11 +609,90 @@ button.kg-tag {
   background: var(--surface-3);
 }
 .kg-action-sheet__header {
-  margin: var(--space-2) var(--space-2) var(--space-3);
+  /* Left-aligned like the rows below it (audit IM-2). */
+  margin: var(--space-2) var(--space-3) var(--space-3);
   font-size: var(--text-base);
   font-weight: var(--font-semibold);
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quick-action row (audit IM-3): big labelled targets for the likely next step. */
+.kg-action-sheet__quick {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-1) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border-default);
+  margin-bottom: var(--space-1);
+}
+.kg-action-sheet__quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-lg);
+  padding: var(--space-2) var(--space-1);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+.kg-action-sheet__quick-btn:active {
+  transform: scale(0.96);
+}
+.kg-action-sheet__quick-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-lg);
+  height: var(--touch-target-lg);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--icon-active);
+}
+.kg-action-sheet__quick-label {
   text-align: center;
+  line-height: var(--leading-xs);
+}
+
+/* Labelled groups; a <details> group folds behind its heading. */
+.kg-action-sheet__group {
+  border-top: var(--border-width) solid var(--border-default);
+}
+.kg-action-sheet__group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--target-min);
+  margin: 0;
+  padding: var(--space-2) var(--space-3) 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  list-style: none;
+}
+summary.kg-action-sheet__group-title {
+  padding-bottom: var(--space-2);
+  cursor: pointer;
+}
+summary.kg-action-sheet__group-title::-webkit-details-marker {
+  display: none;
+}
+.kg-action-sheet__group[open] summary svg {
+  transform: rotate(180deg);
+}
+.kg-action-sheet__group > .kg-action-sheet__btn:first-of-type {
+  border-top: none;
 }
 .kg-action-sheet__buttons {
   display: flex;
@@ -599,10 +724,10 @@ button.kg-tag {
   flex: 1;
 }
 .kg-action-sheet__btn--destructive {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-action-sheet__btn--destructive .kg-icon {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-action-sheet__btn--cancel {
   margin-top: var(--space-2);
@@ -717,7 +842,7 @@ button.kg-tag {
   cursor: pointer;
 }
 .kg-alert__btn--destructive {
-  color: var(--color-danger);
+  color: var(--text-danger);
 }
 .kg-alert__btn--cancel {
   color: var(--text-secondary);
@@ -779,4 +904,196 @@ button.kg-tag {
   border-radius: var(--radius-full);
   color: var(--text-muted);
   cursor: pointer;
+}
+
+/* ── Empty state (audit G-8) ─────────────────────────────────────── */
+.kg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  /* Top third of the viewport, whatever the content above it. */
+  padding: var(--space-12) var(--space-4) var(--space-8);
+  text-align: center;
+  font-family: var(--font-primary);
+}
+.kg-empty__icon {
+  display: inline-flex;
+  margin-bottom: var(--space-2);
+  color: var(--icon-object);
+}
+.kg-empty__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+.kg-empty__hint {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+.kg-empty__action {
+  margin-top: var(--space-3);
+}
+
+/* ── Segmented control (audit G-6, M-6) ──────────────────────────── */
+.kg-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border-default);
+  max-width: 100%;
+}
+.kg-segmented--full {
+  display: flex;
+}
+.kg-segmented--full .kg-segmented__btn {
+  flex: 1 1 0;
+}
+.kg-segmented__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  /* Each segment is itself a full 44 px target (WCAG 2.5.8 / M-6). */
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+.kg-segmented__btn svg {
+  color: var(--icon-action);
+}
+.kg-segmented__btn--active {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+.kg-segmented__btn--active svg {
+  color: var(--icon-active);
+}
+.kg-segmented__btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+/* ── List row (audit SE-2) ───────────────────────────────────────── */
+.kg-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target-lg);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.kg-list-row:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.kg-list-row:active:not(:disabled) {
+  background: var(--color-primary-subtle);
+}
+.kg-list-row:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.kg-list-row__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--icon-object);
+}
+.kg-list-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-half);
+  flex: 1;
+  min-width: 0;
+}
+.kg-list-row__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+}
+.kg-list-row__hint {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.kg-list-row__chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-muted);
+}
+.kg-list-row--danger .kg-list-row__icon,
+.kg-list-row--danger .kg-list-row__title {
+  color: var(--text-danger);
+}
+
+/* ── Shared motion keyframes (audit G-10) ────────────────────────────
+   Timings come from motion tokens, which collapse to 0ms under
+   prefers-reduced-motion, so every use disables itself. */
+@keyframes kg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes kg-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kg-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* A state you just turned on answers back (audit G-10): a quick pop. */
+@keyframes kg-state-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.kg-tag__check {
+  display: inline-flex;
+  animation: kg-pop-in var(--duration-fast) var(--ease-spring);
 }
