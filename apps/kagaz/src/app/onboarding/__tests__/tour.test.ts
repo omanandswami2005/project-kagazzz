@@ -1,7 +1,17 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { TFunction } from 'i18next';
 import { i18n, initI18n } from '@/core/i18n';
-import { ALL_TOUR_TIPS, MENU_TOUR, presentSteps, runTour, WELCOME_TOUR } from '../tour';
+import {
+  ALL_TOUR_TIPS,
+  DOCUMENTS_TOUR,
+  FOLDER_TOUR,
+  MENU_TOUR,
+  presentSteps,
+  runTour,
+  TOOLS_TOUR,
+  VIEWER_TOUR,
+  WELCOME_TOUR,
+} from '../tour';
 
 const drive = vi.fn();
 const destroy = vi.fn();
@@ -116,9 +126,18 @@ describe('spotlight tour', () => {
 
   it('has copy for every drawer step, and replay covers every tour', () => {
     const t = tCommon();
-    for (const step of MENU_TOUR) {
+    for (const step of [...MENU_TOUR, ...DOCUMENTS_TOUR, ...FOLDER_TOUR, ...TOOLS_TOUR, ...VIEWER_TOUR]) {
       expect(t(`tour.${step.key}.title`)).not.toContain('tour.');
+      expect(t(`tour.${step.key}.body`)).not.toContain('tour.');
     }
-    expect(ALL_TOUR_TIPS).toEqual(['welcome-tour', 'documents-tour', 'menu-tour']);
+    expect(t('tour.favorites_star.title')).toBe('Star it here');
+    expect(ALL_TOUR_TIPS).toEqual([
+      'welcome-tour',
+      'documents-tour',
+      'menu-tour',
+      'folder-tour',
+      'tools-tour',
+      'viewer-tour',
+    ]);
   });
 });

@@ -37,6 +37,8 @@ import { useFavorites } from '../hooks/useFavorites';
 import {
   DOCUMENTS_TOUR,
   DOCUMENTS_TOUR_TIP,
+  FOLDER_TOUR,
+  FOLDER_TOUR_TIP,
   runTour,
   WELCOME_TOUR,
   WELCOME_TOUR_TIP,
@@ -478,6 +480,20 @@ export function VaultHomePage(): ReactNode {
       !selectionMode &&
       !search.isActive &&
       seenTips.includes(WELCOME_TOUR_TIP)
+  );
+  // Folder options hide behind each folder's ⋮: point at it once, after the
+  // gestures tour has had its turn (never two tours at once).
+  useFirstRunTour(
+    FOLDER_TOUR,
+    FOLDER_TOUR_TIP,
+    !isLoading &&
+      folders.length > 0 &&
+      !foldersCollapsed &&
+      folderPath.length === 0 &&
+      !selectionMode &&
+      !search.isActive &&
+      seenTips.includes(WELCOME_TOUR_TIP) &&
+      (gesturesToured || documents.length < 2)
   );
   const lockEnabled = useLockStore((s) => s.enabled);
   const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
