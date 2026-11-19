@@ -270,7 +270,8 @@
     "no_text_type": "This file type has no text to extract.",
     "no_text_device": "Text extraction runs in the phone app — open this document there to extract its text.",
     "compress": "Compress",
-    "make_pdf": "Make PDF"
+    "make_pdf": "Make PDF",
+    "zoom_hint": "Double-tap or pinch to zoom · swipe for the next document"
   },
   "detail": {
     "size": "Size",
