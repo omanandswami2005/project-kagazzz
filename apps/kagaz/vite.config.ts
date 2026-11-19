@@ -77,6 +77,17 @@ export default defineConfig(({ command, mode }) => {
       // performance budgets); 300KB pre-minify flags drift early.
       chunkSizeWarningLimit: 300,
       rollupOptions: {
+        // Ionic component files only *define* their element inside
+        // defineCustomElement(), which @ionic/react calls the first time a
+        // component renders — importing one does nothing. Neither Ionic
+        // package declares `sideEffects`, so every component (datetime,
+        // select, range, picker…) was bundled whether used or not. Marking
+        // just the component entry files side-effect-free lets the unused
+        // ones drop out (2026-11-19 bundle pass).
+        treeshake: {
+          moduleSideEffects: (id: string): boolean | undefined =>
+            /[\\/]@ionic[\\/]core[\\/]components[\\/]ion-[a-z-]+\.js$/.test(id) ? false : undefined,
+        },
         output: {
           entryFileNames: 'assets/js/[name].[hash].js',
           chunkFileNames: 'assets/js/[name].[hash].js',
@@ -88,28 +99,47 @@ export default defineConfig(({ command, mode }) => {
           // bundle-size gate can account for them explicitly (G1-4): they are
           // off the initial route and ship inside the APK, so they never hit
           // cold-start FCP.
-          manualChunks: (id: string): string | undefined => {
-            // React + Ionic + router ship in ONE vendor chunk: splitting Ionic
-            // into a second initial-route chunk added an extra critical-path
-            // request that shaved ~0.02 off the Lighthouse score (0.86→0.84,
-            // below the temp floor) for zero byte saving. The framework is
-            // Ionic-dominated (~54 KB React vs ~237 KB Ionic) — real reduction
-            // needs a heavy-overlay-component refactor, not a chunk relabel.
-            if (
-              /[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/.test(
-                id
-              )
-            ) {
-              return 'vendor';
-            }
-            if (/[\\/]node_modules[\\/]pdfjs-dist[\\/]/.test(id)) return 'lib-pdfjs';
-            if (/[\\/]node_modules[\\/]pdf-lib[\\/]/.test(id)) return 'lib-pdflib';
-            if (/[\\/]node_modules[\\/]docx[\\/]/.test(id)) return 'lib-docx';
-            // First-run tour (ADR-026): loads only when a tour runs.
-            if (/[\\/]node_modules[\\/]driver\.js[\\/]/.test(id)) return 'lib-driver';
-            if (/[\\/]node_modules[\\/]mammoth[\\/]/.test(id)) return 'lib-mammoth';
-            if (/[\\/]node_modules[\\/]jszip[\\/]/.test(id)) return 'lib-jszip';
-            return undefined;
+          // Rolldown code-splitting groups (Vite 8; `manualChunks` is deprecated
+          // and skipped virtual modules — see the preload-helper note below).
+          codeSplitting: {
+            groups: [
+              {
+                // React + Ionic + router ship in ONE vendor chunk (~168 KB gz
+                // with only the Ionic components the app renders): splitting
+                // Ionic into a second initial-route chunk added an extra
+                // critical-path request for zero byte saving. Vite's preload helper backs every
+                // dynamic import(); left to the lib groups it was pulled into
+                // lib-pdfjs, so every chunk — the entry included — statically
+                // imported pdf.js (~88 KB gz) on cold start (2026-11-19).
+                name: 'vendor',
+                test: /vite[\\/](preload-helper|modulepreload-polyfill)|[\\/]node_modules[\\/](react|react-dom|scheduler|react-router|react-router-dom|history|@ionic|@stencil|ionicons)[\\/]/,
+                priority: 20,
+              },
+              // Heavy media/office libraries, each with its own dependencies, in
+              // their own lazy chunks so the bundle-size gate can keep them off
+              // the initial route (G1-4). Lower priority than vendor, so a shared
+              // module the framework group claims (the preload helper) never
+              // lands in one of them.
+              ...(
+                [
+                  ['lib-pdfjs', /[\\/]node_modules[\\/]pdfjs-dist[\\/]/],
+                  ['lib-pdflib', /[\\/]node_modules[\\/]pdf-lib[\\/]/],
+                  ['lib-docx', /[\\/]node_modules[\\/]docx[\\/]/],
+                  // First-run tour (ADR-026): loads only when a tour runs.
+                  ['lib-driver', /[\\/]node_modules[\\/]driver\.js[\\/]/],
+                  ['lib-mammoth', /[\\/]node_modules[\\/]mammoth[\\/]/],
+                  ['lib-jszip', /[\\/]node_modules[\\/]jszip[\\/]/],
+                  // Schemas for the action registry / AI tools; never on the startup route.
+                  ['lib-zod', /[\\/]node_modules[\\/]zod[\\/]/],
+                ] as const
+              ).map(([name, test]) => ({
+                name,
+                test,
+                // jszip first: mammoth depends on it, and Settings (backups)
+                // needs jszip alone, not the whole Word importer.
+                priority: name === 'lib-jszip' ? 11 : 10,
+              })),
+            ],
           },
         },
       },
