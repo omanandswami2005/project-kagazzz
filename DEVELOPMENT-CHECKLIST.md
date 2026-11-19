@@ -417,6 +417,9 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · 40d4f27 · feat(document-vault) · empty Quick reference/notes show a dashed, non-interactive example row (never stored); empty Favorites "Show me how" → Documents + star spotlight · first-run journey
+- 2026-11-19 · 4fe6801 · feat(ai-assistant) · chat intro before the model download: what it does + download size + "Set up the assistant" · first-run journey
+- 2026-11-19 · 014cc3c · feat(app) · one-time tours: folder ⋮ tip, PDF Tools (search/categories/tool), viewer (swipe-to-next when possible, ⋮); replay resets all six. **Not device-tested** · first-run journey
 - 2026-11-19 · a8120e6 · feat(document-vault) · empty open folder shows an empty state ("Add a document here" uploads into it, "New folder"); swipe nudge + long-press toast now only back up users who skipped the gestures tour · first-run journey
 - 2026-11-19 · 08d6c36 · feat(app) · gestures tour at 2+ documents (swipe — copy names the user's own swipe actions, row slides while spotlit — long-press select, ⋮) and a drawer tour on first ☰ open (quick reference, notes, archive/trash, backup); runTour handles hardware Back; Settings replay resets all three. **Not device-tested** · first-run journey
 - 2026-11-19 · 8f68bb9 · test(document-vault) · QuickNotes ?new=1 test waits for IonModal.present() before cleanup (unhandled "framework delegate is missing" since the composer opens on first render) · first-run journey
