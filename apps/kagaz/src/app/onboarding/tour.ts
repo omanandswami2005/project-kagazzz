@@ -24,7 +24,14 @@ export type TourKey =
   | 'quick_reference'
   | 'quick_notes'
   | 'archive_trash'
-  | 'backup_menu';
+  | 'backup_menu'
+  | 'folder_more'
+  | 'tools_search'
+  | 'tools_categories'
+  | 'tools_op'
+  | 'viewer_swipe'
+  | 'viewer_more'
+  | 'favorites_star';
 
 /** One stop of a tour: the element to light up and its i18n copy key. */
 export interface TourStep {
@@ -82,8 +89,42 @@ export const MENU_TOUR: readonly TourStep[] = [
 /** `seenTips` id that marks the drawer tour as done. */
 export const MENU_TOUR_TIP = 'menu-tour';
 
+/** The first folder's ⋮, once there is a folder: rename, colour, order, delete. */
+export const FOLDER_TOUR: readonly TourStep[] = [
+  { selector: '[data-agent-id="vault.home.folders"] [data-agent-id$=".more"]', key: 'folder_more', side: 'bottom' },
+];
+
+/** `seenTips` id that marks the folder tip as done. */
+export const FOLDER_TOUR_TIP = 'folder-tour';
+
+/** PDF Tools, the first time it opens: find a tool, browse by kind, pick one. */
+export const TOOLS_TOUR: readonly TourStep[] = [
+  { selector: '[data-agent-id="pdf-tools.search"]', key: 'tools_search', side: 'bottom' },
+  { selector: '[data-agent-id="pdf-tools.categories"]', key: 'tools_categories', side: 'bottom' },
+  { selector: '[data-agent-id="pdf-tools.ops"] [data-agent-id^="pdf-tools.op-"]', key: 'tools_op', side: 'bottom' },
+];
+
+/** `seenTips` id that marks the PDF Tools tour as done. */
+export const TOOLS_TOUR_TIP = 'tools-tour';
+
+/** The document viewer, the first time a document opens. */
+export const VIEWER_TOUR: readonly TourStep[] = [
+  { selector: '[data-agent-id="vault.viewer.content"]', key: 'viewer_swipe', side: 'top' },
+  { selector: '[data-agent-id="vault.viewer.more"]', key: 'viewer_more', side: 'bottom' },
+];
+
+/** `seenTips` id that marks the viewer tour as done. */
+export const VIEWER_TOUR_TIP = 'viewer-tour';
+
 /** Every one-time tour, so "Show the tour again" can bring them all back. */
-export const ALL_TOUR_TIPS = [WELCOME_TOUR_TIP, DOCUMENTS_TOUR_TIP, MENU_TOUR_TIP] as const;
+export const ALL_TOUR_TIPS = [
+  WELCOME_TOUR_TIP,
+  DOCUMENTS_TOUR_TIP,
+  MENU_TOUR_TIP,
+  FOLDER_TOUR_TIP,
+  TOOLS_TOUR_TIP,
+  VIEWER_TOUR_TIP,
+] as const;
 
 /** A running tour; `destroy` closes it (Back button, leaving the page). */
 export interface TourHandle {

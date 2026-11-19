@@ -167,6 +167,34 @@
     "backup_menu": {
       "title": "Back up",
       "body": "Make an encrypted backup file now and then, so a lost phone doesn't mean lost documents."
+    },
+    "folder_more": {
+      "title": "Folder options",
+      "body": "Tap ⋮ on a folder to rename it, change its colour, reorder it or delete it."
+    },
+    "tools_search": {
+      "title": "Find a tool",
+      "body": "Type what you need — \"compress\", \"merge\", \"photo to PDF\"."
+    },
+    "tools_categories": {
+      "title": "Browse by kind",
+      "body": "PDF tools, image tools and the rest — tap one to see only those."
+    },
+    "tools_op": {
+      "title": "Pick a tool",
+      "body": "Choose a tool, then the document. The result is saved as a new document; your original stays as it was."
+    },
+    "viewer_swipe": {
+      "title": "Next document",
+      "body": "Swipe left or right to move through your list. Pinch or double-tap to zoom."
+    },
+    "viewer_more": {
+      "title": "Do more with it",
+      "body": "Share, rename, edit the PDF, extract text, or move it to a folder — all from ⋮."
+    },
+    "favorites_star": {
+      "title": "Star it here",
+      "body": "Tap the star on any document. It shows up in Favorites straight away."
     }
   }
 }

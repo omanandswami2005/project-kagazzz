@@ -25,7 +25,7 @@ has its own tour the first time it opens (quick reference, quick notes,
 archive/trash, backup). Settings → "Show the welcome tour again" resets all
 three. An open folder with nothing in it shows `vault.home.folder-empty`
 with `vault.home.folder-empty.add` (adds into this folder) and
-`vault.home.folder-empty.new-folder`.
+`vault.home.folder-empty.new-folder`. Once a folder exists, a one-time tip points at its ⋮ (rename, colour, order, delete).
 
 ## What I (the AI) can do here
 

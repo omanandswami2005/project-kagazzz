@@ -1,5 +1,7 @@
 # Skill: vault.viewer (Document Viewer)
 
+**First document opened (2026-11-19):** a one-time tour — swipe to the next document (only when the list has another) and the ⋮ menu (`vault.viewer.more`).
+
 ## Purpose
 The user is viewing one document full-screen — an image, or a PDF rendered
 page-by-page — with a panel showing the **text extracted from it** (OCR). This

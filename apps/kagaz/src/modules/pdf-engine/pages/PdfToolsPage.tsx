@@ -28,6 +28,8 @@ import { ToolResultSheet } from '../components/ToolResultSheet';
 import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
 import '../components/pdf-tools.css';
 import { MenuButton } from '@/app/shell/MenuButton';
+import { TOOLS_TOUR, TOOLS_TOUR_TIP } from '@/app/onboarding/tour';
+import { useFirstRunTour } from '@/app/onboarding/useFirstRunTour';
 
 /** Filter chips shown above the grid, "All" first. */
 const CATEGORIES: readonly PdfOpCategory[] = ['pdf', 'image', 'other'];
@@ -95,6 +97,10 @@ export function PdfToolsPage(): ReactNode {
     setResult(engine.lastCreated());
     setRuns((n) => n + 1);
   };
+
+  // First-run journey: the first visit gets a three-step tour — but never
+  // over a tool a deep link already opened.
+  useFirstRunTour(TOOLS_TOUR, TOOLS_TOUR_TIP, activeOp === null && result.length === 0 && !query);
 
   return (
     <IonPage data-agent-id="pdf-tools">

@@ -1,5 +1,7 @@
 # Skill: vault.quick-notes (Quick Notes)
 
+**Empty (2026-11-19):** a dashed, non-interactive example row (`vault.quick-notes.example`, "Locker code") sits above Add. It is never stored.
+
 ## Purpose
 The user is viewing Quick Notes: a personal list of named values they save
 for the fastest possible retrieval — a Wi-Fi password, a locker

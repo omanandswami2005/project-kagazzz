@@ -89,6 +89,13 @@
     "downloading": "The AI model is downloading ({{percent}}%). You can chat when it finishes.",
     "loading": "Loading the AI model...",
     "error": "The assistant could not start.",
-    "manage_button": "Manage AI model"
+    "manage_button": "Manage AI model",
+    "intro_title": "Your documents, on call",
+    "can_find": "Find a document — “where's my PAN card?”",
+    "can_read": "Read it for you — pull out the text, answer what's inside",
+    "can_tools": "Work on PDFs and photos — split, merge, compress, photo to PDF",
+    "can_private": "Only on this phone — nothing you type leaves it",
+    "size": "One-time download · {{size}} · Wi-Fi recommended",
+    "setup_button": "Set up the assistant"
   }
 }

@@ -31,6 +31,7 @@ import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
+import { runTour } from '@/app/onboarding/tour';
 
 /** How long the unstar collapse plays before the row is removed (FV-5). */
 const LEAVE_MS = 250;
@@ -44,6 +45,9 @@ function orderBy(docs: DocumentEntity[], order: readonly string[]): DocumentEnti
     .sort((a, b) => a.k - b.k)
     .map(({ d }) => d);
 }
+
+/** Wait for Documents to slide in before spotlighting a star. */
+const STAR_SPOTLIGHT_MS = 500;
 
 /** Starred-documents screen, reachable from the Favorites tab. */
 export function FavoritesPage(): ReactNode {
@@ -62,6 +66,18 @@ export function FavoritesPage(): ReactNode {
   const { tagsByDocument } = useTags();
   const { toggleFavorite, softDelete, restore } = useVaultMutations();
   const router = useIonRouter();
+  const { t: tCommon } = useTranslation('common');
+  /** Goes to Documents and, once it has slid in, spotlights a row's star. */
+  const showHowToStar = (): void => {
+    router.push('/vault', 'root', 'replace');
+    window.setTimeout(() => {
+      void runTour(
+        [{ selector: '[data-agent-id="vault.home.list"] [data-agent-id$=".favorite"]', key: 'favorites_star', side: 'left' }],
+        tCommon,
+        () => undefined
+      );
+    }, STAR_SPOTLIGHT_MS);
+  };
   // F-88: this page has no move/tag sheet, so only delete/favorite are
   // meaningful swipe targets here regardless of the global Settings choice.
   const swipeLeftAction = usePreferencesStore((s) =>
@@ -150,14 +166,15 @@ export function FavoritesPage(): ReactNode {
               hint={t('favorites.empty_hint')}
               agentId="vault.favorites.empty"
               action={
-                // FV-3: the way to fill this list is from the documents list.
+                // FV-3: the way to fill this list is from the documents list —
+                // so go there and light up a star (first-run journey).
                 <Button
                   variant="secondary"
-                  icon={<Icon name="Folder" size={20} />}
-                  onClick={() => router.push('/vault', 'root', 'replace')}
+                  icon={<Icon name="Star" size={20} />}
+                  onClick={showHowToStar}
                   agentId="vault.favorites.browse"
                 >
-                  {t('favorites.browse')}
+                  {t('favorites.show_how')}
                 </Button>
               }
             />

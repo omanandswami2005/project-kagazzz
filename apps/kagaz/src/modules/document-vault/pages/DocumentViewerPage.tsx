@@ -45,6 +45,8 @@ import {
   useIonRouter,
 } from '@ionic/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { VIEWER_TOUR, VIEWER_TOUR_TIP } from '@/app/onboarding/tour';
+import { useFirstRunTour } from '@/app/onboarding/useFirstRunTour';
 import { useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon } from '@kagaz/ui';
@@ -198,6 +200,19 @@ export function DocumentViewerPage(): ReactNode {
     const next = at < 0 ? undefined : listed[direction === 'next' ? at + 1 : at - 1];
     if (next) router.push(`/doc/${next.id}`, direction === 'next' ? 'forward' : 'back', 'replace');
   });
+
+  // First-run journey: the first opened document shows where swipe-to-next
+  // and ⋮ are. The swipe step only when there is a next document to reach.
+  const canSwipe = listed.length > 1;
+  const viewerTour = useMemo(
+    () => VIEWER_TOUR.filter((step) => step.key !== 'viewer_swipe' || canSwipe),
+    [canSwipe]
+  );
+  useFirstRunTour(
+    viewerTour,
+    VIEWER_TOUR_TIP,
+    authorized === true && !trashed && !loading && !fileLoading && !error && document !== null && !menuOpen
+  );
 
   // VW-8: PDFs most often need shrinking for an upload limit; photos most
   // often need to become a PDF.

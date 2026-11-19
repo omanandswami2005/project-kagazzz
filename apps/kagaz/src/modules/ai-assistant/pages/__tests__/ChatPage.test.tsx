@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
@@ -88,13 +88,16 @@ beforeEach(() => {
 });
 
 describe('ChatPage (F-13)', () => {
-  it('gates to the management page link when no model is downloaded (no Download in chat)', () => {
+  it('before the download, introduces the assistant and its size, then links to setup (no Download in chat)', () => {
     const activate = vi.fn();
     useAiMock.mockReturnValue(aiValue({ status: 'not-downloaded', modelOnDisk: false, activate }));
     render(<ChatPage />);
-    expect(document.querySelector('[data-agent-id="ai.chat.gate"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-agent-id="ai.chat.gate-button"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="ai.chat.intro"]')).toBeInTheDocument();
+    expect(screen.getByText('Your documents, on call')).toBeInTheDocument();
+    expect(screen.getByText(/One-time download · .*MB/)).toBeInTheDocument();
     expect(document.querySelector('[data-agent-id="ai.chat.content"]')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Set up the assistant'));
+    expect(routerPush).toHaveBeenCalledWith('/ai-assistant');
     expect(activate).not.toHaveBeenCalled();
   });
 

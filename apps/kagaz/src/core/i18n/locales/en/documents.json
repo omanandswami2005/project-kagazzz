@@ -141,7 +141,9 @@
     "mask_aadhaar": "Keep only the last 4 digits (recommended for Aadhaar)",
     "move_hint": "Looks like an ID number — keep it locked in Quick Reference.",
     "move": "Move to Quick Reference",
-    "save_to_quickref": "Tap to copy · hold to keep it in Quick Reference"
+    "save_to_quickref": "Tap to copy · hold to keep it in Quick Reference",
+    "example_label": "PAN",
+    "example_value": "ABCDE1234F"
   },
   "quick_notes": {
     "title": "Quick Notes",
@@ -170,7 +172,9 @@
     "delete_selected_title_one": "Delete {{count}} note?",
     "delete_selected_title_other": "Delete {{count}} notes?",
     "copied_selected_one": "Copied {{count}} note",
-    "copied_selected_other": "Copied {{count}} notes"
+    "copied_selected_other": "Copied {{count}} notes",
+    "example_label": "Locker code",
+    "example_value": "4 7 1 9"
   },
   "details": {
     "title": "Details",
@@ -321,7 +325,8 @@
     "browse": "Browse documents",
     "reorder": "Reorder",
     "done": "Done",
-    "removed": "Removed from favorites"
+    "removed": "Removed from favorites",
+    "show_how": "Show me how"
   },
   "search": {
     "placeholder": "Search documents",
@@ -475,5 +480,8 @@
       "title": "Make a backup",
       "hint": "An encrypted copy, in case the phone is lost"
     }
+  },
+  "example": {
+    "label": "Example"
   }
 }

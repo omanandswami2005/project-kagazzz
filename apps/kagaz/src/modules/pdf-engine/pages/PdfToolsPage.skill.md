@@ -1,5 +1,7 @@
 # Skill: pdf-tools (PDF Tools)
 
+**First visit (2026-11-19):** a one-time spotlight tour (`app.tour`) — search, the category filter, a tool card. It waits while a deep-linked tool is open.
+
 ## Purpose
 The user is on the PDF Tools hub. It offers eight on-device operations, each
 opening a sheet to pick the input document(s) from the vault, set any options,
