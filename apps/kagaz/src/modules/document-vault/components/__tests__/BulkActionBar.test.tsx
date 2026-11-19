@@ -89,7 +89,7 @@ describe('BulkActionBar (F-25 + F-65 bulk share)', () => {
         document.querySelector('[data-agent-id="vault.home.bulk-delete"]') as HTMLElement
       );
       expect(onDelete).not.toHaveBeenCalled();
-      expect(screen.getByText('Delete 2 document(s)?')).toBeInTheDocument();
+      expect(screen.getByText('Delete 2 documents?')).toBeInTheDocument();
       await userEvent.click(screen.getByText('Delete'));
       expect(onDelete).toHaveBeenCalledOnce();
     });

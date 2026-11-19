@@ -145,9 +145,9 @@
 
 .kg-storage__dupes {
   padding: var(--space-3);
-  border: var(--border-width) solid var(--color-warning);
-  border-radius: var(--radius-md);
-  background: var(--color-warning-light);
+  border: var(--border-width) solid var(--color-warning-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-subtle);
   color: var(--text-primary);
   font-size: var(--text-sm);
 }
@@ -164,8 +164,46 @@
 .kg-storage__largest-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* ST-4: the sections are cards, like every other grouped list. */
+.kg-storage__card {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+
+.kg-storage__largest-open {
+  display: flex;
+  flex: 1;
+  align-items: center;
   gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--touch-target-lg);
+  padding: var(--space-1);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.kg-storage__largest-open:active {
+  background: var(--surface-2);
+}
+
+.kg-storage__thumb {
+  flex: none;
+  width: var(--space-8);
+}
+
+.kg-storage__largest-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .kg-storage__largest-name {
@@ -179,9 +217,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
 }
 
 .kg-storage__ai-model-info {
@@ -195,15 +233,6 @@
   font-weight: var(--font-semibold);
 }
 
-.kg-storage__ai-model-manage {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  color: var(--color-primary);
-  cursor: pointer;
-}
 
 /* ── Folders (F-9) ──────────────────────────────────────────────── */
 .kg-breadcrumb {

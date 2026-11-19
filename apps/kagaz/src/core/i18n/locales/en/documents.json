@@ -161,8 +161,10 @@
     "more_actions": "More actions",
     "selected": "{{count}} selected",
     "cancel_selection": "Cancel selection",
-    "delete_selected_title": "Delete {{count}} note(s)?",
-    "copied_selected": "Copied {{count}} note(s)"
+    "delete_selected_title_one": "Delete {{count}} note?",
+    "delete_selected_title_other": "Delete {{count}} notes?",
+    "copied_selected_one": "Copied {{count}} note",
+    "copied_selected_other": "Copied {{count}} notes"
   },
   "details": {
     "title": "Details",
@@ -330,10 +332,12 @@
   "storage": {
     "title": "Storage",
     "loading": "Calculating storage…",
-    "used": "{{count}} document(s)",
+    "used_one": "{{count}} document",
+    "used_other": "{{count}} documents",
     "by_type": "By file type",
     "largest": "Largest documents",
-    "duplicates": "{{groups}} duplicate group(s) — about {{size}} can be reclaimed",
+    "duplicates_one": "{{count}} duplicate group — about {{size}} can be freed",
+    "duplicates_other": "{{count}} duplicate groups — about {{size}} can be freed",
     "ai_model": "AI model",
     "ai_model_size": "{{size}} on device",
     "ai_model_manage": "Manage"
@@ -343,7 +347,8 @@
     "cancel": "Cancel selection",
     "selected": "{{count}} selected",
     "delete": "Delete",
-    "delete_confirm": "Delete {{count}} document(s)?",
+    "delete_confirm_one": "Delete {{count}} document?",
+    "delete_confirm_other": "Delete {{count}} documents?",
     "deleted_one": "{{count}} document moved to Trash",
     "deleted_other": "{{count}} documents moved to Trash"
   },

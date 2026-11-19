@@ -161,8 +161,10 @@
     "more_actions": "अधिक कार्य",
     "selected": "{{count}} चयनित",
     "cancel_selection": "चयन रद्द करें",
-    "delete_selected_title": "{{count}} नोट हटाएं?",
-    "copied_selected": "{{count}} नोट कॉपी किए गए"
+    "delete_selected_title_one": "{{count}} नोट हटाएं?",
+    "delete_selected_title_other": "{{count}} नोट हटाएं?",
+    "copied_selected_one": "{{count}} नोट कॉपी किया गया",
+    "copied_selected_other": "{{count}} नोट कॉपी किए गए"
   },
   "details": {
     "title": "विवरण",
@@ -330,10 +332,12 @@
   "storage": {
     "title": "संग्रहण",
     "loading": "संग्रहण की गणना हो रही है…",
-    "used": "{{count}} दस्तावेज़",
+    "used_one": "{{count}} दस्तावेज़",
+    "used_other": "{{count}} दस्तावेज़",
     "by_type": "फ़ाइल प्रकार के अनुसार",
     "largest": "सबसे बड़े दस्तावेज़",
-    "duplicates": "{{groups}} डुप्लिकेट समूह — लगभग {{size}} पुनः प्राप्त किया जा सकता है",
+    "duplicates_one": "{{count}} डुप्लिकेट समूह — लगभग {{size}} जगह खाली हो सकती है",
+    "duplicates_other": "{{count}} डुप्लिकेट समूह — लगभग {{size}} जगह खाली हो सकती है",
     "ai_model": "AI मॉडल",
     "ai_model_size": "डिवाइस पर {{size}}",
     "ai_model_manage": "प्रबंधित करें"
@@ -343,7 +347,8 @@
     "cancel": "चयन रद्द करें",
     "selected": "{{count}} चयनित",
     "delete": "हटाएं",
-    "delete_confirm": "{{count}} दस्तावेज़ हटाएं?",
+    "delete_confirm_one": "{{count}} दस्तावेज़ हटाएं?",
+    "delete_confirm_other": "{{count}} दस्तावेज़ हटाएं?",
     "deleted_one": "{{count}} दस्तावेज़ ट्रैश में ले जाया गया",
     "deleted_other": "{{count}} दस्तावेज़ ट्रैश में ले जाए गए"
   },
