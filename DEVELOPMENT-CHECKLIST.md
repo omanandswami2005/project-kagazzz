@@ -417,6 +417,9 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · a8120e6 · feat(document-vault) · empty open folder shows an empty state ("Add a document here" uploads into it, "New folder"); swipe nudge + long-press toast now only back up users who skipped the gestures tour · first-run journey
+- 2026-11-19 · 08d6c36 · feat(app) · gestures tour at 2+ documents (swipe — copy names the user's own swipe actions, row slides while spotlit — long-press select, ⋮) and a drawer tour on first ☰ open (quick reference, notes, archive/trash, backup); runTour handles hardware Back; Settings replay resets all three. **Not device-tested** · first-run journey
+- 2026-11-19 · 8f68bb9 · test(document-vault) · QuickNotes ?new=1 test waits for IonModal.present() before cleanup (unhandled "framework delegate is missing" since the composer opens on first render) · first-run journey
 - 2026-11-19 · c9841f2 · chore(ui) · 8 unused icons dropped from the curated set · G1-4 bundle
 - 2026-11-19 · 3a7bbaa · refactor(infrastructure) · Dexie → plain IndexedDB in web-fs (same DB name/version 10, lazy open; −35 KB gz); own i18next languageDetector (same `i18nextLng` key) replaces i18next-browser-languagedetector · G1-4 bundle
 - 2026-11-19 · 5ec37dc · perf(app) · **bundle gate passes: initial-load total 562.6 → 383.3 KB gz, vendor 290 → 168 KB (real 200 KB budget restored), startup static graph 358 → 236 KB.** Preload helper had landed in lib-pdfjs, putting pdf.js on every cold start (codeSplitting groups, framework group first); Ionic component files marked side-effect-free (all ~100 components shipped before); lib-zod; gate now fails if any lib-* is statically reachable from the entry. Verified: production build in headless Chrome, every ion-* element upgrades on 5 screens; full gate; APK builds. **Not device-tested** · G1-4 bundle
