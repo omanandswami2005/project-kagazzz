@@ -59,9 +59,17 @@
 }
 
 .kg-vault__no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
   padding-block: var(--space-8);
   text-align: center;
   color: var(--text-secondary);
+}
+
+.kg-vault__no-results > p {
+  margin: 0;
 }
 
 /* ── Tool matches in search results (UX pass 2026-07-24) ────────────── */
@@ -839,10 +847,26 @@
 
 /* UX-4: the sheet content scrolls and clears the home indicator, so no option
    (e.g. "Browse files") is ever clipped at the bottom on short screens. */
+.kg-upload-sheet .kg-list-row {
+  background: transparent;
+  min-height: calc(var(--touch-target) + var(--space-3));
+}
+
+/* UP-4: each source icon sits in a tinted 40 px circle. */
+.kg-upload-sheet .kg-list-row__icon {
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--touch-target) - var(--space-1));
+  height: calc(var(--touch-target) - var(--space-1));
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--icon-active);
+}
+
 .kg-upload-sheet {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
   padding: var(--page-padding);
   padding-bottom: calc(var(--page-padding) + env(safe-area-inset-bottom));
   max-height: 100%;
@@ -859,6 +883,15 @@
    Entrance + press feedback. All timings come from the motion tokens,
    which collapse to 0ms under prefers-reduced-motion (tokens.css), so
    these effects disable themselves for users who ask for less motion. */
+/* VH-12: the empty vault's add actions, stacked full-width (thumb zone). */
+.kg-vault-empty__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: min(100%, 20rem);
+}
+
 /* Keyframes (kg-fade-in, kg-fade-in-up, kg-pop-in) live in @kagaz/ui styles.css. */
 
 /* Document rows cascade in; entering a folder remounts the list, so the

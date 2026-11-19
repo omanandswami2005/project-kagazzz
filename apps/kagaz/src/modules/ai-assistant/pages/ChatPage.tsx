@@ -19,7 +19,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
-import { ATTACH_PARAM } from '@/core/constants/routes';
+import { ASK_PARAM, ATTACH_PARAM } from '@/core/constants/routes';
 import { Button, Icon, Spinner } from '@kagaz/ui';
 import { AskUserForm } from '../components/AskUserForm';
 import { ChatTextarea } from '../components/ChatTextarea';
@@ -121,7 +121,16 @@ export function ChatPage(): ReactNode {
   // a back/forward doesn't attach it again.
   const location = useLocation();
   const history = useHistory();
-  const handoffId = new URLSearchParams(location.search).get(ATTACH_PARAM);
+  const params = new URLSearchParams(location.search);
+  const handoffId = params.get(ATTACH_PARAM);
+  // "Ask AI to find …" (vault search, VH-13): the text waits in the
+  // composer — the user still decides to send it.
+  const askText = params.get(ASK_PARAM);
+  const [handledAsk, setHandledAsk] = useState<string | null>(null);
+  if (askText && handledAsk !== askText) {
+    setHandledAsk(askText);
+    setDraft(askText);
+  }
   const handoffDoc = handoffId ? attachable.documents.find((d) => d.id === handoffId) : undefined;
   const [handledHandoff, setHandledHandoff] = useState<string | null>(null);
   if (handoffDoc && handledHandoff !== handoffDoc.id) {
@@ -130,10 +139,13 @@ export function ChatPage(): ReactNode {
     setAttachments((prev) => (prev.some((p) => p.id === handoffDoc.id) ? prev : [...prev, toRef(handoffDoc)]));
   }
   useEffect(() => {
-    if (handledHandoff && handoffId === handledHandoff) {
+    if (
+      (handledHandoff && handoffId === handledHandoff) ||
+      (handledAsk && askText === handledAsk)
+    ) {
       history.replace(location.pathname);
     }
-  }, [handledHandoff, handoffId, history, location.pathname]);
+  }, [handledHandoff, handoffId, handledAsk, askText, history, location.pathname]);
 
   const submit = (): void => {
     if ((!draft.trim() && attachments.length === 0) || chat.isStreaming) {

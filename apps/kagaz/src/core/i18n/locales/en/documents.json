@@ -219,6 +219,12 @@
       "gallery": "Choose from gallery",
       "files": "Browse files"
     },
+    "source_hints": {
+      "scanner": "Recommended · the cleanest PDF from paper",
+      "camera": "A quick photo of a document",
+      "gallery": "Photos already on your phone",
+      "files": "PDFs and images from your files"
+    },
     "progress_label": "Uploading documents",
     "success_one": "{{count}} document added",
     "success_other": "{{count}} documents added",
@@ -305,7 +311,9 @@
       "permission_denied": "Microphone access is off. Turn it on in system settings to search by voice.",
       "no_speech": "Didn't catch that. Tap the mic and try again.",
       "failed": "Voice input couldn't start. Check that Google speech services are installed and try again."
-    }
+    },
+    "ask_ai": "Ask AI to find “{{query}}”",
+    "ask_ai_prompt": "Find my documents about “{{query}}”"
   },
   "templates": {
     "cta": "Set up starter folders",
@@ -354,7 +362,9 @@
     "size_gt25": "> 25 MB",
     "apply": "Apply",
     "clear": "Clear all",
-    "no_matches": "No documents match these filters"
+    "no_matches": "No documents match these filters",
+    "show_count_one": "Show {{count}} document",
+    "show_count_other": "Show {{count}} documents"
   },
   "tags": {
     "title": "Tags",

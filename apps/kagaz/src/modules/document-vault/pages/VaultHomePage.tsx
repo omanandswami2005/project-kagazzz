@@ -87,7 +87,7 @@ import type { IncomingFile } from '../types/document.types';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
 import { useAi } from '@/app/providers/AIProvider';
-import { askAiAboutRoute } from '@/core/constants/routes';
+import { askAiAboutRoute, askAiRoute } from '@/core/constants/routes';
 
 /** One queued, undo-able delete (bug-audit follow-up — see the `undoQueue` note below). */
 type PendingUndo =
@@ -338,8 +338,10 @@ export function VaultHomePage(): ReactNode {
 
   const finishUpload = ({ documents }: { uploaded: number; documents: DocumentEntity[] }): void => {
     setUploaded(documents);
-    // UX-8: queue the new docs for a name prompt, pre-filled with the default.
-    if (renameOnAdd && documents.length > 0) {
+    // UX-8: name prompt for a single new document, pre-filled with the
+    // default. Audit UP-1: a batch keeps its default names — five prompts in
+    // a row is a wall; each can be renamed later from its menu.
+    if (renameOnAdd && documents.length === 1) {
       setRenameQueue(documents);
     }
   };
@@ -460,7 +462,7 @@ export function VaultHomePage(): ReactNode {
           documents.length === 0 &&
           folders.length === 0 &&
           folderPath.length === 0 ? (
-            <EmptyVaultState onSetUpFolders={setUpStarterFolders} />
+            <EmptyVaultState onAdd={handleSelectSource} onSetUpFolders={setUpStarterFolders} />
           ) : (
             <>
               <div className="kg-vault__search-row">
@@ -492,12 +494,30 @@ export function VaultHomePage(): ReactNode {
                     </ul>
                   )}
                   {visibleDocuments.length === 0 && matchingTools.length === 0 && !search.isSearching ? (
-                    <p
+                    <div
                       className="kg-vault__no-results"
                       data-agent-id="vault.home.no-results"
                     >
-                      {t('search.no_results', { query: search.query })}
-                    </p>
+                      <p>{t('search.no_results', { query: search.query })}</p>
+                      {/* VH-13: the AI reads inside documents' text — one
+                         tap from "can't find it" to asking it. */}
+                      {ai.status !== 'unsupported' && (
+                        <Button
+                          variant="secondary"
+                          icon={<Icon name="Sparkles" size={20} />}
+                          onClick={() =>
+                            router.push(
+                              askAiRoute(t('search.ask_ai_prompt', { query: search.query })),
+                              'forward',
+                              'push'
+                            )
+                          }
+                          agentId="vault.home.no-results.ask-ai"
+                        >
+                          {t('search.ask_ai', { query: search.query })}
+                        </Button>
+                      )}
+                    </div>
                   ) : visibleDocuments.length > 0 || search.isSearching ? (
                     <VirtualDocumentList
                       documents={visibleDocuments}
@@ -661,6 +681,7 @@ export function VaultHomePage(): ReactNode {
           isOpen={isFilterOpen}
           filters={filters}
           tags={tags}
+          countFor={(draft) => applyFilters(documents, draft, tagsByDocument).length}
           onDismiss={() => setFilterOpen(false)}
           onApply={(next) => {
             setFilters(next);

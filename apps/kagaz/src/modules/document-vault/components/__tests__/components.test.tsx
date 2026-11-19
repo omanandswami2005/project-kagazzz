@@ -389,6 +389,28 @@ describe('FilterPanel (F-12)', () => {
     await userEvent.click(await screen.findByText('Clear all'));
     expect(onApply).toHaveBeenCalledWith(EMPTY_FILTERS);
   });
+
+  it('labels Apply with the live result count and blocks zero (audit FP-5)', async () => {
+    render(
+      <IonPage>
+        <IonContent>
+          <FilterPanel
+            isOpen
+            filters={EMPTY_FILTERS}
+            tags={[]}
+            onDismiss={() => undefined}
+            onApply={() => undefined}
+            countFor={(f) => (f.kinds.includes('pdf') ? 0 : 3)}
+          />
+        </IonContent>
+      </IonPage>
+    );
+    // Earlier tests' sheets may linger in jsdom: act on this one (the last).
+    const apply = await screen.findByText('Show 3 documents');
+    const pdfChips = screen.getAllByText('PDF');
+    await userEvent.click(pdfChips[pdfChips.length - 1]);
+    expect(apply.closest('button')).toBeDisabled();
+  });
 });
 
 describe('FolderCard (F-9)', () => {
@@ -572,7 +594,7 @@ describe('TagSelector (F-10)', () => {
 
 describe('EmptyVaultState', () => {
   it('renders the localized empty copy', () => {
-    render(<EmptyVaultState />);
+    render(<EmptyVaultState onAdd={vi.fn()} />);
     expect(screen.getByText('No documents yet')).toBeInTheDocument();
     expect(
       screen.getByText(/Scan or upload your first document/)
@@ -581,11 +603,20 @@ describe('EmptyVaultState', () => {
 
   it('offers the starter-folders CTA when wired (F-30)', async () => {
     const onSetUpFolders = vi.fn();
-    render(<EmptyVaultState onSetUpFolders={onSetUpFolders} />);
+    render(<EmptyVaultState onAdd={vi.fn()} onSetUpFolders={onSetUpFolders} />);
     await userEvent.click(
       document.querySelector('[data-agent-id="vault.home.setup-folders"]') as Element
     );
     expect(onSetUpFolders).toHaveBeenCalledOnce();
+  });
+
+  it('leads with adding a document (audit VH-12)', async () => {
+    const onAdd = vi.fn();
+    render(<EmptyVaultState onAdd={onAdd} />);
+    await userEvent.click(
+      document.querySelector('[data-agent-id="vault.home.empty-files"]') as Element
+    );
+    expect(onAdd).toHaveBeenCalledWith('files');
   });
 });
 

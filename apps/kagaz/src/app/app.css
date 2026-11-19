@@ -55,3 +55,9 @@ ion-title {
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
 }
+
+/* Sheets that fit their content (Ionic auto-height sheet): add
+   className="kg-sheet-auto" with breakpoints [0, 1] (audit UP-3, FP-4). */
+ion-modal.kg-sheet-auto {
+  --height: auto;
+}
