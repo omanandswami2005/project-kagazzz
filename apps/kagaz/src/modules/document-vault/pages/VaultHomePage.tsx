@@ -29,6 +29,7 @@ import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
 import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
+import { ScrollDateBubble } from '../components/ScrollDateBubble';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
@@ -508,6 +509,11 @@ export function VaultHomePage(): ReactNode {
         </IonToolbar>
       </IonHeader>
       <IonContent ref={ionContentRef}>
+        {/* Date of the top visible document, floating while the list scrolls. */}
+        <ScrollDateBubble
+          scrollElement={scrollElement}
+          documents={visibleDocuments}
+        />
         {/* VH-17: offline, pull-to-refresh has nothing to fetch — pulling down
             jumps to search instead (direct manipulation). */}
         <IonRefresher

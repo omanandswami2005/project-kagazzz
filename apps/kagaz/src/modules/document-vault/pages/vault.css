@@ -1188,3 +1188,25 @@
 .kg-doc-item__li--leaving {
   animation: kg-row-leave var(--duration-fast) var(--ease-in) forwards;
 }
+
+/* ── Floating date while scrolling (ScrollDateBubble) ── */
+.kg-scroll-date {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.kg-scroll-date--shown {
+  opacity: 1;
+}
