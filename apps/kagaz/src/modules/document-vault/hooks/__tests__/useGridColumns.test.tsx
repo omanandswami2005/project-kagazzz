@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import { useRef, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { columnsForWidth, useGridColumns } from '../useGridColumns';
 
@@ -54,13 +54,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function Probe({ isGrid }: { isGrid: boolean }): ReactNode {
-  const ref = useRef<HTMLDivElement>(null);
-  const columns = useGridColumns(ref, isGrid);
+function Probe({ isGrid, mounted = true }: { isGrid: boolean; mounted?: boolean }): ReactNode {
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
+  const columns = useGridColumns(el, isGrid);
   return (
-    <div ref={ref} data-testid="probe" data-columns={columns}>
-      {columns}
-    </div>
+    <>
+      <span data-testid="columns" data-columns={columns} />
+      {mounted && <div ref={setEl} data-testid="probe" data-columns={columns} />}
+    </>
   );
 }
 
@@ -75,6 +76,14 @@ describe('useGridColumns (hook wiring)', () => {
     observedWidth = 140 * 3 + 12 * 2;
     const { getByTestId } = render(<Probe isGrid />);
     expect(getByTestId('probe')).toHaveAttribute('data-columns', '3');
+  });
+
+  it('measures a container that mounts after the first render (single-column grid bug)', () => {
+    observedWidth = 140 * 2 + 12;
+    const { getByTestId, rerender } = render(<Probe isGrid mounted={false} />);
+    expect(getByTestId('columns')).toHaveAttribute('data-columns', '1');
+    rerender(<Probe isGrid />);
+    expect(getByTestId('columns')).toHaveAttribute('data-columns', '2');
   });
 
   it('keeps its columns while the page is hidden (width 0) — B2 grid collapse', async () => {

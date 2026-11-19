@@ -8,7 +8,7 @@
  * the container recomputes it from real available width, matching the CSS
  * formula for `auto-fill` grid tracks.
  */
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useState } from 'react';
 
 const MIN_CARD_PX = 140;
 const GAP_PX = 12; // --space-3
@@ -26,21 +26,19 @@ export function columnsForWidth(width: number): number {
 
 /**
  * Tracks a container's live grid column count (1 for non-grid layouts).
- * Takes the container ref rather than creating one, so callers that also
- * need that ref for something else (e.g. measuring scroll offset for
- * virtualization) share a single ref/element instead of juggling two.
+ * Takes the element itself (from a callback ref / state), not a ref object:
+ * the container can mount after the first render — the vault list starts as
+ * a plain list until IonContent's scroll element resolves — and a ref object
+ * gave the effect no way to notice, so the grid stuck at one column
+ * (device report 2026-11-19).
  */
-export function useGridColumns(
-  containerRef: RefObject<HTMLElement | null>,
-  isGrid: boolean
-): number {
+export function useGridColumns(el: HTMLElement | null, isGrid: boolean): number {
   const [columns, setColumns] = useState(1);
 
   useEffect(() => {
     if (!isGrid) {
       return undefined;
     }
-    const el = containerRef.current;
     if (!el || typeof ResizeObserver === 'undefined') {
       return undefined;
     }
@@ -61,7 +59,7 @@ export function useGridColumns(
     });
     observer.observe(el);
     return (): void => observer.disconnect();
-  }, [containerRef, isGrid]);
+  }, [el, isGrid]);
 
   // Derived, not stored: falling back to 1 here (rather than resetting
   // `columns` state when isGrid flips false) means a stale grid measurement
