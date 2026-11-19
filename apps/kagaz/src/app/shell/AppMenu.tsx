@@ -76,7 +76,7 @@ export function AppMenu(): ReactNode {
         : t('menu.backup_never')
       : undefined;
   return (
-    <IonMenu contentId={MAIN_CONTENT_ID} side="start" type="overlay" data-agent-id="app.menu">
+    <IonMenu contentId={MAIN_CONTENT_ID} side="end" type="overlay" data-agent-id="app.menu">
       <IonHeader>
         <IonToolbar>
           {/* DR-1: the mark, the name, and the promise in one line. */}

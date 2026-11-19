@@ -127,7 +127,7 @@ export function FavoritesPage(): ReactNode {
           <MenuButton />
           <IonTitle>{t('favorites.title')}</IonTitle>
           {favorites.length > 1 && (
-            <IonButtons slot="end">
+            <IonButtons slot="primary">
               <Button
                 variant="ghost"
                 size="sm"

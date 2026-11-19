@@ -89,9 +89,20 @@
   color: var(--icon-active);
 }
 
-/* DR-5: items slide in a little, staggered, as the drawer opens. */
+/* DR-5: items slide in a little, staggered, as the drawer opens — from the
+   right, the side the drawer now opens on. */
+@keyframes kg-menu-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-6));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 ion-menu.show-menu .kg-menu__section {
-  animation: kg-fade-in-up var(--duration-normal) var(--ease-out) both;
+  animation: kg-menu-in var(--duration-normal) var(--ease-out) both;
 }
 ion-menu.show-menu .kg-menu__section:nth-child(2) {
   animation-delay: 40ms;

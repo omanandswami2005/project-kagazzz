@@ -50,7 +50,7 @@ export function StoragePage(): ReactNode {
           <MenuButton />
           <IonTitle>{t('storage.title')}</IonTitle>
           {/* ST-5: every way to free space, behind one header action. */}
-          <IonButtons slot="end">
+          <IonButtons slot="primary">
             <Button
               variant="ghost"
               size="sm"

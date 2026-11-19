@@ -5,7 +5,7 @@ The user is on the main vault screen. They see their documents (newest
 first), search, folders and recents, and add new ones (upload button,
 bottom-right).
 
-**Navigation (2026-11-19):** ☰ at the top left opens the side drawer
+**Navigation (2026-11-19):** ☰ at the top right opens the side drawer (it slides in from the right)
 (`app.menu`): Quick reference, Quick notes, Archived, Trash, AI model,
 Settings, Privacy policy. The AI chat is the raised centre button of the tab
 bar (`app.tab.ai`), not a header icon.
