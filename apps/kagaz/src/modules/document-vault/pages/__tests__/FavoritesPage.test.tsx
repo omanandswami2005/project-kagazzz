@@ -77,6 +77,8 @@ describe('FavoritesPage (F-33)', () => {
       document.querySelector('[data-agent-id="vault.favorites.empty"]')
     ).not.toBeNull();
     expect(screen.getByText('No favorites yet')).toBeInTheDocument();
+    // First-run journey: leads to Documents and spotlights a star.
+    expect(screen.getByText('Show me how')).toBeInTheDocument();
   });
 
   it('lists starred documents', () => {

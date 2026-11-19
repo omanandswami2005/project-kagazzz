@@ -76,6 +76,18 @@ beforeEach(() => {
 });
 
 describe('QuickNotesPage (UX pass 2026-07-24)', () => {
+  it('an empty list shows a labelled, made-up example above Add', () => {
+    useQuickReferenceMock.mockReturnValue({
+      ...useQuickReferenceMock(),
+      entries: [],
+    });
+    render(<QuickNotesPage />);
+    const example = document.querySelector('[data-agent-id="vault.quick-notes.example"]');
+    expect(example).toHaveTextContent('Example');
+    expect(example).toHaveTextContent('Locker code');
+    expect(example?.querySelector('button')).toBeNull();
+  });
+
   it('tapping a row copies its value instead of opening edit', async () => {
     render(<QuickNotesPage />);
     await userEvent.click(screen.getByText('Wi-Fi password'));

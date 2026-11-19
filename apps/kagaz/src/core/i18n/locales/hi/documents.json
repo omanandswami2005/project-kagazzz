@@ -141,7 +141,9 @@
     "mask_aadhaar": "सिर्फ़ आख़िरी 4 अंक रखें (आधार के लिए सुझाया गया)",
     "move_hint": "यह पहचान संख्या लगती है — इसे Quick Reference में लॉक करके रखें।",
     "move": "Quick Reference में ले जाएँ",
-    "save_to_quickref": "कॉपी करने के लिए टैप करें · Quick Reference में रखने के लिए दबाकर रखें"
+    "save_to_quickref": "कॉपी करने के लिए टैप करें · Quick Reference में रखने के लिए दबाकर रखें",
+    "example_label": "PAN",
+    "example_value": "ABCDE1234F"
   },
   "quick_notes": {
     "title": "क्विक नोट्स",
@@ -170,7 +172,9 @@
     "delete_selected_title_one": "{{count}} नोट हटाएं?",
     "delete_selected_title_other": "{{count}} नोट हटाएं?",
     "copied_selected_one": "{{count}} नोट कॉपी किया गया",
-    "copied_selected_other": "{{count}} नोट कॉपी किए गए"
+    "copied_selected_other": "{{count}} नोट कॉपी किए गए",
+    "example_label": "लॉकर कोड",
+    "example_value": "4 7 1 9"
   },
   "details": {
     "title": "विवरण",
@@ -321,7 +325,8 @@
     "browse": "दस्तावेज़ देखें",
     "reorder": "क्रम बदलें",
     "done": "हो गया",
-    "removed": "पसंदीदा से हटाया गया"
+    "removed": "पसंदीदा से हटाया गया",
+    "show_how": "कैसे करें, दिखाएँ"
   },
   "search": {
     "placeholder": "दस्तावेज़ खोजें",
@@ -475,5 +480,8 @@
       "title": "बैकअप बनाएँ",
       "hint": "एन्क्रिप्टेड कॉपी, फ़ोन खो जाए तो भी सुरक्षित"
     }
+  },
+  "example": {
+    "label": "उदाहरण"
   }
 }

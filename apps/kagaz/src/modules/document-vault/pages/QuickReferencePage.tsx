@@ -30,6 +30,7 @@ import { QuickReferenceEditSheet } from '../components/QuickReferenceEditSheet';
 import { useIdSuggestions } from '../hooks/useIdSuggestions';
 import { useQuickReference } from '../hooks/useQuickReference';
 import { takeQuickReferenceDraft, type QuickReferenceDraft } from '../store/quick-reference-draft';
+import { ExampleEntry } from '../components/ExampleEntry';
 import './quick-reference.css';
 
 /** Ms after a copy before the clipboard is best-effort cleared (F-84). */
@@ -264,14 +265,22 @@ export function QuickReferencePage(): ReactNode {
               hint={t('quick_reference.empty_hint')}
               agentId="vault.quick-reference.empty"
               action={
-                <Button
-                  variant="primary"
-                  icon={<Icon name="Plus" size={20} />}
-                  onClick={() => setEditTarget(null)}
-                  agentId="vault.quick-reference.empty-add"
-                >
-                  {t('quick_reference.add')}
-                </Button>
+                <div className="kg-quickref__empty-actions">
+                  <ExampleEntry
+                    icon="KeyRound"
+                    label={t('quick_reference.example_label')}
+                    value={t('quick_reference.example_value')}
+                    agentId="vault.quick-reference.example"
+                  />
+                  <Button
+                    variant="primary"
+                    icon={<Icon name="Plus" size={20} />}
+                    onClick={() => setEditTarget(null)}
+                    agentId="vault.quick-reference.empty-add"
+                  >
+                    {t('quick_reference.add')}
+                  </Button>
+                </div>
               }
             />
           ) : (

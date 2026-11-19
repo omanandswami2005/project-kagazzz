@@ -1,5 +1,7 @@
 # Skill: vault.favorites (Favorites)
 
+**Empty (2026-11-19):** `vault.favorites.browse` ("Show me how") goes to Documents and spotlights a row's star.
+
 ## Purpose
 The user is viewing their starred documents — every document they marked
 as a favorite, newest first. This is the second bottom-tab destination,

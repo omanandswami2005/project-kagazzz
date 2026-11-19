@@ -1,5 +1,7 @@
 # Skill: vault.quick-reference (Quick Reference)
 
+**Empty (2026-11-19):** a dashed, non-interactive example row (`vault.quick-reference.example`, "PAN · ABCDE1234F") sits above Add. It is never stored.
+
 ## Purpose
 The user is viewing Quick Reference: a personal list of named values they
 save for fast retrieval — PAN, mobile number, bank account, IFSC, emails,

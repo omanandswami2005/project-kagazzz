@@ -30,6 +30,7 @@ import { QuickNoteRow } from '../components/QuickNoteRow';
 import { QuickNotesEditSheet } from '../components/QuickNotesEditSheet';
 import { useQuickReference } from '../hooks/useQuickReference';
 import { offerQuickReferenceDraft } from '../store/quick-reference-draft';
+import { ExampleEntry } from '../components/ExampleEntry';
 import './quick-reference.css';
 
 /** Ms after a copy before the clipboard is best-effort cleared (F-84 pattern). */
@@ -233,14 +234,22 @@ export function QuickNotesPage(): ReactNode {
               hint={t('quick_notes.empty_hint')}
               agentId="vault.quick-notes.empty"
               action={
-                <Button
-                  variant="primary"
-                  icon={<Icon name="Plus" size={20} />}
-                  onClick={() => setEditTarget(null)}
-                  agentId="vault.quick-notes.empty-add"
-                >
-                  {t('quick_notes.add')}
-                </Button>
+                <div className="kg-quickref__empty-actions">
+                  <ExampleEntry
+                    icon="StickyNote"
+                    label={t('quick_notes.example_label')}
+                    value={t('quick_notes.example_value')}
+                    agentId="vault.quick-notes.example"
+                  />
+                  <Button
+                    variant="primary"
+                    icon={<Icon name="Plus" size={20} />}
+                    onClick={() => setEditTarget(null)}
+                    agentId="vault.quick-notes.empty-add"
+                  >
+                    {t('quick_notes.add')}
+                  </Button>
+                </div>
               }
             />
           ) : (
