@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import {
   TRASH_RETENTION_DAYS,
+  daysUntilPurge,
   deleteForever,
   emptyTrash,
   isExpired,
@@ -113,5 +114,15 @@ describe('deleteForever + emptyTrash', () => {
     ]);
     expect((await emptyTrash(deps)).purged).toBe(2);
     expect(hardDeleted).toEqual(['a', 'b']);
+  });
+});
+
+describe('daysUntilPurge (TR-2)', () => {
+  const day = 86_400_000;
+  const now = Date.parse('2026-11-19T12:00:00Z');
+  it('counts whole days left, never below zero', () => {
+    expect(daysUntilPurge(new Date(now - 1 * day).toISOString(), now)).toBe(29);
+    expect(daysUntilPurge(new Date(now - 29.5 * day).toISOString(), now)).toBe(1);
+    expect(daysUntilPurge(new Date(now - 40 * day).toISOString(), now)).toBe(0);
   });
 });

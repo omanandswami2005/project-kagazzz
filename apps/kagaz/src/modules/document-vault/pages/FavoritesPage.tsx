@@ -13,13 +13,14 @@ import {
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, EmptyState } from '@kagaz/ui';
+import { Alert, Button, EmptyState, Icon } from '@kagaz/ui';
 import { UndoToast } from '@/core/components/UndoToast';
 import { hapticDestructive, hapticTap } from '@/core/haptics';
 import { usePreferencesStore } from '@/core/preferences';
 import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { DocumentListItem } from '../components/DocumentListItem';
+import { DocumentPreviewModal } from '../components/DocumentPreviewModal';
 import { useFavorites } from '../hooks/useFavorites';
 import { useTags } from '../hooks/useTags';
 import { useVaultMutations } from '../hooks/useVaultMutations';
@@ -85,6 +86,10 @@ export function FavoritesPage(): ReactNode {
     [router]
   );
 
+  // FV-1: rows carry ⋮ like everywhere else; here it opens the quick preview
+  // (Open / Share) — the full menu lives on the document itself.
+  const [previewDoc, setPreviewDoc] = useState<DocumentEntity | null>(null);
+
   const listState = isLoading
     ? 'loading'
     : favorites.length === 0
@@ -107,6 +112,17 @@ export function FavoritesPage(): ReactNode {
               title={t('favorites.empty')}
               hint={t('favorites.empty_hint')}
               agentId="vault.favorites.empty"
+              action={
+                // FV-3: the way to fill this list is from the documents list.
+                <Button
+                  variant="secondary"
+                  icon={<Icon name="Folder" size={20} />}
+                  onClick={() => router.push('/vault', 'root', 'replace')}
+                  agentId="vault.favorites.browse"
+                >
+                  {t('favorites.browse')}
+                </Button>
+              }
             />
           ) : (
             <ul
@@ -121,6 +137,7 @@ export function FavoritesPage(): ReactNode {
                   tags={tagsByDocument.get(document.id) ?? []}
                   onOpen={handleOpen}
                   onToggleFavorite={handleToggleFavorite}
+                  onMore={setPreviewDoc}
                   swipeLeftAction={swipeLeftAction}
                   swipeRightAction={swipeRightAction}
                   onSwipeAction={handleSwipeAction}
@@ -129,6 +146,14 @@ export function FavoritesPage(): ReactNode {
             </ul>
           )}
         </main>
+        <DocumentPreviewModal
+          document={previewDoc}
+          onOpen={(doc) => {
+            setPreviewDoc(null);
+            handleOpen(doc);
+          }}
+          onClose={() => setPreviewDoc(null)}
+        />
         <UndoToast
           isOpen={pendingUndo !== null}
           message={t('trash.moved_to_trash')}

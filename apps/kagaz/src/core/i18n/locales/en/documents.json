@@ -304,7 +304,8 @@
   "favorites": {
     "title": "Favorites",
     "empty": "No favorites yet",
-    "empty_hint": "Tap the star on any document to keep it here"
+    "empty_hint": "Star your Aadhaar, PAN and other documents you need often — they'll wait here.",
+    "browse": "Browse documents"
   },
   "search": {
     "placeholder": "Search documents",
@@ -391,16 +392,17 @@
     "title": "Trash",
     "retention_note": "Deleted documents are kept for {{days}} days, then removed permanently.",
     "empty_state": "Trash is empty",
-    "deleted_on": "Deleted {{date}}",
     "restore": "Restore",
     "delete_forever": "Delete forever",
     "delete_forever_confirm_title": "Delete \"{{name}}\" forever?",
     "delete_forever_confirm_message": "This can't be undone — the document will be gone for good.",
     "preview": "Preview {{name}}",
-    "empty_trash": "Empty Trash",
     "empty_confirm": "Permanently delete everything in Trash?",
     "empty_confirm_yes": "Delete all",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "empty_trash_size": "Empty Trash ({{size}})",
+    "deletes_in_one": "Deletes in {{count}} day",
+    "deletes_in_other": "Deletes in {{count}} days"
   },
   "settings": "Settings",
   "preview": {
