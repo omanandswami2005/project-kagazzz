@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Bundle-size gate (CONTRIBUTING.md §Performance & Security, CI-enforced):
- *   vendor chunk       < 200 KB gzipped  (React + Ionic + router; see TEMP note)
+ *   vendor chunk       < 200 KB gzipped  (React + Ionic + router)
  *   app chunk (index)  < 150 KB gzipped
  *   lazy chunks        < 100 KB gzipped each
  *   heavy libs (lib-*) < 180 KB gzipped each, EXCLUDED from the total below
@@ -9,8 +9,10 @@
  *
  * The initial-load total is what governs cold-start FCP: it counts the vendor +
  * app entry + the small per-route lazy chunks, but NOT the heavy media/office
- * libraries (pdfjs, pdf-lib, xlsx, docx, mammoth, jszip), which load only when
- * their tool runs and already ship inside the APK. See HEAVY_LAZY note below.
+ * libraries (pdfjs, pdf-lib, docx, mammoth, jszip, driver.js, zod), which load
+ * only when their tool runs and already ship inside the APK. See HEAVY_LAZY note
+ * below. The gate also checks that no lib-* chunk is reachable from the entry
+ * through static imports.
  *
  * Run after `pnpm build`. Exits 1 on any violation.
  */
@@ -21,20 +23,16 @@ import { gzipSync } from 'node:zlib';
 const KB = 1024;
 
 /**
- * TEMPORARY: vendor (React + Ionic + router in ONE chunk) ships at ~291 KB gz.
- * Measured split: React + router is only ~54 KB — the whole overage is the
- * Ionic framework (~237 KB; the app uses ~25 components but Ionic's dense
- * transitive graph pulls ~159 @ionic/core modules, standalone/not runtime-lazy).
- * Ionic and React are kept in one chunk (splitting them added a critical-path
- * request that regressed Lighthouse ~0.02 for no byte saving). The real 200 KB
- * budget needs a heavy-Ionic-overlay-component replacement refactor, tracked
- * against G1-4; tightening this number (as Ionic shrinks) is the only change.
+ * Vendor (React + Ionic + router, one chunk) is back on the real 200 KB budget
+ * (2026-11-19): it was ~291 KB only because every Ionic component was bundled
+ * whether used or not. vite.config marks Ionic's component entry files
+ * side-effect-free, so only the ~27 components the app renders ship (~168 KB).
  */
-const VENDOR_TEMP_ALLOWANCE_KB = 320;
+const VENDOR_BUDGET_KB = 200;
 
 /**
- * Heavy media / office libraries — `pdfjs-dist`, `pdf-lib`, SheetJS `xlsx`,
- * `docx`, `mammoth`, `jszip` — each ship in their own deterministically-named
+ * Heavy lazy libraries — `pdfjs-dist`, `pdf-lib`, `docx`, `mammoth`, `jszip`,
+ * `driver.js` (first-run tour), `zod` (action/AI tool schemas) — each ship in their own deterministically-named
  * `lib-*` lazy chunk (see vite.config manualChunks). They load only the first
  * time the matching tool runs (render/compress/convert/view), never on the
  * initial route, and on the Capacitor build they already sit inside the APK —
@@ -46,7 +44,7 @@ const VENDOR_TEMP_ALLOWANCE_KB = 320;
 const HEAVY_LAZY_BUDGET_KB = 180;
 
 const BUDGETS = {
-  vendor: VENDOR_TEMP_ALLOWANCE_KB * KB,
+  vendor: VENDOR_BUDGET_KB * KB,
   app: 150 * KB,
   lazy: 100 * KB,
   heavyLazy: HEAVY_LAZY_BUDGET_KB * KB,
@@ -93,6 +91,33 @@ for (const file of files) {
     );
   }
 }
+
+/**
+ * Startup-route guard (2026-11-19): a `lib-*` chunk is excluded from the total
+ * only because it is never on the initial route. Verify that — walk the static
+ * import graph from the entry chunk and fail if it reaches any `lib-*` chunk.
+ * (A shared helper once landed inside lib-pdfjs and put pdf.js on every cold
+ * start without this gate noticing.)
+ */
+const staticImportsOf = (file) => {
+  const code = readFileSync(join(jsDir, file), 'utf8');
+  return [...code.matchAll(/(?:\bfrom\s*|\bimport\s*)["']\.\/([^"']+\.js)["']/g)].map((m) => m[1]);
+};
+const startup = new Set();
+const queue = files.filter((f) => f.startsWith('index.'));
+while (queue.length > 0) {
+  const file = queue.pop();
+  if (startup.has(file) || !files.includes(file)) continue;
+  startup.add(file);
+  queue.push(...staticImportsOf(file));
+}
+const startupGzip = [...startup].reduce((sum, f) => sum + gzipSync(readFileSync(join(jsDir, f))).length, 0);
+for (const file of startup) {
+  if (file.startsWith('lib-')) {
+    errors.push(`${file} is statically imported on the startup route — lib-* chunks must stay lazy`);
+  }
+}
+rows.push(`  ${'(startup route, static graph)'.padEnd(40)} ${(startupGzip / KB).toFixed(1).padStart(7)} KB gz`);
 
 rows.push(
   `${totalGzip <= BUDGETS.total ? '  ' : '✗ '}${'TOTAL'.padEnd(40)} ${(totalGzip / KB).toFixed(1).padStart(7)} KB gz (total ≤ ${BUDGETS.total / KB} KB)`

@@ -339,7 +339,7 @@ graph TB
 | Technology | Purpose |
 |---|---|
 | **SQLite (@capacitor-community/sqlite)** | Primary structured data storage (native) |
-| **Dexie.js** | IndexedDB wrapper (web fallback) |
+| **IndexedDB** (plain API) | Web-fallback file storage (`web-fs.ts`; Dexie removed 2026-11-19) |
 | **Capacitor Filesystem** | Document file storage |
 
 ### Tech Stack Architecture

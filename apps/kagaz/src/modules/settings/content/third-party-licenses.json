@@ -120,11 +120,6 @@
     "license": "Apache-2.0"
   },
   {
-    "name": "dexie",
-    "version": "4.4.3",
-    "license": "Apache-2.0"
-  },
-  {
     "name": "docx",
     "version": "9.7.1",
     "license": "MIT"
@@ -137,11 +132,6 @@
   {
     "name": "i18next",
     "version": "26.3.1",
-    "license": "MIT"
-  },
-  {
-    "name": "i18next-browser-languagedetector",
-    "version": "8.2.1",
     "license": "MIT"
   },
   {

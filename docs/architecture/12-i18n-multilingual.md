@@ -104,7 +104,7 @@ graph LR
 |---|---|---|
 | **Translation framework** | `react-i18next` | React integration for i18next |
 | **Core engine** | `i18next` | Translation resolution, interpolation, pluralization |
-| **Language detection** | `i18next-browser-languagedetector` | Auto-detect from device settings |
+| **Language detection** | A small i18next `languageDetector` module in `config.ts` (saved choice in `localStorage['i18nextLng']`, else `navigator.languages`); replaced `i18next-browser-languagedetector` 2026-11-19 to trim the bundle | Auto-detect from device settings |
 | **Backend** | `i18next-resources-to-backend` | Lazy-load translation files |
 | **Date/time formatting** | `Intl.DateTimeFormat` | Native browser/device API |
 | **Number formatting** | `Intl.NumberFormat` | Native browser/device API |
@@ -153,7 +153,7 @@ src/core/i18n/
 // src/core/i18n/config.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import type { LanguageDetectorModule } from 'i18next';
 import resourcesToBackend from 'i18next-resources-to-backend';
 
 const SUPPORTED_LANGUAGES = ['en', 'hi'] as const;
@@ -177,8 +177,8 @@ i18n
         import(`./locales/${language}/${namespace}.json`)
     )
   )
-  // Auto-detect user language from device settings
-  .use(LanguageDetector)
+  // Saved choice, else the device language (see languageDetector in config.ts)
+  .use(languageDetector)
   // React integration
   .use(initReactI18next)
   .init({
@@ -190,11 +190,8 @@ i18n
     ns: NAMESPACES,
     defaultNS: 'common',
 
-    // Detection priority
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-    },
+    // 'hi-IN' from the device resolves to 'hi'
+    nonExplicitSupportedLngs: true,
 
     // Interpolation (React handles escaping)
     interpolation: {

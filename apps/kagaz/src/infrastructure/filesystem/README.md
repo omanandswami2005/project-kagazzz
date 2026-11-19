@@ -6,7 +6,7 @@ Platform-agnostic file storage (P0-5). Spec: [01-system-architecture.md](../../.
 |---|---|
 | `file-storage.ts` | `FileStorage` protocol + `STORAGE_DIRS` layout (documents/, thumbnails/, temp/, backups/) |
 | `capacitor-fs.ts` | Native impl over `@capacitor/filesystem` (sandboxed `Directory.Data`) |
-| `web-fs.ts` | PWA fallback over IndexedDB (Dexie) |
+| `web-fs.ts` | Web fallback over plain IndexedDB (no wrapper library) |
 | `factory.ts` | `createFileStorage()` platform selection |
 | `temp-cleanup.ts` | `cleanupTempFiles()` — **must run on every app launch** (§3.3) |
 | `base64.ts` | Chunked Uint8Array↔base64 for the Capacitor data format |
