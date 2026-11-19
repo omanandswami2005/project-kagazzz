@@ -81,3 +81,10 @@
 .kg-tour .driver-popover-arrow-side-right {
   border-right-color: var(--surface-2);
 }
+
+/* Gestures tour, swipe step: the spotlit row slides to show its swipe
+   action, over and over while the step is up. Same keyframes as the VH-16
+   peek (vault.css); motion tokens zero it in Simple / reduced motion. */
+.driver-active-element .kg-swipe-row__content {
+  animation: kg-swipe-peek var(--duration-slow) var(--ease-standard) var(--duration-normal) infinite;
+}

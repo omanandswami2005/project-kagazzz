@@ -6,7 +6,7 @@
  * Hardware back closes it first (Ionic's menu back handler, priority 99).
  */
 import { IonContent, IonHeader, IonMenu, IonMenuToggle, IonTitle, IonToolbar, useIonRouter } from '@ionic/react';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { ParseKeys } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -14,6 +14,7 @@ import { Icon, type IconName } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { useLocale } from '@/core/i18n';
 import { usePreferencesStore } from '@/core/preferences';
+import { MENU_TOUR, MENU_TOUR_TIP, runTour, type TourHandle } from '@/app/onboarding/tour';
 import { AppMark } from './AppMark';
 import './shell.css';
 
@@ -64,11 +65,25 @@ const SECTIONS: { titleKey: MenuKey; items: MenuItem[] }[] = [
 /** The app's side drawer. Render once, beside the tabs. */
 export function AppMenu(): ReactNode {
   const { t } = useTranslation(NAMESPACES);
+  const { t: tCommon } = useTranslation('common');
   const router = useIonRouter();
   const ai = useAi();
   const { pathname } = useLocation();
   const { formatShortDate } = useLocale();
   const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const tour = useRef<TourHandle | null>(null);
+  // First-run journey: the first time the drawer opens, walk through what's
+  // in it (quick reference and notes are easy to miss behind ☰).
+  const tourOnFirstOpen = (): void => {
+    const { seenTips, markTipSeen } = usePreferencesStore.getState();
+    if (seenTips.includes(MENU_TOUR_TIP)) return;
+    void runTour(MENU_TOUR, tCommon, () => {
+      tour.current = null;
+      markTipSeen(MENU_TOUR_TIP);
+    }).then((handle) => {
+      tour.current = handle;
+    });
+  };
   const hintFor = (id: string): string | undefined =>
     id === 'backup'
       ? lastBackupAt
@@ -78,7 +93,15 @@ export function AppMenu(): ReactNode {
   // Opens from the right, by ☰ only: a right-edge swipe would collide with
   // row swipe actions and the viewer's next-document swipe.
   return (
-    <IonMenu contentId={MAIN_CONTENT_ID} side="end" type="overlay" swipeGesture={false} data-agent-id="app.menu">
+    <IonMenu
+      contentId={MAIN_CONTENT_ID}
+      side="end"
+      type="overlay"
+      swipeGesture={false}
+      onIonDidOpen={tourOnFirstOpen}
+      onIonWillClose={() => tour.current?.destroy()}
+      data-agent-id="app.menu"
+    >
       <IonHeader>
         <IonToolbar>
           {/* DR-1: the mark, the name, and the promise in one line. */}

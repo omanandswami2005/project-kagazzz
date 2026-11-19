@@ -18,6 +18,14 @@ add a document, make a folder, star one, lock the app, make a backup. The
 folders section (`vault.home.folders-toggle`) collapses like Recent and is
 open again on every launch. While the list scrolls, a date pill
 (`vault.home.scroll-date`) shows when the top visible document was added.
+With two or more documents, a second one-time tour teaches the hidden
+gestures on the first row: swipe (naming the user's own swipe actions; the
+row slides while the step is up), long-press to select, and ⋮. The drawer
+has its own tour the first time it opens (quick reference, quick notes,
+archive/trash, backup). Settings → "Show the welcome tour again" resets all
+three. An open folder with nothing in it shows `vault.home.folder-empty`
+with `vault.home.folder-empty.add` (adds into this folder) and
+`vault.home.folder-empty.new-folder`.
 
 ## What I (the AI) can do here
 

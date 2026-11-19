@@ -136,6 +136,37 @@
     "backup": {
       "title": "Make a backup",
       "body": "An encrypted backup file keeps your documents safe if this phone is lost."
+    },
+    "swipe": {
+      "title": "Swipe a document",
+      "body": "Slide a document sideways for a quick action.",
+      "right": "Swipe right: {{action}}.",
+      "left": "Swipe left: {{action}}.",
+      "change": "Change these in Settings → Swipe actions."
+    },
+    "select": {
+      "title": "Select several",
+      "body": "Press and hold a document to select it, then tap others — share, move or delete them together."
+    },
+    "more": {
+      "title": "Every action",
+      "body": "Tap ⋮ for everything you can do with a document: rename, share, edit the PDF, extract text and more."
+    },
+    "quick_reference": {
+      "title": "Quick reference",
+      "body": "Numbers you copy often — PAN, mobile, bank account — one tap to copy."
+    },
+    "quick_notes": {
+      "title": "Quick notes",
+      "body": "Small things you want fast: a Wi-Fi password, a locker code, a reminder."
+    },
+    "archive_trash": {
+      "title": "Archive and Trash",
+      "body": "Archive keeps old documents out of the way. Deleted ones wait in Trash before they're gone."
+    },
+    "backup_menu": {
+      "title": "Back up",
+      "body": "Make an encrypted backup file now and then, so a lost phone doesn't mean lost documents."
     }
   }
 }
