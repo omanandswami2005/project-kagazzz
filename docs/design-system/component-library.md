@@ -240,7 +240,7 @@ Atoms are the smallest, indivisible UI building blocks.
 | `onRemove` | `() => void` | — | Remove handler |
 | `onClick` | `() => void` | — | Click handler (for filter tags) |
 
-Sizes: static tags (in document rows) stay compact; clickable tags are **filter chips** — 40 px tall with an 8 px gap (44 px hit area), a 1 px `--border-strong` edge, and when selected a `--color-primary-subtle` fill, saffron edge and a check icon (screen audit FP-1/FP-2).
+Sizes: static tags (in document rows) stay compact; clickable tags are **filter chips** — 44 px tall with an 8 px gap, a 1 px `--border-strong` edge, and when selected a `--color-primary-subtle` fill, saffron edge and a check icon (screen audit FP-1/FP-2).
 
 **Accessibility:**
 - Removable tags: `aria-label="Remove [tag name]"` on the × button
@@ -581,7 +581,7 @@ Layout: top third of the content area, centred, 8 px between lines.
 | `agentId` | `string` | Group id; each segment is `${agentId}-${value}` unless `optionAgentId` is given |
 | `fullWidth` | `boolean` | Segments share the row equally |
 
-Segments are 40 px inside a 4 px track (44 px hit area); `aria-pressed` marks the selection; the group exposes `data-agent-state = value`.
+Each segment is a full 44 px target; `aria-pressed` marks the selection; the group exposes `data-agent-state = value`.
 
 ---
 

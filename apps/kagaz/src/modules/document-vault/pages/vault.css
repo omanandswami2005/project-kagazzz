@@ -958,6 +958,12 @@
   transform: scale(0.985);
 }
 
+/* VH-18: starring pops the star — the animation starts when the pressed
+   state starts matching, so it plays on favourite, not on every render. */
+.kg-doc-item__action[aria-pressed='true'] svg {
+  animation: kg-state-pop var(--duration-normal) var(--ease-spring);
+}
+
 /* Thumbnails fade in as their object URL resolves, instead of popping. */
 .kg-doc-item__thumb {
   animation: kg-fade-in var(--duration-normal) var(--ease-out);

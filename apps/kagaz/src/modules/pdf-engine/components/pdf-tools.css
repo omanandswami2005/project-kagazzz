@@ -268,6 +268,8 @@
 /* One tile: page preview with the name under it; selection ring + badge. */
 .kg-pdf-picker__row {
   position: relative;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -309,6 +311,8 @@
 
 .kg-pdf-picker__check[data-checked='true'] {
   background: var(--color-primary);
+  /* TS-12: the order badge pops in as the tile is chosen. */
+  animation: kg-state-pop var(--duration-normal) var(--ease-spring);
 }
 
 .kg-pdf-picker__name {

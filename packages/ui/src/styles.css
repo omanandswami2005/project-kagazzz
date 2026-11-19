@@ -62,7 +62,7 @@ textarea {
 .kg-btn--primary:disabled {
   opacity: 1;
   background: var(--surface-3);
-  color: var(--text-muted);
+  color: var(--text-secondary); /* still AA, though disabled controls are exempt */
   box-shadow: none;
 }
 .kg-btn--secondary {
@@ -286,7 +286,7 @@ textarea {
    hit area reaches 44 px; selected = tinted fill + saffron edge + check
    (audit FP-1/FP-2, M-4). Static tags in list rows stay compact. */
 button.kg-tag {
-  min-height: calc(var(--touch-target) - var(--space-1));
+  min-height: var(--touch-target);
   padding: 0 var(--space-4);
   border-color: var(--border-strong);
   background: var(--surface-1);
@@ -953,9 +953,9 @@ summary.kg-action-sheet__group-title::-webkit-details-marker {
   align-items: center;
   justify-content: center;
   gap: var(--space-1);
-  /* 40 px segment + the 4 px track padding = 44 px hit area. */
-  min-height: calc(var(--touch-target) - var(--space-1));
-  min-width: calc(var(--touch-target) - var(--space-1));
+  /* Each segment is itself a full 44 px target (WCAG 2.5.8 / M-6). */
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
   padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-sm);
@@ -1071,4 +1071,21 @@ summary.kg-action-sheet__group-title::-webkit-details-marker {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* A state you just turned on answers back (audit G-10): a quick pop. */
+@keyframes kg-state-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.kg-tag__check {
+  display: inline-flex;
+  animation: kg-pop-in var(--duration-fast) var(--ease-spring);
 }

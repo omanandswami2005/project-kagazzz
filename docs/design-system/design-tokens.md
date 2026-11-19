@@ -789,7 +789,7 @@ Simple Mode is more than a density switch — it suppresses entire UI patterns. 
 | Token | Simple Mode value | Why |
 |---|---|---|
 | `--shadow-default` | `none` | Shadows confuse on low-end displays in bright light. |
-| `--duration-default` | `0ms` | Reduce motion automatically. |
+| `--duration-default`, `--duration-instant/fast/normal/slow` | `0ms` | No decorative motion at all — every animation reads these tokens, so zeroing them stops it app-wide (screen audit G-10). Same collapse as `prefers-reduced-motion`. |
 | `--radius-default` | `--radius-md` (8px) | Less playful, more obvious affordances. |
 | `--icon-default` | `--icon-lg` (32px) | Bigger, less ambiguous. |
 | `--focus-ring-width` | `4px` | Easier to see. |
@@ -798,6 +798,10 @@ Simple Mode is more than a density switch — it suppresses entire UI patterns. 
 :root[data-density="simple"] {
   --shadow-default: none;
   --duration-default: 0ms;
+  --duration-instant: 0ms;
+  --duration-fast: 0ms;
+  --duration-normal: 0ms;
+  --duration-slow: 0ms;
   --radius-default: var(--radius-md);
   --icon-default: var(--icon-lg);
   --focus-ring-width: 4px;

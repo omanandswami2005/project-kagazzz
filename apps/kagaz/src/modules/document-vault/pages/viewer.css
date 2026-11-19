@@ -146,8 +146,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  /* 36 px chip in a list with 8 px gaps = 44 px hit area (audit M-5). */
-  min-height: calc(var(--touch-target) - var(--space-2));
+  /* A full 44 px target (audit M-5). */
+  min-height: var(--touch-target);
   padding: 0 var(--space-3);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-full);

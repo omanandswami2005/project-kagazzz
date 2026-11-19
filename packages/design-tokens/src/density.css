@@ -28,6 +28,12 @@
      (design-tokens.md §Simple Mode overrides). */
   --shadow-default: none;
   --duration-default: 0ms;
+  /* No decorative motion at all in Simple mode (audit G-10): every
+     animation in the app reads these, so zeroing them stops it everywhere. */
+  --duration-instant: 0ms;
+  --duration-fast: 0ms;
+  --duration-normal: 0ms;
+  --duration-slow: 0ms;
   --radius-default: var(--radius-md);
   --icon-default: var(--icon-lg);
   --focus-ring-width: 4px;
