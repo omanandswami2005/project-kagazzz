@@ -35,6 +35,17 @@
   gap: var(--space-3);
 }
 
+.kg-pdf-tools__group + .kg-pdf-tools__group {
+  margin-top: var(--space-5);
+}
+
+.kg-pdf-tools__group-title {
+  margin: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
 .kg-pdf-tools__card {
   display: flex;
   flex-direction: column;
