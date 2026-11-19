@@ -149,6 +149,7 @@ beforeEach(() => {
     uploadProgress: null,
     isUploadSheetOpen: false,
     lastUploadErrors: [],
+    folderPath: [],
   });
   useDocumentsMock.mockReturnValue({ documents: [], isLoading: false });
   useUploadMock.mockReturnValue({
@@ -192,6 +193,22 @@ describe('VaultHomePage', () => {
     expect(
       document.querySelector('[data-agent-id="vault.home"]')
     ).not.toBeNull();
+  });
+
+  it('says an open folder is empty and offers to add a document into it', () => {
+    // A spy, not the real sheet: presenting the modal here would outlive the test.
+    const original = useVaultStore.getState().openUploadSheet;
+    const openUploadSheet = vi.fn();
+    useVaultStore.setState({
+      openUploadSheet,
+      folderPath: [{ id: 'f1', name: 'Bills', parentId: null, createdAt: '2026-11-19T00:00:00.000Z' } as never],
+    });
+    render(<VaultHomePage />);
+    expect(screen.getByText('This folder is empty')).toBeInTheDocument();
+    expect(screen.queryByText('No documents yet')).toBeNull();
+    fireEvent.click(screen.getByText('Add a document here'));
+    expect(openUploadSheet).toHaveBeenCalledOnce();
+    useVaultStore.setState({ openUploadSheet: original });
   });
 
   it('lists documents when present', () => {

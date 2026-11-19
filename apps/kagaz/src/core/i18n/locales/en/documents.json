@@ -220,7 +220,10 @@
     "rename_title": "Rename folder",
     "section_title": "Folders",
     "section_collapse": "Collapse folders",
-    "section_expand": "Expand folders"
+    "section_expand": "Expand folders",
+    "empty_title": "This folder is empty",
+    "empty_hint": "Add a document straight into this folder, or move one here from its ⋮ menu.",
+    "empty_add": "Add a document here"
   },
   "upload": {
     "sheet_title": "Add a document",

@@ -20,7 +20,7 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSheet, Alert, Button, Icon, ProgressBar, Tag, type ActionSheetButton } from '@kagaz/ui';
+import { ActionSheet, Alert, Button, EmptyState, Icon, ProgressBar, Tag, type ActionSheetButton } from '@kagaz/ui';
 import {
   hapticAction,
   hapticDestructive,
@@ -34,8 +34,15 @@ import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
 import { ScrollDateBubble } from '../components/ScrollDateBubble';
 import { GettingStartedCard, type GettingStartedItem } from '../components/GettingStartedCard';
 import { useFavorites } from '../hooks/useFavorites';
-import { runTour, type TourKey } from '@/app/onboarding/tour';
-import { useWelcomeTour } from '@/app/onboarding/useWelcomeTour';
+import {
+  DOCUMENTS_TOUR,
+  DOCUMENTS_TOUR_TIP,
+  runTour,
+  WELCOME_TOUR,
+  WELCOME_TOUR_TIP,
+  type TourKey,
+} from '@/app/onboarding/tour';
+import { useFirstRunTour } from '@/app/onboarding/useFirstRunTour';
 import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { useLockStore } from '@/modules/auth/store/lock.store';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
@@ -422,10 +429,14 @@ export function VaultHomePage(): ReactNode {
 
   const seenTips = usePreferencesStore((s) => s.seenTips);
   const markTipSeen = usePreferencesStore((s) => s.markTipSeen);
+  // The gestures tour (below) teaches swipe and long-press first; the
+  // VH-16 nudge and VH-15 toast only back it up for users who skipped it.
+  const gesturesToured = seenTips.includes(DOCUMENTS_TOUR_TIP);
   // VH-16: swipe actions are invisible until tried — nudge the first row
   // sideways once, then never again.
   const showSwipePeek =
     !isLoading &&
+    gesturesToured &&
     documents.length > 0 &&
     (swipeLeftAction !== 'none' || swipeRightAction !== 'none') &&
     !seenTips.includes(SWIPE_PEEK_TIP);
@@ -435,11 +446,39 @@ export function VaultHomePage(): ReactNode {
     return (): void => clearTimeout(timer);
   }, [showSwipePeek, markTipSeen]);
   const showLongPressTip =
-    !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
+    !isLoading &&
+    documents.length >= 3 &&
+    uploaded.length === 0 &&
+    !gesturesToured &&
+    !seenTips.includes(LONG_PRESS_TIP);
 
   // First-run journey: the welcome tour (once), then a Getting-started list
   // ticked by real state. Never alongside the empty state or the long-press tip.
-  useWelcomeTour(!isLoading);
+  useFirstRunTour(WELCOME_TOUR, WELCOME_TOUR_TIP, !isLoading);
+  // Then, once there are two documents (past the rename-after-first-add
+  // prompt), the gestures nobody finds alone: swipe, long-press, ⋮.
+  const { t: tSettings } = useTranslation('settings');
+  const documentsTour = useMemo(() => {
+    const swipeText = [
+      swipeRightAction !== 'none' &&
+        tCommon('tour.swipe.right', { action: tSettings(`swipe.action_${swipeRightAction}`) }),
+      swipeLeftAction !== 'none' &&
+        tCommon('tour.swipe.left', { action: tSettings(`swipe.action_${swipeLeftAction}`) }),
+    ].filter(Boolean);
+    return DOCUMENTS_TOUR.filter((step) => step.key !== 'swipe' || swipeText.length > 0).map((step) =>
+      step.key === 'swipe' ? { ...step, body: [...swipeText, tCommon('tour.swipe.change')].join(' ') } : step
+    );
+  }, [swipeLeftAction, swipeRightAction, tCommon, tSettings]);
+  useFirstRunTour(
+    documentsTour,
+    DOCUMENTS_TOUR_TIP,
+    !isLoading &&
+      documents.length >= 2 &&
+      !isUploading &&
+      !selectionMode &&
+      !search.isActive &&
+      seenTips.includes(WELCOME_TOUR_TIP)
+  );
   const lockEnabled = useLockStore((s) => s.enabled);
   const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
   const { favorites: starred } = useFavorites(useViewEnterKey());
@@ -706,6 +745,38 @@ export function VaultHomePage(): ReactNode {
                     <GettingStartedCard
                       items={gettingStarted}
                       onDismiss={() => markTipSeen(GETTING_STARTED_TIP)}
+                    />
+                  )}
+
+                  {/* An empty folder says so, and offers to fill it. */}
+                  {folderPath.length > 0 && documents.length === 0 && folders.length === 0 && !isLoading && (
+                    <EmptyState
+                      icon="FolderOpen"
+                      title={t('folders.empty_title')}
+                      hint={t('folders.empty_hint')}
+                      agentId="vault.home.folder-empty"
+                      action={
+                        <div className="kg-vault-empty__actions">
+                          <Button
+                            icon={<Icon name="Plus" size={20} />}
+                            onClick={openSheet}
+                            fullWidth
+                            agentId="vault.home.folder-empty.add"
+                            agentRole="primary-action"
+                            agentAction="vault.uploadDocument"
+                          >
+                            {t('folders.empty_add')}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            icon={<Icon name="FolderPlus" size={20} />}
+                            onClick={() => setNewFolderOpen(true)}
+                            agentId="vault.home.folder-empty.new-folder"
+                          >
+                            {t('folders.new')}
+                          </Button>
+                        </div>
+                      }
                     />
                   )}
 
