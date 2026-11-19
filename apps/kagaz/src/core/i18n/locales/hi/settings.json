@@ -98,6 +98,7 @@
     "terms": "नियम और शर्तें",
     "licenses": "ओपन-सोर्स लाइसेंस",
     "licenses_intro": "Kagazzz Docs इन ओपन-सोर्स लाइब्रेरियों से बना है। इनके रचनाकारों का धन्यवाद।",
-    "version": "संस्करण {{version}}"
+    "version": "संस्करण {{version}}",
+    "contents": "विषय-सूची"
   }
 }

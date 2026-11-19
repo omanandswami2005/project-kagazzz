@@ -46,14 +46,21 @@ function renderInline(text: string, keyBase: string): ReactNode[] {
 export interface MarkdownViewProps {
   /** Raw Markdown source. */
   source: string;
+  /** When set and the text has 4+ sections, a contents list (this label as
+   * its heading) jumps to each `##` section (audit LG-2). */
+  tocLabel?: string;
 }
 
+/** Minimum number of sections before a contents list is worth showing. */
+const TOC_MIN_SECTIONS = 4;
+
 /** Renders a bounded Markdown subset as React elements. */
-export function MarkdownView({ source }: MarkdownViewProps): ReactNode {
+export function MarkdownView({ source, tocLabel }: MarkdownViewProps): ReactNode {
   const lines = source.replace(/\r\n/g, '\n').split('\n');
   const blocks: ReactNode[] = [];
   let list: string[] = [];
   let key = 0;
+  const sections: { id: string; title: string }[] = [];
 
   const flushList = (): void => {
     if (list.length > 0) {
@@ -94,8 +101,10 @@ export function MarkdownView({ source }: MarkdownViewProps): ReactNode {
     if (heading) {
       const level = Math.min(heading[1].length, 3);
       const Tag = (['h2', 'h2', 'h3'] as const)[level - 1];
+      const id = level === 2 ? `md-section-${sections.length}` : undefined;
+      if (id) sections.push({ id, title: heading[2] });
       blocks.push(
-        <Tag className={`kg-md__h${level}`} key={`h-${key++}`}>
+        <Tag className={`kg-md__h${level}`} key={`h-${key++}`} id={id}>
           {renderInline(heading[2], `h-${key}`)}
         </Tag>
       );
@@ -109,5 +118,33 @@ export function MarkdownView({ source }: MarkdownViewProps): ReactNode {
   }
   flushList();
 
-  return <div className="kg-md">{blocks}</div>;
+  const toc =
+    tocLabel && sections.length >= TOC_MIN_SECTIONS ? (
+      <nav className="kg-md__toc" aria-label={tocLabel} key="toc">
+        <h2 className="kg-md__toc-title">{tocLabel}</h2>
+        <ol>
+          {sections.map((section) => (
+            <li key={section.id}>
+              {/* Buttons, not #hash links: the router owns the URL. */}
+              <button
+                type="button"
+                className="kg-md__toc-link"
+                onClick={() =>
+                  document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              >
+                {section.title}
+              </button>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    ) : null;
+
+  return (
+    <div className="kg-md">
+      {/* The title (# line) comes first, then the contents, then the text. */}
+      {toc ? [blocks[0], toc, ...blocks.slice(1)] : blocks}
+    </div>
+  );
 }

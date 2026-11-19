@@ -50,7 +50,7 @@
   --color-warning: #f59e0b;
   --color-warning-light: #fbbf24;
   /* Tinted surface + edge for warning banners (audit M-12). */
-  --color-warning-subtle: color-mix(in srgb, var(--color-warning) 12%, var(--surface-1));
+  --color-warning-subtle: color-mix(in srgb, var(--color-warning) 12%, var(--surface-2));
   --color-warning-border: color-mix(in srgb, var(--color-warning) 35%, transparent);
   --color-info: #0ea5e9;
   --color-info-light: #38bdf8;

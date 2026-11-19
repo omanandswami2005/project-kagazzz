@@ -98,6 +98,7 @@
     "terms": "Terms & Conditions",
     "licenses": "Open-source licenses",
     "licenses_intro": "Kagazzz Docs is built with these open-source libraries. Thank you to their authors.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "contents": "Contents"
   }
 }

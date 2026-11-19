@@ -55,10 +55,12 @@ export function LegalPage(): ReactNode {
               <p className="kg-legal__intro">{t('about.licenses_intro')}</p>
               <ul className="kg-legal__licenses" data-agent-id="settings.legal.licenses">
                 {licenses.map((lib) => (
+                  // LG-3: name on its own line (no mid-name wrap beside the
+                  // version), version muted below, licence as a chip.
                   <li key={lib.name} className="kg-legal__license">
-                    <span className="kg-legal__lib">
-                      {lib.name}
-                      {lib.version ? ` ${lib.version}` : ''}
+                    <span className="kg-legal__lib-text">
+                      <span className="kg-legal__lib">{lib.name}</span>
+                      {lib.version && <span className="kg-legal__version">{lib.version}</span>}
                     </span>
                     <span className="kg-legal__spdx">{lib.license}</span>
                   </li>
@@ -66,7 +68,7 @@ export function LegalPage(): ReactNode {
               </ul>
             </>
           ) : (
-            <MarkdownView source={doc === 'terms' ? termsMd : privacyMd} />
+            <MarkdownView source={doc === 'terms' ? termsMd : privacyMd} tocLabel={t('about.contents')} />
           )}
         </main>
       </IonContent>
