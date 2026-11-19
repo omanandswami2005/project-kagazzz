@@ -27,7 +27,9 @@ import { useDocumentOcr } from '@/modules/document-vault/hooks/useDocumentOcr';
 import { useImageEnhancement } from '@/modules/document-vault/hooks/useImageEnhancement';
 import { useResizeCompress } from '@/modules/document-vault/hooks/useResizeCompress';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
-import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-tools.actions';
+import type { AiToolContext, CreatedDocuments, DocumentInfo, DocumentSummary } from '../ai-tools.actions';
+import { createFileStorage } from '@/infrastructure/filesystem';
+import { factsOf, readDocumentFacts, withFacts } from '@/modules/document-vault/services/document-facts';
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
@@ -266,6 +268,30 @@ export function useChat(): UseChatResult {
           ...toDocumentSummary(doc),
           ...(snippet ? { snippet } : {}),
         }));
+      },
+      getDocumentInfo: async (documentId): Promise<DocumentInfo> => {
+        let doc = await requireDocument(documentDao, documentId);
+        // Documents added before facts existed: read them once, then keep them.
+        if (!factsOf(doc)) {
+          const facts = await createFileStorage()
+            .read(doc.filePath)
+            .then((bytes) => readDocumentFacts(new Blob([bytes as BlobPart]), doc.fileType))
+            .catch(() => null);
+          if (facts) {
+            const metadataJson = withFacts(doc.metadataJson, facts);
+            await documentDao.update(doc.id, { metadataJson }).catch(() => undefined);
+            doc = { ...doc, metadataJson };
+          }
+        }
+        const facts = factsOf(doc);
+        return {
+          ...toDocumentSummary(doc),
+          ...(facts?.kind === 'pdf'
+            ? { title: facts.title, author: facts.author, passwordProtected: facts.encrypted }
+            : {}),
+          textCharacters: doc.ocrText?.length ?? 0,
+          lastOpenedAt: doc.lastAccessedAt,
+        };
       },
       openQuickReference: (): void => router.push('/quick-reference', 'forward', 'push'),
       openQuickNotes: (): void => router.push('/quick-notes', 'forward', 'push'),

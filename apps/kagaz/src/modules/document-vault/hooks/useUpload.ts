@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDatabase } from '@/app/providers/DatabaseProvider';
+import { readDocumentFacts } from '../services/document-facts';
 import { DocumentDao } from '@/infrastructure/database/dao';
 import { createFileStorage } from '@/infrastructure/filesystem';
 import { currentFolderId, useVaultStore } from '../store/vault.store';
@@ -57,6 +58,7 @@ export function useUpload(): UseUploadResult {
       documents: new DocumentDao(db),
       makeThumbnail: (blob, fileType): Promise<Uint8Array | null> =>
         generateThumbnail(blob, fileType),
+      readFacts: readDocumentFacts,
     });
   }, [db]);
 

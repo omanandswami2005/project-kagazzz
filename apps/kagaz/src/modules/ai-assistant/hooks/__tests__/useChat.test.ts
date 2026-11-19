@@ -667,6 +667,28 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     expect(JSON.stringify(result)).toContain('this PDF has 3 pages');
   });
 
+  it('ai.getDocumentInfo gives page count, title and text size from stored facts — never the text', async () => {
+    const withFacts = {
+      ...documentRow,
+      metadata_json: JSON.stringify({ facts: { kind: 'pdf', pages: 5, title: 'Lease deed' } }),
+      ocr_text: 'secret body text',
+    };
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, [withFacts]),
+    });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const info = await dispatch('ai.getDocumentInfo', { documentId: 'd-1' });
+
+    expect(info.ok).toBe(true);
+    expect(info.data).toMatchObject({ pages: 5, title: 'Lease deed', textCharacters: 16 });
+    expect(JSON.stringify(info)).not.toContain('secret body text');
+  });
+
   it('PDF tools refuse an image with a clear reason, without running the engine', async () => {
     useDatabaseMock.mockReturnValue({
       status: 'ready',

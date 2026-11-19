@@ -16,12 +16,14 @@ import {
   pdfBytes,
   pngBytes,
 } from '../../__tests__/fixtures/vault-fixtures';
+import type { FactsReader } from '../document-facts';
 
 function makeService(overrides?: {
   storage?: MemoryFileStorage;
   createImpl?: (doc: NewDocument) => Promise<ReturnType<typeof entityFromNew>>;
   convertHeic?: (blob: Blob) => Promise<Blob>;
   makeThumbnail?: (blob: Blob, fileType: string) => Promise<Uint8Array | null>;
+  readFacts?: FactsReader;
 }): {
   service: UploadService;
   storage: MemoryFileStorage;
@@ -37,6 +39,7 @@ function makeService(overrides?: {
     documents: { create },
     convertHeic: overrides?.convertHeic,
     makeThumbnail: overrides?.makeThumbnail,
+    readFacts: overrides?.readFacts,
   });
   return { service, storage, create };
 }
@@ -72,6 +75,21 @@ describe('UploadService.processFile', () => {
     const row = create.mock.calls[0]?.[0] as NewDocument;
     expect(row.thumbnailPath).toMatch(/^thumbnails\/[0-9a-f-]+\.jpg$/);
     expect(storage.files.has(row.thumbnailPath ?? '')).toBe(true);
+  });
+
+  it('stores per-type facts (page count) in metadata_json for the assistant', async () => {
+    const readFacts = vi.fn<FactsReader>(() => Promise.resolve({ kind: 'pdf', pages: 4 }));
+    const { service, create } = makeService({ readFacts });
+    await service.processFile(incoming('a.pdf', pdfBytes()), {});
+    const row = create.mock.calls[0]?.[0] as NewDocument;
+    expect(JSON.parse(row.metadataJson ?? '{}')).toEqual({ facts: { kind: 'pdf', pages: 4 } });
+  });
+
+  it('a facts failure is non-fatal (no metadata)', async () => {
+    const readFacts = vi.fn<FactsReader>(() => Promise.reject(new Error('pdfjs boom')));
+    const { service, create } = makeService({ readFacts });
+    await service.processFile(incoming('a.pdf', pdfBytes()), {});
+    expect((create.mock.calls[0]?.[0] as NewDocument).metadataJson).toBeUndefined();
   });
 
   it('a thumbnail failure is non-fatal (no thumbnailPath)', async () => {
