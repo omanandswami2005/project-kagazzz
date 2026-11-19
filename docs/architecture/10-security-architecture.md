@@ -786,15 +786,19 @@ graph TB
 
 ### Dependency audit posture (CI `pnpm audit --audit-level high`)
 
-`pnpm-workspace.yaml` pins/ignores a small set of advisories, each assessed —
-**none is exploitable in the shipped, offline V1 app** (apps/kagaz):
+**2026-11-19: `pnpm audit` is clean — no known vulnerabilities, and no advisory
+is ignored.** Every finding was fixed rather than accepted:
 
-| Advisory(s) | Package | Assessment | Action |
-|---|---|---|---|
-| SSRF (prerendered error page) | `astro` (apps/docs → Starlight) | Docs site only, not shipped in the app; static output (no SSR server). | **Overridden** to a patched `>=6.4.6`. |
-| TLS-bypass / WS-DoS / request-routing | `undici` (vitest → jsdom, dev/test) | Test-runtime only; never shipped and never makes a real network request. Cannot bump — `jsdom@29` imports undici internals removed in the patched 7.28 line. | **Ignored** (documented). |
-| Prototype-pollution + ReDoS | `xlsx` (SheetJS, F-42) | Both are in the **parsing** path; F-42 only **generates** `.xlsx` from the user's own vault data (no untrusted-spreadsheet parsing), lazy-loaded and offline. No npm fix: SheetJS ships `>0.18.5` only via its own CDN (off-limits under ADR-017). | **Ignored** (documented); re-evaluate if a parse/import path is ever added. |
-| Path-traversal / hardlink / symlink (7 GHSAs) | `tar` (pdfjs-dist → optional `canvas` peer → `@mapbox/node-pre-gyp`) | `canvas` is pdfjs-dist's optional **Node-side** rendering peer — this app renders PDFs only in the WebView, never on Node; its native build is denied (`allowBuilds.canvas: false`), so the `tar` extraction the advisories are in never runs. | **Ignored** (documented); re-evaluate if pdfjs-dist's `canvas` peer is ever exercised. |
+| Advisory(s) | Package | Fix |
+|---|---|---|
+| Remote content can be loaded (critical, GHSA-rvm3-566m-v7fv) | `@capacitor/android` / `ios` / `core` | Direct deps → **8.6.2**; overridden to `^8.6.2` so `@aparajita/capacitor-biometric-auth`'s own Capacitor dep can't pull an older one. |
+| Prototype-pollution + ReDoS | `xlsx` (SheetJS, F-42) | **Removed.** The patched builds exist only on SheetJS's CDN. F-42 only *writes* sheets, so `pdf-to-sheet-ops.ts` now writes a minimal SpreadsheetML package with JSZip (already shipped for backups). CSV cells that would run as formulas are prefixed with `'`. |
+| XML injection / DoS (many) | `@xmldom/xmldom` (mammoth; @capacitor/assets) | `mammoth` → 1.13.0; overrides `^0.8.15` / `^0.9.12` per line. |
+| Memory exhaustion | `zod` | Direct dep → 4.6.7; override `>=4.6.6` for tooling copies. |
+| SSRF, XSS and others (incl. critical) | `astro` + its tree (sharp, svgo, devalue, smol-toml, postcss, nanoid, source-map-js, vite) | Docs site → **Astro 7.4 / Starlight 0.43**; patched floors in `overrides`. Docs only, never shipped. |
+| TLS bypass / request smuggling | `undici` (vitest → jsdom) | Override `>=7.30.1 <8` (jsdom 29 works with it). Test runtime only. |
+| Mocker / sandbox | `vitest`, `@vitest/mocker` | All packages → vitest **4.1.12**. |
+| ReDoS / DoS | `brace-expansion`, `minimatch` (3.x and 7–11), `glob`, `browserslist`, `baseline-browser-mapping`, `handlebars` (critical), `uuid`, `fast-copy`, `tar` | Patched floors in `pnpm-workspace.yaml` `overrides`. All are build/dev tooling (eslint, @capacitor/assets, @capacitor/cli, pino-pretty). |
 
 Revisit at each release and when V2 adds network surfaces.
 
