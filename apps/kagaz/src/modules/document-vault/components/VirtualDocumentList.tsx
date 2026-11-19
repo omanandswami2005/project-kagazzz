@@ -29,7 +29,7 @@ import { DocumentListItem } from './DocumentListItem';
 /** Estimated row height per view mode (re-measured per row via `measureElement`,
  * so this only affects the very first paint, not final layout). */
 const ROW_HEIGHT_ESTIMATE: Record<string, number> = {
-  grid: 190,
+  grid: 220, // thumb + name + meta + the ☆ ⋮ row (VH-5)
   compact: 56,
   list: 96,
 };

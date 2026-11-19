@@ -637,8 +637,10 @@
   align-items: stretch;
   gap: var(--space-2);
   height: 100%;
-  /* Reset the row's reserved right gutter — actions overlay the corner now. */
+  /* Reset the row's reserved right gutter; reserve a bottom row inside the
+     card for ☆ ⋮ instead (VH-5). */
   padding: var(--space-2);
+  padding-bottom: calc(var(--touch-target) + var(--space-1));
 }
 
 .kg-vault__list--grid .kg-doc-item__icon,
@@ -654,12 +656,13 @@
   background: var(--surface-2);
 }
 
+/* VH-5: ☆ and ⋮ sit below the picture, never on it — no translucent pill
+   hiding the document (and no grey blob in dark mode). */
 .kg-vault__list--grid .kg-doc-item__actions {
-  top: var(--space-1);
+  top: auto;
+  bottom: var(--space-1);
   right: var(--space-1);
   transform: none;
-  background: color-mix(in srgb, var(--surface-1) 78%, transparent);
-  border-radius: var(--radius-full);
 }
 
 /* Grid cards stay clean — tags collapse away, meta stays as a single line. */

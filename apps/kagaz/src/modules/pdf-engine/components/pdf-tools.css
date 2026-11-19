@@ -125,6 +125,16 @@
   padding: var(--space-4);
 }
 
+.kg-pdf-op__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.kg-pdf-op__title svg {
+  color: var(--icon-object);
+}
+
 .kg-pdf-op__help {
   margin: 0;
   color: var(--text-secondary);

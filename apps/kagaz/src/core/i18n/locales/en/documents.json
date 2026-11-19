@@ -414,5 +414,9 @@
     "more_tools": "More tools",
     "favorite": "Favorite",
     "unfavorite": "Unfavorite"
+  },
+  "tips": {
+    "long_press": "Tip: press and hold a document to select several.",
+    "got_it": "Got it"
   }
 }

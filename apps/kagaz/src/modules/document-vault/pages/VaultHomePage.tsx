@@ -94,6 +94,9 @@ type PendingUndo =
   | { kind: 'single'; document: DocumentEntity }
   | { kind: 'bulk'; documents: DocumentEntity[] };
 
+/** One-time tip id for the long-press multi-select hint (VH-15). */
+const LONG_PRESS_TIP = 'long-press';
+
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
@@ -377,6 +380,11 @@ export function VaultHomePage(): ReactNode {
       ? [{ id: 'transcribe', text: t('actions.transcribe_gemma'), icon: 'FileText' as const, handler: (): void => void handleOcr(doc, 'vision') }]
       : []),
   ];
+
+  const seenTips = usePreferencesStore((s) => s.seenTips);
+  const markTipSeen = usePreferencesStore((s) => s.markTipSeen);
+  const showLongPressTip =
+    !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
 
   const handleSelectSource = (source: UploadSource): void => {
     // Gallery is special-cased: with 2+ photos picked, ask whether to
@@ -1025,6 +1033,16 @@ export function VaultHomePage(): ReactNode {
           message={lastUploadErrors.map((key) => t(key)).join('\n')}
           onDidDismiss={() => useVaultStore.getState().finishUpload([])}
           data-agent-id="vault.home.upload-error-toast"
+        />
+        {/* VH-15: multi-select is a long-press — say so once, when it starts
+            to matter (3+ documents), then never again. */}
+        <IonToast
+          isOpen={showLongPressTip}
+          duration={5000}
+          message={t('tips.long_press')}
+          buttons={[{ text: t('tips.got_it'), role: 'cancel' }]}
+          onDidDismiss={() => markTipSeen(LONG_PRESS_TIP)}
+          data-agent-id="vault.home.tip-long-press"
         />
         <IonToast
           isOpen={ocrMsg !== null}

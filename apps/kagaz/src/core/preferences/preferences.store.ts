@@ -29,6 +29,8 @@ export interface AppPreferences {
   /** ISO time of the last successful encrypted backup, or null if never —
    * drives the Settings backup nudge (audit SE-6). Not PII. */
   lastBackupAt: string | null;
+  /** One-time tips already shown (e.g. 'long-press'), so each shows once. */
+  seenTips: string[];
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
@@ -42,6 +44,7 @@ const DEFAULTS: AppPreferences = {
   swipeRightAction: 'favorite',
   hapticsEnabled: true,
   lastBackupAt: null,
+  seenTips: [],
 };
 
 const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
@@ -85,6 +88,9 @@ export function readPreferences(): AppPreferences {
       hapticsEnabled: parsed.hapticsEnabled !== false,
       lastBackupAt:
         typeof parsed.lastBackupAt === 'string' ? parsed.lastBackupAt : null,
+      seenTips: Array.isArray(parsed.seenTips)
+        ? parsed.seenTips.filter((tip): tip is string => typeof tip === 'string')
+        : [],
     };
   } catch {
     return DEFAULTS;
@@ -111,6 +117,8 @@ interface PreferencesStore extends AppPreferences {
   setHapticsEnabled: (enabled: boolean) => void;
   /** Records when the last encrypted backup finished (audit SE-6). */
   setLastBackupAt: (iso: string) => void;
+  /** Marks a one-time tip as shown. */
+  markTipSeen: (tip: string) => void;
 }
 
 /** App-wide UI preference store (persisted). */
@@ -123,6 +131,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       swipeRightAction,
       hapticsEnabled,
       lastBackupAt,
+      seenTips,
     } = get();
     writePreferences({
       renameOnAdd,
@@ -131,6 +140,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       swipeRightAction,
       hapticsEnabled,
       lastBackupAt,
+      seenTips,
     });
   };
   return {
@@ -153,6 +163,11 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
     },
     setLastBackupAt: (lastBackupAt): void => {
       set({ lastBackupAt });
+      persist();
+    },
+    markTipSeen: (tip): void => {
+      if (get().seenTips.includes(tip)) return;
+      set({ seenTips: [...get().seenTips, tip] });
       persist();
     },
   };

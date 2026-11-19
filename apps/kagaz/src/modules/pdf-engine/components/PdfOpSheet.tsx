@@ -392,7 +392,13 @@ export function PdfOpSheet({
     >
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{op ? t(`ops.${op}`) : ''}</IonTitle>
+          <IonTitle>
+            {/* TS-13: the same icon as the tool's card, so the sheet reads as "that tool". */}
+            <span className="kg-pdf-op__title">
+              {meta && <Icon name={meta.icon} size={20} />}
+              {op ? t(`ops.${op}`) : ''}
+            </span>
+          </IonTitle>
           <IonButtons slot="end">
             <Button
               variant="ghost"
