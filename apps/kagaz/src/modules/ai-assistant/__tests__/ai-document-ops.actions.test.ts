@@ -6,6 +6,7 @@ function makeCtx(overrides: Partial<AiToolContext> = {}): AiToolContext {
   return {
     listDocuments: vi.fn(),
     searchDocuments: vi.fn(),
+    getDocumentInfo: vi.fn(),
     openQuickReference: vi.fn(),
     openQuickNotes: vi.fn(),
     startQuickNote: vi.fn(),
@@ -60,9 +61,11 @@ describe('aiDocumentOpsActions (F-14 document operations)', () => {
     expect(result).toEqual({ created: 2, documents: [] });
   });
 
-  it('splitDocument rejects an empty ranges array', () => {
-    const parsed = aiDocumentOpsActions.splitDocument.args.safeParse({ documentId: 'd-1', ranges: [] });
-    expect(parsed.success).toBe(false);
+  it('splitDocument without ranges splits every page (empty list to the engine)', async () => {
+    expect(aiDocumentOpsActions.splitDocument.args.safeParse({ documentId: 'd-1' }).success).toBe(true);
+    const splitDocument = vi.fn().mockResolvedValue({ created: 3, documents: [] });
+    await aiDocumentOpsActions.splitDocument.handler({ documentId: 'd-1' }, makeCtx({ splitDocument }));
+    expect(splitDocument).toHaveBeenCalledWith('d-1', []);
   });
 
   it('compressDocument defaults quality to medium', () => {

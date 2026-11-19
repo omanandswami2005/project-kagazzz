@@ -504,6 +504,7 @@ The AI assistant operates under strict data access boundaries:
 | Data Type | AI Can Access? | Mechanism |
 |---|---|---|
 | Document **metadata** (name, type, size, tags, dates) | ✅ Yes | Via tool calls to DocumentDAO |
+| Document **facts** (PDF page count, PDF title/author fields, password state; image pixel size) | ✅ Yes | `metadata_json.facts`, read at upload or on first `ai.getDocumentInfo` (2026-11-19). A PDF's Title/Author fields can hold a person's name; they reach the on-device model only, like the document name. Never page text. |
 | Document **file bytes** | ❌ No | Not exposed as a tool |
 | Document **extracted text** (OCR / PDF text layer) of **unlocked** documents | ⚠️ On-device model only | `ai.findInDocuments` (keyword hits + snippet), `ai.readDocumentText`. Locked documents are refused. The model runs on the phone, so the text never leaves it. `ai.runOcr` returns a character count only. |
 | Document **thumbnails** | ❌ No | Not exposed as a tool |

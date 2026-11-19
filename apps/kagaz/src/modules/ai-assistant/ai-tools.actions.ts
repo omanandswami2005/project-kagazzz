@@ -21,6 +21,8 @@ import { z } from 'zod';
 import type { DocumentText, TextMatch } from './services/document-text.service';
 import type { AskUserSpec } from './types/ask-user';
 import type { DocumentEntity } from '@/infrastructure/database/types';
+import { factsOf } from '@/modules/document-vault/services/document-facts';
+import { docRefSchema } from './services/document-resolver';
 
 /** Metadata-only projection of a document — never `ocrText`/`filePath`. */
 export interface DocumentSummary {
@@ -31,8 +33,26 @@ export interface DocumentSummary {
   isFavorite: boolean;
   isLocked: boolean;
   createdAt: string;
+  /** PDFs: page count, once known (document facts, metadata only). */
+  pages?: number;
+  /** Images: "width×height" in pixels, once known. */
+  dimensions?: string;
   /** Text around the hit when the match was inside the document's extracted text (search results only). */
   snippet?: string;
+}
+
+/**
+ * Everything the assistant may know about one document without reading its
+ * content (ai.getDocumentInfo). Per type: a PDF's pages/title/author/password
+ * state, an image's pixel size; plus whether text has been extracted.
+ */
+export interface DocumentInfo extends DocumentSummary {
+  title?: string;
+  author?: string;
+  passwordProtected?: boolean;
+  /** Characters of extracted text (OCR / text layer); 0 = none yet. Never the text. */
+  textCharacters: number;
+  lastOpenedAt?: string;
 }
 
 /** Documents a tool created: ids let the chat link to them and the model chain steps ("merge, then compress the merged one"). */
@@ -52,7 +72,16 @@ export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
     isFavorite: doc.isFavorite,
     isLocked: doc.isLocked,
     createdAt: doc.createdAt,
+    ...factFields(doc),
   };
+}
+
+/** The per-type facts a summary carries, when they have been read. */
+function factFields(doc: DocumentEntity): Pick<DocumentSummary, 'pages' | 'dimensions'> {
+  const facts = factsOf(doc);
+  if (facts?.kind === 'pdf' && facts.pages !== undefined) return { pages: facts.pages };
+  if (facts?.kind === 'image') return { dimensions: `${facts.width}×${facts.height}` };
+  return {};
 }
 
 /**
@@ -65,6 +94,8 @@ export function toDocumentSummary(doc: DocumentEntity): DocumentSummary {
 export interface AiToolContext {
   listDocuments: (limit: number) => Promise<DocumentSummary[]>;
   searchDocuments: (query: string, limit: number) => Promise<DocumentSummary[]>;
+  /** Type-specific facts about one document (reads them from the file the first time). */
+  getDocumentInfo: (documentId: string) => Promise<DocumentInfo>;
   /** Navigates to Quick Reference (F-23). */
   openQuickReference: () => void;
   /** Navigates to Quick Notes (F-23). */
@@ -149,5 +180,15 @@ export const aiToolActions = {
       ctx: AiToolContext
     ): Promise<{ documents: DocumentSummary[] }> =>
       ctx.searchDocuments(args.query, args.limit).then((documents) => ({ documents })),
+  }),
+
+  getDocumentInfo: defineAction({
+    id: 'ai.getDocumentInfo',
+    summary:
+      'Details about one document without reading it: for a PDF its page count, title, author and whether it is password-protected; for an image its pixel size; plus whether its text has been extracted. Call this before splitting or picking pages.',
+    args: z.object({ documentId: docRefSchema }),
+    requiresConfirmation: false,
+    handler: (args: { documentId: string }, ctx: AiToolContext): Promise<DocumentInfo> =>
+      ctx.getDocumentInfo(args.documentId),
   }),
 };

@@ -19,11 +19,13 @@
 import { useEffect, useRef, type RefObject } from 'react';
 import { hapticTap } from '@/core/haptics';
 
-/** How much a fully-off-center card shrinks (1 → 1 - this). 0.25 makes the
- * centred card clearly the "featured" one (was 0.12, too subtle). */
-const MAX_SCALE_DROP = 0.25;
+/** The centred card grows past full size — it is the featured one (device
+ * feedback 2026-11-19: "scale the centred one more"). */
+const CENTER_SCALE = 1.18;
+/** Scale a card one full card-step (or more) away from the centre settles at. */
+const SIDE_SCALE = 0.78;
 /** How much a fully-off-center card fades (1 → 1 - this). */
-const MAX_OPACITY_DROP = 0.35;
+const MAX_OPACITY_DROP = 0.4;
 
 /** Applies the coverflow scale/opacity to every direct `<li>` child of `containerRef`. */
 export function useCoverflowScroll(
@@ -48,7 +50,6 @@ export function useCoverflowScroll(
       rafId = 0;
       const rect = container.getBoundingClientRect();
       const center = rect.left + rect.width / 2;
-      const half = rect.width / 2 || 1;
       let closestIndex = -1;
       let closestDistance = Infinity;
       const children = Array.from(container.children);
@@ -57,8 +58,11 @@ export function useCoverflowScroll(
         const childRect = child.getBoundingClientRect();
         const childCenter = childRect.left + childRect.width / 2;
         const rawDistance = Math.abs(childCenter - center);
-        const distance = Math.min(1, rawDistance / half);
-        child.style.transform = `scale(${(1 - distance * MAX_SCALE_DROP).toFixed(3)})`;
+        // Measured in card steps, so the neighbours already read as smaller
+        // and the centre card stands out at any screen width.
+        const distance = Math.min(1, rawDistance / (childRect.width || 1));
+        const scale = CENTER_SCALE - distance * (CENTER_SCALE - SIDE_SCALE);
+        child.style.transform = `scale(${scale.toFixed(3)})`;
         child.style.opacity = (1 - distance * MAX_OPACITY_DROP).toFixed(3);
         if (rawDistance < closestDistance) {
           closestDistance = rawDistance;

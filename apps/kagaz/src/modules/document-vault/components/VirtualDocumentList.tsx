@@ -20,7 +20,7 @@
  * the list, e.g. the controls row appearing/disappearing).
  */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity, TagEntity } from '@/infrastructure/database/types';
 import { useGridColumns } from '../hooks/useGridColumns';
@@ -98,7 +98,13 @@ export function VirtualDocumentList({
 }: VirtualDocumentListProps): ReactNode {
   const containerRef = useRef<HTMLUListElement>(null);
   const isGrid = viewMode === 'grid';
-  const columns = useGridColumns(containerRef, isGrid);
+  // State, not only the ref: the virtual <ul> mounts after the first render.
+  const [containerEl, setContainerEl] = useState<HTMLUListElement | null>(null);
+  const columns = useGridColumns(containerEl, isGrid);
+  const attachContainer = useCallback((el: HTMLUListElement | null): void => {
+    containerRef.current = el;
+    setContainerEl(el);
+  }, []);
   const rows = useMemo(() => chunk(documents, columns), [documents, columns]);
 
   const [scrollMargin, setScrollMargin] = useState(0);
@@ -109,7 +115,7 @@ export function VirtualDocumentList({
     // Re-measure whenever content that could sit above this list changes
     // size (Recent strip collapse/expand, filter controls appearing, the
     // document count itself affecting the controls row).
-  }, [documents.length, viewMode]);
+  }, [documents.length, viewMode, containerEl]);
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -151,7 +157,7 @@ export function VirtualDocumentList({
 
   return (
     <ul
-      ref={containerRef}
+      ref={attachContainer}
       className="kg-vault__virtual-outer"
       data-agent-id={agentId}
       data-agent-state={agentState}

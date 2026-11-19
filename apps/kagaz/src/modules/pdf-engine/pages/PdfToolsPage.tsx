@@ -62,6 +62,10 @@ export function PdfToolsPage(): ReactNode {
     setHandledLink(location.search);
     setPreselectId(linkedDoc);
     setActiveOp(linkedTool);
+  } else if (!linkedTool && handledLink) {
+    // The page stays cached: forget the handled link once the URL is clean,
+    // so the same link opens the tool again next time.
+    setHandledLink(null);
   }
   useEffect(() => {
     if (handledLink && handledLink === location.search) {

@@ -70,8 +70,8 @@ export function useShareIntent(): void {
           position: 'bottom',
           buttons: only
             ? [
-                { text: t('upload.open'), handler: () => router.push(`/doc/${only.id}`, 'forward', 'push') },
-                { text: t('viewer.ask_ai'), handler: () => router.push(askAiAboutRoute(only.id), 'forward', 'push') },
+                { text: t('upload.open'), handler: (): void => router.push(`/doc/${only.id}`, 'forward', 'push') },
+                { text: t('viewer.ask_ai'), handler: (): void => router.push(askAiAboutRoute(only.id), 'forward', 'push') },
               ]
             : undefined,
         });

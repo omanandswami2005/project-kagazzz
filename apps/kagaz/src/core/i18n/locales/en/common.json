@@ -102,5 +102,40 @@
     "tagline": "Private · on this phone",
     "backup": "Backup",
     "backup_never": "Last backup: never"
+  },
+  "tour": {
+    "next": "Next",
+    "back": "Back",
+    "done": "Got it",
+    "close": "Close the tour",
+    "progress": "{{current}} of {{total}}",
+    "add": {
+      "title": "Add your documents",
+      "body": "Scan paper, pick files or photos. Everything stays on this phone, encrypted."
+    },
+    "search": {
+      "title": "Find anything",
+      "body": "Search by name — or by words inside your documents, like a PAN or a policy number."
+    },
+    "ai": {
+      "title": "Ask your documents",
+      "body": "The assistant reads, finds and works on your documents — on this phone, not online."
+    },
+    "menu": {
+      "title": "Everything else",
+      "body": "Quick reference, notes, trash, backup and settings live here."
+    },
+    "star": {
+      "title": "Star a document",
+      "body": "Tap the star on a document you use often. Starred ones are one tap away in Favorites."
+    },
+    "lock": {
+      "title": "Lock the app",
+      "body": "Turn this on to open Kagazzz Docs with your fingerprint or face."
+    },
+    "backup": {
+      "title": "Make a backup",
+      "body": "An encrypted backup file keeps your documents safe if this phone is lost."
+    }
   }
 }

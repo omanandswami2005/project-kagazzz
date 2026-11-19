@@ -44,7 +44,7 @@ export interface UseTrash {
 }
 
 /** Manages the Trash / Recycle Bin view. */
-export function useTrash(): UseTrash {
+export function useTrash(reloadKey = 0): UseTrash {
   const { db } = useDatabase();
   const [items, setItems] = useState<DocumentEntity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +68,7 @@ export function useTrash(): UseTrash {
     return (): void => {
       cancelled = true;
     };
-  }, [deps]);
+  }, [deps, reloadKey]);
 
   const restore = useCallback(
     async (doc: DocumentEntity): Promise<void> => {

@@ -5,10 +5,19 @@ The user is on the main vault screen. They see their documents (newest
 first), search, folders and recents, and add new ones (upload button,
 bottom-right).
 
-**Navigation (2026-11-19):** ☰ at the top left opens the side drawer
+**Navigation (2026-11-19):** ☰ at the top right opens the side drawer (it slides in from the right)
 (`app.menu`): Quick reference, Quick notes, Archived, Trash, AI model,
 Settings, Privacy policy. The AI chat is the raised centre button of the tab
 bar (`app.tab.ai`), not a header icon.
+
+**First run (2026-11-19):** a 3–4 step spotlight tour (`app.tour`, buttons
+`app.tour.next/back/close`) shows once: add, search, the assistant, the
+drawer. Once documents exist, a **Getting started** card
+(`vault.home.getting-started`) lists five steps, each ticked by real state:
+add a document, make a folder, star one, lock the app, make a backup. The
+folders section (`vault.home.folders-toggle`) collapses like Recent and is
+open again on every launch. While the list scrolls, a date pill
+(`vault.home.scroll-date`) shows when the top visible document was added.
 
 ## What I (the AI) can do here
 

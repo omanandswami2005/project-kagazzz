@@ -60,18 +60,22 @@ export function QuickNotesPage(): ReactNode {
   const selectedEntries = entries.filter((entry) => selectedIds.includes(entry.id));
 
   // FAB quick-add (UX pass 2026-07-25): `/quick-notes?new=1` opens straight
-  // into the composer instead of the list — VaultHomePage's UploadFAB Quick
-  // Note item navigates here. Runs once on mount only; re-running on every
-  // location change would reopen the composer on back/forward navigation.
-  // The query param is stripped via history.replace so it can't fire twice.
-  /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  // into the composer. The page stays cached in Ionic's stack, so this reacts
+  // to the URL (not to mounting): each arrival with ?new=1 opens it once, then
+  // the param is stripped so back/forward can't reopen it.
+  const wantsNew = new URLSearchParams(location.search).get('new') === '1';
+  const [handledNew, setHandledNew] = useState(false);
+  if (wantsNew && !handledNew) {
+    setHandledNew(true);
+    setEditTarget(null);
+  } else if (!wantsNew && handledNew) {
+    setHandledNew(false);
+  }
   useEffect(() => {
-    if (new URLSearchParams(location.search).get('new') === '1') {
-      setEditTarget(null);
+    if (wantsNew && handledNew) {
       history.replace('/quick-notes');
     }
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
+  }, [wantsNew, handledNew, history]);
 
   const handleCopyValue = async (entry: QuickReferenceEntry): Promise<void> => {
     const ok = await copyToClipboard(entry.value, {

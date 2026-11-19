@@ -21,11 +21,15 @@ import { AiConversationDao, DocumentDao } from '@/infrastructure/database/dao';
 import type { AiConversationEntity } from '@/infrastructure/database/types';
 import type { AiMessageEntity, DocumentEntity } from '@/infrastructure/database/types';
 import { buildFtsMatchQuery } from '@/infrastructure/database/fts-query';
+import { isImageFile } from '@/core/components/DocumentThumb';
+import { isPdf } from '@/modules/document-vault/hooks/useDocumentFile';
 import { useDocumentOcr } from '@/modules/document-vault/hooks/useDocumentOcr';
 import { useImageEnhancement } from '@/modules/document-vault/hooks/useImageEnhancement';
 import { useResizeCompress } from '@/modules/document-vault/hooks/useResizeCompress';
 import { usePdfEngine } from '@/modules/pdf-engine/hooks/usePdfEngine';
-import type { AiToolContext, CreatedDocuments, DocumentSummary } from '../ai-tools.actions';
+import type { AiToolContext, CreatedDocuments, DocumentInfo, DocumentSummary } from '../ai-tools.actions';
+import { createFileStorage } from '@/infrastructure/filesystem';
+import { factsOf, readDocumentFacts, withFacts } from '@/modules/document-vault/services/document-facts';
 import { toDocumentSummary } from '../ai-tools.actions';
 import { getChatEngine } from '../services/chat-engine.registry';
 import { AI_TOOL_DESCRIPTORS, aiToolRegistry } from '../services/ai-tool-registry';
@@ -56,6 +60,30 @@ async function requireDocument(documentDao: DocumentDao, ref: string): Promise<D
   return doc;
 }
 
+/**
+ * The PDF tools only read PDFs. Checked up front so the model hears *why*
+ * (and what to do instead) rather than a bare engine "Invalid PDF" — a
+ * scanned photo is the usual mix-up (device feedback 2026-11-19).
+ */
+function requirePdf(doc: DocumentEntity): DocumentEntity {
+  if (!isPdf(doc.fileType)) {
+    throw new Error(
+      `"${doc.name}" is a ${doc.fileType.toUpperCase()} image, not a PDF. Use ai.convertImagesToPdf first, or pick a PDF.`
+    );
+  }
+  return doc;
+}
+
+/** Image tools need an image; a PDF gets a pointer to the right tool. */
+function requireImage(doc: DocumentEntity): DocumentEntity {
+  if (!isImageFile(doc.fileType)) {
+    throw new Error(
+      `"${doc.name}" is a ${doc.fileType.toUpperCase()}, not an image. Use ai.convertPdfToImages first, or pick an image.`
+    );
+  }
+  return doc;
+}
+
 async function requireDocuments(
   documentDao: DocumentDao,
   ids: string[]
@@ -71,9 +99,12 @@ async function requireDocuments(
  * ActionResult mapping produce a real failure instead of a silent
  * `{ created: 0 }` success.
  */
-function requireSaved(count: number, opName: string): number {
+function requireSaved(count: number, opName: string, reason?: string | null): number {
   if (count === 0) {
-    throw new Error(`${opName} did not produce a document`);
+    // The engine's own message says what actually went wrong (bad page range,
+    // unreadable file, …); "did not produce" alone left the model and the user
+    // guessing (device report 2026-11-19).
+    throw new Error(reason ? `${opName} failed: ${reason}` : `${opName} did not produce a document`);
   }
   return count;
 }
@@ -200,6 +231,7 @@ export function useChat(): UseChatResult {
     imagesToPdf,
     pdfToImages,
     exportPdfText,
+    lastError,
   } = pdfEngine;
 
   // F-14/F-23: the context ai-tools.actions.ts's + ai-navigation.actions.ts's
@@ -237,51 +269,75 @@ export function useChat(): UseChatResult {
           ...(snippet ? { snippet } : {}),
         }));
       },
+      getDocumentInfo: async (documentId): Promise<DocumentInfo> => {
+        let doc = await requireDocument(documentDao, documentId);
+        // Documents added before facts existed: read them once, then keep them.
+        if (!factsOf(doc)) {
+          const facts = await createFileStorage()
+            .read(doc.filePath)
+            .then((bytes) => readDocumentFacts(new Blob([bytes as BlobPart]), doc.fileType))
+            .catch(() => null);
+          if (facts) {
+            const metadataJson = withFacts(doc.metadataJson, facts);
+            await documentDao.update(doc.id, { metadataJson }).catch(() => undefined);
+            doc = { ...doc, metadataJson };
+          }
+        }
+        const facts = factsOf(doc);
+        return {
+          ...toDocumentSummary(doc),
+          ...(facts?.kind === 'pdf'
+            ? { title: facts.title, author: facts.author, passwordProtected: facts.encrypted }
+            : {}),
+          textCharacters: doc.ocrText?.length ?? 0,
+          lastOpenedAt: doc.lastAccessedAt,
+        };
+      },
       openQuickReference: (): void => router.push('/quick-reference', 'forward', 'push'),
       openQuickNotes: (): void => router.push('/quick-notes', 'forward', 'push'),
       startQuickNote: (): void => router.push('/quick-notes?new=1', 'forward', 'push'),
       openSettings: (): void => router.push('/settings', 'forward', 'push'),
       openPdfTools: (): void => router.push('/pdf-tools', 'forward', 'push'),
       mergeDocuments: async (documentIds): Promise<CreatedDocuments> => {
-        const docs = await requireDocuments(documentDao, documentIds);
-        return trackCreated(documentDao, async () => requireSaved(await mergePdfs(docs), 'Merge'));
+        const docs = (await requireDocuments(documentDao, documentIds)).map(requirePdf);
+        return trackCreated(documentDao, async () => requireSaved(await mergePdfs(docs), 'Merge', lastError()));
       },
       splitDocument: async (documentId, ranges): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requirePdf(await requireDocument(documentDao, documentId));
         // Model-facing ranges are 1-indexed inclusive; PageRange is 0-indexed.
         const zeroIndexed = ranges.map(({ start, end }) => ({ start: start - 1, end: end - 1 }));
         return trackCreated(documentDao, async () =>
-          requireSaved(await splitPdf(doc, zeroIndexed), 'Split')
+          requireSaved(await splitPdf(doc, zeroIndexed), 'Split', lastError())
         );
       },
       compressDocument: async (documentId, quality): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requirePdf(await requireDocument(documentDao, documentId));
         return trackCreated(documentDao, async () =>
-          requireSaved(await compressPdf(doc, quality), 'Compress')
+          requireSaved(await compressPdf(doc, quality), 'Compress', lastError())
         );
       },
       watermarkDocument: async (documentId, text): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requirePdf(await requireDocument(documentDao, documentId));
         return trackCreated(documentDao, async () =>
-          requireSaved(await watermarkPdf(doc, text), 'Watermark')
+          requireSaved(await watermarkPdf(doc, text), 'Watermark', lastError())
         );
       },
       convertImagesToPdf: async (documentIds): Promise<CreatedDocuments> => {
-        const docs = await requireDocuments(documentDao, documentIds);
+        const docs = (await requireDocuments(documentDao, documentIds)).map(requireImage);
         return trackCreated(documentDao, async () =>
-          requireSaved(await imagesToPdf(docs), 'Images-to-PDF')
+          requireSaved(await imagesToPdf(docs), 'Images-to-PDF', lastError())
         );
       },
       convertPdfToImages: async (documentId, format): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requirePdf(await requireDocument(documentDao, documentId));
         return trackCreated(documentDao, async () =>
-          requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images')
+          requireSaved(await pdfToImages(doc, { format }), 'PDF-to-images', lastError())
         );
       },
       exportPdfText: async (documentId, format): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requirePdf(await requireDocument(documentDao, documentId));
         return trackCreated(documentDao, async () =>
-          requireSaved(await exportPdfText(doc, format), 'Text export')
+          requireSaved(await exportPdfText(doc, format), 'Text export', lastError())
         );
       },
       resizeImage: async (
@@ -290,7 +346,7 @@ export function useChat(): UseChatResult {
         height,
         maxSizeBytes
       ): ReturnType<AiToolContext['resizeImage']> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requireImage(await requireDocument(documentDao, documentId));
         let outcome: Awaited<ReturnType<typeof resizeCompressRun>> | null = null;
         const { created, documents } = await trackCreated(documentDao, async () => {
           outcome = await resizeCompressRun(doc, { width, height, maxSizeBytes });
@@ -308,7 +364,7 @@ export function useChat(): UseChatResult {
         };
       },
       enhanceImage: async (documentId, preset): Promise<CreatedDocuments> => {
-        const doc = await requireDocument(documentDao, documentId);
+        const doc = requireImage(await requireDocument(documentDao, documentId));
         return trackCreated(documentDao, async () => {
           if (!(await applyFilter(doc, preset))) {
             throw new Error('Enhance did not produce a document');
@@ -360,6 +416,7 @@ export function useChat(): UseChatResult {
     imagesToPdf,
     pdfToImages,
     exportPdfText,
+    lastError,
     resizeCompressRun,
     applyFilter,
     extractText,

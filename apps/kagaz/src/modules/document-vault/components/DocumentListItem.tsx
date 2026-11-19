@@ -241,7 +241,10 @@ export function DocumentListItem({
   const hasSwipe = swipeLeftAction !== 'none' || swipeRightAction !== 'none';
 
   return (
-    <li className={`kg-doc-item__li${leaving ? ' kg-doc-item__li--leaving' : ''}`}>
+    <li
+      className={`kg-doc-item__li${leaving ? ' kg-doc-item__li--leaving' : ''}`}
+      data-doc-id={document.id}
+    >
       {hasSwipe ? (
         <SwipeableRow
           leftReveal={swipeReveal(swipeLeftAction)}

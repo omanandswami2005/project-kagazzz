@@ -87,11 +87,26 @@ import {
   ArrowUpNarrowWide,
   Wrench,
   ZoomIn,
+  createLucideIcon,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+/**
+ * Kagaz's own assistant glyph: a page with a folded corner that is also a
+ * speech bubble — "ask your paper" — drawn on Lucide's 24px grid so it sits
+ * with the rest of the set. Replaces the generic sparkles for AI (device
+ * feedback 2026-11-19); sparkles stays for Enhance / Free up space.
+ */
+const Assistant = createLucideIcon('Assistant', [
+  ['path', { d: 'M14 3H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2v3l4-3h6a2 2 0 0 0 2-2V9z', key: 'page' }],
+  ['path', { d: 'M14 3v4a2 2 0 0 0 2 2h4', key: 'fold' }],
+  ['path', { d: 'M8 11h5', key: 'line1' }],
+  ['path', { d: 'M8 14h8', key: 'line2' }],
+]);
+
 /** Curated Lucide subset (add icons as features need them). */
 const ICONS = {
+  Assistant,
   AlertCircle,
   Archive,
   Camera,

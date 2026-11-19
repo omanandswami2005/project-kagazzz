@@ -5,4 +5,7 @@
     <color name="colorPrimary">#C2410C</color>
     <color name="colorPrimaryDark">#9A3412</color>
     <color name="colorAccent">#C2410C</color>
+    <!-- Behind the status / navigation bars (the WebView is padded clear of
+         them): mirrors the surface-2 token, the app bar colour. -->
+    <color name="systemBarBackground">#F1F5F9</color>
 </resources>

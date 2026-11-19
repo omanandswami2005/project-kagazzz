@@ -30,6 +30,7 @@ import {
   splitFileName,
   validateFile,
 } from './file-validation';
+import { withFacts, type FactsReader } from './document-facts';
 
 const logger = log('document-vault');
 
@@ -58,6 +59,8 @@ export interface UploadServiceDeps {
   convertHeic?: HeicConverter;
   /** Optional thumbnail generator (F-24). Absent: no thumbnail. */
   makeThumbnail?: ThumbnailMaker;
+  /** Optional per-type facts reader (page count, image size). Absent: none stored. */
+  readFacts?: FactsReader;
 }
 
 /** Outcome of a batch upload: per-file successes and failures. */
@@ -237,6 +240,9 @@ export class UploadService {
       }
     }
 
+    // Facts (page count, pixel size) for the assistant — best-effort, like the thumbnail.
+    const facts = this.deps.readFacts ? await this.deps.readFacts(blob, fileType).catch(() => null) : null;
+
     const row: NewDocument = {
       name,
       filePath,
@@ -251,6 +257,7 @@ export class UploadService {
       language: 'en',
       sourceType: file.source,
       originalFilename: file.name,
+      ...(facts ? { metadataJson: withFacts(undefined, facts) } : {}),
     };
     try {
       const document = await this.deps.documents.create(row);

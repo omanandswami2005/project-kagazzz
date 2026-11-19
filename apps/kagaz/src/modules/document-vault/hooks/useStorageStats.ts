@@ -14,7 +14,7 @@ import {
 const logger = log('document-vault');
 
 /** Returns the storage snapshot (null until loaded). */
-export function useStorageStats(): { stats: StorageStats | null } {
+export function useStorageStats(reloadKey = 0): { stats: StorageStats | null } {
   const { db } = useDatabase();
   const dao = useMemo(() => (db ? new DocumentDao(db) : null), [db]);
   const [stats, setStats] = useState<StorageStats | null>(null);
@@ -47,7 +47,7 @@ export function useStorageStats(): { stats: StorageStats | null } {
     return (): void => {
       cancelled = true;
     };
-  }, [dao]);
+  }, [dao, reloadKey]);
 
   return { stats };
 }

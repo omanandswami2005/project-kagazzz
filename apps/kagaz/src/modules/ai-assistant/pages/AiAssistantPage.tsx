@@ -75,7 +75,7 @@ export function AiAssistantPage(): ReactNode {
 
           {ai.status === 'not-downloaded' && (
             <div className="kg-ai-settings__center" data-agent-id="ai.settings.download">
-              <Icon name="Sparkles" size={32} aria-hidden />
+              <Icon name="Assistant" size={32} aria-hidden />
               <p>{t('lifecycle.intro')}</p>
               <Button variant="primary" onClick={() => void ai.download()} agentId="ai.settings.download-button">
                 {t('lifecycle.download_button', { size })}

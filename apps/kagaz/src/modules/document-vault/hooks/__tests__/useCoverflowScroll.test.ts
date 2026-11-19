@@ -46,7 +46,7 @@ function buildRow(): HTMLUListElement {
 }
 
 describe('useCoverflowScroll', () => {
-  it('leaves a perfectly centered card at full scale and opacity', () => {
+  it('grows a perfectly centered card past full size, at full opacity', () => {
     const ul = buildRow();
     // Row spans 0..300 (center 150); the "centered" card is itself centered on 150.
     stubRects({
@@ -58,7 +58,7 @@ describe('useCoverflowScroll', () => {
     renderHook(() => useCoverflowScroll(ref, []));
 
     const centered = document.getElementById('centered')!;
-    expect(centered.style.transform).toBe('scale(1.000)');
+    expect(centered.style.transform).toBe('scale(1.180)');
     // jsdom's CSSOM normalizes a whole-number opacity value's serialization.
     expect(centered.style.opacity).toBe('1');
   });
@@ -75,9 +75,9 @@ describe('useCoverflowScroll', () => {
     renderHook(() => useCoverflowScroll(ref, []));
 
     const offCenter = document.getElementById('off-center')!;
-    expect(offCenter.style.transform).toBe('scale(0.750)');
+    expect(offCenter.style.transform).toBe('scale(0.780)');
     // jsdom's CSSOM strips the trailing zero when serializing opacity.
-    expect(offCenter.style.opacity).toBe('0.65');
+    expect(offCenter.style.opacity).toBe('0.6');
   });
 
   it('re-applies on a scroll event', () => {
@@ -101,7 +101,7 @@ describe('useCoverflowScroll', () => {
     return new Promise<void>((resolve) => {
       requestAnimationFrame(() => {
         expect(document.getElementById('off-center')!.style.transform).toBe(
-          'scale(1.000)'
+          'scale(1.180)'
         );
         resolve();
       });

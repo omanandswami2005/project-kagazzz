@@ -99,6 +99,8 @@
     "licenses": "Open-source licenses",
     "licenses_intro": "Kagazzz Docs is built with these open-source libraries. Thank you to their authors.",
     "version": "Version {{version}}",
-    "contents": "Contents"
+    "contents": "Contents",
+    "replay_tour": "Show the welcome tour again",
+    "replay_tour_hint": "A quick look at where everything is"
   }
 }

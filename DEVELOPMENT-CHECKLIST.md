@@ -417,6 +417,31 @@
 
 > Append-only log. One line per meaningful commit (or group), newest first: `YYYY-MM-DD · <hash> · <type(scope)> · what & why · linked checklist item(s)`.
 
+- 2026-11-19 · b4389c8 · test(app) · typed tour copy keys; getDocumentInfo / lastError test doubles; explicit return types. Full gate: lint 0 errors, type-check, 1,367 tests (175 files), agent:lint 13 pages / 38 actions. **Not device-verified** — user asked to test the APK themselves (emulator closed on request) · device feedback
+- 2026-11-19 · b95e900 · docs(ai-assistant) · 05 §4.2.4 failure reasons + document facts; 10 §5.2 facts row (PDF title/author can hold a name, on-device only) · device feedback
+- 2026-11-19 · 682cb00 · feat(app) · first-run journey: driver.js spotlight tour (ADR-026: MIT, 0 deps, no network/storage, lazy) — add/search/assistant/drawer, once, Back closes, en/hi, no motion in Simple; Getting-started card ticked by real state (doc, folder, star, lock, backup); replay in Settings → About; licence list regenerated · device feedback
+- 2026-11-19 · 133af5a · fix(app) · caching follow-ups: vault folder-back only while the vault is visible; drawer by ☰ only (right-edge swipe collided with row swipes); paper transition clears its transforms; virtual list re-measures on mount · device feedback
+- 2026-11-19 · 5a79179 · feat(ai-assistant) · per-type facts in `metadata_json.facts` (PDF pages/title/author/password, image size), read at upload or first ask; summaries carry pages/dimensions; new always-on `ai.getDocumentInfo` (never the text) · device feedback
+- 2026-11-19 · f3ad880 · feat(document-vault) · ScrollDateBubble: date of the top visible document floats at the right while scrolling · device feedback
+- 2026-11-19 · ea15262 · feat(app) · side drawer opens from the right; ☰ in the toolbar end slot, page actions in primary · device feedback
+- 2026-11-19 · a2c131c · feat(document-vault) · folders section collapses like Recent, session-only (open on every launch) · device feedback
+- 2026-11-19 · 1edf9b5 · feat(document-vault) · Recent strip: centre card 118%, neighbours 78%, measured in card steps · device feedback
+- 2026-11-19 · 6106d08 · fix(document-vault) · grid stuck at one column: useGridColumns observed a ref that mounted after the first render; now takes the element · device feedback
+- 2026-11-19 · 2a2febb · feat(app) · paper page transitions (custom navAnimation, motion tokens); tab switches fade in · device feedback
+- 2026-11-19 · da1dc88 · fix(app) · no drawing under the status bar (dropped viewport-fit=cover so Capacitor 8 pads the WebView natively; bar colour = surface-2 light/night — follows the *system* theme, mismatches when the in-app theme differs); AI orb unclipped (tab-bar contain + button overflow) · device feedback
+- 2026-11-19 · 0688e14 · feat(ui) · own assistant glyph (page + speech bubble) replaces sparkles for AI · device feedback
+- 2026-11-19 · b094a24 · fix(app) · page caching: one Suspense around all routes hid them from IonRouterOutlet (every visit remounted, no transitions) — per-page Suspense; cached pages refresh on re-entry (useViewEnterKey); ?new / ?tool / ?ask links react to the URL · device feedback
+- 2026-11-19 · acf2baa · fix(ai-assistant) · "Split did not produce a document": usePdfEngine swallowed the real error — lastError() now reaches the model and the chip; PDF/image type checks up front; split without ranges = every page; 1-indexed out-of-range message with the page count. **Root cause on the user's device not confirmed** (no model on the emulator) — the new build shows the real reason · device feedback
+- 2026-11-19 · f21182a · docs · ID suggestions flagged ⚠️ check before publication (security §3.6.2, compliance §11); audit status · ux-audit follow-ups
+- 2026-11-19 · b5acd6d · feat(document-vault) · shared-in file offers Open / Ask AI (UP-6) · ux-audit follow-ups
+- 2026-11-19 · 75455d1 · feat(app) · language switch on onboarding slide 1 (OB-8); filter/FAB motion (FP-6); thin upload bar (UP-8) · ux-audit follow-ups
+- 2026-11-19 · 1f05af2 · feat(document-vault) · Favorites reorder (FV-4); unstar slides away with Undo (FV-5) · ux-audit follow-ups
+- 2026-11-19 · 43e64e9 · feat(pdf-engine) · All tools grouped under PDF / Image / Other (PT-6) · ux-audit follow-ups
+- 2026-11-19 · af93a76 · feat(document-vault) · Storage total headline + stacked bar by type (ST-2/7/8) · ux-audit follow-ups
+- 2026-11-19 · 6f62013 · feat(document-vault) · viewer pinch/double-tap zoom, swipe to next document (VW-10) · ux-audit follow-ups
+- 2026-11-19 · cdefe82 · feat(document-vault) · Documents polish: controls, quick chips, swipe peek, pull to search (VH-9/10/14/16/17) · ux-audit follow-ups
+- 2026-11-19 · 0c0500d · feat(document-vault) · Free up space sheet with measured compression savings (ST-5) · ux-audit follow-ups
+- 2026-11-19 · d606217 · feat(document-vault) · ID numbers found in OCR text → Quick Reference, Aadhaar masked by default (QR-2/QN-2/VW-9) — ⚠️ compliance re-check before publication · ux-audit follow-ups
 - 2026-11-19 · (this commit) · fix(ui) · **device pass** (Pixel6_API34, debug APK, CDP): cold start, onboarding → Add first document → upload sheet, hardware back closes sheet, tab bar hidden on Settings and back again after hardware back, exit toast above tab bar (G-5), navy dark mode (G-1), Hindi readable. Found + fixed: selected segment barely visible in dark → saffron label + ring. One early ANR traced to emulator cold-boot load (GMS/Play also ANR'd), not app code. Not verified: scanner/camera/AI (need real hardware). Bundle total 545 KB gz vs 500 KB budget — already 535.4 KB before this work. · screen audit
 - 2026-11-19 · 6af803b · docs(ux) · audit status: re-measured every screen — text below AA 100/125 → **0/0**, tap targets <44 px 233/248 → 8/8 (toggle graphics in 48 px rows); open items listed with reasons; toggle off state 3:1 (FP-3) · screen audit
 - 2026-11-19 · 95b9ee0 · feat(ui) · Simple mode zeroes all motion durations (G-10); star/badge pops; segments, filter chips, number chips full 44 px · screen audit

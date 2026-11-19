@@ -50,6 +50,7 @@ describe('aiToolActions.listDocuments', () => {
     const ctx: AiToolContext = {
       listDocuments: vi.fn().mockResolvedValue([toDocumentSummary(document)]),
       searchDocuments: vi.fn(),
+      getDocumentInfo: vi.fn(),
       openQuickReference: vi.fn(),
       openQuickNotes: vi.fn(),
       startQuickNote: vi.fn(),
@@ -89,6 +90,7 @@ describe('aiToolActions.searchDocuments', () => {
     const ctx: AiToolContext = {
       listDocuments: vi.fn(),
       searchDocuments: vi.fn().mockResolvedValue([toDocumentSummary(document)]),
+      getDocumentInfo: vi.fn(),
       openQuickReference: vi.fn(),
       openQuickNotes: vi.fn(),
       startQuickNote: vi.fn(),

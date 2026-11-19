@@ -14,6 +14,8 @@ import {
   IonToast,
   IonToolbar,
   useIonRouter,
+  useIonViewDidEnter,
+  useIonViewWillLeave,
 } from '@ionic/react';
 import { Capacitor } from '@capacitor/core';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -29,6 +31,13 @@ import { useDatabase } from '@/app/providers/DatabaseProvider';
 import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
 import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
+import { ScrollDateBubble } from '../components/ScrollDateBubble';
+import { GettingStartedCard, type GettingStartedItem } from '../components/GettingStartedCard';
+import { useFavorites } from '../hooks/useFavorites';
+import { runTour, type TourKey } from '@/app/onboarding/tour';
+import { useWelcomeTour } from '@/app/onboarding/useWelcomeTour';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
+import { useLockStore } from '@/modules/auth/store/lock.store';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
@@ -98,6 +107,10 @@ type PendingUndo =
 
 /** One-time tip id for the long-press multi-select hint (VH-15). */
 const LONG_PRESS_TIP = 'long-press';
+/** Dismissed Getting-started list (first-run journey). */
+const GETTING_STARTED_TIP = 'getting-started';
+/** Wait for Settings to slide in before spotlighting one of its rows. */
+const SETTINGS_SPOTLIGHT_MS = 500;
 /** One-time swipe hint (VH-16) and how long its animation runs. */
 const SWIPE_PEEK_TIP = 'swipe-peek';
 const SWIPE_PEEK_MS = 2500;
@@ -112,6 +125,7 @@ const isRecent = (d: DocumentEntity, nowMs: number): boolean =>
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  const { t: tCommon } = useTranslation('common');
   // UX pass 2026-07-24: vault search also surfaces a matching PDF Tool
   // (e.g. typing "merge" finds the Merge PDFs tool) — needs the `tools`
   // namespace's own t(), since PDF_OPS names/descriptions live there.
@@ -241,6 +255,8 @@ export function VaultHomePage(): ReactNode {
   const dequeueUndo = (): void => setUndoQueue((queue) => queue.slice(1));
   const [detailsDoc, setDetailsDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
+  // Folders section collapse — session-only, so it is open on every launch.
+  const [foldersCollapsed, setFoldersCollapsed] = useState(false);
 
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
   const handleOcr = async (
@@ -421,6 +437,45 @@ export function VaultHomePage(): ReactNode {
   const showLongPressTip =
     !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
 
+  // First-run journey: the welcome tour (once), then a Getting-started list
+  // ticked by real state. Never alongside the empty state or the long-press tip.
+  useWelcomeTour(!isLoading);
+  const lockEnabled = useLockStore((s) => s.enabled);
+  const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const { favorites: starred } = useFavorites(useViewEnterKey());
+  const spotlight = (selector: string, key: TourKey): void => {
+    void runTour([{ selector, key, side: 'bottom' }], tCommon, () => undefined);
+  };
+  /** Opens Settings, then lights up one setting once the page has slid in. */
+  const spotlightSetting = (agentId: string, key: TourKey): void => {
+    router.push('/settings', 'forward', 'push');
+    window.setTimeout(() => spotlight(`[data-agent-id="${agentId}"]`, key), SETTINGS_SPOTLIGHT_MS);
+  };
+  const gettingStarted: GettingStartedItem[] = [
+    { id: 'add', icon: 'Plus', done: documents.length > 0, onStart: () => useVaultStore.getState().openUploadSheet() },
+    { id: 'folder', icon: 'FolderPlus', done: folders.length > 0, onStart: () => setNewFolderOpen(true) },
+    {
+      id: 'star',
+      icon: 'Star',
+      done: starred.length > 0 || documents.some((d) => d.isFavorite),
+      onStart: () => spotlight('[data-agent-id$=".favorite"]', 'star'),
+    },
+    { id: 'lock', icon: 'Lock', done: lockEnabled, onStart: () => spotlightSetting('settings.biometric-lock', 'lock') },
+    {
+      id: 'backup',
+      icon: 'DatabaseBackup',
+      done: lastBackupAt !== null,
+      onStart: () => spotlightSetting('settings.export-backup', 'backup'),
+    },
+  ];
+  const showGettingStarted =
+    !isLoading &&
+    documents.length > 0 &&
+    folderPath.length === 0 &&
+    !selectionMode &&
+    !showLongPressTip &&
+    !seenTips.includes(GETTING_STARTED_TIP);
+
   const handleSelectSource = (source: UploadSource): void => {
     // Gallery is special-cased: with 2+ photos picked, ask whether to
     // combine them into one PDF (pdfEngine.imagesToPdfFromFiles) before
@@ -446,6 +501,15 @@ export function VaultHomePage(): ReactNode {
   // own navigation handler (0) — Ionic's exits without chaining, so any
   // folder handler below 0 would never run. When no folder is open we
   // call next() to defer to the lower-priority handlers.
+  // The page stays mounted under the viewer/settings (Ionic page cache): only
+  // pop a folder while this page is the one on screen.
+  const isActive = useRef(true);
+  useIonViewDidEnter(() => {
+    isActive.current = true;
+  });
+  useIonViewWillLeave(() => {
+    isActive.current = false;
+  });
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       return undefined;
@@ -460,7 +524,7 @@ export function VaultHomePage(): ReactNode {
         }>
       ).detail.register(10, (next) => {
         const state = useVaultStore.getState();
-        if (state.folderPath.length > 0) {
+        if (isActive.current && state.folderPath.length > 0) {
           state.goToFolderDepth(state.folderPath.length - 1);
         } else {
           next();
@@ -506,6 +570,11 @@ export function VaultHomePage(): ReactNode {
         </IonToolbar>
       </IonHeader>
       <IonContent ref={ionContentRef}>
+        {/* Date of the top visible document, floating while the list scrolls. */}
+        <ScrollDateBubble
+          scrollElement={scrollElement}
+          documents={visibleDocuments}
+        />
         {/* VH-17: offline, pull-to-refresh has nothing to fetch — pulling down
             jumps to search instead (direct manipulation). */}
         <IonRefresher
@@ -591,7 +660,7 @@ export function VaultHomePage(): ReactNode {
                       {ai.status !== 'unsupported' && (
                         <Button
                           variant="secondary"
-                          icon={<Icon name="Sparkles" size={20} />}
+                          icon={<Icon name="Assistant" size={20} />}
                           onClick={() =>
                             router.push(
                               askAiRoute(t('search.ask_ai_prompt', { query: search.query })),
@@ -633,6 +702,13 @@ export function VaultHomePage(): ReactNode {
                     onNavigate={goToFolderDepth}
                   />
 
+                  {showGettingStarted && !search.isActive && (
+                    <GettingStartedCard
+                      items={gettingStarted}
+                      onDismiss={() => markTipSeen(GETTING_STARTED_TIP)}
+                    />
+                  )}
+
                   {folderPath.length === 0 && (
                     <RecentStrip
                       documents={recent}
@@ -642,21 +718,45 @@ export function VaultHomePage(): ReactNode {
                     />
                   )}
 
+                  {/* Collapsible like Recent, but only for this session: the
+                      folders are open again every time the app starts. */}
                   {folders.length > 0 && (
-                    <ul
-                      className="kg-folder-grid"
-                      data-agent-id="vault.home.folders"
-                    >
-                      {folders.map((folder) => (
-                        <li key={folder.id}>
-                          <FolderCard
-                            folder={folder}
-                            onOpen={enterFolder}
-                            onMore={setMoreFolder}
-                          />
-                        </li>
-                      ))}
-                    </ul>
+                    <section className="kg-recent kg-folders">
+                      <button
+                        type="button"
+                        className="kg-recent__header"
+                        aria-expanded={!foldersCollapsed}
+                        aria-controls="vault-home-folders"
+                        data-agent-id="vault.home.folders-toggle"
+                        data-agent-state={foldersCollapsed ? 'collapsed' : 'expanded'}
+                        onClick={() => setFoldersCollapsed((c) => !c)}
+                      >
+                        <h2 className="kg-recent__title">{t('folders.section_title')}</h2>
+                        <Icon
+                          name="ChevronDown"
+                          size={20}
+                          color="var(--text-secondary)"
+                          aria-label={t(foldersCollapsed ? 'folders.section_expand' : 'folders.section_collapse')}
+                        />
+                      </button>
+                      {!foldersCollapsed && (
+                        <ul
+                          id="vault-home-folders"
+                          className="kg-folder-grid"
+                          data-agent-id="vault.home.folders"
+                        >
+                          {folders.map((folder) => (
+                            <li key={folder.id}>
+                              <FolderCard
+                                folder={folder}
+                                onOpen={enterFolder}
+                                onMore={setMoreFolder}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
                   )}
 
                   {documents.length > 0 && (
@@ -849,7 +949,7 @@ export function VaultHomePage(): ReactNode {
                       ]
                     : []),
                   ...(ai.status !== 'unsupported'
-                    ? [{ id: 'ask-ai', text: t('viewer.ask_ai'), icon: 'Sparkles' as const, handler: (): void => router.push(askAiAboutRoute(moreDoc.id), 'forward', 'push') }]
+                    ? [{ id: 'ask-ai', text: t('viewer.ask_ai'), icon: 'Assistant' as const, handler: (): void => router.push(askAiAboutRoute(moreDoc.id), 'forward', 'push') }]
                     : []),
                   {
                     id: 'favorite',

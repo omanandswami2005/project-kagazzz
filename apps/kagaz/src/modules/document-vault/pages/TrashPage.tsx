@@ -28,6 +28,7 @@ import {
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Button, EmptyState, Spinner } from '@kagaz/ui';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -50,7 +51,7 @@ export function TrashPage(): ReactNode {
   const { t } = useTranslation('documents');
   const { formatFileSize } = useLocale();
   const router = useIonRouter();
-  const trash = useTrash();
+  const trash = useTrash(useViewEnterKey());
   const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [deleteForeverTarget, setDeleteForeverTarget] = useState<DocumentEntity | null>(null);
 

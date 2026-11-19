@@ -19,6 +19,7 @@ import { useAi } from '@/app/providers/AIProvider';
 import { Button, Icon } from '@kagaz/ui';
 import { DocumentThumb } from '@/core/components/DocumentThumb';
 import { pdfToolRoute } from '@/core/constants/routes';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { FreeUpSpaceSheet } from '../components/FreeUpSpaceSheet';
 import { StorageBar } from '../components/StorageBar';
 import { useCompressionEstimates } from '../hooks/useCompressionEstimates';
@@ -32,7 +33,8 @@ import { MenuButton } from '@/app/shell/MenuButton';
 export function StoragePage(): ReactNode {
   const { t } = useTranslation('documents');
   const { formatFileSize } = useLocale();
-  const { stats } = useStorageStats();
+  // Cached page: re-read the numbers each time it is shown again.
+  const { stats } = useStorageStats(useViewEnterKey());
   const ai = useAi();
   const router = useIonRouter();
   const [freeUpOpen, setFreeUpOpen] = useState(false);
@@ -48,7 +50,7 @@ export function StoragePage(): ReactNode {
           <MenuButton />
           <IonTitle>{t('storage.title')}</IonTitle>
           {/* ST-5: every way to free space, behind one header action. */}
-          <IonButtons slot="end">
+          <IonButtons slot="primary">
             <Button
               variant="ghost"
               size="sm"

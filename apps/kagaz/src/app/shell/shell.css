@@ -89,9 +89,20 @@
   color: var(--icon-active);
 }
 
-/* DR-5: items slide in a little, staggered, as the drawer opens. */
+/* DR-5: items slide in a little, staggered, as the drawer opens — from the
+   right, the side the drawer now opens on. */
+@keyframes kg-menu-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--space-6));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 ion-menu.show-menu .kg-menu__section {
-  animation: kg-fade-in-up var(--duration-normal) var(--ease-out) both;
+  animation: kg-menu-in var(--duration-normal) var(--ease-out) both;
 }
 ion-menu.show-menu .kg-menu__section:nth-child(2) {
   animation-delay: 40ms;
@@ -101,13 +112,24 @@ ion-menu.show-menu .kg-menu__section:nth-child(3) {
 }
 
 /* ── Centre AI tab: a raised saffron button in the middle of the tab bar ── */
+/* The orb rises above the bar. Ionic clips it twice: the bar has
+   `contain: strict` (paint containment) and each tab button's native
+   element has `overflow: hidden` — both are lifted here, or the orb's top
+   half is cut off (device feedback 2026-11-19). */
 ion-tab-bar {
   overflow: visible;
+  contain: none;
+  position: relative;
+  z-index: 10;
 }
 
 .kg-tab-ai {
   overflow: visible;
   --color-selected: var(--icon-active);
+}
+
+.kg-tab-ai::part(native) {
+  overflow: visible;
 }
 
 .kg-tab-ai__orb {
@@ -133,4 +155,13 @@ ion-tab-bar[hidden] {
    add the bar's height (plus the raised AI orb) to it. ── */
 .kg-tabs-visible ion-toast {
   --ion-safe-area-bottom: calc(env(safe-area-inset-bottom) + var(--touch-target-lg) + var(--space-5));
+}
+
+/* ── Tab switches (Ionic runs no transition for them): the page fades in
+   as it is shown again. A page coming back from display:none replays its
+   animation, so this runs on every switch; zero in Simple / reduced motion.
+   Not while Ionic holds a page invisible for its slide — the fade would
+   override that and flash the page in place. ── */
+ion-router-outlet > .ion-page:not(.ion-page-invisible) {
+  animation: kg-fade-in var(--duration-fast) var(--ease-out);
 }
