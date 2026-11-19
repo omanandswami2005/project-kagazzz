@@ -217,7 +217,10 @@
     "color_default": "Default color",
     "delete_title": "Delete folder?",
     "delete_message": "Documents inside will move to the main list. This can't be undone.",
-    "rename_title": "Rename folder"
+    "rename_title": "Rename folder",
+    "section_title": "Folders",
+    "section_collapse": "Collapse folders",
+    "section_expand": "Expand folders"
   },
   "upload": {
     "sheet_title": "Add a document",

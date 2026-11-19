@@ -217,7 +217,10 @@
     "color_default": "डिफ़ॉल्ट रंग",
     "delete_title": "फ़ोल्डर हटाएं?",
     "delete_message": "इसके अंदर के दस्तावेज़ मुख्य सूची में चले जाएंगे। इसे वापस नहीं किया जा सकता।",
-    "rename_title": "फ़ोल्डर का नाम बदलें"
+    "rename_title": "फ़ोल्डर का नाम बदलें",
+    "section_title": "फ़ोल्डर",
+    "section_collapse": "फ़ोल्डर छिपाएँ",
+    "section_expand": "फ़ोल्डर दिखाएँ"
   },
   "upload": {
     "sheet_title": "दस्तावेज़ जोड़ें",

@@ -241,6 +241,8 @@ export function VaultHomePage(): ReactNode {
   const dequeueUndo = (): void => setUndoQueue((queue) => queue.slice(1));
   const [detailsDoc, setDetailsDoc] = useState<DocumentEntity | null>(null);
   const [isNewFolderOpen, setNewFolderOpen] = useState(false);
+  // Folders section collapse — session-only, so it is open on every launch.
+  const [foldersCollapsed, setFoldersCollapsed] = useState(false);
 
   // F-20: OCR an image document, then toast the outcome (text is stored, not shown).
   const handleOcr = async (
@@ -642,21 +644,45 @@ export function VaultHomePage(): ReactNode {
                     />
                   )}
 
+                  {/* Collapsible like Recent, but only for this session: the
+                      folders are open again every time the app starts. */}
                   {folders.length > 0 && (
-                    <ul
-                      className="kg-folder-grid"
-                      data-agent-id="vault.home.folders"
-                    >
-                      {folders.map((folder) => (
-                        <li key={folder.id}>
-                          <FolderCard
-                            folder={folder}
-                            onOpen={enterFolder}
-                            onMore={setMoreFolder}
-                          />
-                        </li>
-                      ))}
-                    </ul>
+                    <section className="kg-recent kg-folders">
+                      <button
+                        type="button"
+                        className="kg-recent__header"
+                        aria-expanded={!foldersCollapsed}
+                        aria-controls="vault-home-folders"
+                        data-agent-id="vault.home.folders-toggle"
+                        data-agent-state={foldersCollapsed ? 'collapsed' : 'expanded'}
+                        onClick={() => setFoldersCollapsed((c) => !c)}
+                      >
+                        <h2 className="kg-recent__title">{t('folders.section_title')}</h2>
+                        <Icon
+                          name="ChevronDown"
+                          size={20}
+                          color="var(--text-secondary)"
+                          aria-label={t(foldersCollapsed ? 'folders.section_expand' : 'folders.section_collapse')}
+                        />
+                      </button>
+                      {!foldersCollapsed && (
+                        <ul
+                          id="vault-home-folders"
+                          className="kg-folder-grid"
+                          data-agent-id="vault.home.folders"
+                        >
+                          {folders.map((folder) => (
+                            <li key={folder.id}>
+                              <FolderCard
+                                folder={folder}
+                                onOpen={enterFolder}
+                                onMore={setMoreFolder}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
                   )}
 
                   {documents.length > 0 && (
