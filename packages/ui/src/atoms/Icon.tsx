@@ -75,6 +75,14 @@ import {
   Unlock,
   Upload,
   X,
+  ArrowDown,
+  ArrowUp,
+  Clock,
+  DatabaseBackup,
+  Hand,
+  History,
+  Languages,
+  Vibrate,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -145,6 +153,14 @@ const ICONS = {
   Unlock,
   Upload,
   X,
+  ArrowDown,
+  ArrowUp,
+  Clock,
+  DatabaseBackup,
+  Hand,
+  History,
+  Languages,
+  Vibrate,
 } as const;
 
 /** Name of a curated Lucide icon (PascalCase, e.g. "FileText"). */

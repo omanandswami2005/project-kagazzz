@@ -58,6 +58,7 @@
 | `--color-danger-light` | `#FB7185` | Danger hover | Error backgrounds, soft alerts |
 | `--color-warning` | `#F59E0B` | Caution | Expiring documents, quota warnings (amber, not orange: orange is the brand, a warning must not look like a brand button) |
 | `--color-warning-light` | `#FBBF24` | Warning hover | Warning backgrounds |
+| `--color-warning-subtle` / `--color-warning-border` | 12 % / 35 % amber mix | Warning banner | Fill and edge of caution banners (Quick Notes) |
 | `--color-info` | `#0EA5E9` | Informational | Tips, AI suggestions, help text |
 | `--color-info-light` | `#38BDF8` | Info hover | Info backgrounds |
 
@@ -412,12 +413,14 @@ All spacing values are based on a **4px base grid** to ensure consistent rhythm 
 
 | Token | Value (px) | Usage |
 |---|---|---|
-| `--radius-sm` | 4 | Tags, badges, small chips |
-| `--radius-md` | 8 | Buttons, inputs, cards |
-| `--radius-lg` | 12 | Modals, panels, large cards |
-| `--radius-xl` | 16 | Sheets, drawers, image containers |
-| `--radius-2xl` | 24 | Floating action buttons, pills |
-| `--radius-full` | 9999 | Avatars, circular buttons, toggles |
+| `--radius-sm` | 4 | Badges, segments inside a segmented control, small thumbnails |
+| `--radius-md` | 8 | Buttons, inputs, search box, page thumbnails |
+| `--radius-lg` | 12 | **Every card**: document rows/cards, tool cards, settings groups, list rows, banners |
+| `--radius-xl` | 16 | Sheets, drawers |
+| `--radius-2xl` | 24 | Floating action buttons |
+| `--radius-full` | 9999 | Chips (filter, number, tag), avatars, circular buttons, toggles |
+
+One radius per role (screen audit M-13): if a surface is a card, it is 12 px, whatever screen it is on.
 
 ---
 

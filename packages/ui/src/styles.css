@@ -74,7 +74,8 @@ textarea {
   padding: 0;
 }
 .kg-btn--sm {
-  min-height: calc(var(--target-min) * 0.85);
+  /* Never below the 44 px platform minimum (audit M-7). */
+  min-height: max(var(--touch-target), calc(var(--target-min) * 0.85));
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
 }
@@ -175,8 +176,10 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  min-height: var(--target-min);
+  /* The whole row is the hit area — the label forwards taps (audit M-8). */
+  min-height: var(--touch-target-lg);
   font-family: var(--font-primary);
+  cursor: pointer;
 }
 .kg-toggle__label {
   font-size: var(--label-size);
@@ -193,7 +196,8 @@ textarea {
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .kg-toggle__track--on {
-  background: var(--color-accent);
+  /* "On" uses the same saffron as every other selected state (audit SE-1). */
+  background: var(--color-primary);
 }
 .kg-toggle__thumb {
   position: absolute;
@@ -267,13 +271,24 @@ textarea {
   font-size: var(--text-sm);
   cursor: default;
 }
+/* Interactive chips are filter chips: 40 px tall inside an 8 px gap so the
+   hit area reaches 44 px; selected = tinted fill + saffron edge + check
+   (audit FP-1/FP-2, M-4). Static tags in list rows stay compact. */
 button.kg-tag {
+  min-height: calc(var(--touch-target) - var(--space-1));
+  padding: 0 var(--space-4);
+  border-color: var(--border-strong);
+  background: var(--surface-1);
   cursor: pointer;
 }
-.kg-tag--selected {
-  background: var(--color-primary);
+.kg-tag--selected,
+button.kg-tag--selected {
+  background: var(--color-primary-subtle);
   border-color: var(--color-primary);
-  color: var(--text-on-primary);
+  color: var(--text-primary);
+}
+.kg-tag__check {
+  color: var(--color-primary);
 }
 .kg-tag__remove {
   display: inline-flex;
@@ -791,4 +806,145 @@ button.kg-tag {
   border-radius: var(--radius-full);
   color: var(--text-muted);
   cursor: pointer;
+}
+
+/* ── Empty state (audit G-8) ─────────────────────────────────────── */
+.kg-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  /* Top third of the viewport, whatever the content above it. */
+  padding: var(--space-12) var(--space-4) var(--space-8);
+  text-align: center;
+  font-family: var(--font-primary);
+}
+.kg-empty__icon {
+  display: inline-flex;
+  margin-bottom: var(--space-2);
+  color: var(--icon-object);
+}
+.kg-empty__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+.kg-empty__hint {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+.kg-empty__action {
+  margin-top: var(--space-3);
+}
+
+/* ── Segmented control (audit G-6, M-6) ──────────────────────────── */
+.kg-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  border: var(--border-width) solid var(--border-default);
+  max-width: 100%;
+}
+.kg-segmented--full {
+  display: flex;
+}
+.kg-segmented--full .kg-segmented__btn {
+  flex: 1 1 0;
+}
+.kg-segmented__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  /* 40 px segment + the 4 px track padding = 44 px hit area. */
+  min-height: calc(var(--touch-target) - var(--space-1));
+  min-width: calc(var(--touch-target) - var(--space-1));
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+.kg-segmented__btn svg {
+  color: var(--icon-action);
+}
+.kg-segmented__btn--active {
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+.kg-segmented__btn--active svg {
+  color: var(--icon-active);
+}
+.kg-segmented__btn:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+/* ── List row (audit SE-2) ───────────────────────────────────────── */
+.kg-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--touch-target-lg);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+.kg-list-row:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.kg-list-row:active:not(:disabled) {
+  background: var(--color-primary-subtle);
+}
+.kg-list-row:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.kg-list-row__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--icon-object);
+}
+.kg-list-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-half);
+  flex: 1;
+  min-width: 0;
+}
+.kg-list-row__title {
+  font-size: var(--text-base);
+  font-weight: var(--font-medium);
+}
+.kg-list-row__hint {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.kg-list-row__chevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-muted);
+}
+.kg-list-row--danger .kg-list-row__icon,
+.kg-list-row--danger .kg-list-row__title {
+  color: var(--text-danger);
 }
