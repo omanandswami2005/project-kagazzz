@@ -591,7 +591,7 @@ export function VaultHomePage(): ReactNode {
                       {ai.status !== 'unsupported' && (
                         <Button
                           variant="secondary"
-                          icon={<Icon name="Sparkles" size={20} />}
+                          icon={<Icon name="Assistant" size={20} />}
                           onClick={() =>
                             router.push(
                               askAiRoute(t('search.ask_ai_prompt', { query: search.query })),
@@ -849,7 +849,7 @@ export function VaultHomePage(): ReactNode {
                       ]
                     : []),
                   ...(ai.status !== 'unsupported'
-                    ? [{ id: 'ask-ai', text: t('viewer.ask_ai'), icon: 'Sparkles' as const, handler: (): void => router.push(askAiAboutRoute(moreDoc.id), 'forward', 'push') }]
+                    ? [{ id: 'ask-ai', text: t('viewer.ask_ai'), icon: 'Assistant' as const, handler: (): void => router.push(askAiAboutRoute(moreDoc.id), 'forward', 'push') }]
                     : []),
                   {
                     id: 'favorite',

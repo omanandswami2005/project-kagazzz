@@ -482,7 +482,7 @@ export function DocumentViewerPage(): ReactNode {
                 ? [{ id: 'share', icon: 'Share2' as const, label: t('preview.share'), onClick: () => void handleShare() }]
                 : []),
               ...(ai.status !== 'unsupported'
-                ? [{ id: 'ask-ai', icon: 'Sparkles' as const, label: t('viewer.ask_ai'), onClick: () => router.push(askAiAboutRoute(document.id), 'forward', 'push') }]
+                ? [{ id: 'ask-ai', icon: 'Assistant' as const, label: t('viewer.ask_ai'), onClick: () => router.push(askAiAboutRoute(document.id), 'forward', 'push') }]
                 : []),
               // VW-8: the file type's most-needed tool, opened on this document.
               ...(typeTool
