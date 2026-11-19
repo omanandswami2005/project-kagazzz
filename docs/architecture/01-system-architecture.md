@@ -905,7 +905,7 @@ graph TB
 
     subgraph Platforms["Platform Adapters"]
         Native["SQLite (Native)<br/>@capacitor-community/sqlite"]
-        Web["Dexie.js (Web Fallback)<br/>IndexedDB wrapper"]
+        Web["IndexedDB (Web Fallback)<br/>plain API, web-fs.ts"]
     end
 
     DAOs --> Native
