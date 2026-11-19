@@ -37,7 +37,7 @@ import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { usePreferencesStore } from '@/core/preferences';
 import { APP_VERSION } from '@/core/logging';
-import { WELCOME_TOUR_TIP } from '@/app/onboarding/tour';
+import { ALL_TOUR_TIPS } from '@/app/onboarding/tour';
 import './settings.css';
 
 const THEME_OPTIONS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
@@ -324,7 +324,7 @@ export function SettingsPage(): ReactNode {
               title={t('about.replay_tour')}
               hint={t('about.replay_tour_hint')}
               onClick={() => {
-                forgetTip(WELCOME_TOUR_TIP);
+                ALL_TOUR_TIPS.forEach(forgetTip);
                 router.push('/vault', 'root', 'replace');
               }}
               agentId="settings.replay-tour"

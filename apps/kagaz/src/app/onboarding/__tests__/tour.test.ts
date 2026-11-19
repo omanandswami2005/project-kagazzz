@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { TFunction } from 'i18next';
 import { i18n, initI18n } from '@/core/i18n';
-import { presentSteps, runTour, WELCOME_TOUR } from '../tour';
+import { ALL_TOUR_TIPS, MENU_TOUR, presentSteps, runTour, WELCOME_TOUR } from '../tour';
 
 const drive = vi.fn();
 const destroy = vi.fn();
@@ -58,10 +58,16 @@ describe('spotlight tour', () => {
       onPopoverRender: (p: Record<string, HTMLElement>) => void;
       onDestroyed: () => void;
     };
-    expect(config.steps.map((s) => s.popover.title)).toEqual(['Add your documents', 'Everything else']);
+    expect(config.steps.map((s) => s.popover.title)).toEqual([
+      'Add your documents',
+      'Everything else',
+    ]);
 
     const dom = Object.fromEntries(
-      ['nextButton', 'previousButton', 'closeButton', 'wrapper'].map((k) => [k, document.createElement('button')])
+      ['nextButton', 'previousButton', 'closeButton', 'wrapper'].map((k) => [
+        k,
+        document.createElement('button'),
+      ])
     );
     config.onPopoverRender(dom);
     expect(dom.nextButton?.dataset.agentId).toBe('app.tour.next');
@@ -71,5 +77,48 @@ describe('spotlight tour', () => {
     expect(onDone).toHaveBeenCalledOnce();
     handle?.destroy();
     expect(destroy).toHaveBeenCalledOnce();
+  });
+
+  it('uses a step body override and closes on hardware Back', async () => {
+    driverMock.mockReturnValue({ drive, destroy });
+    target('vault.home.upload-fab');
+    await runTour(
+      [
+        {
+          selector: '[data-agent-id="vault.home.upload-fab"]',
+          key: 'swipe',
+          body: 'Swipe right: Favorite.',
+        },
+      ],
+      tCommon(),
+      vi.fn()
+    );
+    const config = driverMock.mock.calls[0]?.[0] as {
+      steps: { popover: { title: string; description: string } }[];
+      onDestroyed: () => void;
+    };
+    expect(config.steps[0]?.popover).toMatchObject({
+      title: 'Swipe a document',
+      description: 'Swipe right: Favorite.',
+    });
+
+    const register = vi.fn((_priority: number, handler: () => void) => handler());
+    document.dispatchEvent(new CustomEvent('ionBackButton', { detail: { register } }));
+    expect(register.mock.calls[0]?.[0]).toBeGreaterThan(100);
+    expect(destroy).toHaveBeenCalledOnce();
+
+    // Once the tour is gone, Back is no longer intercepted.
+    config.onDestroyed();
+    register.mockClear();
+    document.dispatchEvent(new CustomEvent('ionBackButton', { detail: { register } }));
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('has copy for every drawer step, and replay covers every tour', () => {
+    const t = tCommon();
+    for (const step of MENU_TOUR) {
+      expect(t(`tour.${step.key}.title`)).not.toContain('tour.');
+    }
+    expect(ALL_TOUR_TIPS).toEqual(['welcome-tour', 'documents-tour', 'menu-tour']);
   });
 });

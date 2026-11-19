@@ -10,7 +10,21 @@
 import type { TFunction } from 'i18next';
 
 /** Copy keys under `common:tour`. */
-export type TourKey = 'add' | 'search' | 'ai' | 'menu' | 'star' | 'lock' | 'backup';
+export type TourKey =
+  | 'add'
+  | 'search'
+  | 'ai'
+  | 'menu'
+  | 'star'
+  | 'lock'
+  | 'backup'
+  | 'swipe'
+  | 'select'
+  | 'more'
+  | 'quick_reference'
+  | 'quick_notes'
+  | 'archive_trash'
+  | 'backup_menu';
 
 /** One stop of a tour: the element to light up and its i18n copy key. */
 export interface TourStep {
@@ -19,6 +33,8 @@ export interface TourStep {
   /** `common:tour.<key>.title` / `.body`. */
   key: TourKey;
   side?: 'top' | 'bottom' | 'left' | 'right';
+  /** Replaces `common:tour.<key>.body` when the copy depends on settings. */
+  body?: string;
 }
 
 /** The first-run tour of the Documents screen. */
@@ -31,6 +47,43 @@ export const WELCOME_TOUR: readonly TourStep[] = [
 
 /** `seenTips` id that marks the welcome tour as done. */
 export const WELCOME_TOUR_TIP = 'welcome-tour';
+
+/** The first document row (virtualised list: the first one rendered). */
+const FIRST_ROW = '[data-agent-id="vault.home.list"] [data-doc-id]';
+
+/**
+ * The gestures tour, once the vault has documents to act on: swipe and
+ * long-press are invisible until someone shows them. The swipe step's copy
+ * names the user's own swipe actions, so it's passed in as `body` (and the
+ * step is left out when both directions are off).
+ */
+export const DOCUMENTS_TOUR: readonly TourStep[] = [
+  // The <li> holds the swipe row, so the spotlit row also wiggles (tour.css).
+  { selector: FIRST_ROW, key: 'swipe', side: 'bottom' },
+  { selector: `${FIRST_ROW} .kg-doc-item--button`, key: 'select', side: 'bottom' },
+  { selector: `${FIRST_ROW} [data-agent-id$=".more"]`, key: 'more', side: 'left' },
+];
+
+/** `seenTips` id that marks the gestures tour as done. */
+export const DOCUMENTS_TOUR_TIP = 'documents-tour';
+
+/** The side drawer's tour, the first time it opens. */
+export const MENU_TOUR: readonly TourStep[] = [
+  {
+    selector: '[data-agent-id="app.menu.quick-reference"]',
+    key: 'quick_reference',
+    side: 'bottom',
+  },
+  { selector: '[data-agent-id="app.menu.quick-notes"]', key: 'quick_notes', side: 'bottom' },
+  { selector: '[data-agent-id="app.menu.archived"]', key: 'archive_trash', side: 'bottom' },
+  { selector: '[data-agent-id="app.menu.backup"]', key: 'backup_menu', side: 'top' },
+];
+
+/** `seenTips` id that marks the drawer tour as done. */
+export const MENU_TOUR_TIP = 'menu-tour';
+
+/** Every one-time tour, so "Show the tour again" can bring them all back. */
+export const ALL_TOUR_TIPS = [WELCOME_TOUR_TIP, DOCUMENTS_TOUR_TIP, MENU_TOUR_TIP] as const;
 
 /** A running tour; `destroy` closes it (Back button, leaving the page). */
 export interface TourHandle {
@@ -53,13 +106,20 @@ export function presentSteps(steps: readonly TourStep[], root: ParentNode = docu
 
 /** Whether motion is on (Simple mode and reduced motion zero the tokens). */
 function motionAllowed(): boolean {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue('--duration-normal').trim();
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue('--duration-normal')
+    .trim();
   return raw !== '' && parseFloat(raw) > 0;
 }
 
+/** Hardware Back while a tour runs closes the tour, before any page handler. */
+const BACK_PRIORITY = 200;
+type BackEvent = CustomEvent<{ register: (priority: number, handler: () => void) => void }>;
+
 /**
  * Runs a tour over the steps that are present. Resolves null (and runs
- * nothing) when none are; `onDone` fires once, however it ends.
+ * nothing) when none are; `onDone` fires once, however it ends. Back closes
+ * it (above the drawer's own Back handler at 99 and every page's).
  */
 export async function runTour(
   steps: readonly TourStep[],
@@ -68,7 +128,11 @@ export async function runTour(
 ): Promise<TourHandle | null> {
   const present = presentSteps(steps);
   if (present.length === 0) return null;
-  const [{ driver }] = await Promise.all([import('driver.js'), import('driver.js/dist/driver.css'), import('./tour.css')]);
+  const [{ driver }] = await Promise.all([
+    import('driver.js'),
+    import('driver.js/dist/driver.css'),
+    import('./tour.css'),
+  ]);
   const tour = driver({
     animate: motionAllowed(),
     smoothScroll: false,
@@ -88,7 +152,7 @@ export async function runTour(
       element: step.selector,
       popover: {
         title: t(`tour.${step.key}.title`),
-        description: t(`tour.${step.key}.body`),
+        description: step.body ?? t(`tour.${step.key}.body`),
         side: step.side,
         align: 'center' as const,
       },
@@ -101,8 +165,15 @@ export async function runTour(
       popover.closeButton.setAttribute('aria-label', t('tour.close'));
       popover.wrapper.dataset.agentId = 'app.tour';
     },
-    onDestroyed: onDone,
+    onDestroyed: () => {
+      document.removeEventListener('ionBackButton', onBack);
+      onDone();
+    },
   });
+  const onBack = (event: Event): void => {
+    (event as BackEvent).detail.register(BACK_PRIORITY, () => tour.destroy());
+  };
+  document.addEventListener('ionBackButton', onBack);
   tour.drive();
   return { destroy: () => tour.destroy() };
 }
