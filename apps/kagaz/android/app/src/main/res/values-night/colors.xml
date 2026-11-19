@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark system theme: the surface-2 token from packages/design-tokens/src/dark-mode.css. -->
+<resources>
+    <color name="systemBarBackground">#1E293B</color>
+</resources>

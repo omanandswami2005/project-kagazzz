@@ -101,13 +101,24 @@ ion-menu.show-menu .kg-menu__section:nth-child(3) {
 }
 
 /* ── Centre AI tab: a raised saffron button in the middle of the tab bar ── */
+/* The orb rises above the bar. Ionic clips it twice: the bar has
+   `contain: strict` (paint containment) and each tab button's native
+   element has `overflow: hidden` — both are lifted here, or the orb's top
+   half is cut off (device feedback 2026-11-19). */
 ion-tab-bar {
   overflow: visible;
+  contain: none;
+  position: relative;
+  z-index: 10;
 }
 
 .kg-tab-ai {
   overflow: visible;
   --color-selected: var(--icon-active);
+}
+
+.kg-tab-ai::part(native) {
+  overflow: visible;
 }
 
 .kg-tab-ai__orb {
