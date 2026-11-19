@@ -500,3 +500,52 @@
   background: var(--color-primary-subtle);
   border-color: var(--color-primary);
 }
+
+/* First-run intro (model not downloaded yet): what it does, what it costs. */
+.kg-chat__intro {
+  max-width: 28rem;
+  margin-inline: auto;
+}
+
+.kg-chat__intro > svg {
+  color: var(--color-primary);
+}
+
+.kg-chat__intro-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  line-height: var(--leading-xl);
+  color: var(--text-primary);
+}
+
+.kg-chat__intro-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: start;
+}
+
+.kg-chat__intro-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--text-primary);
+}
+
+.kg-chat__intro-list svg {
+  flex: none;
+  color: var(--color-primary);
+}
+
+.kg-chat__intro-size {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}

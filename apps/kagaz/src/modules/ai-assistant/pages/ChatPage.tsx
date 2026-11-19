@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { ASK_PARAM, ATTACH_PARAM } from '@/core/constants/routes';
+import { formatFileSize } from '@/core/i18n';
 import { Button, EmptyState, Icon, Spinner } from '@kagaz/ui';
 import { AskUserForm } from '../components/AskUserForm';
 import { ChatTextarea } from '../components/ChatTextarea';
@@ -46,7 +47,7 @@ const toRef = (d: DocumentEntity): DocRef => ({ id: d.id, name: d.name, fileType
 
 /** The AI Assistant chat screen. */
 export function ChatPage(): ReactNode {
-  const { t } = useTranslation('ai-assistant');
+  const { t, i18n } = useTranslation('ai-assistant');
   const router = useIonRouter();
   const ai = useAi();
   const chat = useChat();
@@ -216,7 +217,40 @@ export function ChatPage(): ReactNode {
       </IonHeader>
 
       <IonContent>
-        {gated ? (
+        {ai.status === 'not-downloaded' ? (
+          // First-run journey: before the one-time download, say what the
+          // assistant does and what it costs, then lead to the setup screen.
+          <div className="kg-chat__gate kg-chat__intro" data-agent-id="ai.chat.intro" data-agent-state="idle">
+            <Icon name="Assistant" size={48} aria-hidden />
+            <h2 className="kg-chat__intro-title">{t('gate.intro_title')}</h2>
+            <ul className="kg-chat__intro-list">
+              {(
+                [
+                  ['Search', 'can_find'],
+                  ['FileText', 'can_read'],
+                  ['Combine', 'can_tools'],
+                  ['ShieldCheck', 'can_private'],
+                ] as const
+              ).map(([icon, key]) => (
+                <li key={key}>
+                  <Icon name={icon} size={20} aria-hidden />
+                  <span>{t(`gate.${key}`)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="kg-chat__intro-size">
+              {t('gate.size', { size: formatFileSize(ai.modelSizeBytes, i18n.language) })}
+            </p>
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => router.push('/ai-assistant')}
+              agentId="ai.chat.intro-setup"
+            >
+              {t('gate.setup_button')}
+            </Button>
+          </div>
+        ) : gated ? (
           <div className="kg-chat__gate" data-agent-id="ai.chat.gate" data-agent-state={ai.status}>
             {ai.status === 'checking' || ai.status === 'downloaded' || ai.status === 'loading' ? (
               <>

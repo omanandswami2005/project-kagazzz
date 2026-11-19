@@ -1,5 +1,7 @@
 # Skill: ai.chat (AI Chat)
 
+**Before the model is downloaded (2026-11-19):** the chat shows an intro (`ai.chat.intro`) — what the assistant does, the one-time download size — and `ai.chat.intro-setup` opens the AI model screen. Other gated states still show `ai.chat.gate`.
+
 ## Purpose
 The user is talking to Kagaz's AI Assistant. It runs on the device (Gemma 4)
 and nothing typed leaves the phone. If the model is already downloaded it
