@@ -337,7 +337,6 @@
     "ai_model_manage": "Manage"
   },
   "bulk": {
-    "select": "Select",
     "toolbar": "Bulk actions",
     "cancel": "Cancel selection",
     "selected": "{{count}} selected",
@@ -401,5 +400,10 @@
     "open": "Open",
     "share": "Share",
     "close": "Close"
+  },
+  "menu": {
+    "more_tools": "More tools",
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite"
   }
 }

@@ -124,4 +124,28 @@ describe('ActionSheet', () => {
       screen.getByRole('button', { name: 'Keep editing' }).querySelectorAll('svg')
     ).toHaveLength(1);
   });
+
+  it('renders quick actions with agent ids and folds collapsed groups (IM-3)', async () => {
+    const share = vi.fn();
+    render(
+      <ActionSheet
+        isOpen
+        agentId="menu"
+        quickActions={[{ id: 'share', text: 'Share', icon: 'Share2', handler: share }]}
+        buttons={[
+          { text: 'Rename', icon: 'Pencil' },
+          { text: 'Compress', icon: 'Shrink', group: 'More tools' },
+        ]}
+        collapsedGroups={['More tools']}
+        onDidDismiss={() => undefined}
+      />
+    );
+    await userEvent.click(
+      document.querySelector('[data-agent-id="menu.share"]') as Element
+    );
+    expect(share).toHaveBeenCalledOnce();
+    const group = screen.getByText('More tools').closest('details');
+    expect(group).not.toBeNull();
+    expect(group).not.toHaveAttribute('open');
+  });
 });

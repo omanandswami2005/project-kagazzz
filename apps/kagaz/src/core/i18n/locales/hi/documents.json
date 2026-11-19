@@ -337,7 +337,6 @@
     "ai_model_manage": "प्रबंधित करें"
   },
   "bulk": {
-    "select": "चुनें",
     "toolbar": "बल्क क्रियाएँ",
     "cancel": "चयन रद्द करें",
     "selected": "{{count}} चयनित",
@@ -401,5 +400,10 @@
     "open": "खोलें",
     "share": "शेयर करें",
     "close": "बंद करें"
+  },
+  "menu": {
+    "more_tools": "और टूल",
+    "favorite": "पसंदीदा",
+    "unfavorite": "पसंद से हटाएँ"
   }
 }
