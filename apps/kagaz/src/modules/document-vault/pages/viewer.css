@@ -20,14 +20,33 @@
 .kg-viewer__pages {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
+  padding: var(--space-3);
   background: var(--surface-2);
+}
+
+/* VW-3: a page is a framed sheet on the canvas, never edge-to-edge white. */
+.kg-viewer__sheet {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .kg-viewer__page {
   width: 100%;
   height: auto;
   display: block;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  animation: kg-fade-in var(--duration-normal) var(--ease-out);
+}
+
+.kg-viewer__page-number {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 /* F-43: rendered Word document. Constrain width and give it document-like
@@ -64,6 +83,13 @@
   flex-direction: column;
   gap: var(--space-3);
   border-top: var(--border-width) solid var(--border-default);
+}
+
+.kg-viewer__text-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .kg-viewer__text-title {
@@ -139,9 +165,15 @@
 }
 
 .kg-viewer__menu-btn {
+  /* 48 × 48 like the ☰ button (audit M-9). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-target-lg);
+  min-height: var(--touch-target-lg);
   background: none;
   border: none;
-  padding: var(--space-2);
+  padding: 0;
   color: var(--text-primary);
   cursor: pointer;
 }

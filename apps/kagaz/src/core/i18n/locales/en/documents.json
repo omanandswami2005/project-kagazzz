@@ -247,12 +247,14 @@
     "extracted_text": "Extracted text",
     "copy": "Copy text",
     "copied": "Text copied",
-    "no_text": "No text extracted. Extraction works on images, scans, and PDFs.",
     "detected_numbers": "Detected numbers",
     "copy_number": "Copy {{number}}",
     "trashed_banner": "Previewing from Trash — restore it to make changes.",
     "ask_ai": "Ask AI",
-    "more": "More"
+    "more": "More",
+    "page_of": "Page {{n}} of {{total}}",
+    "no_text_type": "This file type has no text to extract.",
+    "no_text_device": "Text extraction runs in the phone app — open this document there to extract its text."
   },
   "detail": {
     "size": "Size",

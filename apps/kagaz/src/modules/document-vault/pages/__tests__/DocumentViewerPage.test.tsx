@@ -216,7 +216,7 @@ describe('DocumentViewerPage (UX-6)', () => {
     state.document = doc({ fileType: 'text/plain', ocrText: undefined });
     await renderAuthorized();
     expect(q('vault.viewer.extract-text')).toBeNull();
-    expect(screen.getByText('viewer.no_text')).toBeInTheDocument();
+    expect(screen.getByText('viewer.no_text_type')).toBeInTheDocument();
   });
 
   it('renders an error state when the file fails to render', async () => {

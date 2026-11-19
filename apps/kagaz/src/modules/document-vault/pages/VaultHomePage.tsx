@@ -554,18 +554,26 @@ export function VaultHomePage(): ReactNode {
 
                   {documents.length > 0 && (
                     <div className="kg-vault__controls">
-                      <Button
-                        variant={filterCount > 0 ? 'secondary' : 'ghost'}
-                        size="sm"
-                        icon={<Icon name="Filter" size={20} />}
-                        onClick={() => setFilterOpen(true)}
-                        agentId="vault.home.filter-button"
-                        agentAction="vault.openFilters"
-                      >
-                        {filterCount > 0
-                          ? t('filters.active', { count: filterCount })
-                          : t('filters.title')}
-                      </Button>
+                      <span className="kg-vault__filter">
+                        <Button
+                          variant={filterCount > 0 ? 'secondary' : 'ghost'}
+                          iconOnly
+                          icon={<Icon name="Filter" size={20} />}
+                          onClick={() => setFilterOpen(true)}
+                          agentId="vault.home.filter-button"
+                          agentAction="vault.openFilters"
+                          aria-label={
+                            filterCount > 0
+                              ? t('filters.active', { count: filterCount })
+                              : t('filters.title')
+                          }
+                        />
+                        {filterCount > 0 && (
+                          <span className="kg-vault__filter-badge" aria-hidden="true">
+                            {filterCount}
+                          </span>
+                        )}
+                      </span>
                       {documents.length > 1 && <SortControl />}
                       {/* UX-7: List / Grid / Compact, persisted across launches. */}
                       <ViewModeControl mode={viewMode} onChange={setViewMode} />

@@ -22,7 +22,7 @@ import {
 } from '@ionic/react';
 import { Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, useLocation } from 'react-router-dom';
 import { Icon, Spinner } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { AppMenu, MAIN_CONTENT_ID } from '@/app/shell/AppMenu';
@@ -113,11 +113,24 @@ function useHardwareBack(): void {
  * the vault home header, and consistent with Favorites/Storage already
  * being tab-only rather than also duplicated as header buttons.
  */
+/** The five tab roots: the only routes that show the tab bar (audit G-2). */
+const TAB_ROOTS: readonly string[] = ['/vault', '/favorites', '/ai-chat', '/pdf-tools', '/storage'];
+
+/** Root class while the tab bar shows, so toasts sit above it (audit G-5). */
+const TABS_VISIBLE_CLASS = 'kg-tabs-visible';
+
 export function AppRoutes(): ReactNode {
   useHardwareBack();
   useShareIntent();
   const { t } = useTranslation('common');
   const ai = useAi();
+  const { pathname } = useLocation();
+  // Detail pages (viewer, settings, legal, trash…) get the full height; the
+  // tab bar belongs to the five roots only — Ionic/Material pattern.
+  const showTabs = pathname === '/' || TAB_ROOTS.includes(pathname);
+  useEffect(() => {
+    document.documentElement.classList.toggle(TABS_VISIBLE_CLASS, showTabs);
+  }, [showTabs]);
   return (
     <>
       <AppMenu />
@@ -146,7 +159,12 @@ export function AppRoutes(): ReactNode {
           </Route>
         </Suspense>
       </IonRouterOutlet>
-      <IonTabBar slot="bottom" data-agent-id="app.tab-bar">
+      <IonTabBar
+        slot="bottom"
+        data-agent-id="app.tab-bar"
+        data-agent-state={showTabs ? 'expanded' : 'collapsed'}
+        hidden={!showTabs}
+      >
         <IonTabButton tab="vault" href="/vault" data-agent-id="app.tab.documents">
           <Icon name="Folder" size={24} aria-hidden />
           <IonLabel>{t('tabs.documents')}</IonLabel>
@@ -175,7 +193,8 @@ export function AppRoutes(): ReactNode {
           href="/pdf-tools"
           data-agent-id="app.tab.tools"
         >
-          <Icon name="FileText" size={24} aria-hidden />
+          {/* PT-2: not FileText — that's the "PDF → Text" tool's glyph. */}
+          <Icon name="Wrench" size={24} aria-hidden />
           <IonLabel>{t('tabs.tools')}</IonLabel>
         </IonTabButton>
         <IonTabButton

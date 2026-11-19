@@ -53,7 +53,10 @@ export function SortControl(): ReactNode {
           sortDirection === 'asc' ? 'sort.ascending' : 'sort.descending'
         )}
         icon={
-          <Icon name={sortDirection === 'asc' ? 'ChevronUp' : 'ChevronDown'} />
+          <Icon
+            name={sortDirection === 'asc' ? 'ArrowUpNarrowWide' : 'ArrowDownWideNarrow'}
+            size={20}
+          />
         }
       />
     </div>

@@ -56,6 +56,7 @@ import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hook
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useAi } from '@/app/providers/AIProvider';
 import { NextActions } from '@/core/components/NextActions';
+import { documentTypeIcon } from '@/core/components/DocumentThumb';
 import { askAiAboutRoute } from '@/core/constants/routes';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive } from '@/core/haptics';
@@ -243,30 +244,42 @@ export function DocumentViewerPage(): ReactNode {
             <>
               <div className="kg-viewer__pages" data-agent-id="vault.viewer.pages">
                 {pages.map((url, i) => (
-                  <img
-                    key={url}
-                    className="kg-viewer__page"
-                    src={url}
-                    alt={t('viewer.page', { n: i + 1 })}
-                  />
+                  // VW-3: each page is a framed sheet on the canvas, numbered.
+                  <figure key={url} className="kg-viewer__sheet">
+                    <img
+                      className="kg-viewer__page"
+                      src={url}
+                      alt={t('viewer.page', { n: i + 1 })}
+                    />
+                    {pages.length > 1 && (
+                      <figcaption className="kg-viewer__page-number">
+                        {t('viewer.page_of', { n: i + 1, total: pages.length })}
+                      </figcaption>
+                    )}
+                  </figure>
                 ))}
               </div>
 
               <section className="kg-viewer__text" data-agent-id="vault.viewer.text-panel">
-                <h2 className="kg-viewer__text-title">{t('viewer.extracted_text')}</h2>
+                {/* VW-6: Copy is an icon in the panel header, not a full-width button. */}
+                <div className="kg-viewer__text-head">
+                  <h2 className="kg-viewer__text-title">{t('viewer.extracted_text')}</h2>
+                  {text && text.trim() && (
+                    <Button
+                      variant="ghost"
+                      iconOnly
+                      icon={<Icon name="Copy" size={20} />}
+                      aria-label={t('viewer.copy')}
+                      onClick={() => void handleCopy()}
+                      agentId="vault.viewer.copy-text"
+                    />
+                  )}
+                </div>
                 {text && text.trim() ? (
                   <>
                     <p className="kg-viewer__text-body" data-agent-id="vault.viewer.text-body">
                       {text}
                     </p>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void handleCopy()}
-                      agentId="vault.viewer.copy-text"
-                    >
-                      {t('viewer.copy')}
-                    </Button>
                     {detectedNumbers.length > 0 && (
                       <div
                         className="kg-viewer__numbers"
@@ -305,7 +318,12 @@ export function DocumentViewerPage(): ReactNode {
                     {t('actions.extract_text')}
                   </Button>
                 ) : (
-                  <p className="kg-viewer__text-empty">{t('viewer.no_text')}</p>
+                  // VW-2: don't say "works on images" while showing an image.
+                  <p className="kg-viewer__text-empty">
+                    {documentTypeIcon(document.fileType) === 'File'
+                      ? t('viewer.no_text_type')
+                      : t('viewer.no_text_device')}
+                  </p>
                 )}
                 {/* Gemma transcription: offered even when text already exists (re-run replaces it). */}
                 {canTranscribeWithVision(document) && (
@@ -412,7 +430,8 @@ export function DocumentViewerPage(): ReactNode {
       </IonContent>
       {/* Smart UI §4: what people do next with an open document, in their
           path — same lock gate as the ⋮ menu; not for a Trash preview. */}
-      {document && authorized === true && !trashed && (
+      {/* VW-1: when only "More" would be left, the header ⋮ already covers it. */}
+      {document && authorized === true && !trashed && (intents.supported || ai.status !== 'unsupported') && (
         <IonFooter>
           <NextActions
             agentPrefix="vault.viewer.next"

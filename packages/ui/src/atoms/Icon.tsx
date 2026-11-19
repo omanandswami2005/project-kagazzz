@@ -83,6 +83,10 @@ import {
   History,
   Languages,
   Vibrate,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Wrench,
+  ZoomIn,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -161,6 +165,10 @@ const ICONS = {
   History,
   Languages,
   Vibrate,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Wrench,
+  ZoomIn,
 } as const;
 
 /** Name of a curated Lucide icon (PascalCase, e.g. "FileText"). */

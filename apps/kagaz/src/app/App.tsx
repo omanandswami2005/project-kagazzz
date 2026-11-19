@@ -10,7 +10,11 @@ import { OnboardingGate } from './onboarding/OnboardingGate';
 import { AppProviders } from './providers/AppProviders';
 import { AppRoutes } from './routes';
 
-setupIonicReact();
+// One design on every platform (audit G-9): Material — left-aligned titles,
+// arrow-only back, 48 px toolbar targets. The app is Android-first and our
+// tokens already define every surface, so iOS mode would only re-centre
+// titles and add "Back" labels.
+setupIonicReact({ mode: 'md' });
 
 /** The Kagaz application. */
 export function App(): ReactNode {
