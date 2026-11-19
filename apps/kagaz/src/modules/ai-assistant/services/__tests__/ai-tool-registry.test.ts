@@ -36,6 +36,7 @@ describe('aiToolRegistry', () => {
     const ctx: AiToolContext = {
       listDocuments: async () => [],
       searchDocuments: async () => [],
+      getDocumentInfo: vi.fn(),
       openQuickReference: vi.fn(),
       openQuickNotes: vi.fn(),
       startQuickNote: vi.fn(),

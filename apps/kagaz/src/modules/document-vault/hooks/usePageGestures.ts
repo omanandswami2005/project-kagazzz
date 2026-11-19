@@ -46,7 +46,7 @@ export function usePageGestures(onSwipe: (direction: 'next' | 'previous') => voi
   return {
     zoom,
     bind: {
-      onPointerDown: (e) => {
+      onPointerDown: (e): void => {
         pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
         if (pointers.current.size === 2) {
           pinchStart.current = { distance: distance(), zoom };
@@ -55,13 +55,13 @@ export function usePageGestures(onSwipe: (direction: 'next' | 'previous') => voi
           swipeStart.current = { x: e.clientX, y: e.clientY };
         }
       },
-      onPointerMove: (e) => {
+      onPointerMove: (e): void => {
         if (!pointers.current.has(e.pointerId)) return;
         pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
         const start = pinchStart.current;
         if (start && start.distance > 0) setZoom(clamp((start.zoom * distance()) / start.distance));
       },
-      onPointerUp: (e) => {
+      onPointerUp: (e): void => {
         const start = swipeStart.current;
         swipeStart.current = null;
         const wasPinch = pinchStart.current !== null || pointers.current.size > 1;

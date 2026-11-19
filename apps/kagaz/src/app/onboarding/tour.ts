@@ -9,12 +9,15 @@
  */
 import type { TFunction } from 'i18next';
 
+/** Copy keys under `common:tour`. */
+export type TourKey = 'add' | 'search' | 'ai' | 'menu' | 'star' | 'lock' | 'backup';
+
 /** One stop of a tour: the element to light up and its i18n copy key. */
 export interface TourStep {
   /** CSS selector of the element, by agent id. */
   selector: string;
   /** `common:tour.<key>.title` / `.body`. */
-  key: string;
+  key: TourKey;
   side?: 'top' | 'bottom' | 'left' | 'right';
 }
 
@@ -60,7 +63,7 @@ function motionAllowed(): boolean {
  */
 export async function runTour(
   steps: readonly TourStep[],
-  t: TFunction,
+  t: TFunction<'common'>,
   onDone: () => void
 ): Promise<TourHandle | null> {
   const present = presentSteps(steps);
@@ -76,16 +79,16 @@ export async function runTour(
     stageRadius: 12,
     popoverClass: 'kg-tour',
     showProgress: present.length > 1,
-    progressText: t('common:tour.progress', { current: '{{current}}', total: '{{total}}' }),
-    nextBtnText: t('common:tour.next'),
-    prevBtnText: t('common:tour.back'),
-    doneBtnText: t('common:tour.done'),
+    progressText: t('tour.progress', { current: '{{current}}', total: '{{total}}' }),
+    nextBtnText: t('tour.next'),
+    prevBtnText: t('tour.back'),
+    doneBtnText: t('tour.done'),
     showButtons: present.length > 1 ? ['next', 'previous', 'close'] : ['next', 'close'],
     steps: present.map((step) => ({
       element: step.selector,
       popover: {
-        title: t(`common:tour.${step.key}.title`),
-        description: t(`common:tour.${step.key}.body`),
+        title: t(`tour.${step.key}.title`),
+        description: t(`tour.${step.key}.body`),
         side: step.side,
         align: 'center' as const,
       },
@@ -95,7 +98,7 @@ export async function runTour(
       popover.nextButton.dataset.agentId = 'app.tour.next';
       popover.previousButton.dataset.agentId = 'app.tour.back';
       popover.closeButton.dataset.agentId = 'app.tour.close';
-      popover.closeButton.setAttribute('aria-label', t('common:tour.close'));
+      popover.closeButton.setAttribute('aria-label', t('tour.close'));
       popover.wrapper.dataset.agentId = 'app.tour';
     },
     onDestroyed: onDone,

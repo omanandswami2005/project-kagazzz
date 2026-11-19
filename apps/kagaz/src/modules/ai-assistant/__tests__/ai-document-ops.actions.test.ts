@@ -6,6 +6,7 @@ function makeCtx(overrides: Partial<AiToolContext> = {}): AiToolContext {
   return {
     listDocuments: vi.fn(),
     searchDocuments: vi.fn(),
+    getDocumentInfo: vi.fn(),
     openQuickReference: vi.fn(),
     openQuickNotes: vi.fn(),
     startQuickNote: vi.fn(),

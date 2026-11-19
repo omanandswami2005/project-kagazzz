@@ -34,7 +34,7 @@ import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
 import { ScrollDateBubble } from '../components/ScrollDateBubble';
 import { GettingStartedCard, type GettingStartedItem } from '../components/GettingStartedCard';
 import { useFavorites } from '../hooks/useFavorites';
-import { runTour } from '@/app/onboarding/tour';
+import { runTour, type TourKey } from '@/app/onboarding/tour';
 import { useWelcomeTour } from '@/app/onboarding/useWelcomeTour';
 import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { useLockStore } from '@/modules/auth/store/lock.store';
@@ -443,11 +443,11 @@ export function VaultHomePage(): ReactNode {
   const lockEnabled = useLockStore((s) => s.enabled);
   const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
   const { favorites: starred } = useFavorites(useViewEnterKey());
-  const spotlight = (selector: string, key: string): void => {
+  const spotlight = (selector: string, key: TourKey): void => {
     void runTour([{ selector, key, side: 'bottom' }], tCommon, () => undefined);
   };
   /** Opens Settings, then lights up one setting once the page has slid in. */
-  const spotlightSetting = (agentId: string, key: string): void => {
+  const spotlightSetting = (agentId: string, key: TourKey): void => {
     router.push('/settings', 'forward', 'push');
     window.setTimeout(() => spotlight(`[data-agent-id="${agentId}"]`, key), SETTINGS_SPOTLIGHT_MS);
   };

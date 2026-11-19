@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { TFunction } from 'i18next';
 import { i18n, initI18n } from '@/core/i18n';
 import { presentSteps, runTour, WELCOME_TOUR } from '../tour';
 
@@ -13,6 +14,9 @@ beforeAll(async () => {
   await initI18n();
   await i18n.changeLanguage('en');
 });
+/** The `common` translator, as the app passes it. */
+const tCommon = (): TFunction<'common'> => i18n.getFixedT(null, 'common');
+
 afterEach(() => {
   document.body.innerHTML = '';
   vi.clearAllMocks();
@@ -36,7 +40,7 @@ describe('spotlight tour', () => {
   });
 
   it('runs nothing when no target is present', async () => {
-    expect(await runTour(WELCOME_TOUR, i18n.t, vi.fn())).toBeNull();
+    expect(await runTour(WELCOME_TOUR, tCommon(), vi.fn())).toBeNull();
     expect(driverMock).not.toHaveBeenCalled();
   });
 
@@ -46,7 +50,7 @@ describe('spotlight tour', () => {
     target('app.menu-button');
     const onDone = vi.fn();
 
-    const handle = await runTour(WELCOME_TOUR, i18n.t, onDone);
+    const handle = await runTour(WELCOME_TOUR, tCommon(), onDone);
 
     expect(drive).toHaveBeenCalledOnce();
     const config = driverMock.mock.calls[0]?.[0] as {
