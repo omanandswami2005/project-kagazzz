@@ -464,6 +464,7 @@ export function PdfOpSheet({
             disabled={busy || selectedDocs.length === 0}
             onClick={handleRun}
             agentId="pdf-tools.op-sheet.run"
+            agentRole="primary-action"
           >
             {busy ? t('running') : t('run')}
           </Button>

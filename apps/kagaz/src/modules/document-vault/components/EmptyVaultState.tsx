@@ -40,6 +40,7 @@ export function EmptyVaultState({
               onClick={() => onAdd('scanner')}
               fullWidth
               agentId="vault.home.empty-scan"
+              agentRole="primary-action"
               agentAction="vault.uploadDocument"
             >
               {t('upload.sources.scan')}
@@ -51,6 +52,7 @@ export function EmptyVaultState({
             onClick={() => onAdd('files')}
             fullWidth
             agentId="vault.home.empty-files"
+            agentRole={canScan ? 'secondary-action' : 'primary-action'}
             agentAction="vault.uploadDocument"
           >
             {t('upload.sources.files')}

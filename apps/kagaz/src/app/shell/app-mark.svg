@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 100 100" role="img" aria-label="Kagazzz Docs Tick-K z³ on a document mark">
+      <path d="M14 10 H56 L76 30 V92 H14 Z" fill="#E4570A"/>
+      <path d="M56 10 V30 H76 Z" fill="#FFC9A8"/>
+      <g transform="translate(13 22) scale(0.66)">
+      <g transform="translate(4 9) scale(0.88)">
+        <path d="M12 14 H25 L33 22 V88 H12 Z" fill="#FFFFFF"/>
+        <path d="M25 14 L33 22 H25 Z" fill="#FFFFFF"/>
+        <polygon points="33,48 33,64 47,78 86,20 72,12 46,55" fill="#FFFFFF"/>
+        <polygon points="53,74 59,66 86,88 67,88" fill="#FFFFFF"/>
+      </g></g>
+      <path d="M80 2 H92 L80 16 H92" fill="none" stroke="#E4570A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M94.5 0 H100.5 L97 3.6 Q101 3.6 101 6 Q101 8.6 97.6 8.6 Q95.4 8.6 94.4 7.4" fill="none" stroke="#E4570A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

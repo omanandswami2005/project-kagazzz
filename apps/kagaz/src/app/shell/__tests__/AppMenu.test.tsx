@@ -8,6 +8,11 @@ vi.mock('@ionic/react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@ionic/react')>()),
   useIonRouter: () => ({ push }),
 }));
+const route = vi.hoisted(() => ({ pathname: '/vault' }));
+vi.mock('react-router-dom', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router-dom')>()),
+  useLocation: () => ({ pathname: route.pathname, search: '' }),
+}));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: () => ({ status: status.value }) }));
 
 import { AppMenu } from '../AppMenu';
@@ -33,5 +38,14 @@ describe('AppMenu (smart UI §3 drawer)', () => {
     render(<AppMenu />);
     expect(q('app.menu.ai-model')).toBeNull();
     status.value = 'ready';
+  });
+
+  it('marks the current page and shows the backup status (DR-2, DR-4)', () => {
+    route.pathname = '/trash';
+    render(<AppMenu />);
+    expect(q('app.menu.trash')).toHaveAttribute('aria-current', 'page');
+    expect(q('app.menu.archived')).not.toHaveAttribute('aria-current');
+    expect(q('app.menu.backup')?.textContent).toContain('Last backup: never');
+    route.pathname = '/vault';
   });
 });

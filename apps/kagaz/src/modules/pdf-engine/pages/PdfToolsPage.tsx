@@ -22,6 +22,7 @@ import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
 import { PdfOpSheet } from '../components/PdfOpSheet';
 import { PdfOrganizeSheet } from '../components/PdfOrganizeSheet';
+import { RecentTools } from '../components/RecentTools';
 import { ToolHistoryList } from '../components/ToolHistoryList';
 import { ToolResultSheet } from '../components/ToolResultSheet';
 import { PDF_OPS, searchPdfTools, type PdfOpCategory, type PdfOpId } from '@/core/pdf-tools-catalog';
@@ -102,6 +103,17 @@ export function PdfToolsPage(): ReactNode {
       <IonContent>
         <main className="kg-pdf-tools" data-agent-id="pdf-tools.content">
           <p className="kg-pdf-tools__subtitle">{t('subtitle')}</p>
+
+          {/* PT-5: what you ran last, first — the full history stays below. */}
+          {!query.trim() && (
+            <RecentTools
+              refreshKey={runs}
+              onPick={(op, documentId) => {
+                setPreselectId(documentId);
+                setActiveOp(op);
+              }}
+            />
+          )}
 
           <Search
             value={query}

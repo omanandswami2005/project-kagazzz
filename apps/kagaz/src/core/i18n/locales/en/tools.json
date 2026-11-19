@@ -152,5 +152,6 @@
     "open_named": "Open {{name}}",
     "share": "Share",
     "done": "Done"
-  }
+  },
+  "recent_tools": "Recent tools"
 }
