@@ -20,8 +20,9 @@ import { Button, Icon } from '@kagaz/ui';
 import { DocumentThumb } from '@/core/components/DocumentThumb';
 import { pdfToolRoute } from '@/core/constants/routes';
 import { FreeUpSpaceSheet } from '../components/FreeUpSpaceSheet';
-import { StorageDonut } from '../components/StorageDonut';
+import { StorageBar } from '../components/StorageBar';
 import { useCompressionEstimates } from '../hooks/useCompressionEstimates';
+import { useCountUp } from '../hooks/useCountUp';
 import { isPdf } from '../hooks/useDocumentFile';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
@@ -36,6 +37,7 @@ export function StoragePage(): ReactNode {
   const router = useIonRouter();
   const [freeUpOpen, setFreeUpOpen] = useState(false);
   const estimates = useCompressionEstimates();
+  const shownTotal = useCountUp(stats?.totalBytes ?? 0);
   // ST-5: the large PDFs that compressing could shrink (locked ones stay put).
   const pdfs = (stats?.largest ?? []).filter((d) => isPdf(d.fileType) && !d.isLocked);
 
@@ -65,33 +67,25 @@ export function StoragePage(): ReactNode {
             <p data-agent-id="vault.storage.loading">{t('storage.loading')}</p>
           ) : (
             <>
-              {stats.byType.length > 0 ? (
+              {/* ST-2/ST-7: the total is the headline; it counts up once. */}
+              <section className="kg-storage__total" data-agent-id="vault.storage.total">
+                <span className="kg-storage__total-value">{formatFileSize(Math.round(shownTotal))}</span>
+                <span className="kg-storage__total-label">
+                  {t('storage.used', { count: stats.documentCount })}
+                </span>
+              </section>
+
+              {stats.byType.length > 0 && (
                 <section className="kg-storage__card" data-agent-id="vault.storage.by-type">
                   <h2 className="kg-storage__heading">{t('storage.by_type')}</h2>
-                  <StorageDonut
+                  <StorageBar
                     segments={stats.byType.map((row) => ({
-                      label: row.fileType.toUpperCase(),
+                      fileType: row.fileType,
                       sizeLabel: formatFileSize(row.bytes),
                       fraction: row.fraction,
                     }))}
-                    centerValue={formatFileSize(stats.totalBytes)}
-                    centerLabel={t('storage.used', {
-                      count: stats.documentCount,
-                    })}
                     ariaLabel={t('storage.by_type')}
                   />
-                </section>
-              ) : (
-                <section
-                  className="kg-storage__total"
-                  data-agent-id="vault.storage.total"
-                >
-                  <span className="kg-storage__total-value">
-                    {formatFileSize(stats.totalBytes)}
-                  </span>
-                  <span className="kg-storage__total-label">
-                    {t('storage.used', { count: stats.documentCount })}
-                  </span>
                 </section>
               )}
 
