@@ -60,7 +60,8 @@ export function TrashPage(): ReactNode {
 
   // TR-2: what emptying the Trash frees, and when each item goes by itself.
   const trashBytes = trash.items.reduce((sum, doc) => sum + doc.fileSize, 0);
-  const now = Date.now();
+  // Read once per visit — day counts don't need to tick while you look.
+  const [now] = useState(() => Date.now());
 
   return (
     <IonPage data-agent-id="vault.trash">
