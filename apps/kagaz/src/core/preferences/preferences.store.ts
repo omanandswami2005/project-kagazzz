@@ -31,6 +31,8 @@ export interface AppPreferences {
   lastBackupAt: string | null;
   /** One-time tips already shown (e.g. 'long-press'), so each shows once. */
   seenTips: string[];
+  /** Favorites in the user's own order (document ids, FV-4). Not PII. */
+  favoriteOrder: string[];
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
@@ -45,6 +47,7 @@ const DEFAULTS: AppPreferences = {
   hapticsEnabled: true,
   lastBackupAt: null,
   seenTips: [],
+  favoriteOrder: [],
 };
 
 const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
@@ -65,6 +68,9 @@ function readSwipeAction(
     ? (value as SwipeActionKind)
     : fallback;
 }
+
+const stringArray = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 
 /** Reads persisted preferences, tolerating missing/corrupt values. */
 export function readPreferences(): AppPreferences {
@@ -88,9 +94,8 @@ export function readPreferences(): AppPreferences {
       hapticsEnabled: parsed.hapticsEnabled !== false,
       lastBackupAt:
         typeof parsed.lastBackupAt === 'string' ? parsed.lastBackupAt : null,
-      seenTips: Array.isArray(parsed.seenTips)
-        ? parsed.seenTips.filter((tip): tip is string => typeof tip === 'string')
-        : [],
+      seenTips: stringArray(parsed.seenTips),
+      favoriteOrder: stringArray(parsed.favoriteOrder),
     };
   } catch {
     return DEFAULTS;
@@ -119,6 +124,8 @@ interface PreferencesStore extends AppPreferences {
   setLastBackupAt: (iso: string) => void;
   /** Marks a one-time tip as shown. */
   markTipSeen: (tip: string) => void;
+  /** Saves the user's Favorites order (FV-4). */
+  setFavoriteOrder: (ids: string[]) => void;
 }
 
 /** App-wide UI preference store (persisted). */
@@ -132,6 +139,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       hapticsEnabled,
       lastBackupAt,
       seenTips,
+      favoriteOrder,
     } = get();
     writePreferences({
       renameOnAdd,
@@ -141,6 +149,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       hapticsEnabled,
       lastBackupAt,
       seenTips,
+      favoriteOrder,
     });
   };
   return {
@@ -163,6 +172,10 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
     },
     setLastBackupAt: (lastBackupAt): void => {
       set({ lastBackupAt });
+      persist();
+    },
+    setFavoriteOrder: (favoriteOrder): void => {
+      set({ favoriteOrder });
       persist();
     },
     markTipSeen: (tip): void => {

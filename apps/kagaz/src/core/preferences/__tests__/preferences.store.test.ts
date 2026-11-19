@@ -56,6 +56,7 @@ describe('preferences store — recentSectionCollapsed (UX pass)', () => {
       hapticsEnabled: true,
       lastBackupAt: null,
       seenTips: [],
+      favoriteOrder: [],
     });
   });
 });

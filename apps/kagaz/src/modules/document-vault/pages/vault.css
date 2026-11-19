@@ -1143,3 +1143,34 @@
   min-width: 3ch;
   text-align: end;
 }
+
+/* FV-4: Favorites reorder mode — a name and a drag handle per row. */
+.kg-favorites__reorder-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--row-h);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+
+.kg-favorites__reorder-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* FV-5: an unstarred row slides away before it leaves the list. */
+@keyframes kg-row-leave {
+  to {
+    opacity: 0;
+    transform: translateX(var(--space-8));
+  }
+}
+.kg-doc-item__li--leaving {
+  animation: kg-row-leave var(--duration-fast) var(--ease-in) forwards;
+}

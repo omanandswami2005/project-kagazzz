@@ -312,7 +312,10 @@
     "title": "Favorites",
     "empty": "No favorites yet",
     "empty_hint": "Star your Aadhaar, PAN and other documents you need often — they'll wait here.",
-    "browse": "Browse documents"
+    "browse": "Browse documents",
+    "reorder": "Reorder",
+    "done": "Done",
+    "removed": "Removed from favorites"
   },
   "search": {
     "placeholder": "Search documents",

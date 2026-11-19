@@ -1,12 +1,16 @@
 /**
  * Favorites page (F-33) — the second bottom-tab destination. Lists every
  * document the user has starred, newest first, reusing the vault's
- * DocumentListItem row. Un-starring here drops the row immediately.
+ * DocumentListItem row. Un-starring folds the row away and offers Undo
+ * (FV-5); Reorder mode lets the user drag favourites into their own order (FV-4).
  */
 import {
+  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
+  IonReorder,
+  IonReorderGroup,
   IonTitle,
   IonToolbar,
   useIonRouter,
@@ -27,20 +31,39 @@ import { useVaultMutations } from '../hooks/useVaultMutations';
 import './vault.css';
 import { MenuButton } from '@/app/shell/MenuButton';
 
+/** How long the unstar collapse plays before the row is removed (FV-5). */
+const LEAVE_MS = 250;
+
+/** Sorts `docs` by `order` (ids); ids not in it keep their place at the end. */
+function orderBy(docs: DocumentEntity[], order: readonly string[]): DocumentEntity[] {
+  const rank = new Map(order.map((id, i) => [id, i]));
+  const key = (d: DocumentEntity, i: number): number => rank.get(d.id) ?? order.length + i;
+  return docs
+    .map((d, i) => ({ d, k: key(d, i) }))
+    .sort((a, b) => a.k - b.k)
+    .map(({ d }) => d);
+}
+
 /** Starred-documents screen, reachable from the Favorites tab. */
 export function FavoritesPage(): ReactNode {
   const { t } = useTranslation('documents');
   const [reloadKey, setReloadKey] = useState(0);
-  const { favorites, isLoading } = useFavorites(reloadKey);
+  const { favorites: loaded, isLoading } = useFavorites(reloadKey);
+  // FV-4: the user's own order; new favourites join at the end.
+  const favoriteOrder = usePreferencesStore((s) => s.favoriteOrder);
+  const setFavoriteOrder = usePreferencesStore((s) => s.setFavoriteOrder);
+  const favorites = orderBy(loaded, favoriteOrder);
+  const [reordering, setReordering] = useState(false);
+  // FV-5: unstarring collapses the row, then offers Undo.
+  const [leavingId, setLeavingId] = useState<string | null>(null);
+  const [unstarred, setUnstarred] = useState<DocumentEntity | null>(null);
   const { tagsByDocument } = useTags();
   const { toggleFavorite, softDelete, restore } = useVaultMutations();
   const router = useIonRouter();
   // F-88: this page has no move/tag sheet, so only delete/favorite are
   // meaningful swipe targets here regardless of the global Settings choice.
   const swipeLeftAction = usePreferencesStore((s) =>
-    s.swipeLeftAction === 'delete' || s.swipeLeftAction === 'favorite'
-      ? s.swipeLeftAction
-      : 'none'
+    s.swipeLeftAction === 'delete' || s.swipeLeftAction === 'favorite' ? s.swipeLeftAction : 'none'
   );
   const swipeRightAction = usePreferencesStore((s) =>
     s.swipeRightAction === 'delete' || s.swipeRightAction === 'favorite'
@@ -58,24 +81,27 @@ export function FavoritesPage(): ReactNode {
   // deliberate menu tap.
   const [swipeDeleteTarget, setSwipeDeleteTarget] = useState<DocumentEntity | null>(null);
 
-  const handleToggleFavorite = useCallback(
-    (doc: DocumentEntity): void => {
-      void toggleFavorite(doc).then(() => setReloadKey((k) => k + 1));
-    },
-    [toggleFavorite]
-  );
+  // Plain functions: the React Compiler memoises them (manual useCallback
+  // deps can't track the state setters used here).
+  const handleToggleFavorite = (doc: DocumentEntity): void => {
+    setLeavingId(doc.id);
+    setTimeout(() => {
+      void toggleFavorite(doc).then(() => {
+        setLeavingId(null);
+        setUnstarred(doc);
+        setReloadKey((k) => k + 1);
+      });
+    }, LEAVE_MS);
+  };
 
-  const handleSwipeAction = useCallback(
-    (doc: DocumentEntity, kind: Exclude<SwipeActionKind, 'none'>): void => {
-      if (kind === 'delete') {
-        setSwipeDeleteTarget(doc);
-      } else if (kind === 'favorite') {
-        hapticTap();
-        handleToggleFavorite(doc);
-      }
-    },
-    [handleToggleFavorite]
-  );
+  const handleSwipeAction = (doc: DocumentEntity, kind: Exclude<SwipeActionKind, 'none'>): void => {
+    if (kind === 'delete') {
+      setSwipeDeleteTarget(doc);
+    } else if (kind === 'favorite') {
+      hapticTap();
+      handleToggleFavorite(doc);
+    }
+  };
 
   // [SEC] §3.1, bug-audit hardening: DocumentViewerPage now enforces its own
   // lock gate + markAccessed stamp — see its doc comment. Plain navigate.
@@ -90,11 +116,7 @@ export function FavoritesPage(): ReactNode {
   // (Open / Share) — the full menu lives on the document itself.
   const [previewDoc, setPreviewDoc] = useState<DocumentEntity | null>(null);
 
-  const listState = isLoading
-    ? 'loading'
-    : favorites.length === 0
-      ? 'idle'
-      : 'success';
+  const listState = isLoading ? 'loading' : favorites.length === 0 ? 'idle' : 'success';
 
   return (
     <IonPage data-agent-id="vault.favorites">
@@ -102,6 +124,19 @@ export function FavoritesPage(): ReactNode {
         <IonToolbar>
           <MenuButton />
           <IonTitle>{t('favorites.title')}</IonTitle>
+          {favorites.length > 1 && (
+            <IonButtons slot="end">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<Icon name={reordering ? 'Check' : 'Move'} size={20} />}
+                onClick={() => setReordering((r) => !r)}
+                agentId="vault.favorites.reorder"
+              >
+                {reordering ? t('favorites.done') : t('favorites.reorder')}
+              </Button>
+            </IonButtons>
+          )}
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -130,19 +165,44 @@ export function FavoritesPage(): ReactNode {
               data-agent-id="vault.favorites.list"
               data-agent-state={listState}
             >
-              {favorites.map((document) => (
-                <DocumentListItem
-                  key={document.id}
-                  document={document}
-                  tags={tagsByDocument.get(document.id) ?? []}
-                  onOpen={handleOpen}
-                  onToggleFavorite={handleToggleFavorite}
-                  onMore={setPreviewDoc}
-                  swipeLeftAction={swipeLeftAction}
-                  swipeRightAction={swipeRightAction}
-                  onSwipeAction={handleSwipeAction}
-                />
-              ))}
+              {/* FV-4: in Reorder mode, drag the handles (Ionic reorder group). */}
+              <IonReorderGroup
+                role="none"
+                disabled={!reordering}
+                onIonItemReorder={(event) => {
+                  const ids = favorites.map((d) => d.id);
+                  const [moved] = ids.splice(event.detail.from, 1);
+                  if (moved) ids.splice(event.detail.to, 0, moved);
+                  setFavoriteOrder(ids);
+                  void event.detail.complete(false);
+                }}
+              >
+                {favorites.map((document) =>
+                  reordering ? (
+                    <li
+                      key={document.id}
+                      className="kg-favorites__reorder-row"
+                      data-agent-id={`vault.favorites.reorder-${document.id}`}
+                    >
+                      <span className="kg-favorites__reorder-name">{document.name}</span>
+                      <IonReorder />
+                    </li>
+                  ) : (
+                    <DocumentListItem
+                      key={document.id}
+                      leaving={leavingId === document.id}
+                      document={document}
+                      tags={tagsByDocument.get(document.id) ?? []}
+                      onOpen={handleOpen}
+                      onToggleFavorite={handleToggleFavorite}
+                      onMore={setPreviewDoc}
+                      swipeLeftAction={swipeLeftAction}
+                      swipeRightAction={swipeRightAction}
+                      onSwipeAction={handleSwipeAction}
+                    />
+                  )
+                )}
+              </IonReorderGroup>
             </ul>
           )}
         </main>
@@ -153,6 +213,15 @@ export function FavoritesPage(): ReactNode {
             handleOpen(doc);
           }}
           onClose={() => setPreviewDoc(null)}
+        />
+        <UndoToast
+          isOpen={unstarred !== null}
+          message={t('favorites.removed')}
+          onUndo={() => {
+            if (unstarred) void toggleFavorite(unstarred).then(() => setReloadKey((k) => k + 1));
+          }}
+          onDidDismiss={() => setUnstarred(null)}
+          agentId="vault.favorites.unstar-toast"
         />
         <UndoToast
           isOpen={pendingUndo !== null}
