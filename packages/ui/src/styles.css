@@ -203,12 +203,16 @@ textarea {
   border: none;
   border-radius: var(--radius-full);
   background: var(--surface-3);
+  /* Off reads at 3:1 against the page (WCAG 1.4.11, audit FP-3): a muted
+     outline and a muted thumb, Material-style. */
+  box-shadow: inset 0 0 0 2px var(--text-muted);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard);
 }
 .kg-toggle__track--on {
   /* "On" uses the same saffron as every other selected state (audit SE-1). */
   background: var(--color-primary);
+  box-shadow: none;
 }
 .kg-toggle__thumb {
   position: absolute;
@@ -217,9 +221,13 @@ textarea {
   height: 80%;
   aspect-ratio: 1;
   border-radius: var(--radius-full);
-  background: var(--surface-1);
+  background: var(--text-muted);
   box-shadow: var(--shadow-default);
-  transition: transform var(--duration-fast) var(--ease-spring);
+  transition: transform var(--duration-fast) var(--ease-spring),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+.kg-toggle__track--on .kg-toggle__thumb {
+  background: var(--surface-1);
 }
 .kg-toggle__track--on .kg-toggle__thumb {
   transform: translateX(100%);
