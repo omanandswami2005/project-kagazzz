@@ -347,7 +347,18 @@
     "duplicates_other": "{{count}} डुप्लिकेट समूह — लगभग {{size}} जगह खाली हो सकती है",
     "ai_model": "AI मॉडल",
     "ai_model_size": "डिवाइस पर {{size}}",
-    "ai_model_manage": "प्रबंधित करें"
+    "ai_model_manage": "प्रबंधित करें",
+    "free_up": "जगह खाली करें",
+    "free_up_trash_one": "ट्रैश में {{count}} दस्तावेज़",
+    "free_up_trash_other": "ट्रैश में {{count}} दस्तावेज़",
+    "free_up_compress": "बड़े PDF छोटे करें",
+    "free_up_check_one": "देखें {{count}} PDF कितना छोटा हो सकता है",
+    "free_up_check_other": "देखें {{count}} PDF कितने छोटे हो सकते हैं",
+    "free_up_checking": "{{total}} में से {{n}} जाँच रहे हैं…",
+    "free_up_already_small": "आपके PDF पहले से छोटे हैं — छोटा करने से ज़्यादा जगह नहीं बचेगी।",
+    "free_up_no_pdfs": "छोटा करने लायक कोई बड़ा PDF नहीं।",
+    "free_up_total": "इन्हें छोटा करने से लगभग {{size}} जगह खाली होगी।",
+    "save_about": "~{{size}} बचेगा"
   },
   "bulk": {
     "toolbar": "बल्क क्रियाएँ",

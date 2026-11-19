@@ -168,6 +168,40 @@
 }
 
 /* ST-4: the sections are cards, like every other grouped list. */
+/* ST-5: the Free up space sheet. */
+.kg-free-up {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--page-padding);
+  padding-bottom: calc(var(--page-padding) + env(safe-area-inset-bottom));
+}
+
+.kg-free-up__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}
+
+.kg-free-up__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kg-free-up__heading {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+}
+
+.kg-free-up__hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .kg-storage__card {
   padding: var(--space-4);
   border: var(--border-width) solid var(--border-default);

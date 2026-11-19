@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event';
 import { render, screen } from '@testing-library/react';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { i18n, initI18n } from '@/core/i18n';
@@ -9,6 +10,12 @@ import { StoragePageAgent } from '../StoragePage.agent';
 
 vi.mock('../../hooks/useStorageStats', () => ({ useStorageStats: vi.fn() }));
 vi.mock('@/app/providers/AIProvider', () => ({ useAi: vi.fn() }));
+vi.mock('../../hooks/useTrash', () => ({
+  useTrash: () => ({ items: [], loading: false, emptyTrash: vi.fn(), restore: vi.fn(), deleteForever: vi.fn() }),
+}));
+vi.mock('@/modules/pdf-engine/hooks/usePdfEngine', () => ({
+  usePdfEngine: () => ({ estimateCompressedSize: vi.fn(() => Promise.resolve(100)) }),
+}));
 const useStorageStatsMock = vi.mocked(useStorageStats);
 const useAiMock = vi.mocked(useAi);
 
@@ -34,6 +41,30 @@ beforeEach(() => {
 });
 
 describe('StoragePage (F-26)', () => {
+  it('Free up space measures what compressing would save (ST-5)', async () => {
+    useStorageStatsMock.mockReturnValue({
+      stats: {
+        totalBytes: 8 * 1024 * 1024,
+        documentCount: 1,
+        byType: [],
+        largest: [
+          entityFromNew(
+            { name: 'Huge Scan', filePath: 'documents/huge.pdf', fileType: 'pdf', fileSize: 8 * 1024 * 1024, isFavorite: false, isLocked: false, isArchived: false, language: 'en', sourceType: 'file_picker' },
+            'huge'
+          ),
+        ],
+        duplicateGroups: 0,
+        reclaimableBytes: 0,
+      },
+    });
+    render(<StoragePage />);
+    await userEvent.click(document.querySelector('[data-agent-id="vault.storage.free-up-button"]') as Element);
+    await userEvent.click(await screen.findByText('Check how much 1 PDF can shrink'));
+    // The dry run (mocked) shrinks 8 MB to 100 B: the row offers the saving.
+    expect(await screen.findByText(/Compressing these would free about/)).toBeInTheDocument();
+    expect(document.querySelector('[data-agent-id="vault.storage.free-up.compress-huge"]')).not.toBeNull();
+  });
+
   it('shows a loading state until stats arrive', () => {
     useStorageStatsMock.mockReturnValue({ stats: null });
     render(<StoragePage />);

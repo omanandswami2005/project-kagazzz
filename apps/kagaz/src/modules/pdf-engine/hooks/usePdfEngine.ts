@@ -98,6 +98,12 @@ export interface UsePdfEngineResult {
   watermarkPdf: (doc: DocumentEntity, text: string) => Promise<number>;
   addPageNumbers: (doc: DocumentEntity, options: PageNumberOptions) => Promise<number>;
   compressPdf: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
+  /**
+   * Dry run (audit ST-5): the size `doc` would have after compressing, without
+   * saving anything or recording history — so "save ~X KB" is measured, not
+   * guessed.
+   */
+  estimateCompressedSize: (doc: DocumentEntity, quality: CompressionLevel) => Promise<number>;
   imagesToPdf: (images: DocumentEntity[]) => Promise<number>;
   /**
    * Combines freshly-picked images (not yet vault documents) into one PDF
@@ -382,6 +388,15 @@ export function usePdfEngine(): UsePdfEngineResult {
     [run, readBytes, save]
   );
 
+  const estimateCompressedSize = useCallback(
+    async (doc: DocumentEntity, quality: CompressionLevel): Promise<number> => {
+      const engine = await getEngine();
+      const out = await engine.compressPdf(await readBytes(doc), quality);
+      return out.byteLength;
+    },
+    [getEngine, readBytes]
+  );
+
   const imagesToPdf = useCallback(
     (images: DocumentEntity[]): Promise<number> =>
       run('imagesToPdf', images, async (engine, onProgress) => {
@@ -609,6 +624,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     watermarkPdf,
     addPageNumbers,
     compressPdf,
+    estimateCompressedSize,
     imagesToPdf,
     imagesToPdfFromFiles,
     appendScan,

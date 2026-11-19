@@ -4,6 +4,7 @@
  * duplicate-reclaim hints (F-26). Read-only.
  */
 import {
+  IonButtons,
   IonContent,
   IonHeader,
   IonPage,
@@ -11,14 +12,16 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocale } from '@/core/i18n';
 import { useAi } from '@/app/providers/AIProvider';
 import { Button, Icon } from '@kagaz/ui';
 import { DocumentThumb } from '@/core/components/DocumentThumb';
 import { pdfToolRoute } from '@/core/constants/routes';
+import { FreeUpSpaceSheet } from '../components/FreeUpSpaceSheet';
 import { StorageDonut } from '../components/StorageDonut';
+import { useCompressionEstimates } from '../hooks/useCompressionEstimates';
 import { isPdf } from '../hooks/useDocumentFile';
 import { useStorageStats } from '../hooks/useStorageStats';
 import './vault.css';
@@ -31,6 +34,10 @@ export function StoragePage(): ReactNode {
   const { stats } = useStorageStats();
   const ai = useAi();
   const router = useIonRouter();
+  const [freeUpOpen, setFreeUpOpen] = useState(false);
+  const estimates = useCompressionEstimates();
+  // ST-5: the large PDFs that compressing could shrink (locked ones stay put).
+  const pdfs = (stats?.largest ?? []).filter((d) => isPdf(d.fileType) && !d.isLocked);
 
   return (
     <IonPage data-agent-id="vault.storage">
@@ -38,6 +45,18 @@ export function StoragePage(): ReactNode {
         <IonToolbar>
           <MenuButton />
           <IonTitle>{t('storage.title')}</IonTitle>
+          {/* ST-5: every way to free space, behind one header action. */}
+          <IonButtons slot="end">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<Icon name="Sparkles" size={20} />}
+              onClick={() => setFreeUpOpen(true)}
+              agentId="vault.storage.free-up-button"
+            >
+              {t('storage.free_up')}
+            </Button>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -104,7 +123,11 @@ export function StoragePage(): ReactNode {
                         <DocumentThumb document={doc} iconSize={20} className="kg-storage__thumb" />
                         <span className="kg-storage__largest-text">
                           <span className="kg-storage__largest-name">{doc.name}</span>
-                          <span className="kg-storage__row-size">{formatFileSize(doc.fileSize)}</span>
+                          <span className="kg-storage__row-size">
+                            {formatFileSize(doc.fileSize)}
+                            {(estimates.savings.get(doc.id) ?? 0) > 0 &&
+                              ` · ${t('storage.save_about', { size: formatFileSize(estimates.savings.get(doc.id) ?? 0) })}`}
+                          </span>
                         </span>
                       </button>
                       {isPdf(doc.fileType) && !doc.isLocked && (
@@ -147,6 +170,22 @@ export function StoragePage(): ReactNode {
             </>
           )}
         </main>
+        <FreeUpSpaceSheet
+          isOpen={freeUpOpen}
+          onClose={() => setFreeUpOpen(false)}
+          pdfs={pdfs}
+          estimates={estimates}
+          onCompress={(doc) => {
+            setFreeUpOpen(false);
+            router.push(pdfToolRoute('compress', doc.id), 'forward', 'push');
+          }}
+          aiModelBytes={ai.modelOnDisk ? ai.modelSizeBytes : undefined}
+          onManageAi={() => {
+            setFreeUpOpen(false);
+            router.push('/ai-assistant', 'forward', 'push');
+          }}
+          onFreed={() => setFreeUpOpen(false)}
+        />
       </IonContent>
     </IonPage>
   );

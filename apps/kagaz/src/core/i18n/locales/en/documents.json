@@ -347,7 +347,18 @@
     "duplicates_other": "{{count}} duplicate groups — about {{size}} can be freed",
     "ai_model": "AI model",
     "ai_model_size": "{{size}} on device",
-    "ai_model_manage": "Manage"
+    "ai_model_manage": "Manage",
+    "free_up": "Free up space",
+    "free_up_trash_one": "{{count}} document waiting in Trash",
+    "free_up_trash_other": "{{count}} documents waiting in Trash",
+    "free_up_compress": "Compress large PDFs",
+    "free_up_check_one": "Check how much {{count}} PDF can shrink",
+    "free_up_check_other": "Check how much {{count}} PDFs can shrink",
+    "free_up_checking": "Checking {{n}} of {{total}}…",
+    "free_up_already_small": "Your PDFs are already compact — compressing wouldn't save much.",
+    "free_up_no_pdfs": "No large PDFs to compress.",
+    "free_up_total": "Compressing these would free about {{size}}.",
+    "save_about": "save ~{{size}}"
   },
   "bulk": {
     "toolbar": "Bulk actions",

@@ -64,6 +64,7 @@ function makePdfEngineMock(
     watermarkPdf: vi.fn(() => Promise.resolve(0)),
     addPageNumbers: vi.fn(() => Promise.resolve(0)),
     compressPdf: vi.fn(() => Promise.resolve(0)),
+    estimateCompressedSize: vi.fn(() => Promise.resolve(0)),
     imagesToPdf: vi.fn(() => Promise.resolve(0)),
     imagesToPdfFromFiles: vi.fn(() => Promise.resolve(0)),
     appendScan: vi.fn(() => Promise.resolve(0)),
