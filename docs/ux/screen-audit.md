@@ -67,12 +67,31 @@ Fixed on `feature/ux-audit-fixes` (2026-11-19), in the batches of the [Fix order
 | Text below WCAG AA (light / dark) | 100 / 125 | **0 / 0** |
 | Tap targets under 44 px (light / dark) | 233 / 248 | **8 / 8**: only the toggle switch graphic; the whole 48 px label row is the tap target (M-8) |
 
-**Fixed:** all P0 (G-1, M-1/2/3, M-10, TS-1, LG-1 as a draft for counsel) · every P1 except QR-2, AI-2 and part of ST-5 · and these P2s: G-7, G-8, G-9, G-10, M-4…M-9, M-12, M-13, M-15, OB-1…OB-7, OB-9, OB-10, VH-3, VH-7, VH-11 (Material header), VH-18, VH-19, UP-3, UP-4, UP-9, IM-2, IM-4…IM-7, FP-3, FP-4, FP-5, DR-1…DR-6, VW-6, VW-11 (page fade), VW-12, FV-2, FV-3, ST-3, ST-4, ST-6, PT-1…PT-4, PT-7, PT-8, TS-3, TS-4, TS-5, TS-10, TS-12, TS-13, QR-1, QR-4, QN-1, QN-3, TR-1, TR-2, AR-1, AI-1, AI-3, LG-2, LG-3, SE-1…SE-9.
+**Fixed:** all P0 (G-1, M-1/2/3, M-10, TS-1, LG-1 as a draft for counsel) · every P1 except AI-2 (device) · and these P2s: G-7, G-8, G-9, G-10, M-4…M-9, M-12, M-13, M-15, OB-1…OB-10, VH-3, VH-7, VH-9, VH-10, VH-11 (Material header), VH-14, VH-16, VH-17, VH-18, VH-19, UP-3, UP-4, UP-6, UP-8, UP-9, IM-2, IM-4…IM-7, FP-3…FP-6, DR-1…DR-6, VW-6, VW-9, VW-10, VW-11 (page fade), VW-12, FV-1…FV-5, ST-2…ST-8, PT-1…PT-8, TS-3, TS-4, TS-5, TS-10, TS-12, TS-13, QR-1, QR-2, QR-4, QN-1, QN-2, QN-3, TR-1, TR-2, AR-1, AI-1, AI-3, LG-2, LG-3, SE-1…SE-9.
 
-**Not done, and why:**
+Follow-ups on `feature/ux-audit-followups`:
 
-| ID | Why it is still open |
+- **ST-5 in full:** Storage's **Free up space** sheet offers Empty Trash with its size, the AI model, and a dry-run measurement of what compressing each large PDF would save. The estimate runs the real compressor without saving or recording anything, so "save ~X MB" is measured, not guessed.
+- **QR-2 / QN-2 / VW-9:** PAN and Aadhaar numbers found in unlocked documents' text, in Quick Notes, or held in the viewer can be added to the locked Quick Reference. Aadhaar is saved masked by default.
+- **UP-6:** a file shared into the app is added at once, and its toast offers Open / Ask AI. The clipboard is deliberately not read.
+
+> ⚠️ **Check again before publication — QR-2 / QN-2 / VW-9.** ID detection
+> recognises Aadhaar-shaped numbers, which partly reverses the earlier "no
+> Aadhaar-aware logic" decision. Aadhaar is masked by default and nothing is
+> saved without a tap, but counsel must confirm it, or Aadhaar detection
+> must be removed (PAN only). See
+> [security §3.6.2](../architecture/10-security-architecture.md) and
+> [compliance checklist §11](../indian-compliance-checklist.md).
+
+**Still open:**
+
+| ID | Why |
 |---|---|
+| AI-2 | Needs a phone with the model: download, load and chat states can't run in the browser or the emulator. |
+| VW-5 | The line breaks are lost in the OCR output itself, not in the viewer. |
+| VW-11 (shared-element transition) | Ionic's page transitions don't share elements between pages; the page fade-in is done instead. |
+
+---|---|
 | QR-2, QN-2 | Moving ID numbers between stores needs a compliance decision first: Aadhaar numbers must never be stored raw (UIDAI rules), so "Move to Quick Reference" can't simply copy what's detected. |
 | ST-5 (part) | Each large PDF has an inline **Compress**, but the "Free up space" header action and "save ~X KB" estimates aren't built: an honest estimate needs a dry-run compress per file. |
 | AI-2, OB-8 | Need a phone: the real AI states (download, load, chat) and the Hindi layout can't run in the browser demo. |

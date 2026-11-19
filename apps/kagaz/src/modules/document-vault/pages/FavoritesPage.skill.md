@@ -5,6 +5,11 @@ The user is viewing their starred documents — every document they marked
 as a favorite, newest first. This is the second bottom-tab destination,
 a focused shortlist drawn from the whole vault.
 
+**Order and undo (2026-11-19):** `vault.favorites.reorder` toggles Reorder
+mode (drag handles); the order is saved. Unstarring slides the row away and
+shows an Undo toast (`vault.favorites.unstar-toast`). Each row's ⋮ opens a
+quick preview (Open / Share).
+
 ## What I (the AI) can do here
 - Read the list aloud or summarize it ("you have 4 favorites").
 - Un-star a document via `vault.toggleFavorite` — the row leaves the list
