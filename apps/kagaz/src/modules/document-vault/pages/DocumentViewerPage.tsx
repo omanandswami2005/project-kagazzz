@@ -50,14 +50,14 @@ import { useTranslation } from 'react-i18next';
 import { ActionSheet, Alert, Button, Icon } from '@kagaz/ui';
 import { useDocument } from '../hooks/useDocument';
 import { useDocLock } from '../hooks/useDocLock';
-import { useDocumentFile } from '../hooks/useDocumentFile';
+import { isPdf, useDocumentFile } from '../hooks/useDocumentFile';
 import { useDocxHtml } from '../hooks/useDocxHtml';
 import { canExtractText, canTranscribeWithVision, useDocumentOcr } from '../hooks/useDocumentOcr';
 import { useDocumentIntents } from '../hooks/useDocumentIntents';
 import { useAi } from '@/app/providers/AIProvider';
 import { NextActions } from '@/core/components/NextActions';
-import { documentTypeIcon } from '@/core/components/DocumentThumb';
-import { askAiAboutRoute } from '@/core/constants/routes';
+import { documentTypeIcon, isImageFile } from '@/core/components/DocumentThumb';
+import { askAiAboutRoute, pdfToolRoute } from '@/core/constants/routes';
 import { copyToClipboard } from '@/core/clipboard';
 import { hapticDestructive } from '@/core/haptics';
 import { extractNumberSequences } from '../services/extract-numbers';
@@ -184,6 +184,16 @@ export function DocumentViewerPage(): ReactNode {
       router.goBack();
     }
   };
+
+  // VW-8: PDFs most often need shrinking for an upload limit; photos most
+  // often need to become a PDF.
+  const typeTool = !document
+    ? null
+    : isPdf(document.fileType)
+      ? { id: 'compress', tool: 'compress', icon: 'Shrink' as const, labelKey: 'viewer.compress' as const }
+      : isImageFile(document.fileType)
+        ? { id: 'make-pdf', tool: 'imagesToPdf', icon: 'FileOutput' as const, labelKey: 'viewer.make_pdf' as const }
+        : null;
 
   return (
     <IonPage data-agent-id="vault.viewer">
@@ -431,7 +441,7 @@ export function DocumentViewerPage(): ReactNode {
       {/* Smart UI §4: what people do next with an open document, in their
           path — same lock gate as the ⋮ menu; not for a Trash preview. */}
       {/* VW-1: when only "More" would be left, the header ⋮ already covers it. */}
-      {document && authorized === true && !trashed && (intents.supported || ai.status !== 'unsupported') && (
+      {document && authorized === true && !trashed && (intents.supported || ai.status !== 'unsupported' || typeTool) && (
         <IonFooter>
           <NextActions
             agentPrefix="vault.viewer.next"
@@ -441,6 +451,10 @@ export function DocumentViewerPage(): ReactNode {
                 : []),
               ...(ai.status !== 'unsupported'
                 ? [{ id: 'ask-ai', icon: 'Sparkles' as const, label: t('viewer.ask_ai'), onClick: () => router.push(askAiAboutRoute(document.id), 'forward', 'push') }]
+                : []),
+              // VW-8: the file type's most-needed tool, opened on this document.
+              ...(typeTool
+                ? [{ id: typeTool.id, icon: typeTool.icon, label: t(typeTool.labelKey), onClick: () => router.push(pdfToolRoute(typeTool.tool, document.id), 'forward', 'push') }]
                 : []),
               { id: 'more', icon: 'MoreVertical', label: t('viewer.more'), onClick: () => setMenuOpen(true) },
             ]}

@@ -11,7 +11,9 @@ import {
   IonToolbar,
   useIonRouter,
 } from '@ionic/react';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useHistory, useLocation } from 'react-router-dom';
+import { DOC_PARAM, TOOL_PARAM } from '@/core/constants/routes';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { Icon, Search, SegmentedControl } from '@kagaz/ui';
@@ -44,6 +46,27 @@ export function PdfToolsPage(): ReactNode {
   const [runs, setRuns] = useState(0);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<PdfOpCategory | null>(null);
+
+  // Hand-off from a document (viewer next actions, VW-8): `?tool=&doc=` opens
+  // that tool with the document already chosen (TS-9), then clears the query
+  // so Back doesn't reopen it.
+  const location = useLocation();
+  const history = useHistory();
+  const params = new URLSearchParams(location.search);
+  const linkedTool = PDF_OPS.find((o) => o.id === params.get(TOOL_PARAM))?.id ?? null;
+  const linkedDoc = params.get(DOC_PARAM) ?? undefined;
+  const [preselectId, setPreselectId] = useState<string | undefined>(undefined);
+  const [handledLink, setHandledLink] = useState<string | null>(null);
+  if (linkedTool && handledLink !== location.search) {
+    setHandledLink(location.search);
+    setPreselectId(linkedDoc);
+    setActiveOp(linkedTool);
+  }
+  useEffect(() => {
+    if (handledLink && handledLink === location.search) {
+      history.replace(location.pathname);
+    }
+  }, [handledLink, location.search, location.pathname, history]);
 
   const ops = useMemo(() => {
     const platformOps = PDF_OPS.filter((op) => !op.native || isNative);
@@ -133,10 +156,14 @@ export function PdfToolsPage(): ReactNode {
           op={activeOp === 'organize' ? null : activeOp}
           documents={documents}
           engine={engine}
-          onClose={() => setActiveOp(null)}
+          onClose={() => {
+            setActiveOp(null);
+            setPreselectId(undefined);
+          }}
           onDone={handleDone}
           onOpenDocument={openDocument}
           historyKey={runs}
+          preselectId={preselectId}
         />
 
         <PdfOrganizeSheet

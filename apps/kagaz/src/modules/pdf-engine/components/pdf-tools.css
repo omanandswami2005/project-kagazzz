@@ -76,6 +76,12 @@
   padding: var(--space-4);
 }
 
+.kg-pdf-op__help {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
 .kg-pdf-op__label {
   color: var(--text-secondary);
   font-family: var(--font-primary);

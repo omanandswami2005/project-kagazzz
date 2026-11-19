@@ -50,7 +50,7 @@
   },
   "pick": {
     "pdf_single": "Choose a PDF",
-    "pdf_multi": "Choose PDFs (2 or more)",
+    "pdf_multi": "Choose PDFs (2 or more) in the order you want them",
     "images": "Choose images",
     "empty_pdf": "No PDFs in your vault yet.",
     "empty_images": "No images in your vault yet.",

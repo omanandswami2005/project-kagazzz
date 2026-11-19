@@ -37,6 +37,12 @@ export function ToolHistoryList({
 
   const name = (ref: HistoryDocRef): string => ref.doc?.name ?? t('history.deleted');
 
+  // TS-10 (progressive disclosure): a tool's own history appears once it has
+  // run; "Nothing yet" in every sheet is noise for a new user.
+  if (toolId && (loading || entries.length === 0)) {
+    return null;
+  }
+
   return (
     <section className="kg-tool-history" data-agent-id={prefix} aria-labelledby={`${prefix}-title`}>
       <div className="kg-tool-history__header">

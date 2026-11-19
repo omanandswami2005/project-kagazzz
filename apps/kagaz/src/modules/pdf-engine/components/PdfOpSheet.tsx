@@ -44,6 +44,9 @@ export interface PdfOpSheetProps {
   onOpenDocument: (document: DocumentEntity) => void;
   /** Changes after each run so the tool's history reloads. */
   historyKey?: unknown;
+  /** Document to select when the sheet opens — the one the user came from
+   * (audit TS-9). */
+  preselectId?: string;
 }
 
 const QUALITIES: CompressionLevel[] = ['low', 'medium', 'high'];
@@ -111,6 +114,7 @@ export function PdfOpSheet({
   onDone,
   onOpenDocument,
   historyKey,
+  preselectId,
 }: PdfOpSheetProps): ReactNode {
   const { t } = useTranslation('tools');
   const meta = op ? PDF_OPS.find((o) => o.id === op) : null;
@@ -157,7 +161,14 @@ export function PdfOpSheet({
   // reset state too, but on this IonModal it would skip the close animation.)
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setSelectedIds([]);
+    // TS-9: start with the obvious choice — the document the user came from,
+    // or the only candidate there is.
+    const seed = docs.some((d) => d.id === preselectId)
+      ? [preselectId as string]
+      : docs.length === 1 && docs[0]
+        ? [docs[0].id]
+        : [];
+    setSelectedIds(seed);
     setRanges('');
     setQuality('medium');
     setFormat('png');
@@ -176,9 +187,9 @@ export function PdfOpSheet({
     setMetaDraft(null);
     setLocalError(null);
     engine.reset();
-    // engine identity is stable; resetting on op change only.
+    // engine identity is stable; resetting on op (or hand-off) change only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [op]);
+  }, [op, preselectId]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const multi = meta?.input === 'pdf-multi' || meta?.input === 'images';
@@ -397,6 +408,8 @@ export function PdfOpSheet({
 
       <IonContent>
         <div className="kg-pdf-op">
+          {/* TS-8: one line saying what this tool does before anything is asked. */}
+          {op && <p className="kg-pdf-op__help">{t(`desc.${op}`)}</p>}
           <PdfDocPicker
             documents={docs}
             multi={multi}
