@@ -9,6 +9,8 @@
   overflow: hidden;
   border-radius: var(--radius-md);
   background: var(--surface-2);
+  /* 1 px edge so white PDF pages don't vanish on white cards (audit VH-4). */
+  border: var(--border-width) solid var(--border-default);
   box-shadow: var(--shadow-sm);
   color: var(--icon-object);
 }
@@ -18,6 +20,12 @@
   height: 100%;
   object-fit: cover;
   animation: kg-fade-in var(--duration-normal) var(--ease-out);
+}
+
+/* Photos and ID cards are shown whole on the matte, never cropped (VH-6);
+   PDF pages keep cover — they're already page-shaped. */
+.kg-doc-thumb--image .kg-doc-thumb__img {
+  object-fit: contain;
 }
 
 /* [SEC] §3.1: blurred preview + lock icon for locked documents. */

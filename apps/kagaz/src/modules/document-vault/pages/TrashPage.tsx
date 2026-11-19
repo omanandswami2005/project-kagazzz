@@ -27,7 +27,7 @@ import {
 } from '@ionic/react';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Button, Icon, Spinner } from '@kagaz/ui';
+import { Alert, Button, EmptyState, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -81,10 +81,11 @@ export function TrashPage(): ReactNode {
               <Spinner size="lg" label={t('trash.title')} />
             </div>
           ) : trash.items.length === 0 ? (
-            <div className="kg-trash__empty" data-agent-id="vault.trash.empty">
-              <Icon name="Trash2" size={48} aria-hidden />
-              <p>{t('trash.empty_state')}</p>
-            </div>
+            <EmptyState
+              icon="Trash2"
+              title={t('trash.empty_state')}
+              agentId="vault.trash.empty"
+            />
           ) : (
             <>
               <div className="kg-trash__toolbar">

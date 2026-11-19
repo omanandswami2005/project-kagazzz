@@ -49,3 +49,9 @@
   font-family: var(--font-primary);
   text-align: center;
 }
+
+/* Toolbar titles on the type scale, not Ionic's 17/20 px (audit M-10). */
+ion-title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+}

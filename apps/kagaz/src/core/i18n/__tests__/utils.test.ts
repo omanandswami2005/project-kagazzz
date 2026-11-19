@@ -6,6 +6,7 @@ import {
   formatFileSize,
   formatNumber,
   formatRelativeTime,
+  formatShortDate,
 } from '../utils';
 
 describe('formatDate / formatDateTime', () => {
@@ -72,5 +73,17 @@ describe('formatCurrency', () => {
   it('always formats INR', () => {
     expect(formatCurrency(1500, 'en-IN')).toContain('₹');
     expect(formatCurrency(1500, 'en-IN')).toContain('1,500');
+  });
+});
+
+describe('formatShortDate (audit G-4)', () => {
+  const now = new Date(2026, 10, 19, 15, 0);
+  it('says Today / Yesterday for the last two days', () => {
+    expect(formatShortDate(new Date(2026, 10, 19, 1, 0), 'en-IN', now)).toBe('Today');
+    expect(formatShortDate(new Date(2026, 10, 18, 23, 0), 'en-IN', now)).toBe('Yesterday');
+  });
+  it('drops the year this year and keeps it otherwise', () => {
+    expect(formatShortDate(new Date(2026, 10, 2), 'en-IN', now)).toBe('2 Nov');
+    expect(formatShortDate(new Date(2025, 10, 2), 'en-IN', now)).toBe('2 Nov 2025');
   });
 });

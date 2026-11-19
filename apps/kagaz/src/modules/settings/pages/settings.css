@@ -12,10 +12,119 @@
 .kg-settings__section {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* SE-5: each group is one card; 8 px between rows, 24 px between groups. */
+.kg-settings__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+}
+
+/* List rows sit flush inside the card. */
+.kg-settings__card .kg-list-row {
+  background: transparent;
+  padding-inline: var(--space-1);
+}
+
+.kg-settings__divider {
+  height: var(--border-width);
+  margin-block: var(--space-1);
+  background: var(--border-default);
+}
+
+.kg-settings__section--danger .kg-settings__card {
+  border-color: var(--color-danger);
+}
+
+.kg-settings__section--danger .kg-settings__section-title {
+  color: var(--text-danger);
+}
+
+/* SE-6: backup nudge — tinted saffron card at the top until a backup exists. */
+.kg-settings__nudge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-subtle);
+  color: var(--icon-active);
+}
+
+.kg-settings__nudge-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1 1 12rem;
+}
+
+.kg-settings__nudge-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+}
+
+/* SE-7: Advanced settings fold away. */
+.kg-settings__advanced {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.kg-settings__advanced[open] > .kg-settings__section {
+  margin-top: var(--space-4);
+}
+
+.kg-settings__advanced-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target-lg);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+  list-style: none;
+  cursor: pointer;
+}
+
+.kg-settings__advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.kg-settings__advanced-summary svg {
+  color: var(--icon-object);
+}
+
+.kg-settings__advanced-summary span {
+  flex: 1;
+}
+
+.kg-settings__advanced-summary svg:last-child {
+  color: var(--text-muted);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.kg-settings__advanced[open] .kg-settings__advanced-summary svg:last-child {
+  transform: rotate(180deg);
 }
 
 .kg-settings__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-1);
   color: var(--text-secondary);
   font-family: var(--font-primary);
   font-size: var(--text-sm);
@@ -25,23 +134,11 @@
   margin: 0;
 }
 
-.kg-settings__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 .kg-settings__label {
   color: var(--text-primary);
   font-family: var(--font-primary);
   font-size: var(--text-base);
   font-weight: var(--font-medium);
-}
-
-.kg-settings__choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
 }
 
 .kg-settings__hint {

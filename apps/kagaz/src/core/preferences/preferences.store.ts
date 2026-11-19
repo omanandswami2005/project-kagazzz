@@ -26,6 +26,9 @@ export interface AppPreferences {
   /** UX pass (2026-07-24): whether `core/haptics` fires at all. On by
    * default (native only regardless — haptics is already a no-op on web). */
   hapticsEnabled: boolean;
+  /** ISO time of the last successful encrypted backup, or null if never —
+   * drives the Settings backup nudge (audit SE-6). Not PII. */
+  lastBackupAt: string | null;
 }
 
 const STORAGE_KEY = 'kagaz:preferences';
@@ -38,6 +41,7 @@ const DEFAULTS: AppPreferences = {
   swipeLeftAction: 'delete',
   swipeRightAction: 'favorite',
   hapticsEnabled: true,
+  lastBackupAt: null,
 };
 
 const SWIPE_ACTION_VALUES: readonly SwipeActionKind[] = [
@@ -79,6 +83,8 @@ export function readPreferences(): AppPreferences {
         DEFAULTS.swipeRightAction
       ),
       hapticsEnabled: parsed.hapticsEnabled !== false,
+      lastBackupAt:
+        typeof parsed.lastBackupAt === 'string' ? parsed.lastBackupAt : null,
     };
   } catch {
     return DEFAULTS;
@@ -103,6 +109,8 @@ interface PreferencesStore extends AppPreferences {
   setSwipeAction: (side: 'left' | 'right', action: SwipeActionKind) => void;
   /** Sets whether haptic feedback fires app-wide and persists it. */
   setHapticsEnabled: (enabled: boolean) => void;
+  /** Records when the last encrypted backup finished (audit SE-6). */
+  setLastBackupAt: (iso: string) => void;
 }
 
 /** App-wide UI preference store (persisted). */
@@ -114,6 +122,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       swipeLeftAction,
       swipeRightAction,
       hapticsEnabled,
+      lastBackupAt,
     } = get();
     writePreferences({
       renameOnAdd,
@@ -121,6 +130,7 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
       swipeLeftAction,
       swipeRightAction,
       hapticsEnabled,
+      lastBackupAt,
     });
   };
   return {
@@ -139,6 +149,10 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
     },
     setHapticsEnabled: (hapticsEnabled): void => {
       set({ hapticsEnabled });
+      persist();
+    },
+    setLastBackupAt: (lastBackupAt): void => {
+      set({ lastBackupAt });
       persist();
     },
   };

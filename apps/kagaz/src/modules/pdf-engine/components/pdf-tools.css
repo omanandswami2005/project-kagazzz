@@ -13,10 +13,7 @@
   margin: 0 0 var(--space-4);
 }
 
-.kg-pdf-tools__categories {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.kg-pdf-tools > .kg-segmented {
   margin: var(--space-3) 0;
 }
 
@@ -87,10 +84,9 @@
   margin: 0 0 var(--space-2);
 }
 
-.kg-pdf-op__choices {
+.kg-pdf-op__field {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+  flex-direction: column;
 }
 
 .kg-pdf-op__fields {
@@ -213,7 +209,7 @@
   gap: var(--space-1);
   width: 100%;
   padding: var(--space-1);
-  border: var(--border-width-thick) solid transparent;
+  border: none;
   border-radius: var(--radius-lg);
   background: transparent;
   color: var(--text-primary);
@@ -222,7 +218,8 @@
 }
 
 .kg-pdf-picker__row[data-agent-state='selected'] {
-  border-color: var(--color-primary);
+  /* Outline, not border: selection doesn't reserve layout (audit M-15). */
+  outline: var(--border-width-thick) solid var(--color-primary);
   background: var(--color-primary-subtle);
 }
 
@@ -235,9 +232,11 @@
   justify-content: center;
   min-width: var(--space-6);
   height: var(--space-6);
+  /* Unselected = empty ring, selected = filled saffron with its order (TS-3). */
   border: var(--border-width-thick) solid var(--surface-1);
   border-radius: var(--radius-full);
-  background: var(--overlay-scrim);
+  background: transparent;
+  box-shadow: var(--shadow-sm);
   color: var(--text-on-primary);
   font-size: var(--text-xs);
   font-weight: var(--font-bold);

@@ -13,7 +13,7 @@ import {
 } from '@ionic/react';
 import { useCallback, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Icon } from '@kagaz/ui';
+import { Alert, EmptyState } from '@kagaz/ui';
 import { UndoToast } from '@/core/components/UndoToast';
 import { hapticDestructive, hapticTap } from '@/core/haptics';
 import { usePreferencesStore } from '@/core/preferences';
@@ -102,16 +102,12 @@ export function FavoritesPage(): ReactNode {
       <IonContent>
         <main className="kg-vault" data-agent-id="vault.favorites.content">
           {!isLoading && favorites.length === 0 ? (
-            <div
-              className="kg-favorites__empty"
-              data-agent-id="vault.favorites.empty"
-            >
-              <Icon name="Star" size={48} />
-              <p className="kg-favorites__empty-title">{t('favorites.empty')}</p>
-              <p className="kg-favorites__empty-hint">
-                {t('favorites.empty_hint')}
-              </p>
-            </div>
+            <EmptyState
+              icon="Star"
+              title={t('favorites.empty')}
+              hint={t('favorites.empty_hint')}
+              agentId="vault.favorites.empty"
+            />
           ) : (
             <ul
               className="kg-vault__list"

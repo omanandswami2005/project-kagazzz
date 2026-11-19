@@ -12,9 +12,9 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Checkbox, Icon, Input, ProgressBar } from '@kagaz/ui';
+import { Button, Checkbox, Icon, Input, ProgressBar, SegmentedControl, type SegmentedOption } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import type {
   CompressionLevel,
@@ -68,6 +68,39 @@ const STAMP_POSITIONS: StampPosition[] = [
 /** Image width as a percentage of the page width, per size choice (F-38). */
 const STAMP_SIZES = { small: 15, medium: 25, large: 40 } as const;
 type StampSize = keyof typeof STAMP_SIZES;
+
+
+/** A labelled single-choice row (audit G-6, TS-4): label above, segments below. */
+function ChoiceField<T extends string>({
+  label,
+  agentId,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  agentId: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly SegmentedOption<T>[];
+}): ReactNode {
+  const labelId = useId();
+  return (
+    <div className="kg-pdf-op__field">
+      <p className="kg-pdf-op__label" id={labelId}>
+        {label}
+      </p>
+      <SegmentedControl
+        aria-labelledby={labelId}
+        agentId={agentId}
+        value={value}
+        onChange={onChange}
+        options={options}
+        fullWidth
+      />
+    </div>
+  );
+}
 
 /** Adaptive operation modal. */
 export function PdfOpSheet({
@@ -446,38 +479,24 @@ export function PdfOpSheet({
     }
     if (op === 'compress') {
       return (
-        <div className="kg-pdf-op__choices" role="group" aria-label={t('params.quality')}>
-          <p className="kg-pdf-op__label">{t('params.quality')}</p>
-          {QUALITIES.map((q) => (
-            <Button
-              key={q}
-              variant={quality === q ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setQuality(q)}
-              agentId={`pdf-tools.op-sheet.quality-${q}`}
-            >
-              {t(`params.quality_${q}`)}
-            </Button>
-          ))}
-        </div>
+        <ChoiceField
+          label={t('params.quality')}
+          agentId="pdf-tools.op-sheet.quality"
+          value={quality}
+          onChange={setQuality}
+          options={QUALITIES.map((q) => ({ value: q, label: t(`params.quality_${q}`) }))}
+        />
       );
     }
     if (op === 'pdfToImages') {
       return (
-        <div className="kg-pdf-op__choices" role="group" aria-label={t('params.format')}>
-          <p className="kg-pdf-op__label">{t('params.format')}</p>
-          {(['png', 'jpeg'] as const).map((f) => (
-            <Button
-              key={f}
-              variant={format === f ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setFormat(f)}
-              agentId={`pdf-tools.op-sheet.format-${f}`}
-            >
-              {f.toUpperCase()}
-            </Button>
-          ))}
-        </div>
+        <ChoiceField
+          label={t('params.format')}
+          agentId="pdf-tools.op-sheet.format"
+          value={format}
+          onChange={setFormat}
+          options={(['png', 'jpeg'] as const).map((f) => ({ value: f, label: f.toUpperCase() }))}
+        />
       );
     }
     if (op === 'watermark') {
@@ -512,42 +531,20 @@ export function PdfOpSheet({
             onChange={setStampPage}
             agentId="pdf-tools.op-sheet.stamp-page"
           />
-          <div
-            className="kg-pdf-op__choices"
-            role="group"
-            aria-label={t('params.stamp_position')}
-          >
-            <p className="kg-pdf-op__label">{t('params.stamp_position')}</p>
-            {STAMP_POSITIONS.map((p) => (
-              <Button
-                key={p}
-                variant={stampPosition === p ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setStampPosition(p)}
-                agentId={`pdf-tools.op-sheet.stamp-position-${p}`}
-              >
-                {t(`params.position_${p}`)}
-              </Button>
-            ))}
-          </div>
-          <div
-            className="kg-pdf-op__choices"
-            role="group"
-            aria-label={t('params.stamp_size')}
-          >
-            <p className="kg-pdf-op__label">{t('params.stamp_size')}</p>
-            {(Object.keys(STAMP_SIZES) as StampSize[]).map((s) => (
-              <Button
-                key={s}
-                variant={stampSize === s ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setStampSize(s)}
-                agentId={`pdf-tools.op-sheet.stamp-size-${s}`}
-              >
-                {t(`params.stamp_size_${s}`)}
-              </Button>
-            ))}
-          </div>
+          <ChoiceField
+            label={t('params.stamp_position')}
+            agentId="pdf-tools.op-sheet.stamp-position"
+            value={stampPosition}
+            onChange={setStampPosition}
+            options={STAMP_POSITIONS.map((p) => ({ value: p, label: t(`params.position_${p}`) }))}
+          />
+          <ChoiceField
+            label={t('params.stamp_size')}
+            agentId="pdf-tools.op-sheet.stamp-size"
+            value={stampSize}
+            onChange={setStampSize}
+            options={(Object.keys(STAMP_SIZES) as StampSize[]).map((s) => ({ value: s, label: t(`params.stamp_size_${s}`) }))}
+          />
         </div>
       );
     }
@@ -560,85 +557,45 @@ export function PdfOpSheet({
     if (op === 'pdfToExcel') {
       return (
         <>
-          <div
-            className="kg-pdf-op__choices"
-            role="group"
-            aria-label={t('params.sheet_format')}
-          >
-            <p className="kg-pdf-op__label">{t('params.sheet_format')}</p>
-            {(['xlsx', 'csv'] as const).map((f) => (
-              <Button
-                key={f}
-                variant={sheetFormat === f ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setSheetFormat(f)}
-                agentId={`pdf-tools.op-sheet.sheet-format-${f}`}
-              >
-                {t(`params.sheet_format_${f}`)}
-              </Button>
-            ))}
-          </div>
+          <ChoiceField
+            label={t('params.sheet_format')}
+            agentId="pdf-tools.op-sheet.sheet-format"
+            value={sheetFormat}
+            onChange={setSheetFormat}
+            options={(['xlsx', 'csv'] as const).map((f) => ({ value: f, label: t(`params.sheet_format_${f}`) }))}
+          />
           <p className="kg-pdf-op__note">{t('params.excel_note')}</p>
         </>
       );
     }
     if (op === 'pdfToText') {
       return (
-        <div className="kg-pdf-op__choices" role="group" aria-label={t('params.text_format')}>
-          <p className="kg-pdf-op__label">{t('params.text_format')}</p>
-          {(['txt', 'md'] as const).map((f) => (
-            <Button
-              key={f}
-              variant={textFormat === f ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setTextFormat(f)}
-              agentId={`pdf-tools.op-sheet.text-format-${f}`}
-            >
-              {t(`params.text_format_${f}`)}
-            </Button>
-          ))}
-        </div>
+        <ChoiceField
+          label={t('params.text_format')}
+          agentId="pdf-tools.op-sheet.text-format"
+          value={textFormat}
+          onChange={setTextFormat}
+          options={(['txt', 'md'] as const).map((f) => ({ value: f, label: t(`params.text_format_${f}`) }))}
+        />
       );
     }
     if (op === 'pageNumbers') {
       return (
         <>
-          <div
-            className="kg-pdf-op__choices"
-            role="group"
-            aria-label={t('params.number_position')}
-          >
-            <p className="kg-pdf-op__label">{t('params.number_position')}</p>
-            {PAGE_NUMBER_POSITIONS.map((p) => (
-              <Button
-                key={p}
-                variant={pageNumberPosition === p ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setPageNumberPosition(p)}
-                agentId={`pdf-tools.op-sheet.number-position-${p}`}
-              >
-                {t(`params.position_${p}`)}
-              </Button>
-            ))}
-          </div>
-          <div
-            className="kg-pdf-op__choices"
-            role="group"
-            aria-label={t('params.number_format')}
-          >
-            <p className="kg-pdf-op__label">{t('params.number_format')}</p>
-            {PAGE_NUMBER_FORMATS.map((f) => (
-              <Button
-                key={f}
-                variant={pageNumberFormat === f ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setPageNumberFormat(f)}
-                agentId={`pdf-tools.op-sheet.number-format-${f}`}
-              >
-                {t(`params.number_format_${f}`)}
-              </Button>
-            ))}
-          </div>
+          <ChoiceField
+            label={t('params.number_position')}
+            agentId="pdf-tools.op-sheet.number-position"
+            value={pageNumberPosition}
+            onChange={setPageNumberPosition}
+            options={PAGE_NUMBER_POSITIONS.map((p) => ({ value: p, label: t(`params.position_${p}`) }))}
+          />
+          <ChoiceField
+            label={t('params.number_format')}
+            agentId="pdf-tools.op-sheet.number-format"
+            value={pageNumberFormat}
+            onChange={setPageNumberFormat}
+            options={PAGE_NUMBER_FORMATS.map((f) => ({ value: f, label: t(`params.number_format_${f}`) }))}
+          />
         </>
       );
     }

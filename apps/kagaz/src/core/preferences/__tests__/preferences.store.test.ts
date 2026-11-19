@@ -54,6 +54,7 @@ describe('preferences store — recentSectionCollapsed (UX pass)', () => {
       swipeLeftAction: 'delete',
       swipeRightAction: 'favorite',
       hapticsEnabled: true,
+      lastBackupAt: null,
     });
   });
 });

@@ -1,5 +1,10 @@
 {
   "title": "Settings",
+  "backup_nudge": {
+    "title": "Back up your documents",
+    "body": "Last backup: never. A backup is the only way to get your documents back if this phone is lost or reset.",
+    "action": "Back up now"
+  },
   "language": {
     "title": "Language",
     "english": "English",
@@ -38,6 +43,9 @@
     "enabled": "Vibrate on touch",
     "enabled_hint": "Feel a light vibration on taps, swipe actions, and scrolling through Recent. Turn off to keep the app silent."
   },
+  "advanced": {
+    "title": "Advanced"
+  },
   "security": {
     "title": "Security",
     "biometric_lock": "Biometric lock",
@@ -58,10 +66,6 @@
   },
   "data": {
     "title": "Data & Privacy",
-    "trash": "Trash",
-    "trash_hint": "View documents you've deleted. They're kept for 30 days, then removed for good.",
-    "archived": "Archived",
-    "archived_hint": "View documents you've archived — hidden from your main list, but still searchable and backed up.",
     "backup": "Export encrypted backup",
     "backup_hint": "Save an encrypted archive of all your documents. Only this app, on this device, can open it.",
     "backup_done_one": "Encrypted backup saved — {{count}} document.",
@@ -84,7 +88,9 @@
     "confirm_keyword": "DELETE",
     "confirm_prompt": "Type {{keyword}} to confirm",
     "confirm_button": "Delete everything",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "backup_last": "Last backup: {{date}}",
+    "danger_title": "Danger zone"
   },
   "about": {
     "title": "About",

@@ -18,7 +18,7 @@ import {
 } from '@ionic/react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Spinner } from '@kagaz/ui';
+import { Button, EmptyState, Spinner } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -55,14 +55,15 @@ export function ArchivedPage(): ReactNode {
           <p className="kg-archived__note">{t('archived.note')}</p>
 
           {archive.loading ? (
-            <div className="kg-archived__empty">
+            <div className="kg-archived__loading">
               <Spinner size="lg" label={t('archived.title')} />
             </div>
           ) : archive.items.length === 0 ? (
-            <div className="kg-archived__empty" data-agent-id="vault.archived.empty">
-              <Icon name="Archive" size={48} aria-hidden />
-              <p>{t('archived.empty_state')}</p>
-            </div>
+            <EmptyState
+              icon="Archive"
+              title={t('archived.empty_state')}
+              agentId="vault.archived.empty"
+            />
           ) : (
             <ul className="kg-archived__list" data-agent-id="vault.archived.list">
               {archive.items.map((doc: DocumentEntity) => (

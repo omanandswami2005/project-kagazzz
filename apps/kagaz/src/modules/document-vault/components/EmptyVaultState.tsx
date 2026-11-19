@@ -6,7 +6,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
-import { Button, Icon } from '@kagaz/ui';
+import { Button, EmptyState, Icon } from '@kagaz/ui';
 
 /** Props for {@link EmptyVaultState}. */
 export interface EmptyVaultStateProps {
@@ -20,11 +20,13 @@ export function EmptyVaultState({
 }: EmptyVaultStateProps): ReactNode {
   const { t } = useTranslation('documents');
   return (
-    <div className="kg-vault-empty" data-agent-id="vault.home.empty-state">
-      <Icon name="FolderOpen" size={48} />
-      <p className="kg-vault-empty__message">{t('empty_state.message')}</p>
-      <p className="kg-vault-empty__hint">{t('empty_state.hint')}</p>
-      {onSetUpFolders && (
+    <EmptyState
+      icon="FolderOpen"
+      title={t('empty_state.message')}
+      hint={t('empty_state.hint')}
+      agentId="vault.home.empty-state"
+      action={
+        onSetUpFolders && (
         <Button
           variant="secondary"
           size="md"
@@ -35,7 +37,8 @@ export function EmptyVaultState({
         >
           {t('templates.cta')}
         </Button>
-      )}
-    </div>
+        )
+      }
+    />
   );
 }

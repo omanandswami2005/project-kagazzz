@@ -14,7 +14,7 @@ import {
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
-import { Button, Icon, Search } from '@kagaz/ui';
+import { Icon, Search, SegmentedControl } from '@kagaz/ui';
 import type { DocumentEntity } from '@/infrastructure/database/types';
 import { useDocuments } from '@/modules/document-vault/hooks/useDocuments';
 import { usePdfEngine } from '../hooks/usePdfEngine';
@@ -88,33 +88,18 @@ export function PdfToolsPage(): ReactNode {
             onChange={setQuery}
           />
 
-          <div
-            className="kg-pdf-tools__categories"
-            role="group"
+          <SegmentedControl
             aria-label={t('category_filter_label')}
-            data-agent-id="pdf-tools.categories"
-            data-agent-state={category ?? 'all'}
-          >
-            <Button
-              variant={category === null ? 'primary' : 'secondary'}
-              size="sm"
-              onClick={() => setCategory(null)}
-              agentId="pdf-tools.category-all"
-            >
-              {t('category_all')}
-            </Button>
-            {CATEGORIES.map((c) => (
-              <Button
-                key={c}
-                variant={category === c ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => setCategory(c)}
-                agentId={`pdf-tools.category-${c}`}
-              >
-                {t(`category_${c}`)}
-              </Button>
-            ))}
-          </div>
+            agentId="pdf-tools.categories"
+            optionAgentId={(c) => `pdf-tools.category-${c}`}
+            value={category ?? 'all'}
+            onChange={(c) => setCategory(c === 'all' ? null : c)}
+            options={(['all', ...CATEGORIES] as const).map((c) => ({
+              value: c,
+              label: t(`category_${c}`),
+            }))}
+            fullWidth
+          />
 
           {ops.length === 0 ? (
             <p className="kg-pdf-tools__no-results" data-agent-id="pdf-tools.no-results">

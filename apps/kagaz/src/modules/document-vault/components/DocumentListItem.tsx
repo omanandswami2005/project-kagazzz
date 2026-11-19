@@ -5,7 +5,7 @@
  */
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon, Tag, type IconName } from '@kagaz/ui';
+import { Icon, Tag } from '@kagaz/ui';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, swipeReveal, useLongPress, type SwipeActionKind } from '@/core/gestures';
 import type {
@@ -13,16 +13,7 @@ import type {
   TagEntity,
 } from '@/infrastructure/database/types';
 import { useThumbnail } from '@/core/hooks/useThumbnail';
-import { FileType } from '../types/document.types';
-
-const TYPE_ICONS: Partial<Record<string, IconName>> = {
-  [FileType.PDF]: 'FileText',
-  [FileType.JPG]: 'FileImage',
-  [FileType.JPEG]: 'FileImage',
-  [FileType.PNG]: 'FileImage',
-  [FileType.HEIC]: 'FileImage',
-  [FileType.WEBP]: 'FileImage',
-};
+import { documentTypeIcon, isImageFile } from '@/core/components/DocumentThumb';
 
 /** Short, human type label for the meta line — MIME or extension → e.g. "PDF". */
 function shortType(fileType: string): string {
@@ -80,7 +71,7 @@ export function DocumentListItem({
   onSwipeAction,
 }: DocumentListItemProps): ReactNode {
   const { t } = useTranslation('documents');
-  const { formatDate, formatFileSize } = useLocale();
+  const { formatShortDate, formatFileSize } = useLocale();
   const thumbnailUrl = useThumbnail(document.thumbnailPath);
 
   const longPress = useLongPress(
@@ -118,13 +109,13 @@ export function DocumentListItem({
           </span>
         ) : thumbnailUrl ? (
           <img
-            className="kg-doc-item__thumb"
+            className={`kg-doc-item__thumb${isImageFile(document.fileType) ? ' kg-doc-item__thumb--image' : ''}`}
             src={thumbnailUrl}
             alt=""
             loading="lazy"
           />
         ) : (
-          <Icon name={TYPE_ICONS[document.fileType] ?? 'File'} size={24} />
+          <Icon name={documentTypeIcon(document.fileType)} size={24} />
         )}
       </span>
       <span className="kg-doc-item__body">
@@ -140,7 +131,7 @@ export function DocumentListItem({
           <span className="kg-doc-item__dot" aria-hidden>
             ·
           </span>
-          {formatDate(document.createdAt)}
+          {formatShortDate(document.createdAt)}
         </span>
         {tags.length > 0 && (
           <span className="kg-doc-item__tags">
