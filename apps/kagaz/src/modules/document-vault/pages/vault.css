@@ -543,6 +543,50 @@
   margin-inline-start: auto;
 }
 
+/* VH-16: a one-time sideways nudge of the first row hints at swipe actions. */
+@keyframes kg-swipe-peek {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35%,
+  55% {
+    transform: translateX(calc(var(--space-8) * -1));
+  }
+}
+.kg-vault__peek .kg-doc-item__li:first-child .kg-swipe-row__content,
+.kg-vault__peek .kg-vault__virtual-row:first-child .kg-doc-item__li:first-child .kg-swipe-row__content {
+  animation: kg-swipe-peek var(--duration-slow) var(--ease-standard) 600ms 2;
+}
+
+/* VH-14: suggestion chips under the controls. */
+.kg-vault__quick {
+  display: flex;
+  gap: var(--space-2);
+  margin-block: 0 var(--space-2);
+  overflow-x: auto;
+}
+
+/* VH-9: every control in the row is the same 44 px box — Filter and the
+   sort direction match the Sort select instead of floating as bare icons. */
+.kg-vault__controls .kg-select {
+  min-height: var(--touch-target);
+  padding-block: 0;
+}
+
+.kg-vault__controls .kg-btn--icon-only {
+  min-height: var(--touch-target);
+  min-width: var(--touch-target);
+  border: var(--border-width) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.kg-vault__controls .kg-segmented {
+  padding: 0;
+  gap: 0;
+}
+
 .kg-vault__filter {
   position: relative;
   flex: 0 0 auto;
@@ -710,7 +754,13 @@
 }
 
 .kg-vault__list--compact .kg-doc-item {
+  min-height: var(--target-min);
   padding-block: var(--space-2);
+}
+
+/* Grid cards size to their content, not to a list row's height. */
+.kg-vault__list--grid .kg-doc-item {
+  min-height: 0;
 }
 
 .kg-vault__list--compact .kg-doc-item__icon,
@@ -729,6 +779,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  /* VH-10: row height follows the density mode (Simple 80 / 56 / Compact). */
+  min-height: var(--row-h);
   padding: var(--space-3);
   /* Reserve room so the tag + favorite actions never overlap content. */
   padding-right: calc(var(--target-min) * 2 + var(--space-3));
