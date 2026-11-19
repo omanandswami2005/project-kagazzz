@@ -102,6 +102,10 @@ describe('QuickNotesPage (UX pass 2026-07-24)', () => {
       ).toHaveAttribute('data-agent-state', 'open')
     );
     expect(historyReplaceMock).toHaveBeenCalledWith('/quick-notes');
+    // The composer now opens on the first render (the page reacts to the
+    // URL, not to mounting), so present() is still in flight here: let it
+    // settle before cleanup unmounts the modal under it.
+    await new Promise((resolve) => setTimeout(resolve, 300));
   });
 
   it('does not open the composer without the ?new=1 param', () => {
