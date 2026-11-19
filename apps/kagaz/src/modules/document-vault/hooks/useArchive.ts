@@ -36,7 +36,7 @@ export interface UseArchive {
 }
 
 /** Manages the Archived documents view. */
-export function useArchive(): UseArchive {
+export function useArchive(reloadKey = 0): UseArchive {
   const { db } = useDatabase();
   const [items, setItems] = useState<DocumentEntity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +56,7 @@ export function useArchive(): UseArchive {
     return (): void => {
       cancelled = true;
     };
-  }, [dao]);
+  }, [dao, reloadKey]);
 
   const unarchive = useCallback(
     async (doc: DocumentEntity): Promise<void> => {

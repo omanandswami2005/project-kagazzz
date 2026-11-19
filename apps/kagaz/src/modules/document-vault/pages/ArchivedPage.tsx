@@ -19,6 +19,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, EmptyState, Spinner } from '@kagaz/ui';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { useLocale } from '@/core/i18n';
 import { SwipeableRow, type SwipeReveal } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -34,7 +35,7 @@ const DELETE_REVEAL: SwipeReveal = { icon: 'Trash2', colorVar: 'var(--color-dang
 export function ArchivedPage(): ReactNode {
   const { t } = useTranslation('documents');
   const { locale } = useLocale();
-  const archive = useArchive();
+  const archive = useArchive(useViewEnterKey());
 
   const formatDate = (iso?: string): string =>
     iso ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(iso)) : '';

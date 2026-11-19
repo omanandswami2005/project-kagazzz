@@ -20,10 +20,10 @@ import {
   useIonRouter,
   useIonToast,
 } from '@ionic/react';
-import { Suspense, useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, Route, useLocation } from 'react-router-dom';
-import { Icon, Spinner } from '@kagaz/ui';
+import { Icon } from '@kagaz/ui';
 import { useAi } from '@/app/providers/AIProvider';
 import { AppMenu, MAIN_CONTENT_ID } from '@/app/shell/AppMenu';
 import { useShareIntent } from '@/modules/document-vault/hooks/useShareIntent';
@@ -136,7 +136,6 @@ export function AppRoutes(): ReactNode {
       <AppMenu />
     <IonTabs>
       <IonRouterOutlet id={MAIN_CONTENT_ID}>
-        <Suspense fallback={<Spinner size="lg" label="Loading..." />}>
           <Route exact path="/vault" component={LazyVaultHomePage} />
           <Route exact path="/pdf-tools" component={LazyPdfToolsPage} />
           <Route exact path="/settings" component={LazySettingsPage} />
@@ -157,7 +156,6 @@ export function AppRoutes(): ReactNode {
           <Route exact path="/">
             <Redirect to="/vault" />
           </Route>
-        </Suspense>
       </IonRouterOutlet>
       <IonTabBar
         slot="bottom"
@@ -183,7 +181,7 @@ export function AppRoutes(): ReactNode {
         {ai.status !== 'unsupported' && (
           <IonTabButton tab="ai" href="/ai-chat" className="kg-tab-ai" data-agent-id="app.tab.ai">
             <span className="kg-tab-ai__orb">
-              <Icon name="Sparkles" size={24} aria-hidden />
+              <Icon name="Assistant" size={24} strokeWidth={2} aria-hidden />
             </span>
             <IonLabel>{t('tabs.ai')}</IonLabel>
           </IonTabButton>

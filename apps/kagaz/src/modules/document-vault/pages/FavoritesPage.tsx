@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Button, EmptyState, Icon } from '@kagaz/ui';
 import { UndoToast } from '@/core/components/UndoToast';
 import { hapticDestructive, hapticTap } from '@/core/haptics';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
 import { usePreferencesStore } from '@/core/preferences';
 import type { SwipeActionKind } from '@/core/gestures';
 import type { DocumentEntity } from '@/infrastructure/database/types';
@@ -48,7 +49,8 @@ function orderBy(docs: DocumentEntity[], order: readonly string[]): DocumentEnti
 export function FavoritesPage(): ReactNode {
   const { t } = useTranslation('documents');
   const [reloadKey, setReloadKey] = useState(0);
-  const { favorites: loaded, isLoading } = useFavorites(reloadKey);
+  const enterKey = useViewEnterKey();
+  const { favorites: loaded, isLoading } = useFavorites(reloadKey + enterKey);
   // FV-4: the user's own order; new favourites join at the end.
   const favoriteOrder = usePreferencesStore((s) => s.favoriteOrder);
   const setFavoriteOrder = usePreferencesStore((s) => s.setFavoriteOrder);
