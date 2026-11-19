@@ -17,7 +17,7 @@ items.
 | Switch theme | `settings.setTheme` | `theme` = `'system'` \| `'light'` \| `'dark'`. |
 | Set a swipe action | `settings.setSwipeAction` | `side` = `'left'` \| `'right'`, `action` = `'delete'` \| `'favorite'` \| `'move'` \| `'tags'` \| `'none'`. |
 
-Tapping a language/theme/swipe-action segment is also a **direct manipulation** — the user can do it by hand. Layout (screen audit SE-2…SE-8): a backup nudge (`settings.backup-nudge`) sits on top until the first backup; groups are cards; Backup/Restore/AI/About are list rows; swipe actions and haptics are folded under Advanced (`settings.advanced`); Delete all data is the last row, in the Danger zone. Trash and Archived live in the side drawer only.
+Tapping a language/theme/swipe-action segment is also a **direct manipulation** — the user can do it by hand. Layout (screen audit SE-2…SE-8): a backup nudge (`settings.backup-nudge`) sits on top until the first backup; groups are cards; Backup/Restore/AI/About are list rows; swipe actions and haptics are folded under Advanced (`settings.advanced`); Delete all data is the last row, in the Danger zone. Trash and Archived live in the side drawer only. About also has **Show the welcome tour again** (`settings.replay-tour`): it returns to Documents and replays the first-run tour.
 
 ## Voice examples I should recognize
 - "switch to hindi" / "हिंदी में बदलो" → `settings.setLanguage({ language: 'hi' })`

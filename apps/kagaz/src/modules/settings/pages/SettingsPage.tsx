@@ -37,6 +37,7 @@ import { useTheme, type ThemeSetting } from '@/app/providers/ThemeProvider';
 import { useAi } from '@/app/providers/AIProvider';
 import { usePreferencesStore } from '@/core/preferences';
 import { APP_VERSION } from '@/core/logging';
+import { WELCOME_TOUR_TIP } from '@/app/onboarding/tour';
 import './settings.css';
 
 const THEME_OPTIONS: readonly ThemeSetting[] = ['system', 'light', 'dark'];
@@ -109,6 +110,7 @@ export function SettingsPage(): ReactNode {
   const setSwipeAction = usePreferencesStore((s) => s.setSwipeAction);
   const hapticsEnabled = usePreferencesStore((s) => s.hapticsEnabled);
   const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const forgetTip = usePreferencesStore((s) => s.forgetTip);
   const setHapticsEnabled = usePreferencesStore((s) => s.setHapticsEnabled);
 
   return (
@@ -316,6 +318,17 @@ export function SettingsPage(): ReactNode {
           </details>
 
           <SettingsSection id="settings-about" icon="Info" title={t('about.title')}>
+            {/* First-run journey: the welcome tour, again, on the Documents screen. */}
+            <ListRow
+              icon="Hand"
+              title={t('about.replay_tour')}
+              hint={t('about.replay_tour_hint')}
+              onClick={() => {
+                forgetTip(WELCOME_TOUR_TIP);
+                router.push('/vault', 'root', 'replace');
+              }}
+              agentId="settings.replay-tour"
+            />
             {ABOUT_LINKS.map(([doc, labelKey, icon]) => (
               <ListRow
                 key={doc}

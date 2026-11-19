@@ -32,6 +32,12 @@ import { UndoToast } from '@/core/components/UndoToast';
 import type { SwipeActionKind } from '@/core/gestures';
 import { searchPdfTools, type PdfOpMeta } from '@/core/pdf-tools-catalog';
 import { ScrollDateBubble } from '../components/ScrollDateBubble';
+import { GettingStartedCard, type GettingStartedItem } from '../components/GettingStartedCard';
+import { useFavorites } from '../hooks/useFavorites';
+import { runTour } from '@/app/onboarding/tour';
+import { useWelcomeTour } from '@/app/onboarding/useWelcomeTour';
+import { useViewEnterKey } from '@/core/hooks/useViewEnterKey';
+import { useLockStore } from '@/modules/auth/store/lock.store';
 import { VirtualDocumentList } from '../components/VirtualDocumentList';
 import { BulkActionBar } from '../components/BulkActionBar';
 import { EmptyVaultState } from '../components/EmptyVaultState';
@@ -101,6 +107,10 @@ type PendingUndo =
 
 /** One-time tip id for the long-press multi-select hint (VH-15). */
 const LONG_PRESS_TIP = 'long-press';
+/** Dismissed Getting-started list (first-run journey). */
+const GETTING_STARTED_TIP = 'getting-started';
+/** Wait for Settings to slide in before spotlighting one of its rows. */
+const SETTINGS_SPOTLIGHT_MS = 500;
 /** One-time swipe hint (VH-16) and how long its animation runs. */
 const SWIPE_PEEK_TIP = 'swipe-peek';
 const SWIPE_PEEK_MS = 2500;
@@ -115,6 +125,7 @@ const isRecent = (d: DocumentEntity, nowMs: number): boolean =>
 /** Main vault screen: list + upload (F-1). */
 export function VaultHomePage(): ReactNode {
   const { t } = useTranslation('documents');
+  const { t: tCommon } = useTranslation('common');
   // UX pass 2026-07-24: vault search also surfaces a matching PDF Tool
   // (e.g. typing "merge" finds the Merge PDFs tool) — needs the `tools`
   // namespace's own t(), since PDF_OPS names/descriptions live there.
@@ -426,6 +437,45 @@ export function VaultHomePage(): ReactNode {
   const showLongPressTip =
     !isLoading && documents.length >= 3 && uploaded.length === 0 && !seenTips.includes(LONG_PRESS_TIP);
 
+  // First-run journey: the welcome tour (once), then a Getting-started list
+  // ticked by real state. Never alongside the empty state or the long-press tip.
+  useWelcomeTour(!isLoading);
+  const lockEnabled = useLockStore((s) => s.enabled);
+  const lastBackupAt = usePreferencesStore((s) => s.lastBackupAt);
+  const { favorites: starred } = useFavorites(useViewEnterKey());
+  const spotlight = (selector: string, key: string): void => {
+    void runTour([{ selector, key, side: 'bottom' }], tCommon, () => undefined);
+  };
+  /** Opens Settings, then lights up one setting once the page has slid in. */
+  const spotlightSetting = (agentId: string, key: string): void => {
+    router.push('/settings', 'forward', 'push');
+    window.setTimeout(() => spotlight(`[data-agent-id="${agentId}"]`, key), SETTINGS_SPOTLIGHT_MS);
+  };
+  const gettingStarted: GettingStartedItem[] = [
+    { id: 'add', icon: 'Plus', done: documents.length > 0, onStart: () => useVaultStore.getState().openUploadSheet() },
+    { id: 'folder', icon: 'FolderPlus', done: folders.length > 0, onStart: () => setNewFolderOpen(true) },
+    {
+      id: 'star',
+      icon: 'Star',
+      done: starred.length > 0 || documents.some((d) => d.isFavorite),
+      onStart: () => spotlight('[data-agent-id$=".favorite"]', 'star'),
+    },
+    { id: 'lock', icon: 'Lock', done: lockEnabled, onStart: () => spotlightSetting('settings.biometric-lock', 'lock') },
+    {
+      id: 'backup',
+      icon: 'DatabaseBackup',
+      done: lastBackupAt !== null,
+      onStart: () => spotlightSetting('settings.export-backup', 'backup'),
+    },
+  ];
+  const showGettingStarted =
+    !isLoading &&
+    documents.length > 0 &&
+    folderPath.length === 0 &&
+    !selectionMode &&
+    !showLongPressTip &&
+    !seenTips.includes(GETTING_STARTED_TIP);
+
   const handleSelectSource = (source: UploadSource): void => {
     // Gallery is special-cased: with 2+ photos picked, ask whether to
     // combine them into one PDF (pdfEngine.imagesToPdfFromFiles) before
@@ -651,6 +701,13 @@ export function VaultHomePage(): ReactNode {
                     path={folderPath}
                     onNavigate={goToFolderDepth}
                   />
+
+                  {showGettingStarted && !search.isActive && (
+                    <GettingStartedCard
+                      items={gettingStarted}
+                      onDismiss={() => markTipSeen(GETTING_STARTED_TIP)}
+                    />
+                  )}
 
                   {folderPath.length === 0 && (
                     <RecentStrip

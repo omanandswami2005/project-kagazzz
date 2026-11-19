@@ -447,5 +447,30 @@
   "quick_filters": {
     "recent": "Added this week · {{count}}",
     "starred": "Starred · {{count}}"
+  },
+  "getting_started": {
+    "title": "Getting started",
+    "progress": "{{done}} of {{total}} done",
+    "dismiss": "Hide getting started",
+    "add": {
+      "title": "Add your first document",
+      "hint": "Scan, or pick a file or photo"
+    },
+    "folder": {
+      "title": "Make a folder",
+      "hint": "Keep ID, bills and certificates apart"
+    },
+    "star": {
+      "title": "Star a document",
+      "hint": "Your most-used ones, one tap away"
+    },
+    "lock": {
+      "title": "Lock the app",
+      "hint": "Open with your fingerprint or face"
+    },
+    "backup": {
+      "title": "Make a backup",
+      "hint": "An encrypted copy, in case the phone is lost"
+    }
   }
 }

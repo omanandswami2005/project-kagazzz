@@ -32,6 +32,7 @@
 - [ADR-024: On-device semantic search — EmbeddingGemma via LiteRT-LM EmbeddingEngine](#adr-024-on-device-semantic-search--embeddinggemma-via-litert-lm-embeddingengine)
 - [ADR-023: Online mode — Gemma 4 on Vertex AI via a dev proxy](#adr-023-online-mode--gemma-4-on-vertex-ai-via-a-dev-proxy)
 - [ADR-025: Browser web demo — dev-server only, testing only](#adr-025-browser-web-demo--dev-server-only-testing-only)
+- [ADR-026: First-run tour — driver.js](#adr-026-first-run-tour--driverjs)
 - [Dependency Version Policy](#dependency-version-policy)
 
 ---
@@ -1303,6 +1304,20 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
+## ADR-026: First-run tour — driver.js
+
+| | |
+|---|---|
+| **Status** | ✅ Accepted (2026-11-19) |
+
+**Context.** The first-run journey needs spotlight steps (dim the screen, light up one control, explain it) over Ionic pages, in en/hi, matching the design tokens, with no network, no storage of its own and no new CSP needs.
+
+**Alternatives.** Shepherd.js 16 and Intro.js 8 are **AGPL-3.0**, forbidden for this proprietary app. react-joyride 3 (MIT) pulls 10 runtime dependencies, including Floating UI, at roughly twice the size. A hand-written overlay would re-solve positioning, scrolling and focus that a library already handles.
+
+**Decision.** **driver.js 1.14** (MIT, zero dependencies, about 15 KB gzipped JS + 2 KB CSS). Audited: its bundle's only URL is the SVG namespace string. It has no `fetch`/XHR/`eval`/`new Function` and never touches `localStorage`. It is imported lazily in `app/onboarding/tour.ts` only when a tour runs, so it adds nothing to the initial bundle. Popover styling is token-only (`tour.css`). "Seen" state lives in the app's own `seenTips` preference. The Getting-started checklist is a native card (`GettingStartedCard`), not driver's floating checklist widget, which would fight the FAB and tab-bar corners.
+
+---
+
 ## Dependency Version Policy
 
 > Adopted 2026-06-10. Exact versions live in `package.json`; this policy governs how they move.
@@ -1317,4 +1332,4 @@ already solved for the scanner (WebView/WASM → native).
 
 ---
 
-*Last updated: 2026-11-18 · Kagaz Architecture Decision Records v1.7 (ADR-025 dev-server-only web demo; ADR-022/023/024 withdrawn or deferred for the store release; ADR-021 LiteRT-LM supersedes WebLLM)*
+*Last updated: 2026-11-19 · Kagaz Architecture Decision Records v1.8 (ADR-026 driver.js first-run tour; ADR-025 dev-server-only web demo; ADR-022/023/024 withdrawn or deferred for the store release; ADR-021 LiteRT-LM supersedes WebLLM)*

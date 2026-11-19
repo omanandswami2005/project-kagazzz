@@ -124,6 +124,8 @@ interface PreferencesStore extends AppPreferences {
   setLastBackupAt: (iso: string) => void;
   /** Marks a one-time tip as shown. */
   markTipSeen: (tip: string) => void;
+  /** Shows a one-time tip again (Settings → Replay the tour). */
+  forgetTip: (tip: string) => void;
   /** Saves the user's Favorites order (FV-4). */
   setFavoriteOrder: (ids: string[]) => void;
 }
@@ -181,6 +183,10 @@ export const usePreferencesStore = create<PreferencesStore>((set, get) => {
     markTipSeen: (tip): void => {
       if (get().seenTips.includes(tip)) return;
       set({ seenTips: [...get().seenTips, tip] });
+      persist();
+    },
+    forgetTip: (tip): void => {
+      set({ seenTips: get().seenTips.filter((t) => t !== tip) });
       persist();
     },
   };
