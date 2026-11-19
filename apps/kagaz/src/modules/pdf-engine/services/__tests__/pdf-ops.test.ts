@@ -145,6 +145,18 @@ describe('PDF Engine Core Operations Implementation', () => {
       expect(progress[progress.length - 1].percent).toBe(100);
     });
 
+    it('splits every page into its own document when no ranges are given', async () => {
+      const parts = await splitPdfImpl(await createTestPdf(3), []);
+      expect(parts).toHaveLength(3);
+      expect((await PDFDocument.load(parts[2])).getPageCount()).toBe(1);
+    });
+
+    it('says the page count, 1-indexed, when a range runs past the end', async () => {
+      await expect(splitPdfImpl(valid2PagePdf, [{ start: 0, end: 2 }])).rejects.toThrowError(
+        'Pages 1-3 are out of range: this PDF has 2 pages'
+      );
+    });
+
     it('should throw PAGE_OUT_OF_RANGE if start index is negative', async () => {
       await expect(splitPdfImpl(valid2PagePdf, [{ start: -1, end: 0 }])).rejects.toThrowError(
         expect.objectContaining({

@@ -130,6 +130,9 @@ export function ChatPage(): ReactNode {
   if (askText && handledAsk !== askText) {
     setHandledAsk(askText);
     setDraft(askText);
+  } else if (!askText && handledAsk) {
+    // Cached page: once the URL is clean, the same request can arrive again.
+    setHandledAsk(null);
   }
   const handoffDoc = handoffId ? attachable.documents.find((d) => d.id === handoffId) : undefined;
   const [handledHandoff, setHandledHandoff] = useState<string | null>(null);
@@ -137,6 +140,8 @@ export function ChatPage(): ReactNode {
     // Adjusting state while rendering (React's documented pattern) — not an effect.
     setHandledHandoff(handoffDoc.id);
     setAttachments((prev) => (prev.some((p) => p.id === handoffDoc.id) ? prev : [...prev, toRef(handoffDoc)]));
+  } else if (!handoffId && handledHandoff) {
+    setHandledHandoff(null);
   }
   useEffect(() => {
     if (
@@ -220,7 +225,7 @@ export function ChatPage(): ReactNode {
               </>
             ) : (
               <>
-                <Icon name={ai.status === 'error' ? 'AlertCircle' : 'Sparkles'} size={32} aria-hidden />
+                <Icon name={ai.status === 'error' ? 'AlertCircle' : 'Assistant'} size={32} aria-hidden />
                 <p role={ai.status === 'error' ? 'alert' : undefined}>
                   {ai.status === 'unsupported'
                     ? t('lifecycle.unsupported')
@@ -262,7 +267,7 @@ export function ChatPage(): ReactNode {
                 the newest document — tapping fills the box, it doesn't send. */}
             {chat.messages.length === 0 && (
               <EmptyState
-                icon="Sparkles"
+                icon="Assistant"
                 title={t('suggestions.title')}
                 hint={t('suggestions.hint')}
                 agentId="ai.chat.suggestions"

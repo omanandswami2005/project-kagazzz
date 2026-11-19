@@ -89,6 +89,12 @@ export interface UsePdfEngineResult {
    * React has re-rendered.
    */
   lastCreated: () => DocumentEntity[];
+  /**
+   * Why the last operation failed (its raw message), or null if it succeeded.
+   * A getter for the same reason as {@link lastCreated}: the AI tools read it
+   * right after an op resolves 0, to tell the model the real cause.
+   */
+  lastError: () => string | null;
   mergePdfs: (docs: DocumentEntity[]) => Promise<number>;
   splitPdf: (doc: DocumentEntity, ranges: PageRange[]) => Promise<number>;
   /** Renders every page to a preview image blob (F-35 organizer; no save). */
@@ -154,6 +160,7 @@ export function usePdfEngine(): UsePdfEngineResult {
   const db = useOptionalDatabase();
   // Documents saved by the in-flight run (one run at a time per screen).
   const createdRef = useRef<DocumentEntity[]>([]);
+  const errorRef = useRef<string | null>(null);
 
   // One engine per screen; torn down (workers terminated) on unmount.
   useEffect(() => {
@@ -201,6 +208,7 @@ export function usePdfEngine(): UsePdfEngineResult {
 
   const reset = useCallback(() => setState(IDLE), []);
   const lastCreated = useCallback((): DocumentEntity[] => createdRef.current, []);
+  const lastError = useCallback((): string | null => errorRef.current, []);
 
   /**
    * Records a finished run in the tool history. Best-effort: a history write
@@ -246,6 +254,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     ): Promise<number> => {
       setState({ ...IDLE, busy: true });
       createdRef.current = [];
+      errorRef.current = null;
       const started = Date.now();
       try {
         const engine = await getEngine();
@@ -263,6 +272,7 @@ export function usePdfEngine(): UsePdfEngineResult {
         const message = err instanceof Error ? err.message : String(err);
         const { code } = pdfErrorInfoOf(err);
         logger.error({ event: 'pdf.tool.failed', code, err: { message } });
+        errorRef.current = message;
         setState((s) => ({
           ...s,
           busy: false,
@@ -616,6 +626,7 @@ export function usePdfEngine(): UsePdfEngineResult {
     state,
     reset,
     lastCreated,
+    lastError,
     mergePdfs,
     splitPdf,
     loadPagePreviews,

@@ -109,7 +109,8 @@ export async function mergePdfsImpl(
 }
 
 /**
- * Splits a PDF into multiple Uint8Arrays according to page ranges.
+ * Splits a PDF into multiple Uint8Arrays according to page ranges (0-indexed,
+ * inclusive). An empty `ranges` makes one document per page.
  */
 export async function splitPdfImpl(
   pdf: Uint8Array,
@@ -119,6 +120,12 @@ export async function splitPdfImpl(
   const op = 'splitPdf';
   const doc = await loadAndValidatePdf(pdf, op);
   const totalPages = doc.getPageCount();
+  // No ranges = one document per page (the AI assistant can ask for this
+  // without knowing the page count; device feedback 2026-11-19).
+  const parts: PageRange[] =
+    ranges.length > 0
+      ? ranges
+      : Array.from({ length: totalPages }, (_, i) => ({ start: i, end: i }));
 
   if (onProgress) {
     onProgress({
@@ -130,10 +137,10 @@ export async function splitPdfImpl(
   }
 
   // Validate ranges
-  for (const range of ranges) {
+  for (const range of parts) {
     if (range.start < 0 || range.end >= totalPages || range.start > range.end) {
       throw new PdfEngineException(
-        `Page range out of range: ${range.start}-${range.end} (total pages: ${totalPages})`,
+        `Pages ${range.start + 1}-${range.end + 1} are out of range: this PDF has ${totalPages} page${totalPages === 1 ? '' : 's'}`,
         'PAGE_OUT_OF_RANGE',
         op
       );
@@ -141,8 +148,8 @@ export async function splitPdfImpl(
   }
 
   const results: Uint8Array[] = [];
-  for (let i = 0; i < ranges.length; i++) {
-    const range = ranges[i];
+  for (let i = 0; i < parts.length; i++) {
+    const range = parts[i];
     const newDoc = await PDFDocument.create();
     const indices = Array.from(
       { length: range.end - range.start + 1 },
@@ -158,8 +165,8 @@ export async function splitPdfImpl(
       onProgress({
         operationId: 'split',
         operation: op,
-        percent: Math.round(10 + ((i + 1) / ranges.length) * 90),
-        message: `Split range ${i + 1} of ${ranges.length}`,
+        percent: Math.round(10 + ((i + 1) / parts.length) * 90),
+        message: `Split range ${i + 1} of ${parts.length}`,
       });
     }
   }

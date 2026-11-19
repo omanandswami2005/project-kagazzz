@@ -45,7 +45,7 @@ export const aiDocumentOpsActions = {
   splitDocument: defineAction({
     id: 'ai.splitDocument',
     summary:
-      'Split a PDF into multiple new documents by page ranges (1-indexed, inclusive). The original is untouched.',
+      'Split a PDF into new documents by page ranges (1-indexed, inclusive). Leave out ranges to make one document per page. The original is untouched.',
     voice: ['split this pdf', 'split this document into pages', 'इस PDF को बांटो'],
     args: z.object({
       documentId: docRefSchema,
@@ -56,14 +56,14 @@ export const aiDocumentOpsActions = {
             end: z.number().int().min(1),
           })
         )
-        .min(1, 'Splitting needs at least one page range'),
+        .optional(),
     }),
     requiresConfirmation: false,
     handler: (
-      args: { documentId: string; ranges: { start: number; end: number }[] },
+      args: { documentId: string; ranges?: { start: number; end: number }[] },
       ctx: AiToolContext
     ): Promise<CreatedDocuments> =>
-      ctx.splitDocument(args.documentId, args.ranges),
+      ctx.splitDocument(args.documentId, args.ranges ?? []),
   }),
 
   compressDocument: defineAction({

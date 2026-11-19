@@ -27,6 +27,7 @@ const pdfEngine = vi.hoisted(() => ({
   imagesToPdf: vi.fn(),
   pdfToImages: vi.fn(),
   exportPdfText: vi.fn(),
+  lastError: vi.fn((): string | null => null),
 }));
 // useChat now also calls usePdfEngine() for F-14's document-op tools —
 // mocked at the hook boundary (same reasoning as useIonRouter above)
@@ -599,11 +600,11 @@ describe('useChat document-op tools (F-14 document operations)', () => {
       'DRAFT'
     );
 
-    expect(await dispatch('ai.convertImagesToPdf', { documentIds: ['d-1'] })).toEqual({
-      ok: true,
-      data: { created: 1, documents: [] },
-    });
-    expect(pdfEngine.imagesToPdf).toHaveBeenCalledWith([expect.objectContaining({ id: 'd-1' })]);
+    // d-1 is a PDF: the image tool refuses it with a pointer, before running.
+    const wrongType = await dispatch('ai.convertImagesToPdf', { documentIds: ['d-1'] });
+    expect(wrongType.ok).toBe(false);
+    expect(JSON.stringify(wrongType)).toContain('not an image');
+    expect(pdfEngine.imagesToPdf).not.toHaveBeenCalled();
 
     expect(await dispatch('ai.convertPdfToImages', { documentId: 'd-1', format: 'png' })).toEqual({
       ok: true,
@@ -653,6 +654,36 @@ describe('useChat document-op tools (F-14 document operations)', () => {
     expect(result.ok).toBe(false);
   });
 
+  it("passes the engine's own failure reason to the model (device report 2026-11-19)", async () => {
+    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    pdfEngine.splitPdf.mockResolvedValue(0);
+    pdfEngine.lastError.mockReturnValueOnce('Pages 4-5 are out of range: this PDF has 3 pages');
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.splitDocument', { documentId: 'd-1', ranges: [{ start: 4, end: 5 }] });
+
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('this PDF has 3 pages');
+  });
+
+  it('PDF tools refuse an image with a clear reason, without running the engine', async () => {
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, [{ ...documentRow, name: 'Scan.jpg', file_type: 'jpg' }]),
+    });
+    plugin.resolveToolCall.mockResolvedValue(undefined);
+    await renderReady();
+
+    const result = await dispatch('ai.compressDocument', { documentId: 'd-1', quality: 'medium' });
+
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('not a PDF');
+    expect(pdfEngine.compressPdf).not.toHaveBeenCalled();
+  });
+
   it('ai.loadSkill returns the skill rules and tools through the real registry', async () => {
     useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
     plugin.resolveToolCall.mockResolvedValue(undefined);
@@ -669,7 +700,12 @@ describe('useChat document-op tools (F-14 document operations)', () => {
   });
 
   it('image tools: resize forwards dimensions and budget, ocr returns only a character count', async () => {
-    useDatabaseMock.mockReturnValue({ status: 'ready', db: readyDbWithDocument() });
+    useDatabaseMock.mockReturnValue({
+      status: 'ready',
+      db: new FakeDb()
+        .onQuery(/FROM ai_conversations/, [conversationRow])
+        .onQuery(/FROM documents/, [{ ...documentRow, name: 'Photo.jpg', file_type: 'jpg' }]),
+    });
     imageOps.resizeRun.mockResolvedValue({
       saved: true,
       hitQualityFloor: false,
